@@ -387,6 +387,93 @@ function brokerExportSalesKpis_(scopeRows,displayRows){
   ];
 }
 
+function brokerPerformanceCompanyRows_(allRows){
+  const rows=allRows||[];
+  const explicitStatus=brokerLiveGet_('bpStatus').length>0;
+  const groups=by(rows,'brokerageCompany');
+
+  const data=Object.keys(groups).map(name=>{
+    const all=groups[name];
+    const valid=explicitStatus
+      ? all
+      : all.filter(r=>String(r.status||'').trim().toLowerCase()!=='cancel');
+    const egp=valid.filter(r=>projectCurrency_(r)==='EGP');
+    const usd=valid.filter(r=>projectCurrency_(r)==='USD');
+    const cancelled=all.filter(r=>String(r.status||'').trim().toLowerCase()==='cancel').length;
+    const valueEGP=sum(egp,'amount');
+    const valueUSD=sum(usd,'amount');
+
+    return {
+      name,
+      deals:valid.length,
+      valueEGP,
+      valueUSD,
+      avgEGP:egp.length?valueEGP/egp.length:0,
+      cancelRate:all.length?cancelled/all.length*100:0,
+      topProject:brokerTopValue_(valid,'project'),
+      topBCSales:brokerTopValue_(valid,'bcSales'),
+      bcManager:brokerTopValue_(valid,'bcManager'),
+      lastDeal:brokerLastDeal_(valid.length?valid:all)
+    };
+  });
+
+  const sort=document.getElementById('brokerCenterSort')?.value||'valueEGP';
+  data.sort((a,b)=>(b[sort]||0)-(a[sort]||0)||b.deals-a.deals||a.name.localeCompare(b.name));
+  return data;
+}
+
+function brokerPerformanceExportDataset_(){
+  const allRows=brokerPerformanceRows_();
+  const salesRows=brokerMetricRows_(allRows,'bpStatus');
+  const cancelledRows=allRows.filter(r=>String(r.status||'').trim().toLowerCase()==='cancel');
+  const egpRows=salesRows.filter(r=>projectCurrency_(r)==='EGP');
+  const usdRows=salesRows.filter(r=>projectCurrency_(r)==='USD');
+
+  const companiesAll=new Set(allRows.map(r=>String(r.brokerageCompany||'').trim()).filter(Boolean));
+  const activeCompanies=new Set(salesRows.map(r=>String(r.brokerageCompany||'').trim()).filter(Boolean));
+  const egpValue=sum(egpRows,'amount');
+  const usdValue=sum(usdRows,'amount');
+  const avgEgp=egpRows.length?egpValue/egpRows.length:0;
+  const cancelRate=allRows.length?cancelledRows.length/allRows.length*100:0;
+
+  const companyRows=brokerPerformanceCompanyRows_(allRows).map((x,i)=>({
+    rank:i+1,
+    brokerageCompany:x.name,
+    deals:x.deals,
+    salesValueEGP:x.valueEGP?`EGP ${money(x.valueEGP)}`:'EGP 0',
+    salesValueUSD:x.valueUSD?`USD ${money(x.valueUSD)}`:'—',
+    avgDealEGP:x.avgEGP?`EGP ${money(x.avgEGP)}`:'—',
+    cancelRate:`${x.cancelRate.toFixed(1)}%`,
+    topProject:x.topProject,
+    topBCSales:x.topBCSales,
+    bcManager:x.bcManager,
+    lastDeal:x.lastDeal
+  }));
+
+  return {
+    title:'EDEN BI — Broker Performance Report',
+    filename:'EDEN_Broker_Performance',
+    rows:companyRows,
+    headers:[
+      '#','Brokerage Company','Deals','Sales Value EGP','Sales Value USD',
+      'Avg Deal EGP','Cancel Rate','Top Project','Top BC Sales','BC Manager','Last Deal'
+    ],
+    keys:[
+      'rank','brokerageCompany','deals','salesValueEGP','salesValueUSD',
+      'avgDealEGP','cancelRate','topProject','topBCSales','bcManager','lastDeal'
+    ],
+    kpis:[
+      ['Total Companies',companiesAll.size.toLocaleString('en-US')],
+      ['Active Companies',activeCompanies.size.toLocaleString('en-US')],
+      ['Broker Deals',salesRows.length.toLocaleString('en-US')],
+      ['Sales Value EGP',money(egpValue)],
+      ['Sales Value USD',money(usdValue)],
+      ['Avg Deal EGP',money(avgEgp)],
+      ['Cancel Rate',`${cancelRate.toFixed(1)}%`]
+    ]
+  };
+}
+
 function brokerExportDataset_(){
   const dealHeaders=[
     'Brokerage Company','Project','Unit Code','Status',
@@ -400,16 +487,7 @@ function brokerExportDataset_(){
   ];
 
   if(currentView==='brokerPerformance'){
-    const scope=brokerPerformanceRows_();
-    const rows=brokerMetricRows_(scope,'bpStatus');
-    return {
-      title:'EDEN BI — Broker Performance Export',
-      filename:'EDEN_Broker_Performance',
-      rows:brokerExportDealRows_(rows),
-      headers:dealHeaders,
-      keys:dealKeys,
-      kpis:brokerExportSalesKpis_(scope,rows)
-    };
+    return brokerPerformanceExportDataset_();
   }
 
   if(currentView==='brokerOverview'){
@@ -3954,35 +4032,8 @@ function renderBrokerPerformanceCenter_(){
   setText('brokerKpiAvg',money(avgEgp));
   setText('brokerKpiCancel',cancelRate.toFixed(1)+'%');
 
-  // Company table follows the live Deal Status filter.
-  // If no status is selected, Cancel is excluded by default.
-  const groups=by(allRows,'brokerageCompany');
-  const explicitStatus=brokerLiveGet_('bpStatus').length>0;
-  let data=Object.keys(groups).map(name=>{
-    const all=groups[name];
-    const valid=explicitStatus
-      ? all
-      : all.filter(r=>String(r.status||'').trim().toLowerCase()!=='cancel');
-    const egp=valid.filter(r=>projectCurrency_(r)==='EGP');
-    const usd=valid.filter(r=>projectCurrency_(r)==='USD');
-    const cancelled=all.filter(r=>String(r.status||'').trim().toLowerCase()==='cancel').length;
-    const valueEGP=sum(egp,'amount'),valueUSD=sum(usd,'amount');
-    return {
-      name,
-      deals:valid.length,
-      valueEGP,
-      valueUSD,
-      avgEGP:egp.length?valueEGP/egp.length:0,
-      cancelRate:all.length?cancelled/all.length*100:0,
-      topProject:brokerTopValue_(valid,'project'),
-      topBCSales:brokerTopValue_(valid,'bcSales'),
-      bcManager:brokerTopValue_(valid,'bcManager'),
-      lastDeal:brokerLastDeal_(valid.length?valid:all)
-    };
-  });
-
-  const sort=document.getElementById('brokerCenterSort')?.value||'valueEGP';
-  data.sort((a,b)=>(b[sort]||0)-(a[sort]||0)||b.deals-a.deals||a.name.localeCompare(b.name));
+  // Company table and exports share the exact same aggregation + sorting logic.
+  const data=brokerPerformanceCompanyRows_(allRows);
 
   const empty=document.getElementById('brokerPerformanceEmpty');
   if(!data.length){

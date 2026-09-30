@@ -1,0 +1,32 @@
+EDEN BI — Broker Performance Export Fix V40
+
+Changed:
+- Broker Performance export now uses the exact same company aggregation and sorting as the on-screen Broker Performance Table.
+- Export KPIs now match the Broker Performance KPI cards:
+  Total Companies
+  Active Companies
+  Broker Deals
+  Sales Value EGP
+  Sales Value USD
+  Avg Deal EGP
+  Cancel Rate
+- Export table now matches the visible Broker Performance table columns:
+  #
+  Brokerage Company
+  Deals
+  Sales Value EGP
+  Sales Value USD
+  Avg Deal EGP
+  Cancel Rate
+  Top Project
+  Top BC Sales
+  BC Manager
+  Last Deal
+- Current live Broker Performance filters and current table ranking/sort are respected.
+- Excel, PDF and CSV broker exports all consume the same corrected dataset.
+- No client names or client mobile numbers are included in Broker Performance export.
+
+Technical:
+- Added brokerPerformanceCompanyRows_() as the shared aggregation/sort source for both rendering and export.
+- Added brokerPerformanceExportDataset_() for exact KPI/table export output.
+- Existing Broker Performance screen behavior remains unchanged.
