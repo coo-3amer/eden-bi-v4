@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>EDEN BI Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <?!= include('Styles'); ?>
+</head>
+<body>
+<div class="loginScreen edenAccessScreen hidden" id="loginScreen">
+  <div class="eaAtmos" aria-hidden="true"><div class="eaGlow g1"></div><div class="eaGlow g2"></div><div class="eaGrid"></div></div>
+  <main class="eaShell">
+    <section class="eaHero">
+      <div class="eaBrand"><i></i> EDEN DEVELOPMENT</div>
+      <div class="eaHeroCopy">
+        <div class="eaKicker">BUSINESS INTELLIGENCE</div>
+        <h1>Command your<br><span>business.</span></h1>
+        <p>One secure gateway to transactions, sales performance, inventory and executive intelligence.</p>
+      </div>
+      <footer><span class="eaOnline"><b></b>SYSTEM ONLINE</span><span id="edenAccessDate">EDEN BI</span></footer>
+    </section>
+    <section class="eaLogin">
+      <div class="eaCard" id="loginCard">
+        <div class="eaMobileBrand">EDEN <span>BI</span></div>
+        <div class="eaTop"><span>SECURE ACCESS</span><time id="edenAccessClock">--:--</time></div>
+        <h2>Welcome back.</h2>
+        <p>Enter your credentials to access the EDEN intelligence environment.</p>
+        <label class="eaField"><span>USERNAME</span><div class="eaInput"><b>◇</b><input id="loginUsername" class="loginInput" placeholder="Enter username" autocomplete="username"></div></label>
+        <label class="eaField"><span>PASSWORD</span><div class="eaInput"><b>◇</b><input id="loginPassword" class="loginInput" type="password" placeholder="Enter password" autocomplete="current-password"><button id="edenPasswordToggle" type="button" aria-label="Show password">◉</button></div></label>
+        <button class="loginBtn eaButton" id="loginBtn" type="button"><span>ACCESS DASHBOARD</span><b>→</b></button>
+        <div id="loginError" class="loginError" aria-live="polite"></div>
+        <div class="hiddenLoginReaction" id="hiddenLoginReaction"></div>
+        <div class="eaSecurity"><b>◆</b><span>Protected EDEN environment<small>AUTHORIZED PERSONNEL ONLY</small></span></div>
+      </div>
+    </section>
+  </main>
+</div>
+<div class="edenMagicTransition hidden" id="edenMagicTransition" aria-hidden="true">
+ <div class="edenMagicParticles" id="edenMagicParticles"></div>
+ <div class="edenMagicContent"><div class="eaGranted">ACCESS GRANTED</div><div class="edenMagicLine"><span class="edenMagicWord">WELCOME</span><span class="edenMagicWord">TO</span><span class="edenMagicWord edenMagicHeroWord">EDEN BI</span></div><div class="edenMagicBeam"></div></div>
+</div>
+<?!= include('Loader'); ?>
+<div class="app hidden" id="appRoot"><?!= include('Sidebar'); ?><?!= include('MainContent'); ?></div>
+<?!= include('Scripts'); ?>
+</body></html>

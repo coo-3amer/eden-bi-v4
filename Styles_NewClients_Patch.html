@@ -1,0 +1,121 @@
+
+<style>
+.newClientsYearSection{margin-top:18px}
+.newClientsYearSection.hidden{display:none!important}
+.newClientsYearHead{align-items:flex-start}
+.newClientsYearCards{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+  gap:10px;
+  padding:14px 14px 0;
+}
+.newClientsYearCard{
+  padding:13px;
+  border:1px solid #2a405b;
+  border-radius:12px;
+  background:#101f31;
+}
+.newClientsYearCard span{display:block;color:#91b5d9;font-size:10px;font-weight:900}
+.newClientsYearCard b{display:block;margin:5px 0;color:#ffd21f;font-size:24px}
+.newClientsYearCard small{color:#7291af;font-size:9px}
+.newClientYearBadge{
+  display:inline-block;
+  min-width:62px;
+  padding:7px 10px;
+  border:1px solid #365474;
+  border-radius:999px;
+  background:#152942;
+  color:#b9d8f6;
+  text-align:center;
+  font-weight:900;
+}
+.newClientCount{color:#ffd21f;font-size:17px}
+.newClientNamesDetails summary{cursor:pointer;color:#80bfff;font-weight:800;font-size:11px}
+.newClientNamesGrid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(260px,1fr));
+  gap:7px;
+  max-height:390px;
+  overflow:auto;
+  padding-top:10px;
+}
+.newClientNameItem{
+  display:flex;
+  gap:9px;
+  padding:9px;
+  border:1px solid #213750;
+  border-radius:9px;
+  background:#0c1928;
+}
+.newClientIndex{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:25px;
+  height:25px;
+  flex:0 0 25px;
+  border-radius:50%;
+  background:#1d3550;
+  color:#9fc5ea;
+  font-size:9px;
+  font-weight:900;
+}
+.newClientNameItem b{display:block;color:#edf6ff;font-size:11px}
+.newClientNameItem small{display:block;margin-top:3px;color:#7898b6;font-size:9px;line-height:1.4}
+@media(max-width:900px){.newClientNamesGrid{grid-template-columns:1fr}}
+</style>
+
+<style>
+/* Inventory Discount — isolated patch */
+.inventoryDiscountFilter{min-width:145px}
+.inventoryDiscountControl{
+  display:flex;
+  align-items:center;
+  height:42px;
+  border:1px solid #2b4059;
+  border-radius:10px;
+  background:#0a1523;
+  overflow:hidden;
+}
+.inventoryDiscountControl:focus-within{
+  border-color:#ffd21f;
+  box-shadow:0 0 0 3px rgba(255,210,31,.08);
+}
+.inventoryDiscountControl input{
+  width:100%;
+  height:100%;
+  margin:0!important;
+  padding:0 10px!important;
+  border:0!important;
+  background:transparent!important;
+  color:#fff!important;
+  outline:none!important;
+  box-shadow:none!important;
+}
+.inventoryDiscountControl span{
+  padding:0 12px;
+  color:#ffd21f;
+  font-weight:900;
+}
+.inventoryCard.discount{
+  border-color:#725f20;
+  background:linear-gradient(180deg,#2b2715,#171b22);
+}
+.inventoryCard.discount .inventoryCardValue{color:#ffd65c}
+.inventoryCard.netValue{
+  border-color:#2e6e4c;
+  background:linear-gradient(180deg,#123123,#111d22);
+}
+.inventoryCard.netValue .inventoryCardValue{color:#75e4a4}
+.inventoryDiscountBadge{
+  display:inline-block;
+  padding:5px 8px;
+  border:1px solid #66551b;
+  border-radius:999px;
+  background:#332b10;
+  color:#ffd65c;
+  font-size:10px;
+  font-weight:900;
+}
+.inventoryDiscountedPrice{color:#75e4a4}
+</style>

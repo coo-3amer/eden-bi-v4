@@ -1,0 +1,1576 @@
+<main class="main">
+    <div class="topbar">
+      <div><h1 id="pageTitle" class="title">Transactions Dashboard</h1><div id="pageDesc" class="desc">Overview for projects, sales, branches, meters and deals.</div></div>
+      <div class="actions"><button class="btn secondary" onclick="resetFilters()">Reset</button><button class="btn" onclick="exportCSV()">Export CSV</button></div>
+    </div>
+
+    <section class="filters">
+      <div class="filterGroup multi" id="projectMulti">
+        <button type="button" class="multiBtn"><span id="projectLabel">All Projects</span><b>▾</b></button>
+        <div class="multiPanel">
+          <div class="multiActions"><button type="button" class="miniBtn" data-action="all" data-target="project">Select all</button><button type="button" class="miniBtn" data-action="clear" data-target="project">Clear</button></div>
+          <div id="projectChecks"></div>
+        </div>
+      </div>
+
+      <div class="filterGroup multi" id="unitCategoryMulti">
+        <button type="button" class="multiBtn"><span id="unitCategoryLabel">All Unit Types</span><b>▾</b></button>
+        <div class="multiPanel">
+          <div class="multiActions"><button type="button" class="miniBtn" data-action="all" data-target="unitCategory">Select all</button><button type="button" class="miniBtn" data-action="clear" data-target="unitCategory">Clear</button></div>
+          <div id="unitCategoryChecks"></div>
+        </div>
+      </div>
+      <div class="filterGroup multi" id="salesMulti">
+        <button type="button" class="multiBtn"><span id="salesLabel">All Sales</span><b>▾</b></button>
+        <div class="multiPanel">
+          <div class="multiActions"><button type="button" class="miniBtn" data-action="all" data-target="sales">Select all</button><button type="button" class="miniBtn" data-action="clear" data-target="sales">Clear</button></div>
+          <div id="salesChecks"></div>
+        </div>
+      </div>
+      <div class="filterGroup multi" id="salesManagerMulti">
+        <button type="button" class="multiBtn"><span id="salesManagerLabel">All Sales Managers</span><b>▾</b></button>
+        <div class="multiPanel">
+          <div class="multiActions">
+            <button type="button" class="miniBtn" data-action="all" data-target="salesManager">Select all</button>
+            <button type="button" class="miniBtn" data-action="clear" data-target="salesManager">Clear</button>
+          </div>
+          <div id="salesManagerChecks"></div>
+        </div>
+      </div>
+      <div class="filterGroup multi" id="nationalityMulti">
+        <button type="button" class="multiBtn"><span id="nationalityLabel">All Nationalities</span><b>▾</b></button>
+        <div class="multiPanel">
+          <div class="multiActions">
+            <button type="button" class="miniBtn" data-action="all" data-target="nationality">Select all</button>
+            <button type="button" class="miniBtn" data-action="clear" data-target="nationality">Clear</button>
+          </div>
+          <div id="nationalityChecks"></div>
+        </div>
+      </div>
+
+      <div class="filterGroup multi" id="clientTypeMulti">
+        <button type="button" class="multiBtn"><span id="clientTypeLabel">All Client Types</span><b>▾</b></button>
+        <div class="multiPanel">
+          <div class="multiActions">
+            <button type="button" class="miniBtn" data-action="all" data-target="clientType">Select all</button>
+            <button type="button" class="miniBtn" data-action="clear" data-target="clientType">Clear</button>
+          </div>
+          <div id="clientTypeChecks"></div>
+        </div>
+      </div>
+
+            <div class="filterGroup multi" id="branchMulti">
+        <button type="button" class="multiBtn"><span id="branchLabel">All Branches</span><b>▾</b></button>
+        <div class="multiPanel">
+          <div class="multiActions"><button type="button" class="miniBtn" data-action="all" data-target="branch">Select all</button><button type="button" class="miniBtn" data-action="clear" data-target="branch">Clear</button></div>
+          <div id="branchChecks"></div>
+        </div>
+      </div>
+      <div class="filterGroup multi" id="statusMulti">
+        <button type="button" class="multiBtn"><span id="statusLabel">All Status</span><b>▾</b></button>
+        <div class="multiPanel">
+          <div class="multiActions"><button type="button" class="miniBtn" data-action="all" data-target="status">Select all</button><button type="button" class="miniBtn" data-action="clear" data-target="status">Clear</button></div>
+          <div id="statusChecks"></div>
+        </div>
+      </div>
+
+      <div class="filterGroup multi" id="renovationMulti">
+        <button type="button" class="multiBtn"><span id="renovationLabel">All Renovation</span><b>▾</b></button>
+        <div class="multiPanel">
+          <div class="multiActions"><button type="button" class="miniBtn" data-action="all" data-target="renovation">Select all</button><button type="button" class="miniBtn" data-action="clear" data-target="renovation">Clear</button></div>
+          <div id="renovationChecks"></div>
+        </div>
+      </div>
+
+      <div class="filterGroup multi" id="mainSourceMulti">
+        <button type="button" class="multiBtn"><span id="mainSourceLabel">All Main Sources</span><b>▾</b></button>
+        <div class="multiPanel">
+          <div class="multiActions">
+            <button type="button" class="miniBtn" data-action="all" data-target="mainSource">Select all</button>
+            <button type="button" class="miniBtn" data-action="clear" data-target="mainSource">Clear</button>
+          </div>
+          <div class="multiSearchWrap">
+            <input
+              type="text"
+              class="multiSearchInput"
+              placeholder="Search main sources..."
+              oninput="filterMultiOptions('mainSourceChecks', this.value)">
+          </div>
+          <div id="mainSourceChecks"></div>
+        </div>
+      </div>
+
+      <div class="filterGroup multi" id="sourceTypeMulti">
+        <button type="button" class="multiBtn"><span id="sourceTypeLabel">All Source Types</span><b>▾</b></button>
+        <div class="multiPanel">
+          <div class="multiActions">
+            <button type="button" class="miniBtn" data-action="all" data-target="sourceType">Select all</button>
+            <button type="button" class="miniBtn" data-action="clear" data-target="sourceType">Clear</button>
+          </div>
+          <div class="multiSearchWrap">
+            <input
+              type="text"
+              class="multiSearchInput"
+              placeholder="Search source types..."
+              oninput="filterMultiOptions('sourceTypeChecks', this.value)">
+          </div>
+          <div id="sourceTypeChecks"></div>
+        </div>
+      </div>
+
+      <div class="filterGroup multi" id="campaignNameMulti">
+        <button type="button" class="multiBtn"><span id="campaignNameLabel">All Campaigns</span><b>▾</b></button>
+        <div class="multiPanel">
+          <div class="multiActions">
+            <button type="button" class="miniBtn" data-action="all" data-target="campaignName">Select all</button>
+            <button type="button" class="miniBtn" data-action="clear" data-target="campaignName">Clear</button>
+          </div>
+          <div class="multiSearchWrap">
+            <input
+              type="text"
+              class="multiSearchInput"
+              placeholder="Search campaigns..."
+              oninput="filterMultiOptions('campaignNameChecks', this.value)">
+          </div>
+          <div id="campaignNameChecks"></div>
+        </div>
+      </div>
+
+      <div class="filterGroup multi" id="mediaBuyerMulti">
+        <button type="button" class="multiBtn"><span id="mediaBuyerLabel">All Media Buyers</span><b>▾</b></button>
+        <div class="multiPanel">
+          <div class="multiActions">
+            <button type="button" class="miniBtn" data-action="all" data-target="mediaBuyer">Select all</button>
+            <button type="button" class="miniBtn" data-action="clear" data-target="mediaBuyer">Clear</button>
+          </div>
+          <div class="multiSearchWrap">
+            <input
+              type="text"
+              class="multiSearchInput"
+              placeholder="Search media buyers..."
+              oninput="filterMultiOptions('mediaBuyerChecks', this.value)">
+          </div>
+          <div id="mediaBuyerChecks"></div>
+        </div>
+      </div>
+
+      <div class="filterGroup multi" id="brokerageCompanyMulti">
+        <button type="button" class="multiBtn"><span id="brokerageCompanyLabel">All Brokerage Companies</span><b>▾</b></button>
+        <div class="multiPanel">
+          <div class="multiActions">
+            <button type="button" class="miniBtn" data-action="all" data-target="brokerageCompany">Select all</button>
+            <button type="button" class="miniBtn" data-action="clear" data-target="brokerageCompany">Clear</button>
+          </div>
+          <div class="multiSearchWrap"><input type="text" class="multiSearchInput" placeholder="Search brokerage companies..." oninput="filterMultiOptions('brokerageCompanyChecks', this.value)"></div>
+          <div id="brokerageCompanyChecks"></div>
+        </div>
+      </div>
+
+      <div class="filterGroup multi" id="bcSalesMulti">
+        <button type="button" class="multiBtn"><span id="bcSalesLabel">All BC Sales</span><b>▾</b></button>
+        <div class="multiPanel">
+          <div class="multiActions">
+            <button type="button" class="miniBtn" data-action="all" data-target="bcSales">Select all</button>
+            <button type="button" class="miniBtn" data-action="clear" data-target="bcSales">Clear</button>
+          </div>
+          <div class="multiSearchWrap"><input type="text" class="multiSearchInput" placeholder="Search BC sales..." oninput="filterMultiOptions('bcSalesChecks', this.value)"></div>
+          <div id="bcSalesChecks"></div>
+        </div>
+      </div>
+
+      <div class="filterGroup multi" id="bcManagerMulti">
+        <button type="button" class="multiBtn"><span id="bcManagerLabel">All BC Managers</span><b>▾</b></button>
+        <div class="multiPanel">
+          <div class="multiActions">
+            <button type="button" class="miniBtn" data-action="all" data-target="bcManager">Select all</button>
+            <button type="button" class="miniBtn" data-action="clear" data-target="bcManager">Clear</button>
+          </div>
+          <div class="multiSearchWrap"><input type="text" class="multiSearchInput" placeholder="Search BC managers..." oninput="filterMultiOptions('bcManagerChecks', this.value)"></div>
+          <div id="bcManagerChecks"></div>
+        </div>
+      </div>
+
+      <div class="filterGroup multi" id="dayMulti">
+        <button type="button" class="multiBtn"><span id="dayLabel">All Days</span><b>▾</b></button>
+        <div class="multiPanel">
+          <div class="multiActions"><button type="button" class="miniBtn" data-action="all" data-target="day">Select all</button><button type="button" class="miniBtn" data-action="clear" data-target="day">Clear</button></div>
+          <div id="dayChecks"></div>
+        </div>
+        <div class="filterHint">Days: choose one or more</div>
+      </div>
+      <div class="filterGroup multi" id="monthMulti">
+        <button type="button" class="multiBtn"><span id="monthLabel">All Months</span><b>▾</b></button>
+        <div class="multiPanel">
+          <div class="multiActions"><button type="button" class="miniBtn" data-action="all" data-target="month">Select all</button><button type="button" class="miniBtn" data-action="clear" data-target="month">Clear</button></div>
+          <div id="monthChecks"></div>
+        </div>
+        <div class="filterHint">Months: choose one or more</div>
+      </div>
+      <div class="filterGroup multi" id="yearMulti">
+        <button type="button" class="multiBtn"><span id="yearLabel">All Years</span><b>▾</b></button>
+        <div class="multiPanel">
+          <div class="multiActions"><button type="button" class="miniBtn" data-action="all" data-target="year">Select all</button><button type="button" class="miniBtn" data-action="clear" data-target="year">Clear</button></div>
+          <div id="yearChecks"></div>
+        </div>
+        <div class="filterHint">Years: choose one or more</div>
+      </div>
+      <input id="search" placeholder="Search client / unit / campaign..." oninput="applyFilters()">
+    </section>
+
+    <section class="filters hidden" id="brokerFilters">
+      <div class="filterGroup multi" id="brokerEdenMulti">
+        <button type="button" class="multiBtn"><span id="brokerEdenLabel">All Eden Sales</span><b>▾</b></button>
+        <div class="multiPanel">
+          <div class="multiActions"><button type="button" class="miniBtn" data-action="all" data-target="brokerEden">Select all</button><button type="button" class="miniBtn" data-action="clear" data-target="brokerEden">Clear</button></div>
+          <div id="brokerEdenChecks"></div>
+        </div>
+      </div>
+      <div class="filterGroup multi" id="brokerCreatedByMulti">
+        <button type="button" class="multiBtn"><span id="brokerCreatedByLabel">All Created By</span><b>▾</b></button>
+        <div class="multiPanel">
+          <div class="multiActions"><button type="button" class="miniBtn" data-action="all" data-target="brokerCreatedBy">Select all</button><button type="button" class="miniBtn" data-action="clear" data-target="brokerCreatedBy">Clear</button></div>
+          <div id="brokerCreatedByChecks"></div>
+        </div>
+      </div>
+      <div class="filterGroup multi" id="brokerLastSalesMulti">
+        <button type="button" class="multiBtn"><span id="brokerLastSalesLabel">All Last Sales</span><b>▾</b></button>
+        <div class="multiPanel">
+          <div class="multiActions"><button type="button" class="miniBtn" data-action="all" data-target="brokerLastSales">Select all</button><button type="button" class="miniBtn" data-action="clear" data-target="brokerLastSales">Clear</button></div>
+          <div id="brokerLastSalesChecks"></div>
+        </div>
+      </div>
+      <div class="filterGroup multi" id="brokerLinkMulti">
+        <button type="button" class="multiBtn"><span id="brokerLinkLabel">All Link Status</span><b>▾</b></button>
+        <div class="multiPanel">
+          <div class="multiActions"><button type="button" class="miniBtn" data-action="all" data-target="brokerLink">Select all</button><button type="button" class="miniBtn" data-action="clear" data-target="brokerLink">Clear</button></div>
+          <div id="brokerLinkChecks"></div>
+        </div>
+      </div>
+      <div class="filterGroup multi" id="brokerStatusMulti">
+        <button type="button" class="multiBtn"><span id="brokerStatusLabel">All Broker Status</span><b>▾</b></button>
+        <div class="multiPanel">
+          <div class="multiActions"><button type="button" class="miniBtn" data-action="all" data-target="brokerStatus">Select all</button><button type="button" class="miniBtn" data-action="clear" data-target="brokerStatus">Clear</button></div>
+          <div id="brokerStatusChecks"></div>
+        </div>
+      </div>
+      <div class="filterGroup multi" id="brokerDayMulti">
+        <button type="button" class="multiBtn"><span id="brokerDayLabel">All Creation Days</span><b>▾</b></button>
+        <div class="multiPanel">
+          <div class="multiActions"><button type="button" class="miniBtn" data-action="all" data-target="brokerDay">Select all</button><button type="button" class="miniBtn" data-action="clear" data-target="brokerDay">Clear</button></div>
+          <div id="brokerDayChecks"></div>
+        </div>
+        <div class="filterHint">Creation day: choose one or more</div>
+      </div>
+      <div class="filterGroup multi" id="brokerMonthMulti">
+        <button type="button" class="multiBtn"><span id="brokerMonthLabel">All Creation Months</span><b>▾</b></button>
+        <div class="multiPanel">
+          <div class="multiActions"><button type="button" class="miniBtn" data-action="all" data-target="brokerMonth">Select all</button><button type="button" class="miniBtn" data-action="clear" data-target="brokerMonth">Clear</button></div>
+          <div id="brokerMonthChecks"></div>
+        </div>
+        <div class="filterHint">Creation month: choose one or more</div>
+      </div>
+      <div class="filterGroup multi" id="brokerYearMulti">
+        <button type="button" class="multiBtn"><span id="brokerYearLabel">All Creation Years</span><b>▾</b></button>
+        <div class="multiPanel">
+          <div class="multiActions"><button type="button" class="miniBtn" data-action="all" data-target="brokerYear">Select all</button><button type="button" class="miniBtn" data-action="clear" data-target="brokerYear">Clear</button></div>
+          <div id="brokerYearChecks"></div>
+        </div>
+        <div class="filterHint">Creation year: choose one or more</div>
+      </div>
+      <input id="brokerSearch" placeholder="Search company / mobile / group..." oninput="applyFilters()">
+    </section>
+
+
+
+
+    <section class="inventoryPanel hidden" id="inventoryPanel">
+      <div class="inventoryToolbar">
+        <div>
+          <h3 id="inventoryTitle">Kobuleti Inventory</h3>
+          <div class="small" id="inventoryUpdated">Live data from the project inventory sheet.</div>
+        </div>
+        <div class="inventoryActions">
+          <button class="btn secondary" onclick="loadInventory(true)">Refresh Inventory</button>
+          <a class="btn inventoryLink" id="inventorySheetLink" href="#" target="_blank">Open Source Sheet</a>
+        </div>
+      </div>
+
+      <div class="inventoryCards" id="inventoryCards"></div>
+
+      <div class="inventoryFilterBar">
+        <div class="inventorySearchCell">
+          <div class="inventoryFilterName">Search</div>
+          <div class="inventorySearchBox">
+            <span>⌕</span>
+            <input id="inventorySearch" placeholder="Search by unit code, floor, type or view" oninput="applyInventoryFilters()">
+          </div>
+        </div>
+        
+        <div class="inventoryFilterCell">
+          <div class="inventoryFilterName">Floor</div>
+          <div class="filterGroup multi inventoryFilterGroup" id="inventoryFloorMulti">
+            <button type="button" class="multiBtn inventoryFilterButton">
+              <span id="inventoryFloorLabel">All Floors</span>
+              <span class="inventoryChevron">▾</span>
+            </button>
+            <div class="multiPanel inventoryDropdownPanel">
+              <div class="inventoryDropdownTop">
+                <div class="inventoryDropdownTitle">Floor</div>
+                <button type="button" class="inventoryDropdownClose" onclick="this.closest('.filterGroup').classList.remove('open')">×</button>
+              </div>
+              <div class="inventoryDropdownSearchWrap">
+                <input class="inventoryDropdownSearch" placeholder="Search floors" oninput="filterInventoryOptions('inventoryFloor',this.value)">
+              </div>
+              <div class="inventoryDropdownActions">
+                <button type="button" class="miniBtn" data-action="all" data-target="inventoryFloor">Select all</button>
+                <button type="button" class="miniBtn" data-action="clear" data-target="inventoryFloor">Clear</button>
+                <span id="inventoryFloorCount">0 options</span>
+              </div>
+              <div class="inventoryChecks" id="inventoryFloorChecks"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="inventoryFilterCell">
+          <div class="inventoryFilterName">Unit Type</div>
+          <div class="filterGroup multi inventoryFilterGroup" id="inventoryUnitTypeMulti">
+            <button type="button" class="multiBtn inventoryFilterButton">
+              <span id="inventoryUnitTypeLabel">All Unit Types</span>
+              <span class="inventoryChevron">▾</span>
+            </button>
+            <div class="multiPanel inventoryDropdownPanel">
+              <div class="inventoryDropdownTop">
+                <div class="inventoryDropdownTitle">Unit Type</div>
+                <button type="button" class="inventoryDropdownClose" onclick="this.closest('.filterGroup').classList.remove('open')">×</button>
+              </div>
+              <div class="inventoryDropdownSearchWrap">
+                <input class="inventoryDropdownSearch" placeholder="Search unit types" oninput="filterInventoryOptions('inventoryUnitType',this.value)">
+              </div>
+              <div class="inventoryDropdownActions">
+                <button type="button" class="miniBtn" data-action="all" data-target="inventoryUnitType">Select all</button>
+                <button type="button" class="miniBtn" data-action="clear" data-target="inventoryUnitType">Clear</button>
+                <span id="inventoryUnitTypeCount">0 options</span>
+              </div>
+              <div class="inventoryChecks" id="inventoryUnitTypeChecks"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="inventoryFilterCell">
+          <div class="inventoryFilterName">Type</div>
+          <div class="filterGroup multi inventoryFilterGroup" id="inventoryTypeMulti">
+            <button type="button" class="multiBtn inventoryFilterButton">
+              <span id="inventoryTypeLabel">All Types</span>
+              <span class="inventoryChevron">▾</span>
+            </button>
+            <div class="multiPanel inventoryDropdownPanel">
+              <div class="inventoryDropdownTop">
+                <div class="inventoryDropdownTitle">Type</div>
+                <button type="button" class="inventoryDropdownClose" onclick="this.closest('.filterGroup').classList.remove('open')">×</button>
+              </div>
+              <div class="inventoryDropdownSearchWrap">
+                <input class="inventoryDropdownSearch" placeholder="Search types" oninput="filterInventoryOptions('inventoryType',this.value)">
+              </div>
+              <div class="inventoryDropdownActions">
+                <button type="button" class="miniBtn" data-action="all" data-target="inventoryType">Select all</button>
+                <button type="button" class="miniBtn" data-action="clear" data-target="inventoryType">Clear</button>
+                <span id="inventoryTypeCount">0 options</span>
+              </div>
+              <div class="inventoryChecks" id="inventoryTypeChecks"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="inventoryFilterCell">
+          <div class="inventoryFilterName">Status</div>
+          <div class="filterGroup multi inventoryFilterGroup" id="inventoryStatusMulti">
+            <button type="button" class="multiBtn inventoryFilterButton">
+              <span id="inventoryStatusLabel">All Statuses</span>
+              <span class="inventoryChevron">▾</span>
+            </button>
+            <div class="multiPanel inventoryDropdownPanel">
+              <div class="inventoryDropdownTop">
+                <div class="inventoryDropdownTitle">Status</div>
+                <button type="button" class="inventoryDropdownClose" onclick="this.closest('.filterGroup').classList.remove('open')">×</button>
+              </div>
+              <div class="inventoryDropdownSearchWrap">
+                <input class="inventoryDropdownSearch" placeholder="Search statuses" oninput="filterInventoryOptions('inventoryStatus',this.value)">
+              </div>
+              <div class="inventoryDropdownActions">
+                <button type="button" class="miniBtn" data-action="all" data-target="inventoryStatus">Select all</button>
+                <button type="button" class="miniBtn" data-action="clear" data-target="inventoryStatus">Clear</button>
+                <span id="inventoryStatusCount">0 options</span>
+              </div>
+              <div class="inventoryChecks" id="inventoryStatusChecks"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="inventoryFilterCell">
+          <div class="inventoryFilterName">Company</div>
+          <div class="filterGroup multi inventoryFilterGroup" id="inventoryCompanyMulti">
+            <button type="button" class="multiBtn inventoryFilterButton">
+              <span id="inventoryCompanyLabel">All Companies</span>
+              <span class="inventoryChevron">▾</span>
+            </button>
+            <div class="multiPanel inventoryDropdownPanel">
+              <div class="inventoryDropdownTop">
+                <div class="inventoryDropdownTitle">Company</div>
+                <button type="button" class="inventoryDropdownClose" onclick="this.closest('.filterGroup').classList.remove('open')">×</button>
+              </div>
+              <div class="inventoryDropdownSearchWrap">
+                <input class="inventoryDropdownSearch" placeholder="Search companies" oninput="filterInventoryOptions('inventoryCompany',this.value)">
+              </div>
+              <div class="inventoryDropdownActions">
+                <button type="button" class="miniBtn" data-action="all" data-target="inventoryCompany">Select all</button>
+                <button type="button" class="miniBtn" data-action="clear" data-target="inventoryCompany">Clear</button>
+                <span id="inventoryCompanyCount">0 options</span>
+              </div>
+              <div class="inventoryChecks" id="inventoryCompanyChecks"></div>
+            </div>
+          </div>
+        </div>
+        <div class="inventorySortFilter">
+          <div class="inventoryFilterName">Sort By</div>
+          <select id="inventorySortBy" onchange="applyInventoryFilters()" aria-label="Sort inventory">
+            <option value="">Default Order</option>
+            <option value="areaDesc">Largest Area</option>
+            <option value="areaAsc">Smallest Area</option>
+            <option value="meterPriceAsc">Lowest Price/M² After Discount</option>
+            <option value="meterPriceDesc">Highest Price/M² After Discount</option>
+            <option value="totalAsc">Lowest Total After Discount</option>
+            <option value="totalDesc">Highest Total After Discount</option>
+          </select>
+        </div>
+
+        <div class="inventoryDiscountFilter">
+          <div class="inventoryFilterName">Discount %</div>
+          <div class="inventoryDiscountControl">
+            <input id="inventoryDiscountPercent" type="number" min="0" max="100" step="any" value="0" oninput="applyInventoryDiscount()" aria-label="Inventory discount percentage">
+            <span>%</span>
+          </div>
+        </div>
+
+        <button type="button" class="inventoryClearAll" onclick="clearAllInventoryFilters()">Clear all</button>
+      </div>
+
+      <div class="inventoryActiveFilters hidden" id="inventoryActiveFilters">
+        <div class="inventoryActiveTitle">Active filters</div>
+        <div class="inventoryChips" id="inventoryFilterChips"></div>
+      </div>
+
+      <div class="inventoryMessage hidden" id="inventoryMessage"></div>
+      <div class="tableWrap"><table id="inventoryTable"></table></div>
+    </section>
+
+
+    <section class="dealEntryPanel hidden" id="dealEntryPanel">
+      <div class="dealWizardHead">
+        <div>
+          <h3>Add New Deal</h3>
+          <div class="small">Kobuleti V1 • Inventory validation • Transactions tab 2026 • Starts from row 34</div>
+        </div>
+        <div class="dealStepText" id="dealStepText">Step 1 of 5</div>
+      </div>
+
+      <div class="dealProgress">
+        <div class="dealProgressBar" id="dealProgressBar"></div>
+      </div>
+
+      <div class="dealAlert hidden" id="dealAlert"></div>
+
+      <div class="dealStep active" data-deal-step="1">
+        <h3>1. Project & Unit</h3>
+        <div class="dealFormGrid">
+          <label>Project *<select id="dealProject" onchange="loadDealUnits()"><option value="KOBULETI">KOBULETI</option></select></label>
+          <label>Unit Code *<select id="dealUnitCode" onchange="selectDealUnit()"><option value="">Select Unit</option></select></label>
+          <label>Transaction Status *
+            <select id="dealStatus"><option value="">Select Status</option></select>
+          </label>
+          <label>Reservation Amount<input id="dealReservationAmount" type="number" min="0" step="0.01"></label>
+          <label>Additional Status<input id="dealAdditionalStatus" placeholder="Optional"></label>
+          <label>Transaction Date *<input id="dealTransactionDate" type="date"></label>
+        </div>
+        <div class="dealUnitCard hidden" id="dealUnitCard"></div>
+      </div>
+
+      <div class="dealStep" data-deal-step="2">
+        <h3>2. Client Details</h3>
+        <div class="dealFormGrid">
+          <label>Client Name *<input id="dealClientName"></label>
+          <label>Mobile *<input id="dealMobile"></label>
+          <label>Email<input id="dealEmail" type="email"></label>
+          <label>Nationality<select id="dealNationality"><option value="">Select Nationality</option></select></label>
+          <label>ID Type<select id="dealIdType"><option value="">Select ID Type</option></select></label>
+          <label>ID Number<input id="dealIdNumber"></label>
+          <label>ID Address<input id="dealIdAddress"></label>
+          <label>Residence Address<input id="dealResidenceAddress"></label>
+          <label>Job Title<input id="dealJobTitle"></label>
+          <label>Birth Date<input id="dealBirthDate" type="date"></label>
+          <label>Gender<select id="dealGender"><option value="">Select Gender</option></select></label>
+          <label>Client Statue<select id="dealClientStatue"><option value="">Select Client Statue</option></select></label>
+        </div>
+      </div>
+
+      <div class="dealStep" data-deal-step="3">
+        <h3>3. Transaction & Source</h3>
+        <div class="dealFormGrid">
+          <label>Branch *<select id="dealBranch"></select></label>
+          <label>Sales Name *<select id="dealSalesName"></select></label>
+          <label>Shared With<input id="dealSharedWith"></label>
+          <label>Sales Manager<select id="dealSalesManager"><option value="">Select Sales Manager</option></select></label>
+          <label>Head Of Sales<select id="dealHeadOfSales"><option value="">Select Head Of Sales</option></select></label>
+          <label>CCO<select id="dealCCO"><option value="">Select CCO</option></select></label>
+          <label>Deal Status<select id="dealDealStatus"><option value="">Select Deal Status</option></select></label>
+          <label>Main Source<select id="dealMainSource"></select></label>
+          <label>Source Type<select id="dealSourceType"></select></label>
+          <label>Campaign Name<select id="dealCampaignName"></select></label>
+          <label>Media Buyer<select id="dealMediaBuyer"></select></label>
+          <label>Brokerage Company<select id="dealBrokerageCompany"></select></label>
+          <label>BC Sales<select id="dealBCSales"></select></label>
+        </div>
+      </div>
+
+      <div class="dealStep" data-deal-step="4">
+        <h3>4. Down Payment & Payment Plan</h3>
+        <div class="dealFormGrid">
+          <label>DP %<input id="dealDPPercent" type="number" min="0" step="0.01"></label>
+          <label>Actual DP<input id="dealActualDP" type="number" min="0" step="0.01" oninput="calculateDealRemain()"></label>
+          <label>DP Paid<input id="dealDPPaid" type="number" min="0" step="0.01" oninput="calculateDealRemain()"></label>
+          <label>Actual Paid<input id="dealActualPaid" type="number" min="0" step="0.01" oninput="calculateDealRemain()"></label>
+          <label>Remain<input id="dealRemain" type="number" min="0" step="0.01"></label>
+          <label>Payment Date<input id="dealPaymentDate" type="date"></label>
+          <label>Type Of Payment Plan<select id="dealPaymentPlanType"><option value="">Select Payment Plan</option></select></label>
+          <label>Installments Period<select id="dealInstallments"><option value="">Select Installments Period</option></select></label>
+          <label>Period<select id="dealPeriod"><option value="">Select Period</option></select></label>
+          <label>Installment Plan<input id="dealInstallmentPlan" placeholder="Example: M36 / Q12"></label>
+          <label>Period Type<select id="dealPeriodType"><option value="">Select Period Type</option></select></label>
+          <label>Discount Offer<select id="dealDiscountOffer"><option value="">Select Offer</option></select></label>
+          <label>Maintenance %<input id="dealMaintenancePercent" type="number" min="0" step="0.01"></label>
+          <label>Maintenance Amount<input id="dealMaintenanceAmount" type="number" min="0" step="0.01"></label>
+        </div>
+      </div>
+
+      <div class="dealStep" data-deal-step="5">
+        <h3>5. Review & Save</h3>
+        <div class="dealReview" id="dealReview"></div>
+        <label class="dealNotesLabel">Notes<textarea id="dealNotes" rows="5"></textarea></label>
+        <div class="dealConfirm">
+          <label><input type="checkbox" id="dealConfirmCheck"> I reviewed the client, unit, source and payment details.</label>
+        </div>
+      </div>
+
+      <div class="dealWizardActions">
+        <button class="btn secondary hidden" id="dealPrevBtn" onclick="dealPrevStep()">Previous</button>
+        <button class="btn" id="dealNextBtn" onclick="dealNextStep()">Next</button>
+        <button class="btn hidden" id="dealSaveBtn" onclick="submitNewDeal()">Save Deal</button>
+        <button class="btn secondary" onclick="resetDealWizard()">Clear Form</button>
+      </div>
+    </section>
+
+    <section class="usersPanel hidden" id="usersPanel">
+      <div class="panelHead">
+        <div>
+          <h3>System Users</h3>
+          <div class="small">Create, edit, disable or delete dashboard users. Available for Admin only.</div>
+        </div>
+        <button class="btn" onclick="openUserForm()">+ New User</button>
+      </div>
+      <div class="userForm hidden" id="userForm">
+        <div class="formGrid">
+          <input id="userUsername" placeholder="Username">
+          <input id="userPassword" placeholder="Password">
+          <input id="userName" placeholder="Full Name">
+          <select id="userRole">
+            <option>Super Admin</option>
+            <option>Admin</option>
+            <option>Manager</option>
+            <option>Sales</option>
+            <option>Marketing</option>
+            <option>Finance</option>
+            <option>Viewer</option>
+          </select>
+          <select id="userStatus">
+            <option>Active</option>
+            <option>Inactive</option>
+          </select>
+        </div>
+        <div class="formActions">
+          <button class="btn" onclick="saveUser()">Save User</button>
+          <button class="btn secondary" onclick="closeUserForm()">Cancel</button>
+        </div>
+      </div>
+      <div class="tableWrap"><table id="usersTable"></table></div>
+    </section>
+
+    <!-- KPI / chart area intentionally cleared for rebuild -->
+<div class="targetsModal hidden" id="targetsModal">
+      <div class="targetsBackdrop" onclick="closeTargetsManager_()"></div>
+      <div class="targetsDialog">
+        <div class="targetsDialogHead">
+          <div>
+            <div class="execEyebrow">TARGET SYSTEM</div>
+            <h2>Target Center</h2>
+            <div class="small">Company, managers, sales and branches • Monthly / Quarterly / Yearly</div>
+          </div>
+          <button type="button" class="targetsClose" onclick="closeTargetsManager_()">×</button>
+        </div>
+
+        <div class="targetForm">
+          <input type="hidden" id="targetId">
+          <label>Scope
+            <select id="targetScope" onchange="refreshTargetNameOptions_()">
+              <option>Company</option><option>Manager</option><option>Sales</option><option>Branch</option>
+            </select>
+          </label>
+          <label>Name<select id="targetName"></select></label>
+          <label>Period
+            <select id="targetPeriod" onchange="toggleTargetPeriodFields_()">
+              <option>Yearly</option><option>Quarterly</option><option>Monthly</option>
+            </select>
+          </label>
+          <label>Year<input id="targetYear" type="number" min="2020" max="2100"></label>
+          <label class="hidden" id="targetMonthWrap">Month
+            <select id="targetMonth">
+              <option value="">Select</option>
+              <option>January</option><option>February</option><option>March</option><option>April</option>
+              <option>May</option><option>June</option><option>July</option><option>August</option>
+              <option>September</option><option>October</option><option>November</option><option>December</option>
+            </select>
+          </label>
+          <label class="hidden" id="targetQuarterWrap">Quarter
+            <select id="targetQuarter"><option value="">Select</option><option>Q1</option><option>Q2</option><option>Q3</option><option>Q4</option></select>
+          </label>
+          <label>Target EGP<input id="targetEGP" type="number" min="0" step="any" placeholder="0"></label>
+          <label>Target USD<input id="targetUSD" type="number" min="0" step="any" placeholder="0"></label>
+          <div class="targetFormActions">
+            <button type="button" class="btn" onclick="saveTargetFromUi_()">Save Target</button>
+            <button type="button" class="btn secondary" onclick="resetTargetForm_()">New / Clear</button>
+          </div>
+        </div>
+
+        <div class="targetsTableWrap">
+          <table class="targetsTable">
+            <thead><tr><th>Scope</th><th>Name</th><th>Period</th><th>Year</th><th>Month/Q</th><th>EGP</th><th>USD</th><th>Actions</th></tr></thead>
+            <tbody id="targetsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <style>
+      .teamChartsComparisonSection{
+        padding:20px !important;
+      }
+      .teamChartsHead{
+        gap:18px;
+        align-items:flex-start;
+        margin-bottom:18px;
+      }
+      .teamChartsEyebrow{
+        font-size:10px;
+        font-weight:800;
+        letter-spacing:.12em;
+        text-transform:uppercase;
+        color:var(--muted);
+        margin-bottom:6px;
+      }
+      .teamChartLegend{
+        display:flex;
+        align-items:center;
+        gap:18px;
+        margin-left:auto;
+        padding-top:8px;
+        flex-wrap:wrap;
+      }
+      .teamLegendItem{
+        display:flex;
+        align-items:center;
+        gap:7px;
+        font-size:12px;
+        font-weight:700;
+        color:var(--text);
+        white-space:nowrap;
+      }
+      .teamLegendItem i{
+        width:10px;
+        height:10px;
+        display:block;
+        border-radius:50%;
+      }
+      .teamLegendA i{background:#3b82f6;box-shadow:0 0 12px rgba(59,130,246,.55)}
+      .teamLegendB i{background:#a855f7;box-shadow:0 0 12px rgba(168,85,247,.55)}
+
+      .teamMetricChartsGrid{
+        display:grid;
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:16px;
+      }
+      .teamMetricChartCard{
+        min-height:245px;
+        padding:16px 16px 12px;
+        border:1px solid var(--line);
+        border-radius:16px;
+        background:var(--panel);
+        box-shadow:0 12px 28px rgba(0,0,0,.08);
+        overflow:hidden;
+      }
+      .teamMetricChartCardWide{
+        grid-column:1/-1;
+      }
+      .teamMetricChartTitle{
+        font-size:14px;
+        line-height:1.25;
+        font-weight:800;
+        color:var(--text);
+        margin-bottom:10px;
+      }
+      .teamMetricCanvasWrap{
+        position:relative;
+        height:185px;
+        min-height:185px;
+      }
+      .teamMonthlyTrendCard{
+        margin-top:18px;
+        padding:16px;
+        border:1px solid var(--line);
+        border-radius:16px;
+        background:var(--panel);
+        box-shadow:0 12px 28px rgba(0,0,0,.08);
+      }
+      .teamMonthlyTrendHead h3{
+        margin:0;
+        color:var(--text);
+        font-size:15px;
+      }
+      .teamMonthlyCanvasWrap{
+        height:330px !important;
+        min-height:330px !important;
+        margin-top:10px;
+      }
+      @media(max-width:1100px){
+        .teamMetricChartsGrid{grid-template-columns:1fr}
+        .teamMetricChartCardWide{grid-column:auto}
+        .teamMetricChartCard{min-height:230px}
+      }
+      @media(max-width:700px){
+        .teamChartsComparisonSection{padding:14px !important}
+        .teamMetricChartCard{padding:13px;min-height:220px}
+        .teamMetricCanvasWrap{height:170px;min-height:170px}
+        .teamMonthlyCanvasWrap{height:280px !important;min-height:280px !important}
+        .teamChartLegend{margin-left:0;width:100%}
+      }
+
+      /* ===== EDEN PERFORMANCE SUITE ===== */
+      .executiveHomeSection,.teamsPerformanceSection{
+        margin:18px 0;
+        padding:20px;
+        border:1px solid var(--line);
+        border-radius:18px;
+        background:var(--panel);
+        box-shadow:0 16px 38px rgba(0,0,0,.08);
+      }
+      .execHead,.execSectionTitle{
+        display:flex;align-items:flex-start;justify-content:space-between;gap:18px;
+      }
+      .execHead h2,.execSectionTitle h3{margin:3px 0;color:var(--text)}
+      .execEyebrow{
+        font-size:10px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)
+      }
+      .executiveKpis{
+        display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:18px
+      }
+      .execKpi{
+        min-height:112px;padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--panel-soft)
+      }
+      .execPrimary{grid-column:span 2}
+      .execLabel{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+      .execValue{margin-top:10px;font-size:25px;font-weight:900;line-height:1.05;color:var(--text)}
+      .execValue.execName{font-size:18px}
+      .execValue.negative{color:#ef4444}
+      .execSub{margin-top:7px;font-size:11px;color:var(--muted)}
+      .execTargetCard,.execPipelineCard,.teamPerfChartCard{
+        margin-top:14px;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--panel-soft)
+      }
+      .execTargetTop>div{display:flex;justify-content:space-between;gap:12px;align-items:center;color:var(--text)}
+      .execTargetTop span{font-size:11px;color:var(--muted)}
+      .execTargetTrack,.teamPerfProgress{
+        height:9px;margin-top:12px;border-radius:99px;background:var(--input-bg);overflow:hidden;border:1px solid var(--line)
+      }
+      .execTargetTrack i,.teamPerfProgress i{
+        display:block;height:100%;width:0;border-radius:inherit;background:linear-gradient(90deg,#14b8a6,#3b82f6)
+      }
+      .executivePipeline{display:grid;gap:9px;margin-top:14px}
+      .execPipeRow{display:grid;grid-template-columns:120px minmax(0,1fr) 45px;align-items:center;gap:10px;font-size:11px}
+      .execPipeRow span{color:var(--muted)}
+      .execPipeRow>div{height:8px;border-radius:99px;background:var(--input-bg);overflow:hidden}
+      .execPipeRow i{display:block;height:100%;border-radius:inherit;background:#3b82f6}
+      .execPipeRow b{text-align:right;color:var(--text)}
+      .teamsPerformanceGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:18px}
+      .teamPerfCard{padding:16px;border:1px solid var(--line);border-radius:15px;background:var(--panel-soft)}
+      .teamPerfTop{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center}
+      .teamPerfRank{
+        width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;
+        background:var(--input-bg);border:1px solid var(--line);font-weight:900;color:var(--text)
+      }
+      .teamPerfTop h4{margin:0;color:var(--text);font-size:15px}
+      .teamPerfTop small{color:var(--muted);font-size:10px}
+      .teamPerfTop>strong{font-size:20px;color:var(--text)}
+      .teamPerfNumbers{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:13px}
+      .teamPerfNumbers span{display:flex;flex-direction:column;gap:3px}
+      .teamPerfNumbers b{font-size:12px;color:var(--text)}
+      .teamPerfNumbers small{font-size:9px;text-transform:uppercase;color:var(--muted)}
+      .teamPerfBottom{
+        display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;margin-top:13px;padding-top:10px;border-top:1px solid var(--line)
+      }
+      .teamPerfBottom span,.teamPerfBottom small{font-size:10px;color:var(--muted)}
+      .teamPerfBottom b{font-size:12px;color:var(--text)}
+      .teamPerfChartWrap{height:300px;position:relative;margin-top:10px}
+      .targetsModal{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:24px}
+      .targetsModal.hidden{display:none!important}
+      .targetsBackdrop{position:absolute;inset:0;background:rgba(0,0,0,.68);backdrop-filter:blur(8px)}
+      .targetsDialog{
+        position:relative;z-index:1;width:min(1180px,96vw);max-height:90vh;overflow:auto;
+        background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:20px;padding:20px;
+        box-shadow:0 30px 90px rgba(0,0,0,.35)
+      }
+      .targetsDialogHead{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
+      .targetsDialogHead h2{margin:3px 0}
+      .targetsClose{width:38px;height:38px;border:1px solid var(--line);border-radius:10px;background:var(--panel-soft);color:var(--text);font-size:24px;cursor:pointer}
+      .targetForm{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:18px}
+      .targetForm label{font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+      .targetForm input,.targetForm select{
+        width:100%;margin-top:5px;min-height:40px;padding:8px 10px;border:1px solid var(--line);
+        border-radius:10px;background:var(--input-bg);color:var(--text)
+      }
+      .targetFormActions{display:flex;align-items:flex-end;gap:8px;grid-column:span 2}
+      .targetsTableWrap{overflow:auto;margin-top:18px;border:1px solid var(--line);border-radius:12px}
+      .targetsTable{width:100%;border-collapse:collapse;font-size:11px}
+      .targetsTable th,.targetsTable td{padding:10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+      .targetsTable th{color:var(--muted);background:var(--panel-soft)}
+      .targetActions{display:flex;gap:6px}
+      .targetActions button{
+        border:1px solid var(--line);background:var(--input-bg);color:var(--text);border-radius:7px;padding:5px 8px;cursor:pointer
+      }
+      @media(max-width:1100px){
+        .executiveKpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+        .execPrimary{grid-column:span 2}
+        .targetForm{grid-template-columns:repeat(2,minmax(0,1fr))}
+        .teamsPerformanceGrid{grid-template-columns:1fr}
+      }
+      @media(max-width:700px){
+        .executiveHomeSection,.teamsPerformanceSection{padding:14px}
+        .executiveKpis{grid-template-columns:1fr}
+        .execPrimary{grid-column:auto}
+        .execHead{flex-direction:column}
+        .execPipeRow{grid-template-columns:88px 1fr 34px}
+        .teamPerfNumbers{grid-template-columns:repeat(2,1fr)}
+        .targetForm{grid-template-columns:1fr}
+        .targetFormActions{grid-column:auto;flex-wrap:wrap}
+        .targetsModal{padding:8px}
+        .targetsDialog{padding:14px}
+      }
+    </style>
+<!-- EDEN BI — NEW TRANSACTIONS INSIGHT LAYER -->
+    <section class="cards edenKpiGrid" id="cards"></section>
+
+    <section class="edenSalesCurvePanel" id="salesCurvePanel">
+      <div class="edenSalesCurveTop">
+        <div><span class="edenCurveKicker">SALES PERFORMANCE</span><h3>Sales Performance Curve</h3><p>Compare sales employees over time using dedicated chart filters.</p></div>
+        <div class="edenCurveHeadStats">
+          <div class="edenCurveMetric"><label>Metric</label><select id="curveMetric" onchange="renderSalesCurve_()"><option value="valueEGP">Sales Value EGP</option><option value="valueUSD">Sales Value USD</option><option value="deals">Deals Count</option></select></div>
+        </div>
+      </div>
+      <div class="edenCurveFilters">
+        <label><span>Sales Manager</span><div class="edenCurveMulti" id="curveManagerMulti"><button type="button" onclick="toggleCurveMulti_('curveManagerMulti')">All Managers <b>▾</b></button><div class="edenCurveMultiMenu"></div></div></label>
+        <label><span>Sales Employee</span><div class="edenCurveMulti" id="curveSalesMulti"><button type="button" onclick="toggleCurveMulti_('curveSalesMulti')">All Sales <b>▾</b></button><div class="edenCurveMultiMenu"></div></div></label>
+        <label><span>Year</span><div class="edenCurveMulti" id="curveYearMulti"><button type="button" onclick="toggleCurveMulti_('curveYearMulti')">All Years <b>▾</b></button><div class="edenCurveMultiMenu"></div></div></label>
+        <label><span>Month</span><div class="edenCurveMulti" id="curveMonthMulti"><button type="button" onclick="toggleCurveMulti_('curveMonthMulti')">All Months <b>▾</b></button><div class="edenCurveMultiMenu"></div></div></label>
+        <label><span>Project</span><div class="edenCurveMulti" id="curveProjectMulti"><button type="button" onclick="toggleCurveMulti_('curveProjectMulti')">All Projects <b>▾</b></button><div class="edenCurveMultiMenu"></div></div></label>
+        <label><span>Branch</span><div class="edenCurveMulti" id="curveBranchMulti"><button type="button" onclick="toggleCurveMulti_('curveBranchMulti')">All Branches <b>▾</b></button><div class="edenCurveMultiMenu"></div></div></label>
+        <label><span>Deals Type</span><div class="edenCurveMulti" id="curveDealStatusMulti"><button type="button" onclick="toggleCurveMulti_('curveDealStatusMulti')">All Deal Statuss <b>▾</b></button><div class="edenCurveMultiMenu"></div></div></label>
+        <button type="button" class="edenCurveClear" onclick="resetSalesCurveFilters_()">Clear</button>
+      </div>
+      <div class="edenCurveSeriesSummary" id="curveSeriesSummary"></div>
+      <div class="edenCurveExecutiveSummary" id="curveExecutiveSummary"></div>
+      <div class="edenCurveYearSummary" id="curveYearSummary"></div>
+      <div class="edenCurveYearCompare hidden" id="curveYearCompareWrap">
+        <div class="edenYearCompareHead"><div><span>YEAR COMPARISON</span><h4>Annual Performance</h4></div><small id="curveYearCompareNote">Selected years</small></div>
+        <div class="edenYearCompareCanvas"><canvas id="curveYearCompareChart"></canvas></div>
+      </div>
+      <div class="edenCurveCanvas"><canvas id="salesCurveChart"></canvas><div class="edenCurveEmpty hidden" id="salesCurveEmpty">No sales data for the selected chart filters.</div></div>
+    </section>
+
+    <section id="chartsSection" class="edenInsightGrid">
+      <article class="edenInsightCard edenSpan2">
+        <div class="edenInsightHead"><div><span>PROJECT PERFORMANCE</span><h3>Deals by Project</h3></div><b id="projectChartMeta"></b></div>
+        <div class="edenChartCanvas"><canvas id="projectChart"></canvas><div class="edenEmpty hidden" id="projectChartEmpty">No project data for the current filters.</div></div>
+      </article>
+
+      <article class="edenInsightCard">
+        <div class="edenInsightHead"><div><span>EGP PORTFOLIO</span><h3>Value by Project</h3></div><b id="valueEgpMeta"></b></div>
+        <div class="edenChartCanvas"><canvas id="valueEgpChart"></canvas><div class="edenEmpty hidden" id="valueEgpChartEmpty">No EGP transactions for the current filters.</div></div>
+      </article>
+
+      <article class="edenInsightCard">
+        <div class="edenInsightHead"><div><span>USD PORTFOLIO</span><h3>Value by Project</h3></div><b id="valueUsdMeta"></b></div>
+        <div class="edenChartCanvas"><canvas id="valueUsdChart"></canvas><div class="edenEmpty hidden" id="valueUsdChartEmpty">No USD transactions for the current filters.</div></div>
+      </article>
+
+      <article class="edenInsightCard edenSpan2">
+        <div class="edenInsightHead"><div><span>SALES PERFORMANCE</span><h3>Top Salespeople</h3></div><b id="salesChartMeta"></b></div>
+        <div class="edenChartCanvas edenSalesCanvas"><canvas id="salesChart"></canvas><div class="edenEmpty hidden" id="salesChartEmpty">No salesperson data for the current filters.</div></div>
+      </article>
+
+      <article class="edenInsightCard edenSpan2">
+        <div class="edenInsightHead">
+          <div><span>BROKER PERFORMANCE</span><h3>Top Brokerage Companies</h3></div>
+          <b id="brokerageCompanyChartMeta"></b>
+        </div>
+        <div class="edenChartCanvas edenSalesCanvas">
+          <canvas id="brokerageCompanyChart"></canvas>
+          <div class="edenEmpty hidden" id="brokerageCompanyChartEmpty">No brokerage company sales for the current filters.</div>
+        </div>
+      </article>
+
+      <article class="edenInsightCard">
+        <div class="edenInsightHead"><div><span>BRANCH PERFORMANCE</span><h3>Deals by Branch</h3></div><b id="branchChartMeta"></b></div>
+        <div class="edenChartCanvas"><canvas id="branchChart"></canvas><div class="edenEmpty hidden" id="branchChartEmpty">No branch data for the current filters.</div></div>
+      </article>
+
+      <article class="edenInsightCard">
+        <div class="edenInsightHead"><div><span>PIPELINE MIX</span><h3>Status Breakdown</h3></div><b id="statusChartMeta"></b></div>
+        <div class="edenChartCanvas"><canvas id="statusChart"></canvas><div class="edenEmpty hidden" id="statusChartEmpty">No status data for the current filters.</div></div>
+      </article>
+
+      <article class="edenInsightCard edenSpan2">
+        <div class="edenInsightHead"><div><span>AREA PERFORMANCE</span><h3>Meters by Project</h3></div><b id="meterChartMeta"></b></div>
+        <div class="edenChartCanvas edenShortCanvas"><canvas id="meterChart"></canvas><div class="edenEmpty hidden" id="meterChartEmpty">No area data for the current filters.</div></div>
+      </article>
+    </section>
+
+    <style>
+      .edenKpiGrid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:11px!important;margin:14px 0 15px!important}
+      .edenKpiGrid .card{min-height:96px!important;padding:14px 16px!important;border-radius:13px!important;border:1px solid #284158!important;background:linear-gradient(145deg,#11263a 0%,#0b1b2a 100%)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.025),0 7px 18px rgba(0,0,0,.11)!important;position:relative!important;overflow:hidden!important}
+      .edenKpiGrid .card:before{content:""!important;position:absolute!important;left:0!important;top:0!important;bottom:0!important;width:3px!important;background:linear-gradient(#f0c95e,#65aaff)!important;opacity:.9!important}
+      .edenKpiGrid .label{font-size:9px!important;font-weight:900!important;letter-spacing:.045em!important;color:#91abc3!important;text-transform:uppercase!important}
+      .edenKpiGrid .value{font-size:23px!important;line-height:1!important;margin-top:8px!important;font-weight:950!important;color:#f0c95e!important;letter-spacing:-.025em!important}
+      .edenKpiGrid .small{font-size:8.5px!important;margin-top:7px!important;color:#6f8aa2!important;line-height:1.25!important}
+      .edenInsightGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 16px}
+      .edenInsightCard{min-width:0;border:1px solid #263d53;border-radius:14px;background:linear-gradient(145deg,#0e2132,#091722);padding:14px;box-shadow:0 7px 20px rgba(0,0,0,.11)}
+      .edenSpan2{grid-column:span 2}
+      .edenInsightHead{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px}
+      .edenInsightHead span{font-size:8px;font-weight:900;letter-spacing:.09em;color:#6f91ae}
+      .edenInsightHead h3{font-size:13px;margin:3px 0 0;color:#eef5fb}
+      .edenInsightHead b{font-size:9px;color:#f0c95e;white-space:nowrap;font-weight:850}
+      .edenChartCanvas{position:relative;height:220px;min-height:220px}
+      .edenSalesCanvas{height:270px;min-height:270px}
+      .edenShortCanvas{height:200px;min-height:200px}
+      .edenEmpty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:20px;color:#708aa1;font-size:11px;border:1px dashed rgba(112,145,174,.18);border-radius:10px;background:rgba(5,15,24,.22)}
+      .edenEmpty.hidden{display:none!important}
+      @media(max-width:1450px){.edenKpiGrid{grid-template-columns:repeat(3,minmax(0,1fr))!important}.edenInsightGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.edenSpan2{grid-column:span 2}}
+      @media(max-width:900px){.edenKpiGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.edenInsightGrid{grid-template-columns:1fr}.edenSpan2{grid-column:auto}}
+      @media(max-width:560px){.edenKpiGrid{grid-template-columns:1fr!important}}
+    </style>
+    <style>
+      /* EDEN BI — Management KPI Cards V3 */
+      .edenKpiGrid{grid-template-columns:repeat(5,minmax(0,1fr))!important}
+      .edenKpiGrid .edenKpiCard{
+        display:grid!important;grid-template-columns:38px minmax(0,1fr)!important;gap:11px!important;
+        align-items:center!important;min-height:92px!important;padding:13px 14px!important;
+      }
+      .edenKpiGrid .edenKpiCard:before{display:none!important}
+      .edenKpiIcon{
+        width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+        font-size:15px;font-weight:950;color:#6ab6ff;background:rgba(79,157,232,.12);
+        border:1px solid rgba(101,170,255,.15);box-shadow:inset 0 1px 0 rgba(255,255,255,.035)
+      }
+      .edenKpiBody{min-width:0}
+      .edenKpiGrid .edenKpiCard .label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .edenKpiGrid .edenKpiCard .value{
+        font-size:20px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:7px!important
+      }
+      .edenKpiGrid .edenKpiCard .small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .edenKpiCard[data-kpi="egp"] .edenKpiIcon,.edenKpiCard[data-kpi="avg"] .edenKpiIcon{color:#f0c95e;background:rgba(240,201,94,.11);border-color:rgba(240,201,94,.15)}
+      .edenKpiCard[data-kpi="usd"] .edenKpiIcon,.edenKpiCard[data-kpi="cash"] .edenKpiIcon{color:#4fd39a;background:rgba(79,211,154,.10);border-color:rgba(79,211,154,.14)}
+      .edenKpiCard[data-kpi="clients"] .edenKpiIcon,.edenKpiCard[data-kpi="projects"] .edenKpiIcon{color:#ad83ff;background:rgba(173,131,255,.10);border-color:rgba(173,131,255,.14)}
+      .edenKpiCard[data-kpi="remain"] .edenKpiIcon{color:#ff8aa8;background:rgba(255,138,168,.09);border-color:rgba(255,138,168,.14)}
+      .edenKpiCard[data-kpi="paid"] .edenKpiIcon{color:#55c8d8;background:rgba(85,200,216,.09);border-color:rgba(85,200,216,.14)}
+      @media(max-width:1650px){.edenKpiGrid{grid-template-columns:repeat(4,minmax(0,1fr))!important}}
+      @media(max-width:1300px){.edenKpiGrid{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
+      @media(max-width:900px){.edenKpiGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+      @media(max-width:560px){.edenKpiGrid{grid-template-columns:1fr!important}}
+
+      .edenKpiDelta{display:flex;align-items:center;gap:4px;margin-top:6px;font-size:8px;font-weight:900;white-space:nowrap}
+      .edenKpiDelta b{font-size:10px}
+      .edenKpiDelta span{color:#667f95;font-weight:700;overflow:hidden;text-overflow:ellipsis}
+      .edenKpiDelta.up{color:#4fd39a}.edenKpiDelta.down{color:#ff829d}.edenKpiDelta.flat{color:#8fa6ba}
+      .edenKpiCard:has(.edenKpiDelta){min-height:106px!important}
+      .edenSalesCurvePanel{margin:0 0 14px;border:1px solid #263d53;border-radius:15px;background:linear-gradient(145deg,#0e2132,#091722);padding:16px;box-shadow:0 7px 20px rgba(0,0,0,.11)}
+      .edenSalesCurveTop{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:13px}.edenCurveKicker{font-size:8px;font-weight:950;letter-spacing:.11em;color:#7194b2}.edenSalesCurveTop h3{margin:4px 0 3px;font-size:15px;color:#f1f6fa}.edenSalesCurveTop p{margin:0;font-size:9px;color:#718ba2}
+      .edenCurveMetric label,.edenCurveFilters span{display:block;margin:0 0 5px;font-size:8px;font-weight:900;letter-spacing:.055em;color:#7894ac;text-transform:uppercase}.edenCurveMetric select,.edenCurveFilters select{height:36px;min-width:150px;border:1px solid #29445c;border-radius:9px;background:#0a1927;color:#eaf1f6;padding:0 10px;outline:none;font-size:10px;font-weight:750}
+      .edenCurveFilters{display:grid;grid-template-columns:repeat(7,minmax(115px,1fr)) auto;gap:9px;align-items:end;margin-bottom:12px;padding:11px;border:1px solid rgba(92,137,174,.14);border-radius:11px;background:rgba(5,15,24,.26)}.edenCurveFilters label{min-width:0}.edenCurveFilters select{width:100%;min-width:0}.edenCurveClear{height:36px;border:1px solid rgba(240,201,94,.28);border-radius:9px;background:rgba(240,201,94,.08);color:#f0c95e;padding:0 14px;font-size:9px;font-weight:900;cursor:pointer}
+      .edenCurveCanvas{height:300px;position:relative}.edenCurveEmpty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#718ba2;font-size:11px;border:1px dashed rgba(112,145,174,.18);border-radius:10px}.edenCurveEmpty.hidden{display:none!important}
+      @media(max-width:1050px){.edenCurveFilters{grid-template-columns:repeat(2,minmax(0,1fr))}.edenCurveClear{grid-column:span 2}.edenSalesCurveTop{flex-direction:column}.edenCurveMetric,.edenCurveMetric select{width:100%}}
+
+      .edenCurveMulti{position:relative;width:100%}
+      .edenCurveMulti>button{width:100%;height:36px;border:1px solid #29445c;border-radius:9px;background:#0a1927;color:#eaf1f6;padding:0 10px;display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10px;font-weight:750;cursor:pointer;text-align:left}
+      .edenCurveMulti.open>button{border-color:#d9b957}
+      .edenCurveMultiMenu{display:none;position:absolute;z-index:120;top:41px;left:0;right:0;max-height:245px;overflow:auto;padding:7px;background:#091725;border:1px solid #2c465e;border-radius:10px;box-shadow:0 16px 35px rgba(0,0,0,.38)}
+      .edenCurveMulti.open .edenCurveMultiMenu{display:block}
+      .edenCurveMultiItem{display:flex!important;align-items:center;gap:8px;padding:7px 8px!important;border-radius:7px;cursor:pointer;color:#b9cbd9;font-size:9px!important;text-transform:none!important;letter-spacing:0!important;margin:0!important}
+      .edenCurveMultiItem:hover{background:rgba(91,164,230,.10)}
+      .edenCurveMultiItem input{accent-color:#e4bf58;width:13px;height:13px;margin:0;flex:0 0 auto}
+      .edenCurveMultiActions{display:flex;gap:5px;padding:2px 2px 7px;border-bottom:1px solid rgba(105,142,173,.14);margin-bottom:4px}
+      .edenCurveMultiActions button{flex:1;height:25px;border:1px solid #29445c;border-radius:6px;background:#0d2030;color:#91abc0;font-size:8px;font-weight:850;cursor:pointer}
+      .edenCurveHeadStats{display:flex;align-items:flex-end;gap:10px}
+      .edenCurveDealCount{min-width:125px;height:52px;padding:7px 11px;border:1px solid rgba(240,201,94,.24);border-radius:10px;background:rgba(240,201,94,.055);display:flex;flex-direction:column;justify-content:center}
+      .edenCurveDealCount span{font-size:7px;font-weight:950;letter-spacing:.08em;color:#7894ac}.edenCurveDealCount strong{font-size:18px;line-height:20px;color:#f0c95e;font-weight:950}.edenCurveDealCount small{font-size:7px;color:#68839a}
+      .edenCurveSeriesSummary{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 11px}
+      .edenCurveSeriesSummary:empty{display:none}
+      .edenCurveSeriesStat{min-width:145px;flex:1 1 145px;max-width:230px;border:1px solid rgba(106,145,176,.18);border-radius:10px;background:rgba(7,20,31,.48);padding:8px 10px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+      .edenCurveSeriesStat .name{min-width:0;color:#9fb5c7;font-size:9px;font-weight:850;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .edenCurveSeriesStat .count{color:#f0c95e;font-size:16px;font-weight:950;white-space:nowrap}
+      .edenCurveSeriesStat .count small{display:block;color:#668198;font-size:7px;font-weight:800;text-align:right;letter-spacing:.04em}
+      .edenCurveExecutiveSummary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0 0 11px}
+      .edenCurveExecutiveSummary:empty{display:none}
+      .edenCurveExecBox{border:1px solid rgba(106,145,176,.15);border-radius:9px;background:rgba(7,20,31,.32);padding:8px 10px;min-width:0}
+      .edenCurveExecBox span{display:block;color:#668198;font-size:7px;font-weight:900;letter-spacing:.055em;margin-bottom:3px}
+      .edenCurveExecBox strong{display:block;color:#dce8f0;font-size:11px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .edenCurveExecBox strong.gold{color:#f0c95e}
+      @media(max-width:1050px){.edenCurveExecutiveSummary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+      .edenCurveYearSummary{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 11px}
+      .edenCurveYearSummary:empty{display:none}
+      .edenCurveYearCard{min-width:180px;flex:1 1 180px;max-width:300px;border:1px solid rgba(240,201,94,.18);border-radius:10px;background:rgba(240,201,94,.035);padding:9px 11px}
+      .edenCurveYearCard .yr{display:flex;justify-content:space-between;align-items:center;gap:8px;color:#8099ad;font-size:8px;font-weight:950;letter-spacing:.06em}
+      .edenCurveYearCard .yr b{color:#f0c95e;font-size:13px}
+      .edenCurveYearCard .val{margin-top:4px;color:#e5eef4;font-size:14px;font-weight:950}
+      .edenCurveYearCard .meta{margin-top:2px;color:#668198;font-size:7px;font-weight:800}
+      .edenCurveYearCompare{border:1px solid rgba(93,136,170,.17);border-radius:11px;background:rgba(7,20,31,.28);padding:10px 11px;margin:0 0 12px}
+      .edenYearCompareHead{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px}
+      .edenYearCompareHead span{display:block;color:#6f8ba1;font-size:7px;font-weight:950;letter-spacing:.08em}
+      .edenYearCompareHead h4{margin:3px 0 0;color:#e7eff4;font-size:11px}
+      .edenYearCompareHead small{color:#688299;font-size:7px;font-weight:800}
+      .edenYearCompareCanvas{height:180px;position:relative}
+    </style>
+
+    <section id="brokerPerformanceCenter" class="brokerPerformanceCenter hidden">
+      <div class="brokerCenterHead">
+        <div>
+          <span class="brokerEyebrow">BROKER INTELLIGENCE</span>
+          <h3>Broker Performance Center</h3>
+          <div class="small">Dedicated brokerage sales intelligence. Filters update live; Cancel is excluded by default and included when explicitly selected in Deal Status.</div>
+        </div>
+        <div class="brokerCenterActions">
+          <select id="brokerPerfMetric" onchange="renderBrokerPerformanceCenter_()">
+            <option value="valueEGP">Ranking: Sales Value EGP</option>
+            <option value="valueUSD">Ranking: Sales Value USD</option>
+            <option value="deals">Ranking: Deals</option>
+          </select>
+          <select id="brokerCenterSort" onchange="renderBrokerPerformanceCenter_()">
+            <option value="valueEGP">Table: Sales Value EGP</option>
+            <option value="valueUSD">Table: Sales Value USD</option>
+            <option value="deals">Table: Deals</option>
+            <option value="avgEGP">Table: Avg Deal EGP</option>
+            <option value="cancelRate">Table: Cancel Rate</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="brokerPerfFilters brokerLiveFilterGrid dashboardFilterBar">
+
+        <div class="filterGroup multi brokerLiveMulti" id="bpProjectMulti">
+          <div class="brokerLiveFilterName dashboardFilterName">Project</div>
+          <button type="button" class="multiBtn brokerLiveBtn">
+            <span id="bpProjectLabel">All Projects</span><b>▾</b>
+          </button>
+          <div class="multiPanel brokerLivePanel">
+            <div class="brokerLiveActions multiActions">
+              <button type="button" class="miniBtn" onclick="brokerLiveSelectAll_('bpProject',true,'bp')">Select all</button>
+              <button type="button" class="miniBtn" onclick="brokerLiveSelectAll_('bpProject',false,'bp')">Clear</button>
+            </div>
+            <div class="multiSearchWrap">
+              <input type="text" class="multiSearchInput" placeholder="Search project..." aria-label="Search Project">
+            </div>
+            <div id="bpProjectChecks"></div>
+          </div>
+        </div>
+        <div class="filterGroup multi brokerLiveMulti" id="bpCompanyMulti">
+          <div class="brokerLiveFilterName dashboardFilterName">Brokerage Company</div>
+          <button type="button" class="multiBtn brokerLiveBtn">
+            <span id="bpCompanyLabel">All Companies</span><b>▾</b>
+          </button>
+          <div class="multiPanel brokerLivePanel">
+            <div class="brokerLiveActions multiActions">
+              <button type="button" class="miniBtn" onclick="brokerLiveSelectAll_('bpCompany',true,'bp')">Select all</button>
+              <button type="button" class="miniBtn" onclick="brokerLiveSelectAll_('bpCompany',false,'bp')">Clear</button>
+            </div>
+            <div class="multiSearchWrap">
+              <input type="text" class="multiSearchInput" placeholder="Search brokerage company..." aria-label="Search Brokerage Company">
+            </div>
+            <div id="bpCompanyChecks"></div>
+          </div>
+        </div>
+        <div class="filterGroup multi brokerLiveMulti" id="bpStatusMulti">
+          <div class="brokerLiveFilterName dashboardFilterName">Deal Status</div>
+          <button type="button" class="multiBtn brokerLiveBtn">
+            <span id="bpStatusLabel">All Deal Status</span><b>▾</b>
+          </button>
+          <div class="multiPanel brokerLivePanel">
+            <div class="brokerLiveActions multiActions">
+              <button type="button" class="miniBtn" onclick="brokerLiveSelectAll_('bpStatus',true,'bp')">Select all</button>
+              <button type="button" class="miniBtn" onclick="brokerLiveSelectAll_('bpStatus',false,'bp')">Clear</button>
+            </div>
+            <div class="multiSearchWrap">
+              <input type="text" class="multiSearchInput" placeholder="Search deal status..." aria-label="Search Deal Status">
+            </div>
+            <div id="bpStatusChecks"></div>
+          </div>
+        </div>
+        <div class="filterGroup multi brokerLiveMulti" id="bpSalesManagerMulti">
+          <div class="brokerLiveFilterName dashboardFilterName">Sales Manager</div>
+          <button type="button" class="multiBtn brokerLiveBtn">
+            <span id="bpSalesManagerLabel">All Sales Managers</span><b>▾</b>
+          </button>
+          <div class="multiPanel brokerLivePanel">
+            <div class="brokerLiveActions multiActions">
+              <button type="button" class="miniBtn" onclick="brokerLiveSelectAll_('bpSalesManager',true,'bp')">Select all</button>
+              <button type="button" class="miniBtn" onclick="brokerLiveSelectAll_('bpSalesManager',false,'bp')">Clear</button>
+            </div>
+            <div class="multiSearchWrap">
+              <input type="text" class="multiSearchInput" placeholder="Search sales manager..." aria-label="Search Sales Manager">
+            </div>
+            <div id="bpSalesManagerChecks"></div>
+          </div>
+        </div>
+        <div class="filterGroup multi brokerLiveMulti" id="bpSalesMulti">
+          <div class="brokerLiveFilterName dashboardFilterName">BC Sales</div>
+          <button type="button" class="multiBtn brokerLiveBtn">
+            <span id="bpSalesLabel">All BC Sales</span><b>▾</b>
+          </button>
+          <div class="multiPanel brokerLivePanel">
+            <div class="brokerLiveActions multiActions">
+              <button type="button" class="miniBtn" onclick="brokerLiveSelectAll_('bpSales',true,'bp')">Select all</button>
+              <button type="button" class="miniBtn" onclick="brokerLiveSelectAll_('bpSales',false,'bp')">Clear</button>
+            </div>
+            <div class="multiSearchWrap">
+              <input type="text" class="multiSearchInput" placeholder="Search bc sales..." aria-label="Search BC Sales">
+            </div>
+            <div id="bpSalesChecks"></div>
+          </div>
+        </div>
+        <div class="filterGroup multi brokerLiveMulti" id="bpManagerMulti">
+          <div class="brokerLiveFilterName dashboardFilterName">BC Manager</div>
+          <button type="button" class="multiBtn brokerLiveBtn">
+            <span id="bpManagerLabel">All BC Managers</span><b>▾</b>
+          </button>
+          <div class="multiPanel brokerLivePanel">
+            <div class="brokerLiveActions multiActions">
+              <button type="button" class="miniBtn" onclick="brokerLiveSelectAll_('bpManager',true,'bp')">Select all</button>
+              <button type="button" class="miniBtn" onclick="brokerLiveSelectAll_('bpManager',false,'bp')">Clear</button>
+            </div>
+            <div class="multiSearchWrap">
+              <input type="text" class="multiSearchInput" placeholder="Search bc manager..." aria-label="Search BC Manager">
+            </div>
+            <div id="bpManagerChecks"></div>
+          </div>
+        </div>
+        <div class="filterGroup multi brokerLiveMulti" id="bpYearMulti">
+          <div class="brokerLiveFilterName dashboardFilterName">Year</div>
+          <button type="button" class="multiBtn brokerLiveBtn">
+            <span id="bpYearLabel">All Years</span><b>▾</b>
+          </button>
+          <div class="multiPanel brokerLivePanel">
+            <div class="brokerLiveActions multiActions">
+              <button type="button" class="miniBtn" onclick="brokerLiveSelectAll_('bpYear',true,'bp')">Select all</button>
+              <button type="button" class="miniBtn" onclick="brokerLiveSelectAll_('bpYear',false,'bp')">Clear</button>
+            </div>
+            <div class="multiSearchWrap">
+              <input type="text" class="multiSearchInput" placeholder="Search year..." aria-label="Search Year">
+            </div>
+            <div id="bpYearChecks"></div>
+          </div>
+        </div>
+        <div class="filterGroup multi brokerLiveMulti" id="bpMonthMulti">
+          <div class="brokerLiveFilterName dashboardFilterName">Month</div>
+          <button type="button" class="multiBtn brokerLiveBtn">
+            <span id="bpMonthLabel">All Months</span><b>▾</b>
+          </button>
+          <div class="multiPanel brokerLivePanel">
+            <div class="brokerLiveActions multiActions">
+              <button type="button" class="miniBtn" onclick="brokerLiveSelectAll_('bpMonth',true,'bp')">Select all</button>
+              <button type="button" class="miniBtn" onclick="brokerLiveSelectAll_('bpMonth',false,'bp')">Clear</button>
+            </div>
+            <div class="multiSearchWrap">
+              <input type="text" class="multiSearchInput" placeholder="Search month..." aria-label="Search Month">
+            </div>
+            <div id="bpMonthChecks"></div>
+          </div>
+        </div>
+        <div class="filterGroup multi brokerLiveMulti" id="bpDayMulti">
+          <div class="brokerLiveFilterName dashboardFilterName">Day</div>
+          <button type="button" class="multiBtn brokerLiveBtn">
+            <span id="bpDayLabel">All Days</span><b>▾</b>
+          </button>
+          <div class="multiPanel brokerLivePanel">
+            <div class="brokerLiveActions multiActions">
+              <button type="button" class="miniBtn" onclick="brokerLiveSelectAll_('bpDay',true,'bp')">Select all</button>
+              <button type="button" class="miniBtn" onclick="brokerLiveSelectAll_('bpDay',false,'bp')">Clear</button>
+            </div>
+            <div class="multiSearchWrap">
+              <input type="text" class="multiSearchInput" placeholder="Search day..." aria-label="Search Day">
+            </div>
+            <div id="bpDayChecks"></div>
+          </div>
+        </div>
+        <button type="button" class="brokerPerfClear brokerLiveClear" onclick="resetBrokerPerformanceFilters_()">Clear all</button>
+      </div>
+
+      <div class="brokerKpiGrid brokerKpiGridV24">
+        <article><span>TOTAL COMPANIES</span><b id="brokerKpiCompanies">0</b><small>Companies in current scope</small></article>
+        <article><span>ACTIVE COMPANIES</span><b id="brokerKpiActive">0</b><small>Companies with non-cancel deals</small></article>
+        <article><span>BROKER DEALS</span><b id="brokerKpiDeals">0</b><small>Filtered deals • Cancel excluded by default</small></article>
+        <article><span>SALES VALUE EGP</span><b id="brokerKpiEGP">0</b><small>EGP projects only</small></article>
+        <article><span>SALES VALUE USD</span><b id="brokerKpiUSD">0</b><small>USD projects only</small></article>
+        <article><span>AVG DEAL EGP</span><b id="brokerKpiAvg">0</b><small>Average EGP deal value</small></article>
+        <article><span>CANCEL RATE</span><b id="brokerKpiCancel">0%</b><small>Cancelled / all broker deals</small></article>
+      </div>
+
+      <div class="brokerChartGrid">
+        <article class="brokerChartCard brokerSpan2">
+          <div class="brokerChartHead"><div><span>COMPANY RANKING</span><h4 id="brokerTopCompaniesTitle">Top Brokerage Companies</h4></div><b id="brokerTopCompaniesMeta"></b></div>
+          <div class="brokerChartCanvas"><canvas id="brokerTopCompaniesChart"></canvas><div id="brokerTopCompaniesEmpty" class="edenEmpty hidden">No brokerage company data.</div></div>
+        </article>
+
+        <article class="brokerChartCard">
+          <div class="brokerChartHead"><div><span>BC SALES</span><h4>Top BC Sales</h4></div><b id="brokerBcSalesMeta"></b></div>
+          <div class="brokerChartCanvas"><canvas id="brokerBcSalesChart"></canvas><div id="brokerBcSalesEmpty" class="edenEmpty hidden">No BC Sales data.</div></div>
+        </article>
+
+        <article class="brokerChartCard">
+          <div class="brokerChartHead"><div><span>BC MANAGERS</span><h4>Top BC Managers</h4></div><b id="brokerManagersMeta"></b></div>
+          <div class="brokerChartCanvas"><canvas id="brokerManagersChart"></canvas><div id="brokerManagersEmpty" class="edenEmpty hidden">No BC Manager data.</div></div>
+        </article>
+
+        <article class="brokerChartCard">
+          <div class="brokerChartHead"><div><span>PROJECT MIX</span><h4>Deals by Project</h4></div><b id="brokerProjectMeta"></b></div>
+          <div class="brokerChartCanvas"><canvas id="brokerProjectChart"></canvas><div id="brokerProjectEmpty" class="edenEmpty hidden">No project data.</div></div>
+        </article>
+
+        <article class="brokerChartCard">
+          <div class="brokerChartHead"><div><span>MARKET SHARE</span><h4>Broker Deal Share</h4></div><b id="brokerShareMeta"></b></div>
+          <div class="brokerChartCanvas"><canvas id="brokerShareChart"></canvas><div id="brokerShareEmpty" class="edenEmpty hidden">No market share data.</div></div>
+        </article>
+
+        <article class="brokerChartCard brokerSpan2">
+          <div class="brokerChartHead"><div><span>SALES VELOCITY</span><h4>Broker Companies Trend</h4></div><b id="brokerTrendMeta"></b></div>
+          <div class="brokerChartCanvas brokerTrendCanvas"><canvas id="brokerTrendChart"></canvas><div id="brokerTrendEmpty" class="edenEmpty hidden">No dated broker deals in scope.</div></div>
+        </article>
+
+        <article class="brokerChartCard brokerSpan2">
+          <div class="brokerChartHead"><div><span>COMPANY × PROJECT</span><h4>Broker Project Distribution</h4></div><b id="brokerMatrixMeta"></b></div>
+          <div class="brokerChartCanvas brokerMatrixCanvas"><canvas id="brokerMatrixChart"></canvas><div id="brokerMatrixEmpty" class="edenEmpty hidden">No broker/project distribution data.</div></div>
+        </article>
+      </div>
+
+      <div class="brokerTableTitle">
+        <div><span>BROKERAGE DIRECTORY</span><h4>Broker Performance Table</h4></div>
+        <small>Click a company name to open its company profile and deals.</small>
+      </div>
+      <div class="brokerCenterTableWrap">
+        <table class="brokerCenterTable">
+          <thead><tr>
+            <th>#</th><th>Brokerage Company</th><th>Deals</th><th>Sales Value EGP</th>
+            <th>Sales Value USD</th><th>Avg Deal EGP</th><th>Cancel Rate</th>
+            <th>Top Project</th><th>Top BC Sales</th><th>BC Manager</th><th>Last Deal</th>
+          </tr></thead>
+          <tbody id="brokerPerformanceBody"></tbody>
+        </table>
+        <div id="brokerPerformanceEmpty" class="edenEmpty hidden">No brokerage company data for the selected broker filters.</div>
+      </div>
+    </section>
+
+
+
+    <section id="brokerUtilityPanel" class="brokerUtilityPanel hidden">
+      <div class="brokerUtilityHead">
+        <div>
+          <span>BROKER OPERATIONS</span>
+          <h2 id="brokerUtilityTitle">Broker Companies</h2>
+          <p id="brokerUtilityDesc">Dedicated broker data workspace.</p>
+        </div>
+        <div class="brokerUtilityCount" id="brokerUtilityCount"></div>
+      </div>
+
+      <div id="brokerUtilityKpis" class="brokerUtilityKpis"></div>
+
+      <div id="brokerOverviewSalesWorkspace" class="brokerOverviewSalesWorkspace hidden">
+        <div class="brokerOverviewFilterBar brokerLiveFilterGrid brokerOverviewLiveGrid dashboardFilterBar">
+
+        <div class="filterGroup multi brokerLiveMulti" id="boProjectMulti">
+          <div class="brokerLiveFilterName dashboardFilterName">Project</div>
+          <button type="button" class="multiBtn brokerLiveBtn">
+            <span id="boProjectLabel">All Projects</span><b>▾</b>
+          </button>
+          <div class="multiPanel brokerLivePanel">
+            <div class="brokerLiveActions multiActions">
+              <button type="button" class="miniBtn" onclick="brokerLiveSelectAll_('boProject',true,'bo')">Select all</button>
+              <button type="button" class="miniBtn" onclick="brokerLiveSelectAll_('boProject',false,'bo')">Clear</button>
+            </div>
+            <div class="multiSearchWrap">
+              <input type="text" class="multiSearchInput" placeholder="Search project..." aria-label="Search Project">
+            </div>
+            <div id="boProjectChecks"></div>
+          </div>
+        </div>
+        <div class="filterGroup multi brokerLiveMulti" id="boCompanyMulti">
+          <div class="brokerLiveFilterName dashboardFilterName">Brokerage Company</div>
+          <button type="button" class="multiBtn brokerLiveBtn">
+            <span id="boCompanyLabel">All Brokerage Companies</span><b>▾</b>
+          </button>
+          <div class="multiPanel brokerLivePanel">
+            <div class="brokerLiveActions multiActions">
+              <button type="button" class="miniBtn" onclick="brokerLiveSelectAll_('boCompany',true,'bo')">Select all</button>
+              <button type="button" class="miniBtn" onclick="brokerLiveSelectAll_('boCompany',false,'bo')">Clear</button>
+            </div>
+            <div class="multiSearchWrap">
+              <input type="text" class="multiSearchInput" placeholder="Search brokerage company..." aria-label="Search Brokerage Company">
+            </div>
+            <div id="boCompanyChecks"></div>
+          </div>
+        </div>
+        <div class="filterGroup multi brokerLiveMulti" id="boStatusMulti">
+          <div class="brokerLiveFilterName dashboardFilterName">Deal Status</div>
+          <button type="button" class="multiBtn brokerLiveBtn">
+            <span id="boStatusLabel">All Deal Status</span><b>▾</b>
+          </button>
+          <div class="multiPanel brokerLivePanel">
+            <div class="brokerLiveActions multiActions">
+              <button type="button" class="miniBtn" onclick="brokerLiveSelectAll_('boStatus',true,'bo')">Select all</button>
+              <button type="button" class="miniBtn" onclick="brokerLiveSelectAll_('boStatus',false,'bo')">Clear</button>
+            </div>
+            <div class="multiSearchWrap">
+              <input type="text" class="multiSearchInput" placeholder="Search deal status..." aria-label="Search Deal Status">
+            </div>
+            <div id="boStatusChecks"></div>
+          </div>
+        </div>
+        <div class="filterGroup multi brokerLiveMulti" id="boSalesManagerMulti">
+          <div class="brokerLiveFilterName dashboardFilterName">Sales Manager</div>
+          <button type="button" class="multiBtn brokerLiveBtn">
+            <span id="boSalesManagerLabel">All Sales Managers</span><b>▾</b>
+          </button>
+          <div class="multiPanel brokerLivePanel">
+            <div class="brokerLiveActions multiActions">
+              <button type="button" class="miniBtn" onclick="brokerLiveSelectAll_('boSalesManager',true,'bo')">Select all</button>
+              <button type="button" class="miniBtn" onclick="brokerLiveSelectAll_('boSalesManager',false,'bo')">Clear</button>
+            </div>
+            <div class="multiSearchWrap">
+              <input type="text" class="multiSearchInput" placeholder="Search sales manager..." aria-label="Search Sales Manager">
+            </div>
+            <div id="boSalesManagerChecks"></div>
+          </div>
+        </div>
+        <div class="filterGroup multi brokerLiveMulti" id="boYearMulti">
+          <div class="brokerLiveFilterName dashboardFilterName">Year</div>
+          <button type="button" class="multiBtn brokerLiveBtn">
+            <span id="boYearLabel">All Years</span><b>▾</b>
+          </button>
+          <div class="multiPanel brokerLivePanel">
+            <div class="brokerLiveActions multiActions">
+              <button type="button" class="miniBtn" onclick="brokerLiveSelectAll_('boYear',true,'bo')">Select all</button>
+              <button type="button" class="miniBtn" onclick="brokerLiveSelectAll_('boYear',false,'bo')">Clear</button>
+            </div>
+            <div class="multiSearchWrap">
+              <input type="text" class="multiSearchInput" placeholder="Search year..." aria-label="Search Year">
+            </div>
+            <div id="boYearChecks"></div>
+          </div>
+        </div>
+        <div class="filterGroup multi brokerLiveMulti" id="boMonthMulti">
+          <div class="brokerLiveFilterName dashboardFilterName">Month</div>
+          <button type="button" class="multiBtn brokerLiveBtn">
+            <span id="boMonthLabel">All Months</span><b>▾</b>
+          </button>
+          <div class="multiPanel brokerLivePanel">
+            <div class="brokerLiveActions multiActions">
+              <button type="button" class="miniBtn" onclick="brokerLiveSelectAll_('boMonth',true,'bo')">Select all</button>
+              <button type="button" class="miniBtn" onclick="brokerLiveSelectAll_('boMonth',false,'bo')">Clear</button>
+            </div>
+            <div class="multiSearchWrap">
+              <input type="text" class="multiSearchInput" placeholder="Search month..." aria-label="Search Month">
+            </div>
+            <div id="boMonthChecks"></div>
+          </div>
+        </div>
+        <div class="filterGroup multi brokerLiveMulti" id="boDayMulti">
+          <div class="brokerLiveFilterName dashboardFilterName">Day</div>
+          <button type="button" class="multiBtn brokerLiveBtn">
+            <span id="boDayLabel">All Days</span><b>▾</b>
+          </button>
+          <div class="multiPanel brokerLivePanel">
+            <div class="brokerLiveActions multiActions">
+              <button type="button" class="miniBtn" onclick="brokerLiveSelectAll_('boDay',true,'bo')">Select all</button>
+              <button type="button" class="miniBtn" onclick="brokerLiveSelectAll_('boDay',false,'bo')">Clear</button>
+            </div>
+            <div class="multiSearchWrap">
+              <input type="text" class="multiSearchInput" placeholder="Search day..." aria-label="Search Day">
+            </div>
+            <div id="boDayChecks"></div>
+          </div>
+        </div>
+          <button type="button" class="brokerOverviewClear brokerLiveClear" onclick="resetBrokerOverviewFilters_()">Clear all</button>
+        </div>
+
+        <div class="brokerOverviewSalesKpis">
+          <article>
+            <span>BROKER COMPANIES</span>
+            <b id="brokerOverviewCompaniesKpi">0</b>
+            <small>Companies with deals in selected scope</small>
+          </article>
+          <article>
+            <span>BROKER DEALS</span>
+            <b id="brokerOverviewDealsKpi">0</b>
+            <small>Filtered deals • Cancel excluded by default</small>
+          </article>
+          <article>
+            <span>SALES VALUE EGP</span>
+            <b id="brokerOverviewEgpKpi">0</b>
+            <small>EGP deals only</small>
+          </article>
+          <article>
+            <span>SALES VALUE USD</span>
+            <b id="brokerOverviewUsdKpi">0</b>
+            <small>USD deals only</small>
+          </article>
+          <article>
+            <span>TOP BROKER COMPANY</span>
+            <b id="brokerOverviewTopCompanyKpi">—</b>
+            <small id="brokerOverviewTopCompanySub">By number of deals</small>
+          </article>
+          <article>
+            <span>CANCEL RATE</span>
+            <b id="brokerOverviewCancelKpi">0%</b>
+            <small>Cancelled / all broker deals</small>
+          </article>
+        </div>
+
+        <div class="brokerOverviewSalesCharts">
+          <article class="brokerOverviewSalesCard brokerOverviewWide">
+            <div class="brokerOverviewSalesHead">
+              <div><span>TOP COMPANIES</span><h3>Brokerage Companies by Deals</h3></div>
+              <b id="brokerOverviewTopDealsMeta"></b>
+            </div>
+            <div class="brokerOverviewSalesCanvas"><canvas id="brokerOverviewTopDealsChart"></canvas></div>
+          </article>
+
+          <article class="brokerOverviewSalesCard">
+            <div class="brokerOverviewSalesHead">
+              <div><span>EGP SALES</span><h3>Top Brokerage Companies — EGP</h3></div>
+              <b id="brokerOverviewEgpMeta"></b>
+            </div>
+            <div class="brokerOverviewSalesCanvas"><canvas id="brokerOverviewEgpChart"></canvas></div>
+          </article>
+
+          <article class="brokerOverviewSalesCard">
+            <div class="brokerOverviewSalesHead">
+              <div><span>USD SALES</span><h3>Top Brokerage Companies — USD</h3></div>
+              <b id="brokerOverviewUsdMeta"></b>
+            </div>
+            <div class="brokerOverviewSalesCanvas"><canvas id="brokerOverviewUsdChart"></canvas></div>
+          </article>
+
+          <article class="brokerOverviewSalesCard">
+            <div class="brokerOverviewSalesHead">
+              <div><span>PROJECT MIX</span><h3>Broker Deals by Project</h3></div>
+              <b id="brokerOverviewProjectMeta"></b>
+            </div>
+            <div class="brokerOverviewSalesCanvas"><canvas id="brokerOverviewProjectChart"></canvas></div>
+          </article>
+
+          <article class="brokerOverviewSalesCard">
+            <div class="brokerOverviewSalesHead">
+              <div><span>STATUS</span><h3>Broker Deal Status</h3></div>
+              <b id="brokerOverviewStatusMeta"></b>
+            </div>
+            <div class="brokerOverviewSalesCanvas"><canvas id="brokerOverviewStatusChart"></canvas></div>
+          </article>
+
+          <article class="brokerOverviewSalesCard brokerOverviewWide">
+            <div class="brokerOverviewSalesHead">
+              <div><span>SALES TREND</span><h3>Broker Deals Over Time</h3></div>
+              <b id="brokerOverviewTrendMeta"></b>
+            </div>
+            <div class="brokerOverviewSalesCanvas brokerOverviewTrendCanvas"><canvas id="brokerOverviewTrendChart"></canvas></div>
+          </article>
+        </div>
+      </div>
+
+      <div class="brokerUtilityTableBox">
+        <div class="brokerUtilityTableHead">
+          <div>
+            <span id="brokerUtilityTableEyebrow">BROKER SALES</span>
+            <h3 id="brokerUtilityTableTitle">Broker Companies</h3>
+          </div>
+          <div class="small" id="brokerUtilityTableMeta"></div>
+        </div>
+        <div class="brokerUtilityTableWrap">
+          <table id="brokerUtilityTable" class="brokerUtilityTable"></table>
+          <div id="brokerUtilityEmpty" class="brokerUtilityEmpty hidden">No broker records match the selected filters.</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="brokerCompanyDetailPanel" class="brokerCompanyDetailPanel hidden">
+      <div class="brokerCompanyDetailHead">
+        <button type="button" class="brokerBackBtn" onclick="backToBrokerCompanies_()">← Back to Brokerage Companies</button>
+        <div class="brokerCompanyDetailTitle">
+          <span>BROKER COMPANY 360°</span>
+          <h2 id="brokerCompanyDetailName">Brokerage Company</h2>
+          <p>Company profile and its linked Transactions deals. Client personal details are intentionally hidden in the BROKERS module.</p>
+        </div>
+      </div>
+
+      <div class="brokerCompanyDetailKpis" id="brokerCompanyDetailKpis"></div>
+
+      <div class="brokerCompanyProfileBox">
+        <div class="brokerCompanyBoxHead">
+          <div><span>COMPANY PROFILE</span><h3>Broker Information</h3></div>
+          <div id="brokerCompanyProfileStatus"></div>
+        </div>
+        <div class="brokerCompanyProfileGrid" id="brokerCompanyProfileGrid"></div>
+      </div>
+
+      <div class="brokerCompanyDealsBox">
+        <div class="brokerCompanyBoxHead">
+          <div><span>TRANSACTIONS</span><h3>Company Deals</h3></div>
+          <div class="small" id="brokerCompanyDealsCount"></div>
+        </div>
+        <div class="brokerCompanyDealsWrap">
+          <table id="brokerCompanyDealsTable" class="brokerCompanyDealsTable"></table>
+          <div id="brokerCompanyDealsEmpty" class="brokerCompanyDealsEmpty hidden">No Transactions deals are linked to this brokerage company name. If this company has sales, check the Brokerage Company spelling in Transactions.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="tableBox" id="transactionTableBox">
+      <div class="tableHead"><h3 id="tableTitle">Deals Details</h3><div id="rowCount" class="small"></div></div>
+      <div class="tableWrap"><table id="mainTable"></table></div>
+    </section>
+
+    <section class="tableBox newClientsYearSection hidden" id="newClientsYearSection">
+      <div class="tableHead newClientsYearHead">
+        <div>
+          <h3>New Clients by First Purchase Year</h3>
+          <div class="small">Each client is counted once only in the year of their first valid purchase or reservation.</div>
+        </div>
+        <div id="newClientsYearTotal" class="small"></div>
+      </div>
+
+      <div class="newClientsYearCards" id="newClientsYearCards"></div>
+
+      <div class="tableWrap">
+        <table id="newClientsYearTable"></table>
+      </div>
+    </section>
+  </main>

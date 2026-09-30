@@ -1,0 +1,45 @@
+<aside class="sidebar">
+    <div class="brand">EDEN <span>DEVELOPMENT</span></div>
+    <div class="sub">Live Dashboard</div>
+    <div class="userBox" id="loggedUserBox">Not logged in</div>
+    <button type="button" class="logoutBtn" onclick="logout()">Logout</button>
+    <div class="themeSwitcher"><div class="themeSwitcherLabel">Theme</div>
+      <select id="themeSelector" onchange="setAppTheme(this.value)">
+        <option value="eden-luxury">EDEN Luxury</option><option value="royal-navy">Royal Navy</option>
+        <option value="emerald-executive">Emerald Executive</option><option value="pearl-white">Pearl White</option><option value="obsidian">Obsidian</option>
+      </select>
+    </div>
+    <div class="nav">
+      <div class="module open" id="transactionsModule">
+        <button type="button" class="moduleHeader open" onclick="toggleModule('transactionsModule')"><span>📊 TRANSACTIONS</span><span class="moduleArrow">▾</span></button>
+        <div class="moduleMenu">
+          <button class="active" onclick="setView('dashboard', this)">🏠 Overview</button><button onclick="setView('projects', this)">📁 Projects</button>
+          <button onclick="setView('sales', this)">👨‍💼 Sales</button><button onclick="setView('branches', this)">🏢 Branches</button>
+          <button onclick="setView('clients', this)">👥 Clients Analysis</button><button onclick="setView('deals', this)">💰 Deals Details</button>
+          <button onclick="setView('dealEntry', this)">➕ Add New Deal</button>
+        </div>
+      </div>
+      <div class="sectionDivider"></div>
+      <div class="module" id="brokersModule">
+        <button type="button" class="moduleHeader" onclick="toggleModule('brokersModule')"><span>🤝 BROKERS</span><span class="moduleArrow">▸</span></button>
+        <div class="moduleMenu">
+          <button onclick="setView('brokerOverview', this)">🤝 Broker Overview</button>
+          <button onclick="setView('brokerPerformance', this)">📊 Broker Performance</button>
+          <button onclick="setView('brokerCompanies', this)">🏢 Broker Companies</button>
+          <button onclick="setView('brokerSales', this)">👨‍💼 Eden Sales</button>
+          <button onclick="setView('brokerOrientations', this)">🎯 Orientations</button>
+          <button onclick="setView('brokerHealth', this)">🩺 Company Health</button>
+        </div>
+      </div>
+      <div class="sectionDivider"></div>
+      <div class="module" id="inventoriesModule">
+        <button type="button" class="moduleHeader" onclick="toggleModule('inventoriesModule')"><span>🏗 INVENTORIES</span><span class="moduleArrow">▸</span></button>
+        <div class="moduleMenu"><button onclick="setView('inventoryCCG', this)">🏙 City Center Gldani</button><button onclick="setView('inventoryEdenWalk', this)">🏬 Eden Walk</button></div>
+      </div>
+      <div class="sectionDivider"></div>
+      <div class="module" id="systemModule">
+        <button type="button" class="moduleHeader" onclick="toggleModule('systemModule')"><span>⚙ SYSTEM</span><span class="moduleArrow">▸</span></button>
+        <div class="moduleMenu"><button onclick="setView('systemUsers', this)">👤 Users</button></div>
+      </div>
+    </div>
+  </aside>

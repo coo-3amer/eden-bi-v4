@@ -1,0 +1,2881 @@
+<style>
+    :root{--bg:#08111f;--panel:#111c2d;--panel2:#17263a;--line:#263850;--text:#eef5ff;--muted:#8fb0d4;--gold:#ffd21f;--green:#32d583;--red:#ff6b6b;--blue:#59b7ff;--chip:#20334d}
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif;font-size:14px}.app{display:flex;min-height:100vh}.sidebar{width:280px;background:#07101d;border-right:1px solid var(--line);padding:22px 16px;position:fixed;inset:0 auto 0 0;overflow:auto}.brand{font-size:24px;font-weight:900;letter-spacing:.5px}.brand span{color:var(--gold)}.sub{font-size:12px;color:var(--muted);margin:6px 0 22px}.nav button,.projectBtn{width:100%;border:0;background:transparent;color:var(--muted);padding:12px 14px;border-radius:12px;text-align:left;cursor:pointer;font-weight:700;margin-bottom:6px}.nav button:hover,.nav button.active,.projectBtn:hover,.projectBtn.active{background:var(--panel2);color:#fff}.sideTitle{font-size:11px;color:#6f8eb0;text-transform:uppercase;margin:20px 10px 10px}.sectionDivider{height:1px;background:var(--line);margin:14px 6px}.module{margin-bottom:10px}.moduleHeader{width:100%;border:0;background:rgba(255,255,255,.03);color:#dbeafe;padding:13px 14px;border-radius:12px;text-align:left;cursor:pointer;font-weight:900;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between}.moduleHeader:hover,.moduleHeader.open{background:var(--panel2);color:#fff}.moduleArrow{font-size:12px;color:var(--gold)}.moduleMenu{display:none;padding:4px 0 8px 10px;border-left:1px solid rgba(129,167,212,.18);margin-left:10px}.module.open .moduleMenu{display:block}.moduleMenu button{padding:10px 12px;margin-bottom:4px;font-size:13px}.moduleMenu button.active{background:rgba(255,210,31,.14)!important;color:#fff;border:1px solid rgba(255,210,31,.25)}.main{margin-left:280px;width:calc(100% - 280px);padding:22px}.topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:18px}.title{font-size:28px;font-weight:900;margin:0}.desc{color:var(--muted);margin-top:5px}.actions{display:flex;gap:10px}.btn{background:var(--gold);color:#111;border:0;border-radius:12px;padding:11px 15px;font-weight:900;cursor:pointer}.btn.secondary{background:var(--panel2);color:#fff;border:1px solid var(--line)}.filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}.filters select,.filters input,.multiBtn{background:var(--panel);border:1px solid var(--line);border-radius:12px;color:#fff;padding:12px;outline:none;min-height:45px}.filterGroup{position:relative}.multiBtn{width:100%;text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:700}.multiBtn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.multiPanel{display:none;position:absolute;top:50px;left:0;right:0;background:#0d1828;border:1px solid var(--line);border-radius:14px;padding:10px;z-index:30;box-shadow:0 16px 40px rgba(0,0,0,.35);max-height:260px;overflow:auto}.filterGroup.open .multiPanel{display:block}.multiActions{display:flex;gap:8px;margin-bottom:8px}.miniBtn{background:var(--chip);color:#fff;border:1px solid var(--line);border-radius:10px;padding:7px 9px;cursor:pointer;font-size:11px;font-weight:800}.checkRow{display:flex;gap:8px;align-items:center;padding:8px 6px;border-radius:8px;color:#dbeafe;cursor:pointer}.checkRow:hover{background:var(--panel2)}.checkRow input{width:auto;min-height:auto;padding:0}.filterHint{font-size:10px;color:var(--muted);margin-top:4px}.cards{display:grid;grid-template-columns:repeat(5,minmax(170px,1fr));gap:14px;margin-bottom:16px}.card{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:18px;padding:18px;min-height:105px}.label{color:var(--muted);font-weight:800;font-size:12px}.value{font-size:27px;font-weight:950;margin-top:10px;color:var(--gold)}.small{font-size:12px;color:var(--muted);margin-top:5px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}.box{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;min-height:330px}.box h3{margin:0 0 14px}.tableBox{background:var(--panel);border:1px solid var(--line);border-radius:18px;overflow:hidden}.tableHead{display:flex;justify-content:space-between;align-items:center;padding:15px 18px;border-bottom:1px solid var(--line)}.tableWrap{max-height:610px;overflow:auto}table{width:100%;border-collapse:collapse}th,td{padding:11px 12px;border-bottom:1px solid var(--line);white-space:nowrap;text-align:left;font-size:12px}th{position:sticky;top:0;background:#18283d;color:#b8d7fa;z-index:1}tr:hover{background:#16263a}.chip{display:inline-block;padding:5px 9px;border-radius:999px;background:var(--chip);font-weight:800}.status-Closed{background:rgba(50,213,131,.18);color:#8dffbf}.status-Cancel{background:rgba(255,107,107,.18);color:#ffabab}.status-Reservation{background:rgba(255,210,31,.16);color:#ffe37a}.status-Renovation{background:rgba(96,165,250,.18);color:#bfdbfe}.hidden{display:none!important}.loader{position:fixed;inset:0;background:rgba(8,17,31,.92);display:flex;align-items:center;justify-content:center;z-index:99;font-size:24px;font-weight:900;color:var(--gold)}@media(max-width:1200px){.filters{grid-template-columns:repeat(3,1fr)}.cards{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.sidebar{position:relative;width:100%;height:auto}.main{margin-left:0;width:100%}.app{display:block}}
+  
+.loginScreen{position:fixed;inset:0;background:radial-gradient(circle at top,#18283d 0,#08111f 55%);display:flex;align-items:center;justify-content:center;z-index:200}.loginCard{width:380px;max-width:92vw;background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:22px;padding:28px;box-shadow:0 25px 80px rgba(0,0,0,.45)}.loginBrand{font-size:32px;font-weight:950;letter-spacing:.5px}.loginBrand span{color:var(--gold)}.loginSub{color:var(--muted);margin:8px 0 20px;font-weight:700}.loginInput{width:100%;background:#0d1828;border:1px solid var(--line);border-radius:14px;color:#fff;padding:14px;margin-bottom:12px;outline:none;font-weight:700}.loginInput:focus{border-color:var(--gold)}.loginBtn{width:100%;background:var(--gold);color:#111;border:0;border-radius:14px;padding:13px;font-weight:950;cursor:pointer;margin-top:2px}.loginError{color:#ffabab;min-height:20px;margin-top:12px;font-weight:800}.loginHint{font-size:11px;color:var(--muted);margin-top:10px}.userBox{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:10px 0;color:#dbeafe;font-size:12px;font-weight:800}.logoutBtn{width:100%;border:1px solid var(--line);background:#18283d;color:#fff;padding:10px 12px;border-radius:12px;cursor:pointer;font-weight:900;margin-bottom:14px}.logoutBtn:hover{background:#243850}
+
+
+.usersPanel{background:var(--panel);border:1px solid var(--line);border-radius:18px;overflow:hidden;margin-bottom:16px}.panelHead{display:flex;justify-content:space-between;align-items:center;padding:18px;border-bottom:1px solid var(--line)}.panelHead h3{margin:0 0 4px}.userForm{padding:18px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.025)}.formGrid{display:grid;grid-template-columns:repeat(5,minmax(150px,1fr));gap:10px}.userForm input,.userForm select{background:var(--panel2);border:1px solid var(--line);border-radius:12px;color:#fff;padding:12px;outline:none}.formActions{margin-top:12px}.miniAction{background:var(--panel2);border:1px solid var(--line);color:#fff;border-radius:9px;padding:7px 10px;cursor:pointer;font-weight:800;margin-right:5px}.miniAction.danger{background:rgba(255,107,107,.15);border-color:rgba(255,107,107,.3);color:#ffb4b4}@media(max-width:1200px){.formGrid{grid-template-columns:repeat(2,1fr)}}
+
+
+.lampWrong .clickLampCone{animation:clickConeFlicker .9s steps(1,end)}
+@keyframes clickConeFlicker{
+0%{opacity:.82}10%{opacity:.03}20%{opacity:.82}30%{opacity:.03}
+40%{opacity:.82}50%{opacity:.03}60%{opacity:.82}70%{opacity:.03}
+82%{opacity:1}100%{opacity:.82}
+}
+
+</style><style>
+.inventoryPanel{display:block}.inventoryToolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px}.inventoryToolbar h3{margin:0 0 4px}.inventoryActions{display:flex;gap:8px;align-items:center}.inventoryLink{text-decoration:none;display:inline-flex;align-items:center}.inventoryCards{display:grid;grid-template-columns:repeat(5,minmax(150px,1fr));gap:12px;margin-bottom:16px}.inventoryCard{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:16px;box-shadow:0 2px 8px rgba(15,23,42,.05)}.inventoryCard.available{border-left:4px solid #16a34a}.inventoryCard.reservation{border-left:4px solid #f59e0b}.inventoryCard.closed{border-left:4px solid #dc2626}.inventoryCard.value{border-left:4px solid #2563eb}.inventoryCardTitle{font-size:12px;color:#64748b;text-transform:uppercase;font-weight:700;letter-spacing:.04em}.inventoryCardValue{font-size:26px;font-weight:800;margin:6px 0;color:#0f172a}.inventoryFilters{display:grid;grid-template-columns:2fr repeat(5,1fr);gap:10px;background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:12px;margin-bottom:14px}.inventoryFilters input,.inventoryFilters select{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:9px;padding:10px;background:#fff}.inventoryStatus{display:inline-block;padding:5px 9px;border-radius:999px;font-weight:700;font-size:11px}.invAvailable{background:#dcfce7;color:#166534}.invReserved{background:#fef3c7;color:#92400e}.invClosed{background:#fee2e2;color:#991b1b}.invOther{background:#e2e8f0;color:#334155}.inventoryMessage{padding:12px 14px;border-radius:10px;margin-bottom:12px;font-weight:700}.inventoryMessage.success{background:#dcfce7;color:#166534}.inventoryMessage.warning{background:#fef3c7;color:#92400e}.inventoryMessage.error{background:#fee2e2;color:#991b1b}.inventoryCheckBtn{white-space:nowrap}@media(max-width:1100px){.inventoryCards{grid-template-columns:repeat(2,1fr)}.inventoryFilters{grid-template-columns:repeat(2,1fr)}}
+</style>
+
+<style>
+.inventoryFilters .filterGroup{min-width:0}
+.inventoryFilters .multiBtn{min-height:42px}
+.inventoryFilters>input{background:var(--panel);border:1px solid var(--line);color:#fff}
+.inventoryFilters .multiPanel{min-width:210px}
+@media(max-width:1400px){.inventoryFilters{grid-template-columns:repeat(3,minmax(180px,1fr))}}
+@media(max-width:850px){.inventoryFilters{grid-template-columns:1fr}}
+</style>
+
+
+<style>
+.dealEntryPanel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px;margin-bottom:16px}
+.dealWizardHead{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}.dealWizardHead h3{margin:0 0 5px;font-size:21px}
+.dealStepText{background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:8px 12px;font-weight:900;color:var(--gold)}
+.dealProgress{height:8px;background:#0b1727;border-radius:999px;overflow:hidden;margin:16px 0 20px}.dealProgressBar{height:100%;width:20%;background:var(--gold);transition:width .2s ease}
+.dealStep{display:none}.dealStep.active{display:block}.dealStep h3{margin:0 0 16px}
+.dealFormGrid{display:grid;grid-template-columns:repeat(3,minmax(180px,1fr));gap:13px}
+.dealFormGrid label,.dealNotesLabel{display:flex;flex-direction:column;gap:7px;color:#b8d7fa;font-size:12px;font-weight:800}
+.dealFormGrid input,.dealFormGrid select,.dealNotesLabel textarea{width:100%;background:#0d1828;border:1px solid var(--line);border-radius:11px;color:#fff;padding:12px;outline:none}
+.dealFormGrid input:focus,.dealFormGrid select:focus,.dealNotesLabel textarea:focus{border-color:var(--gold)}
+.dealWizardActions{display:flex;gap:9px;align-items:center;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
+.dealAlert{padding:12px 14px;border-radius:11px;margin-bottom:16px;font-weight:800}.dealAlert.info{background:rgba(89,183,255,.14);color:#bce4ff}.dealAlert.success{background:rgba(50,213,131,.14);color:#9fffc5}.dealAlert.warning{background:rgba(255,210,31,.14);color:#ffe681}.dealAlert.error{background:rgba(255,107,107,.14);color:#ffb1b1}
+.dealUnitCard{margin-top:16px;background:#0d1828;border:1px solid var(--line);border-radius:14px;padding:15px}.dealUnitCard.allowed{border-color:rgba(50,213,131,.65)}.dealUnitCard.blocked{border-color:rgba(255,107,107,.65)}.dealUnitCard.checking{border-color:rgba(89,183,255,.65)}
+.dealUnitHeader{display:flex;align-items:center;justify-content:space-between;font-size:18px}.dealUnitGrid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-top:13px}.dealUnitGrid span{background:var(--panel2);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:4px}.dealUnitGrid small{color:var(--muted)}.dealUnitMessage{margin-top:12px;color:#dbeafe}
+.dealReview{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-bottom:16px}.dealReview>div{display:flex;justify-content:space-between;gap:12px;background:#0d1828;border:1px solid var(--line);border-radius:10px;padding:11px}.dealReview span{color:var(--muted)}.dealReview b{text-align:right}
+.dealConfirm{margin-top:13px;background:rgba(255,210,31,.08);border:1px solid rgba(255,210,31,.22);border-radius:11px;padding:12px}.dealConfirm input{margin-right:8px}
+@media(max-width:1100px){.dealFormGrid{grid-template-columns:repeat(2,1fr)}.dealUnitGrid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:700px){.dealFormGrid,.dealReview{grid-template-columns:1fr}.dealUnitGrid{grid-template-columns:repeat(2,1fr)}.dealWizardHead{flex-direction:column}}
+</style>
+
+<style>
+/* Inventory filter bar V2 */
+.inventoryFilterBar{
+  display:grid;
+  grid-template-columns:minmax(280px,1.65fr) repeat(5,minmax(145px,1fr)) auto;
+  gap:10px;
+  align-items:end;
+  padding:14px;
+  margin:0 0 10px;
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:#101d2d;
+  box-shadow:0 8px 24px rgba(0,0,0,.14);
+}
+.inventoryFilterName{
+  margin:0 0 6px 2px;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:#8ea9c7;
+}
+.inventorySearchBox{
+  height:42px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:0 12px;
+  border:1px solid #2b4059;
+  border-radius:10px;
+  background:#0a1523;
+}
+.inventorySearchBox:focus-within{
+  border-color:#d9b817;
+  box-shadow:0 0 0 3px rgba(217,184,23,.09);
+}
+.inventorySearchBox span{color:#8ea9c7;font-size:17px}
+.inventorySearchBox input{
+  width:100%;
+  height:100%;
+  padding:0!important;
+  margin:0!important;
+  border:0!important;
+  outline:0!important;
+  background:transparent!important;
+  color:#fff!important;
+  box-shadow:none!important;
+}
+.inventoryFilterGroup{position:relative}
+.inventoryFilterButton{
+  width:100%;
+  height:42px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding:0 11px;
+  border:1px solid #2b4059;
+  border-radius:10px;
+  background:#0a1523;
+  color:#edf5ff;
+  font-size:12px;
+  font-weight:700;
+}
+.inventoryFilterButton:hover{border-color:#476484;background:#0d1b2c}
+.inventoryFilterGroup.open .inventoryFilterButton{
+  border-color:#d9b817;
+  box-shadow:0 0 0 3px rgba(217,184,23,.08);
+}
+.inventoryChevron{color:#d9b817;font-size:10px}
+.inventoryDropdownPanel{
+  position:absolute;
+  z-index:150;
+  top:48px;
+  left:0;
+  width:300px;
+  max-height:410px;
+  padding:0;
+  overflow:hidden;
+  border:1px solid #2f4865;
+  border-radius:13px;
+  background:#0c1725;
+  box-shadow:0 22px 55px rgba(0,0,0,.52);
+}
+.inventoryDropdownTop{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:12px 13px 9px;
+}
+.inventoryDropdownTitle{font-weight:900;color:#f4f8fd;font-size:13px}
+.inventoryDropdownClose{
+  width:26px;height:26px;border:0;border-radius:7px;
+  background:#17283b;color:#9fb4cb;cursor:pointer;font-size:17px;
+}
+.inventoryDropdownSearchWrap{padding:0 11px 9px}
+.inventoryDropdownSearch{
+  width:100%;
+  height:36px;
+  margin:0!important;
+  padding:0 10px!important;
+  border:1px solid #2b4059!important;
+  border-radius:8px!important;
+  background:#08121e!important;
+  color:#fff!important;
+}
+.inventoryDropdownActions{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  padding:8px 11px;
+  border-top:1px solid #1d3045;
+  border-bottom:1px solid #1d3045;
+}
+.inventoryDropdownActions .miniBtn{
+  padding:6px 9px;
+  border-radius:7px;
+  font-size:10px;
+}
+.inventoryDropdownActions>span{
+  margin-left:auto;
+  color:#7893b0;
+  font-size:9px;
+  white-space:nowrap;
+}
+.inventoryChecks{
+  max-height:280px;
+  overflow:auto;
+  padding:6px;
+}
+.inventoryCheckRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  min-height:38px;
+  padding:6px 9px;
+  border-radius:8px;
+  cursor:pointer;
+  color:#dce9f7;
+}
+.inventoryCheckRow:hover{background:#14253a}
+.inventoryCheckMain{display:flex;align-items:center;gap:9px;min-width:0}
+.inventoryCheckMain input{accent-color:#d9b817}
+.inventoryCheckText{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inventoryOptionCount{
+  min-width:28px;
+  padding:3px 7px;
+  border-radius:999px;
+  background:#1b3049;
+  color:#93b5d8;
+  text-align:center;
+  font-size:9px;
+  font-weight:900;
+}
+.inventoryClearAll{
+  height:42px;
+  padding:0 14px;
+  border:1px solid #324861;
+  border-radius:10px;
+  background:transparent;
+  color:#b7c8da;
+  font-size:11px;
+  font-weight:800;
+  white-space:nowrap;
+}
+.inventoryClearAll:hover{border-color:#d9b817;color:#fff}
+.inventoryActiveFilters{
+  display:flex;
+  align-items:flex-start;
+  gap:12px;
+  margin:0 0 14px;
+  padding:10px 12px;
+  border:1px solid #203650;
+  border-radius:12px;
+  background:#0c1827;
+}
+.inventoryActiveTitle{
+  padding-top:6px;
+  color:#7f9bb8;
+  font-size:10px;
+  font-weight:900;
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+.inventoryChips{display:flex;flex-wrap:wrap;gap:7px}
+.inventoryChip{
+  padding:6px 9px;
+  border:1px solid #365270;
+  border-radius:999px;
+  background:#16283c;
+  color:#e6f1fc;
+  font-size:10px;
+  cursor:pointer;
+}
+.inventoryChip span{color:#8fb0d0}
+.inventoryChip b{margin-left:5px;color:#d9b817}
+.inventoryChip:hover{border-color:#d9b817}
+.inventoryChecks::-webkit-scrollbar{width:7px}
+.inventoryChecks::-webkit-scrollbar-thumb{background:#304963;border-radius:99px}
+.inventoryChecks::-webkit-scrollbar-track{background:#0c1725}
+@media(max-width:1450px){
+  .inventoryFilterBar{grid-template-columns:minmax(260px,1.4fr) repeat(3,minmax(160px,1fr))}
+}
+@media(max-width:900px){
+  .inventoryFilterBar{grid-template-columns:1fr 1fr}
+  .inventorySearchCell{grid-column:1/-1}
+}
+@media(max-width:620px){
+  .inventoryFilterBar{grid-template-columns:1fr}
+  .inventoryDropdownPanel{width:min(300px,calc(100vw - 44px))}
+  .inventoryActiveFilters{display:block}
+  .inventoryActiveTitle{margin-bottom:7px}
+}
+</style>
+
+<style>
+/* Deals Wizard layout hardening */
+.dealEntryPanel{background:#101d2d;border:1px solid #263c56;border-radius:18px;padding:20px;box-shadow:0 10px 32px rgba(0,0,0,.18)}
+.dealEntryPanel.hidden{display:none!important}
+.dealWizardHead{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:14px}
+.dealWizardHead h3{margin:0 0 5px;font-size:22px;color:#fff}
+.dealStepText{padding:9px 13px;border-radius:999px;background:#1b3049;color:#ffd21f;font-weight:900;font-size:12px;white-space:nowrap}
+.dealProgress{height:8px;background:#08131f;border-radius:999px;overflow:hidden;margin-bottom:18px}
+.dealProgressBar{height:100%;width:20%;background:linear-gradient(90deg,#ffd21f,#f0b800);border-radius:999px;transition:width .25s ease}
+.dealAlert{margin:0 0 18px;padding:12px 14px;border-radius:12px;font-size:12px;font-weight:800}
+.dealAlert.hidden{display:none!important}
+.dealAlert.info{background:#132b43;color:#9fcfff;border:1px solid #285276}
+.dealAlert.success{background:#133524;color:#8ee7b5;border:1px solid #286143}
+.dealAlert.warning{background:#35321d;color:#ffe484;border:1px solid #6a5f24}
+.dealAlert.error{background:#3b1e24;color:#ffabb7;border:1px solid #733543}
+.dealStep{display:none!important}
+.dealStep.active{display:block!important}
+.dealStep h3{margin:0 0 16px;font-size:16px;color:#fff}
+.dealFormGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.dealFormGrid label,.dealNotesLabel{display:flex;flex-direction:column;gap:7px;color:#a9c8e7;font-size:11px;font-weight:800}
+.dealFormGrid input,.dealFormGrid select,.dealFormGrid textarea,.dealNotesLabel textarea{width:100%;min-height:44px;margin:0!important;padding:10px 12px!important;box-sizing:border-box;border:1px solid #2d4663!important;border-radius:10px!important;background:#0a1523!important;color:#fff!important;outline:none}
+.dealFormGrid input:focus,.dealFormGrid select:focus,.dealNotesLabel textarea:focus{border-color:#ffd21f!important;box-shadow:0 0 0 3px rgba(255,210,31,.08)}
+.dealUnitCard{margin-top:18px;padding:15px;border:1px solid #2c4564;border-radius:14px;background:#0b1726}
+.dealUnitCard.hidden{display:none!important}
+.dealUnitCard.allowed{border-color:#2f6d4c}
+.dealUnitCard.blocked{border-color:#7a3742}
+.dealUnitHeader{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.dealUnitGrid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+.dealUnitGrid span{display:flex;flex-direction:column;gap:5px;padding:10px;border-radius:10px;background:#12243a}
+.dealUnitGrid small{color:#7fa0c2;font-size:9px;text-transform:uppercase}
+.dealUnitGrid b{color:#fff;font-size:12px}
+.dealUnitMessage{margin-top:12px;color:#bdd2e8;font-size:11px}
+.dealReview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.dealReviewCard{padding:14px;border:1px solid #263d58;border-radius:12px;background:#0b1726}
+.dealConfirm{margin-top:14px;padding:12px;border-radius:10px;background:#0b1726;color:#c8d8e8}
+.dealWizardActions{display:flex;gap:10px;align-items:center;padding-top:18px;margin-top:18px;border-top:1px solid #263c56}
+.dealWizardActions .btn{min-width:105px;min-height:42px}
+.dealWizardActions .hidden{display:none!important}
+@media(max-width:1100px){.dealFormGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.dealUnitGrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){.dealWizardHead{display:block}.dealStepText{display:inline-block;margin-top:10px}.dealFormGrid{grid-template-columns:1fr}.dealUnitGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.dealReview{grid-template-columns:1fr}.dealWizardActions{flex-wrap:wrap}}
+</style>
+
+<style>
+/* New clients by first purchase year */
+.newClientsYearSection{margin-top:18px}
+.newClientsYearSection.hidden{display:none!important}
+.newClientsYearHead{align-items:flex-start}
+.newClientsYearHead h3{margin-bottom:5px}
+.newClientsYearCards{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(135px,1fr));
+  gap:10px;
+  padding:14px 14px 0;
+}
+.newClientsYearCard{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  min-height:78px;
+  padding:12px;
+  border:1px solid #2a405b;
+  border-radius:12px;
+  background:#101f31;
+}
+.newClientsYearCard span{
+  color:#91b5d9;
+  font-size:10px;
+  font-weight:900;
+  text-transform:uppercase;
+}
+.newClientsYearCard b{
+  color:#ffd21f;
+  font-size:24px;
+  line-height:1;
+}
+.newClientsYearCard small{color:#7291af;font-size:9px}
+.newClientYearBadge{
+  display:inline-block;
+  min-width:62px;
+  padding:7px 10px;
+  border:1px solid #365474;
+  border-radius:999px;
+  background:#152942;
+  color:#b9d8f6;
+  text-align:center;
+  font-weight:900;
+}
+.newClientCount{color:#ffd21f;font-size:17px}
+.newClientNamesDetails summary{
+  cursor:pointer;
+  color:#80bfff;
+  font-weight:800;
+  font-size:11px;
+}
+.newClientNamesDetails[open] summary{margin-bottom:10px}
+.newClientNamesGrid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(260px,1fr));
+  gap:7px;
+  max-height:390px;
+  overflow:auto;
+  padding:5px 4px 5px 0;
+}
+.newClientNameItem{
+  display:flex;
+  gap:9px;
+  align-items:flex-start;
+  padding:9px;
+  border:1px solid #213750;
+  border-radius:9px;
+  background:#0c1928;
+}
+.newClientIndex{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 25px;
+  width:25px;
+  height:25px;
+  border-radius:50%;
+  background:#1d3550;
+  color:#9fc5ea;
+  font-size:9px;
+  font-weight:900;
+}
+.newClientNameItem div{min-width:0}
+.newClientNameItem b{
+  display:block;
+  color:#edf6ff;
+  font-size:11px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.newClientNameItem small{
+  display:block;
+  margin-top:3px;
+  color:#7898b6;
+  font-size:9px;
+  line-height:1.4;
+}
+@media(max-width:900px){
+  .newClientNamesGrid{grid-template-columns:1fr}
+}
+</style>
+
+<style>
+/* Brokers filters dropdown positioning fix */
+#brokerFilters .filterGroup.multi{
+  position:relative!important;
+  min-width:0;
+}
+
+#brokerFilters .multiBtn{
+  width:100%;
+  position:relative;
+  z-index:2;
+}
+
+#brokerFilters .multiPanel{
+  position:absolute!important;
+  top:calc(100% + 6px)!important;
+  left:0!important;
+  right:auto!important;
+  width:100%!important;
+  min-width:220px!important;
+  max-width:320px!important;
+  max-height:320px!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  z-index:9999!important;
+  border:1px solid #2d4663!important;
+  border-radius:12px!important;
+  background:#0c1725!important;
+  box-shadow:0 18px 45px rgba(0,0,0,.45)!important;
+}
+
+#brokerFilters .multiPanel .multiActions{
+  position:sticky;
+  top:0;
+  z-index:2;
+  display:flex;
+  gap:8px;
+  padding:9px;
+  background:#132238;
+  border-bottom:1px solid #263c56;
+}
+
+#brokerFilters .multiPanel .checkRow{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  min-height:36px;
+  padding:7px 10px;
+  margin:2px 5px;
+  border-radius:8px;
+  color:#dce9f7;
+  cursor:pointer;
+}
+
+#brokerFilters .multiPanel .checkRow:hover{
+  background:#17283d;
+}
+
+#brokerFilters .multiPanel input[type="checkbox"]{
+  accent-color:#ffd21f;
+  flex:0 0 auto;
+}
+
+#brokerFilters .multiPanel::-webkit-scrollbar{
+  width:8px;
+}
+
+#brokerFilters .multiPanel::-webkit-scrollbar-track{
+  background:#0c1725;
+}
+
+#brokerFilters .multiPanel::-webkit-scrollbar-thumb{
+  background:#314763;
+  border-radius:999px;
+}
+
+#brokerFilters{
+  overflow:visible!important;
+}
+
+#brokerFilters .filterGroup.open{
+  z-index:10000!important;
+}
+</style>
+
+<style>
+.multiSearchWrap{
+  position:sticky;
+  top:0;
+  z-index:3;
+  padding:0 0 8px;
+  background:#0d1828;
+}
+.multiSearchInput{
+  width:100%;
+  min-height:38px!important;
+  padding:9px 10px!important;
+  border:1px solid var(--line)!important;
+  border-radius:9px!important;
+  background:#111c2d!important;
+  color:#fff!important;
+  outline:none!important;
+  font-size:12px!important;
+}
+.multiSearchInput:focus{
+  border-color:var(--gold)!important;
+}
+</style>
+
+<style>
+.multiPanel .multiSearchWrap{
+  position:sticky;
+  top:0;
+  z-index:4;
+  padding:0 0 8px;
+  background:#0d1828;
+}
+.multiPanel .multiSearchInput{
+  width:100%;
+  min-height:38px!important;
+  padding:9px 10px!important;
+  border:1px solid var(--line)!important;
+  border-radius:9px!important;
+  background:#111c2d!important;
+  color:#fff!important;
+  outline:none!important;
+  font-size:12px!important;
+}
+.multiPanel .multiSearchInput::placeholder{
+  color:#7898b6;
+}
+.multiPanel .multiSearchInput:focus{
+  border-color:var(--gold)!important;
+}
+</style>
+
+<style>
+/* Unified dashboard filter bar — matches Inventory */
+.dashboardFilterBar{
+  display:grid!important;
+  grid-template-columns:repeat(auto-fit,minmax(170px,1fr))!important;
+  gap:10px!important;
+  padding:14px!important;
+  margin-bottom:16px!important;
+  border:1px solid var(--line)!important;
+  border-radius:16px!important;
+  background:var(--panel)!important;
+  overflow:visible!important;
+}
+
+.dashboardFilterCell,
+.dashboardSearchCell{
+  min-width:0;
+}
+
+.dashboardFilterName{
+  margin:0 0 7px 2px;
+  color:#b8d7fa;
+  font-size:10px;
+  line-height:1;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+
+.dashboardFilterBar .multiBtn{
+  width:100%;
+  min-height:44px!important;
+  padding:11px 12px!important;
+  border:1px solid #2b4059!important;
+  border-radius:10px!important;
+  background:#0a1523!important;
+  color:#fff!important;
+  font-size:12px!important;
+  font-weight:800!important;
+}
+
+.dashboardFilterBar .multiBtn b{
+  color:var(--gold);
+  font-size:10px;
+}
+
+.dashboardSearchBox{
+  display:flex;
+  align-items:center;
+  min-height:44px;
+  border:1px solid #2b4059;
+  border-radius:10px;
+  background:#0a1523;
+  overflow:hidden;
+}
+
+.dashboardSearchBox span{
+  padding-left:12px;
+  color:#8fb0d4;
+  font-size:17px;
+}
+
+.dashboardSearchBox input{
+  width:100%!important;
+  min-height:42px!important;
+  margin:0!important;
+  padding:10px 12px 10px 8px!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  color:#fff!important;
+  outline:none!important;
+}
+
+.dashboardSearchBox input::placeholder{
+  color:#7898b6;
+}
+
+.dashboardClearAll{
+  min-height:44px;
+  align-self:end;
+  border:1px solid #36506d;
+  border-radius:10px;
+  background:#102034;
+  color:#fff;
+  cursor:pointer;
+  font-size:12px;
+  font-weight:900;
+}
+
+.dashboardClearAll:hover{
+  border-color:var(--gold);
+  color:var(--gold);
+}
+
+.dashboardFilterBar .filterHint{
+  display:none;
+}
+
+.dashboardFilterBar .multiPanel{
+  top:calc(100% + 6px)!important;
+  left:0!important;
+  right:auto!important;
+  width:100%!important;
+  min-width:230px!important;
+  max-width:340px!important;
+  z-index:9999!important;
+}
+
+.dashboardFilterBar .filterGroup.open{
+  z-index:10000!important;
+}
+
+@media(max-width:1450px){
+  .dashboardFilterBar{
+    grid-template-columns:repeat(4,minmax(170px,1fr))!important;
+  }
+}
+
+@media(max-width:1000px){
+  .dashboardFilterBar{
+    grid-template-columns:repeat(2,minmax(160px,1fr))!important;
+  }
+}
+
+@media(max-width:620px){
+  .dashboardFilterBar{
+    grid-template-columns:1fr!important;
+  }
+}
+</style>
+
+<style>
+/* ===== EDEN BI PREMIUM THEMES ===== */
+:root,
+html[data-theme="eden-luxury"]{
+  --bg:#071018;
+  --panel:#0d1822;
+  --panel2:#132331;
+  --line:#2a3d4e;
+  --text:#f6f2e8;
+  --heading:#fff9e8;
+  --muted:#9fb0bd;
+  --subtle:#718391;
+  --gold:#d8b45a;
+  --gold-strong:#f1cb6d;
+  --green:#46c98a;
+  --red:#ef6f6c;
+  --blue:#65aee8;
+  --chip:#1d3140;
+  --sidebar-bg:#08131b;
+  --input-bg:#0a1620;
+  --table-head:#172735;
+  --hover-bg:#142532;
+  --card-value:#f1cb6d;
+  --shadow:rgba(0,0,0,.42);
+  --accent-gradient:linear-gradient(135deg,#d8b45a,#f1cb6d);
+  --panel-gradient:linear-gradient(180deg,#142430,#0d1822);
+}
+
+
+
+
+
+body{
+  background:
+    radial-gradient(circle at 12% 0%,color-mix(in srgb,var(--gold) 7%,transparent),transparent 28%),
+    var(--bg)!important;
+  color:var(--text)!important;
+}
+
+.sidebar{
+  background:
+    linear-gradient(180deg,color-mix(in srgb,var(--sidebar-bg) 94%,black),var(--sidebar-bg))!important;
+  border-right-color:var(--line)!important;
+  box-shadow:8px 0 28px color-mix(in srgb,var(--shadow) 65%,transparent);
+}
+
+.brand{
+  color:var(--heading)!important;
+  text-shadow:0 1px 14px color-mix(in srgb,var(--gold) 18%,transparent);
+}
+.brand span{color:var(--gold-strong)!important}
+
+.title,
+.box h3,
+.tableHead h3,
+.panelHead h3,
+.dealWizardHead h3,
+.inventoryToolbar h3,
+.loginBrand{
+  color:var(--heading)!important;
+}
+
+.card,
+.box,
+.tableBox,
+.usersPanel,
+.dealEntryPanel,
+.dashboardFilterBar,
+.inventoryPanel,
+.themeSwitcher{
+  background:var(--panel-gradient)!important;
+  border-color:var(--line)!important;
+  box-shadow:0 12px 34px color-mix(in srgb,var(--shadow) 70%,transparent)!important;
+}
+
+.card{
+  position:relative;
+  overflow:hidden;
+}
+.card::before{
+  content:"";
+  position:absolute;
+  inset:0 auto 0 0;
+  width:3px;
+  background:var(--accent-gradient);
+  opacity:.85;
+}
+
+.value,
+.inventoryCardValue{
+  color:var(--card-value)!important;
+  text-shadow:0 0 18px color-mix(in srgb,var(--card-value) 15%,transparent);
+}
+
+.small,
+.desc,
+.filterHint,
+.label,
+.sub,
+.inventoryCardTitle,
+.themeSwitcherLabel,
+.dashboardFilterName{
+  color:var(--muted)!important;
+}
+
+.moduleHeader,
+.moduleMenu button,
+.nav button,
+.logoutBtn{
+  color:var(--muted)!important;
+}
+.moduleHeader:hover,
+.moduleHeader.open,
+.moduleMenu button:hover,
+.moduleMenu button.active,
+.nav button:hover,
+.nav button.active{
+  color:var(--heading)!important;
+}
+
+.moduleMenu button.active{
+  background:color-mix(in srgb,var(--gold) 13%,transparent)!important;
+  border-color:color-mix(in srgb,var(--gold) 34%,transparent)!important;
+}
+
+.filters select,
+.filters input,
+.multiBtn,
+.dashboardSearchBox,
+.dashboardFilterBar .multiBtn,
+.inventorySearchBox,
+.inventoryFilterButton,
+.inventoryDiscountControl,
+.dealFormGrid input,
+.dealFormGrid select,
+.dealNotesLabel textarea,
+.userForm input,
+.userForm select,
+.themeSwitcher select{
+  background:var(--input-bg)!important;
+  color:var(--text)!important;
+  border-color:var(--line)!important;
+}
+
+input::placeholder,
+textarea::placeholder{
+  color:var(--subtle)!important;
+}
+
+.multiPanel{
+  background:var(--panel)!important;
+  border-color:var(--line)!important;
+  box-shadow:0 18px 44px var(--shadow)!important;
+}
+
+.multiSearchWrap{
+  background:var(--panel)!important;
+}
+
+.multiSearchInput{
+  background:var(--input-bg)!important;
+  color:var(--text)!important;
+}
+
+th{
+  background:var(--table-head)!important;
+  color:var(--heading)!important;
+  border-bottom-color:var(--line)!important;
+}
+
+td{
+  color:var(--text)!important;
+  border-bottom-color:var(--line)!important;
+}
+
+tr:hover,
+.checkRow:hover{
+  background:var(--hover-bg)!important;
+}
+
+.btn{
+  background:var(--accent-gradient)!important;
+  color:#111!important;
+  box-shadow:0 8px 20px color-mix(in srgb,var(--gold) 18%,transparent);
+}
+.btn.secondary{
+  background:var(--panel2)!important;
+  color:var(--text)!important;
+  border-color:var(--line)!important;
+}
+
+.chip,
+.miniBtn,
+.miniAction{
+  background:var(--chip)!important;
+  color:var(--text)!important;
+  border-color:var(--line)!important;
+}
+
+.themeSwitcher{
+  margin:0 0 16px;
+  padding:12px;
+  border-radius:14px;
+}
+.themeSwitcherLabel{
+  margin-bottom:7px;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.themeSwitcher select{
+  width:100%;
+  min-height:42px;
+  padding:9px 10px;
+  border-radius:10px;
+  outline:none;
+  font-weight:800;
+}
+
+.loginScreen{
+  background:
+    radial-gradient(circle at top,color-mix(in srgb,var(--gold) 10%,transparent),transparent 38%),
+    var(--bg)!important;
+}
+.loginCard{
+  background:var(--panel-gradient)!important;
+  color:var(--text)!important;
+  border-color:var(--line)!important;
+}
+
+</style>
+
+<style>
+/* ===== TRANSACTIONS TREND ANALYSIS ===== */
+.trendAnalysisSection{
+  margin-bottom:16px;
+  padding:18px;
+  border:1px solid var(--line);
+  border-radius:18px;
+  background:var(--panel-gradient,var(--panel));
+  box-shadow:0 12px 34px color-mix(in srgb,var(--shadow) 65%,transparent);
+}
+
+.trendAnalysisHead{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:18px;
+  margin-bottom:14px;
+}
+
+.trendAnalysisHead h3{
+  margin:0 0 5px;
+  color:var(--heading,var(--text));
+  font-size:17px;
+}
+
+.trendControls{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(140px,1fr));
+  gap:9px;
+  min-width:min(560px,55%);
+}
+
+.trendControls label{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.trendControls label>span{
+  color:var(--muted);
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+
+.trendControls select{
+  width:100%;
+  min-height:40px;
+  padding:9px 10px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:var(--input-bg);
+  color:var(--text);
+  outline:none;
+  font-size:11px;
+  font-weight:800;
+}
+
+.trendCanvasWrap{
+  position:relative;
+  width:100%;
+  height:360px;
+  padding:8px 4px 0;
+}
+
+@media(max-width:1000px){
+  .trendAnalysisHead{
+    flex-direction:column;
+  }
+  .trendControls{
+    min-width:0;
+    width:100%;
+  }
+}
+
+@media(max-width:620px){
+  .trendControls{
+    grid-template-columns:1fr;
+  }
+  .trendCanvasWrap{
+    height:310px;
+  }
+}
+</style>
+
+<style>
+/* Section-specific filter visibility fix */
+.dashboardFilterBar.hidden,
+section.filters.hidden,
+#brokerFilters.hidden,
+#inventoryPanel.hidden,
+#dealEntryPanel.hidden,
+#usersPanel.hidden{
+  display:none!important;
+}
+
+/* Only the active section's filter bar may be visible. */
+#brokerFilters:not(.hidden),
+section.filters.dashboardFilterBar:not(.hidden){
+  display:grid!important;
+}
+</style>
+
+<style>
+.inventorySortFilter{min-width:210px}
+.inventorySortFilter select{
+  width:100%;
+  height:42px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:var(--input-bg,#0a1523);
+  color:var(--text);
+  padding:0 12px;
+  font-weight:800;
+  outline:none;
+}
+.inventorySortFilter select:focus{border-color:var(--gold)}
+.inventoryMeterAfterDiscount{color:var(--green)}
+</style>
+<style>
+.healthBadge{display:inline-flex;align-items:center;justify-content:center;min-width:92px;padding:6px 10px;border-radius:999px;border:1px solid var(--line);font-size:10px;font-weight:900;white-space:nowrap}
+.health-critical{background:color-mix(in srgb,var(--red) 18%,transparent);border-color:color-mix(in srgb,var(--red) 40%,var(--line));color:color-mix(in srgb,var(--red) 72%,white)}
+.health-needs-review{background:color-mix(in srgb,var(--gold) 16%,transparent);border-color:color-mix(in srgb,var(--gold) 38%,var(--line));color:var(--gold-strong)}
+.health-healthy{background:color-mix(in srgb,var(--green) 16%,transparent);border-color:color-mix(in srgb,var(--green) 38%,var(--line));color:color-mix(in srgb,var(--green) 70%,white)}
+.healthIssuesCell{max-width:560px;white-space:normal!important;line-height:1.6;color:var(--text)}18%{opacity:.08}34%{opacity:1}51%{opacity:.14}70%{opacity:1}}
+@keyframes clickPanelShake{0%,100%{margin-left:0}25%{margin-left:-7px}50%{margin-left:7px}75%{margin-left:-4px}}
+
+/* Magic transition retained */
+.edenMagicTransition{position:fixed;inset:0;z-index:280;display:flex;align-items:center;justify-content:center;background:#030303;opacity:0;visibility:hidden;overflow:hidden}.edenMagicTransition.hidden{display:none!important}.edenMagicTransition.magicActive{display:flex!important;visibility:visible;opacity:1;animation:emIn .25s ease both}.edenMagicTransition.magicLeaving{animation:emOut .5s ease both}.edenMagicContent{width:min(1050px,94vw);text-align:center}.edenMagicLine{display:flex;justify-content:center;flex-wrap:wrap;gap:.28em;font-size:clamp(31px,5.7vw,82px);font-weight:950;letter-spacing:.065em}.edenMagicWord{display:inline-block;opacity:0;transform:translateY(28px) scale(.92);filter:blur(10px);color:#eee}.magicActive .edenMagicWord{animation:emWord .62s cubic-bezier(.16,1,.3,1) forwards}.magicActive .edenMagicWord:nth-child(1){animation-delay:.12s}.magicActive .edenMagicWord:nth-child(2){animation-delay:.33s}.magicActive .edenMagicWord:nth-child(3){animation-delay:.54s}.magicActive .edenMagicWord:nth-child(4){animation-delay:.76s}.edenMagicHeroWord{color:#dfba3d!important;text-shadow:0 0 22px rgba(223,186,61,.22)}.edenMagicBeam{width:0;height:1px;margin:22px auto;background:linear-gradient(90deg,transparent,#d5b23c,#fff0a4,#d5b23c,transparent);opacity:0}.magicActive .edenMagicBeam{animation:emBeam 1.2s .7s ease forwards}.edenMagicParticles{position:absolute;inset:0}.edenMagicParticle{position:absolute;width:2px;height:2px;border-radius:50%;background:#dfba3d;opacity:0;animation:emParticle var(--dur) var(--delay) ease-out forwards}@keyframes emIn{from{opacity:0}to{opacity:1}}@keyframes emOut{to{opacity:0}}@keyframes emWord{to{opacity:1;transform:none;filter:blur(0)}}@keyframes emBeam{0%{width:0;opacity:0}35%{opacity:1}80%{width:min(720px,80vw);opacity:.8}100%{width:min(800px,86vw);opacity:0}}@keyframes emParticle{0%{opacity:0;transform:translateY(30px)}25%{opacity:.8}100%{opacity:0;transform:translate(var(--x),-100px)}}
+@media(max-width:760px){.clickLampScene{height:720px;min-height:720px}.clickLampHitArea{left:50%;bottom:auto;top:0;transform:translateX(-50%) scale(.68);transform-origin:50% 0}.hiddenLoginPanel{right:auto!important;left:50%!important;top:auto!important;bottom:15px!important;width:min(350px,88vw)!important;transform:translateX(-50%) translateY(25px)!important}.lampOn .hiddenLoginPanel{transform:translateX(-50%) translateY(0)!important}.lampHint{left:50%;bottom:auto;top:350px;transform:translateX(-50%)}}
+</style>
+
+<style>
+/* EDEN BI Executive Access — isolated login layer */
+.edenAccessScreen{--eag:#d7b75f;--eat:#f5f1e7;--eam:#85817a;position:fixed;inset:0;z-index:200;display:grid;place-items:center;padding:clamp(16px,3vw,46px);overflow:hidden;background:#050505!important;color:var(--eat);isolation:isolate}
+.eaAtmos{position:absolute;inset:0;z-index:-1;overflow:hidden;pointer-events:none;background:radial-gradient(circle at 18% 15%,rgba(215,183,95,.09),transparent 29%),radial-gradient(circle at 80% 85%,rgba(215,183,95,.055),transparent 28%)}
+.eaGrid{position:absolute;inset:-40%;background-image:linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);background-size:58px 58px;transform:perspective(850px) rotateX(64deg) translateY(30%);mask-image:linear-gradient(to top,#000,transparent 70%);animation:eaGrid 18s linear infinite}
+.eaGlow{position:absolute;border-radius:50%;filter:blur(100px);opacity:.16}.g1{width:35vw;height:35vw;left:-12vw;top:-14vw;background:#8a691c}.g2{width:30vw;height:30vw;right:-12vw;bottom:-12vw;background:#725616}
+.eaShell{width:min(1180px,94vw);min-height:min(720px,88vh);display:grid;grid-template-columns:1.12fr .88fr;overflow:hidden;position:relative;border:1px solid rgba(255,255,255,.07);border-radius:32px;background:rgba(8,8,8,.84);box-shadow:0 45px 120px rgba(0,0,0,.64);backdrop-filter:blur(24px)}
+.eaShell:before{content:"";position:absolute;z-index:2;top:0;left:8%;right:8%;height:1px;background:linear-gradient(90deg,transparent,var(--eag),transparent);opacity:.7}
+.eaHero{position:relative;padding:clamp(38px,5vw,70px);display:flex;flex-direction:column;justify-content:space-between;border-right:1px solid rgba(255,255,255,.06);background:linear-gradient(145deg,rgba(215,183,95,.045),transparent 38%)}
+.eaHero:after{content:"BI";position:absolute;right:-18px;bottom:-60px;font-size:330px;line-height:.8;font-weight:950;letter-spacing:-.1em;color:rgba(255,255,255,.017)}
+.eaBrand{display:flex;align-items:center;gap:14px;font-size:10px;font-weight:900;letter-spacing:.26em;color:#ecd58f}.eaBrand i{width:42px;height:1px;background:var(--eag)}
+.eaHeroCopy{position:relative;z-index:1;margin:60px 0}.eaKicker{margin-bottom:18px;font-size:9px;font-weight:900;letter-spacing:.32em;color:var(--eag)}
+.eaHero h1{margin:0;font-size:clamp(54px,6vw,86px);line-height:.91;letter-spacing:-.055em;font-weight:800;color:#f8f6ef}.eaHero h1 span{color:transparent;-webkit-text-stroke:1px rgba(239,216,145,.78)}
+.eaHero p{max-width:485px;margin:28px 0 0;color:#8f8b83;font-size:13px;line-height:1.8}
+.eaHero footer{display:flex;justify-content:space-between;align-items:center;color:#64615b;font-size:9px;letter-spacing:.13em}.eaOnline{display:flex;align-items:center;gap:9px;font-weight:900}.eaOnline b{width:7px;height:7px;border-radius:50%;background:#79c890;box-shadow:0 0 14px rgba(121,200,144,.4);animation:eaPulse 2s infinite}
+.eaLogin{display:grid;place-items:center;padding:clamp(34px,5vw,70px);background:linear-gradient(180deg,rgba(255,255,255,.018),rgba(255,255,255,.005))}
+.eaCard{width:min(100%,410px)}.eaMobileBrand{display:none;font-size:18px;font-weight:950;letter-spacing:.14em}.eaMobileBrand span{color:var(--eag)}
+.eaTop{display:flex;justify-content:space-between;align-items:center;margin-bottom:36px;font-size:9px;font-weight:900;letter-spacing:.26em;color:var(--eag)}.eaTop time{color:#706d66;letter-spacing:.12em}
+.eaCard h2{margin:0;font-size:clamp(38px,4vw,52px);line-height:1;letter-spacing:-.045em;color:#f8f6f0}.eaCard>p{margin:14px 0 34px;color:#7d7972;font-size:12px;line-height:1.7}
+.eaField{display:grid;gap:8px;margin-bottom:18px}.eaField>span{font-size:9px;font-weight:900;letter-spacing:.17em;color:#77736c}.eaInput{position:relative}
+.eaInput>b{position:absolute;left:17px;top:50%;transform:translateY(-50%);font-size:13px;color:#77736b}.edenAccessScreen .loginInput{width:100%;height:56px;margin:0!important;padding:0 48px!important;border:1px solid rgba(255,255,255,.09)!important;border-radius:13px!important;background:rgba(255,255,255,.025)!important;color:#f7f4ec!important;outline:0;font-weight:650!important}
+.edenAccessScreen .loginInput::placeholder{color:#514f4a}.edenAccessScreen .loginInput:focus{border-color:rgba(215,183,95,.62)!important;background:rgba(215,183,95,.035)!important;box-shadow:0 0 0 4px rgba(215,183,95,.05)!important}
+.eaInput button{position:absolute;right:9px;top:50%;transform:translateY(-50%);width:38px;height:38px;border:0;border-radius:9px;background:transparent;color:#77736b;cursor:pointer}.eaInput button:hover{background:rgba(255,255,255,.04);color:#e8d18a}
+.eaButton{width:100%;height:58px;margin:7px 0 0!important;padding:0 18px!important;display:flex;align-items:center;justify-content:space-between;border:1px solid rgba(240,217,141,.34)!important;border-radius:13px!important;background:linear-gradient(135deg,#c6a447,#e2c873)!important;color:#090806!important;font-size:10px!important;font-weight:950!important;letter-spacing:.16em;box-shadow:0 14px 34px rgba(132,99,25,.17);transition:.18s}.eaButton:hover{transform:translateY(-1px);filter:brightness(1.06)}.eaButton:disabled{opacity:.72;cursor:wait;transform:none}
+.edenAccessScreen .loginError{min-height:18px;margin:10px 0 0!important;color:#e28b8b!important;font-size:10px;font-weight:800!important}.edenAccessScreen .hiddenLoginReaction{min-height:14px;color:#67635c;font-size:9px}
+.eaSecurity{display:flex;gap:10px;align-items:center;margin-top:22px;padding-top:20px;border-top:1px solid rgba(255,255,255,.06);font-size:10px;color:#77736c}.eaSecurity>b{color:var(--eag)}.eaSecurity span{display:grid;gap:3px}.eaSecurity small{font-size:8px;color:#4f4c47;letter-spacing:.08em}
+.edenAccessScreen.loginWrong .eaCard{animation:eaShake .38s ease}.edenAccessScreen.loginWrong .loginInput{border-color:rgba(226,139,139,.42)!important}.edenAccessScreen.loginSuccess .eaShell{border-color:rgba(215,183,95,.38);box-shadow:0 45px 120px rgba(0,0,0,.64),0 0 90px rgba(215,183,95,.07)}
+.eaGranted{text-align:center;margin-bottom:14px;color:#d7b75f;font-size:10px;font-weight:900;letter-spacing:.34em}
+@keyframes eaGrid{to{transform:perspective(850px) rotateX(64deg) translateY(calc(30% + 58px))}}@keyframes eaPulse{50%{opacity:.45}}@keyframes eaShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}50%{transform:translateX(6px)}75%{transform:translateX(-3px)}}
+@media(max-width:900px){.edenAccessScreen{padding:0}.eaShell{width:100%;min-height:100vh;border:0;border-radius:0;grid-template-columns:1fr}.eaHero{display:none}.eaLogin{padding:30px 22px}.eaMobileBrand{display:block;margin-bottom:60px}}
+@media(max-width:480px){.eaMobileBrand{margin-bottom:44px}.eaTop{margin-bottom:28px}.eaCard h2{font-size:38px}}
+@media(prefers-reduced-motion:reduce){.eaGrid,.eaOnline b,.edenAccessScreen.loginWrong .eaCard{animation:none!important}}
+</style>
+
+<style>
+/* =========================================================
+   EDEN BI — COMMAND CENTER V3
+   Structural dashboard refinement. Login is untouched.
+   ========================================================= */
+
+/* Lock the desktop shell so the sidebar can never collapse/clamp its text. */
+@media (min-width:1201px){
+  #appRoot.app{
+    display:flex!important;
+    align-items:stretch;
+    width:100%;
+    min-height:100vh;
+    overflow:visible;
+  }
+  #appRoot .sidebar{
+    width:280px!important;
+    min-width:280px!important;
+    max-width:280px!important;
+    flex:0 0 280px!important;
+    left:0!important;
+    right:auto!important;
+    padding:22px 16px!important;
+    overflow-x:hidden!important;
+    overflow-y:auto!important;
+  }
+  #appRoot .sidebar .brand,
+  #appRoot .sidebar .sub,
+  #appRoot .sidebar .userBox,
+  #appRoot .sidebar .themeSwitcher,
+  #appRoot .sidebar .nav,
+  #appRoot .sidebar .module,
+  #appRoot .sidebar .moduleHeader,
+  #appRoot .sidebar .moduleMenu,
+  #appRoot .sidebar .moduleMenu button{
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+  }
+  #appRoot .sidebar .brand,
+  #appRoot .sidebar .sub,
+  #appRoot .sidebar .userBox,
+  #appRoot .sidebar button{
+    white-space:normal!important;
+    overflow:visible!important;
+    text-overflow:clip!important;
+  }
+  #appRoot .main{
+    margin-left:280px!important;
+    width:calc(100% - 280px)!important;
+    max-width:none!important;
+    padding:20px 22px 36px!important;
+    overflow:visible!important;
+  }
+}
+
+/* Header: premium but compact. */
+#appRoot .topbar{
+  min-height:78px!important;
+  margin-bottom:14px!important;
+  padding:15px 18px!important;
+  border-radius:16px!important;
+  align-items:center!important;
+}
+#appRoot .title{
+  font-size:25px!important;
+  line-height:1.05!important;
+}
+#appRoot .desc{
+  margin-top:5px!important;
+  font-size:11px!important;
+}
+#appRoot .actions{
+  gap:8px!important;
+  flex-wrap:wrap!important;
+  justify-content:flex-end!important;
+}
+#appRoot .actions .btn{
+  min-height:40px!important;
+  padding:9px 13px!important;
+  font-size:11px!important;
+}
+
+/* Filters become a compact control deck rather than a giant panel. */
+#appRoot .dashboardFilterBar,
+#appRoot .filters{
+  gap:8px!important;
+  margin-bottom:14px!important;
+}
+#appRoot .dashboardFilterBar{
+  padding:13px!important;
+  border-radius:15px!important;
+}
+#appRoot .filterLabel,
+#appRoot .filterTitle,
+#appRoot .dashboardFilterName{
+  font-size:8px!important;
+  letter-spacing:.1em!important;
+}
+#appRoot .multiBtn,
+#appRoot .filters select,
+#appRoot .filters input{
+  min-height:40px!important;
+  padding:9px 10px!important;
+  border-radius:9px!important;
+  font-size:11px!important;
+}
+
+/* Command Center */
+#appRoot #executiveHomeSection{
+  padding:16px!important;
+  margin:0 0 14px!important;
+  border-radius:17px!important;
+  min-height:0!important;
+}
+#appRoot #executiveHomeSection .execHead{
+  margin-bottom:13px!important;
+  align-items:center!important;
+}
+#appRoot #executiveHomeSection .execEyebrow{
+  margin-bottom:5px!important;
+  font-size:8px!important;
+  letter-spacing:.18em!important;
+}
+#appRoot #executiveHomeSection .execHead h2{
+  font-size:19px!important;
+  line-height:1.1!important;
+  margin:0!important;
+}
+#appRoot #executiveHomeSection .execHead p{
+  margin:5px 0 0!important;
+  font-size:10px!important;
+}
+#appRoot #executiveHomeSection .execHead .btn{
+  min-height:38px!important;
+  padding:8px 12px!important;
+  font-size:10px!important;
+}
+
+/* 7 KPIs: 3 strategic cards + 4 compact cards. */
+#appRoot #executiveKpis{
+  display:grid!important;
+  grid-template-columns:repeat(12,minmax(0,1fr))!important;
+  gap:9px!important;
+  margin-bottom:10px!important;
+}
+#appRoot #executiveKpis .execKpi{
+  grid-column:span 3;
+  min-height:82px!important;
+  padding:12px 13px!important;
+  border-radius:13px!important;
+}
+#appRoot #executiveKpis .execKpi:nth-child(-n+3){
+  grid-column:span 4;
+  min-height:92px!important;
+}
+#appRoot #executiveKpis .execLabel{
+  font-size:8px!important;
+  letter-spacing:.08em!important;
+}
+#appRoot #executiveKpis .execValue{
+  margin-top:7px!important;
+  font-size:21px!important;
+  line-height:1.05!important;
+}
+#appRoot #executiveKpis .execValue.execName{
+  font-size:15px!important;
+  line-height:1.15!important;
+}
+#appRoot #executiveKpis .execSub{
+  margin-top:6px!important;
+  font-size:9px!important;
+}
+
+/* Target progress: compact, with an explicit over-target state. */
+#appRoot .execTargetCard{
+  padding:11px 13px!important;
+  margin-bottom:10px!important;
+  border-radius:13px!important;
+}
+#appRoot .execTargetTop{
+  margin-bottom:8px!important;
+  font-size:10px!important;
+}
+#appRoot .execTargetTrack{
+  height:7px!important;
+  border-radius:99px!important;
+  overflow:hidden!important;
+}
+#appRoot .execTargetTrack i{
+  border-radius:99px!important;
+}
+#appRoot #executiveHomeSection.targetExceeded .execTargetCard{
+  border-color:rgba(89,202,142,.28)!important;
+  box-shadow:inset 0 0 0 1px rgba(89,202,142,.04)!important;
+}
+#appRoot #executiveHomeSection.targetExceeded .execTargetTrack i{
+  background:linear-gradient(90deg,#5fc78e,#a8e6bf)!important;
+}
+#appRoot #executiveHomeSection.targetExceeded #executiveTargetText{
+  color:#9edbb7!important;
+}
+
+/* Pipeline stays useful but no longer dominates the page. */
+#appRoot .execPipelineCard{
+  padding:12px 13px!important;
+  border-radius:13px!important;
+}
+#appRoot .execPipelineTitle{
+  margin-bottom:9px!important;
+  font-size:10px!important;
+}
+#appRoot #executivePipeline{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:5px 18px!important;
+}
+#appRoot .execPipeRow{
+  display:grid!important;
+  grid-template-columns:86px minmax(70px,1fr) 34px!important;
+  gap:8px!important;
+  align-items:center!important;
+  min-height:22px!important;
+  font-size:9px!important;
+}
+#appRoot .execPipeRow>div{
+  height:5px!important;
+}
+
+/* Standard KPI/cards below Command Center. */
+#appRoot .cards{
+  gap:10px!important;
+  margin-bottom:14px!important;
+}
+#appRoot .card{
+  min-height:88px!important;
+  padding:13px!important;
+  border-radius:14px!important;
+}
+#appRoot .card .label{font-size:9px!important}
+#appRoot .card .value{font-size:22px!important;margin-top:7px!important}
+#appRoot .card .small{font-size:9px!important;margin-top:4px!important}
+
+/* Charts/tables use the screen, not oversized cards. */
+#appRoot .grid{gap:12px!important;margin-bottom:14px!important}
+#appRoot .box{
+  min-height:285px!important;
+  padding:14px!important;
+  border-radius:15px!important;
+}
+#appRoot .box h3{font-size:13px!important;margin-bottom:10px!important}
+#appRoot .tableBox{border-radius:15px!important}
+#appRoot .tableHead{padding:12px 14px!important}
+#appRoot th,#appRoot td{padding:9px 10px!important;font-size:10px!important}
+
+/* Tablet */
+@media (max-width:1450px) and (min-width:1201px){
+  #appRoot #executiveKpis .execKpi{grid-column:span 6}
+  #appRoot #executiveKpis .execKpi:nth-child(-n+3){grid-column:span 4}
+}
+
+/* Existing mobile behavior retained, but Command Center remains readable. */
+@media(max-width:1200px){
+  #appRoot #executiveKpis{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #appRoot #executiveKpis .execKpi,
+  #appRoot #executiveKpis .execKpi:nth-child(-n+3){grid-column:auto!important}
+  #appRoot #executivePipeline{grid-template-columns:1fr!important}
+}
+@media(max-width:620px){
+  #appRoot #executiveKpis{grid-template-columns:1fr!important}
+  #appRoot #executiveHomeSection{padding:12px!important}
+  #appRoot #executiveHomeSection .execHead{align-items:flex-start!important}
+  #appRoot #executivePipeline{grid-template-columns:1fr!important}
+}
+</style>
+
+<style>
+/* Single-theme mode — theme switcher retired */
+#appRoot .themeSwitcher{display:none!important}
+</style>
+
+<style>
+/* ================= COMMISSIONS ================= */
+#appRoot .commissionsPanel{margin-top:14px}
+#appRoot .commHeader{
+  display:flex;justify-content:space-between;gap:18px;align-items:center;
+  padding:18px 19px;border:1px solid rgba(215,183,95,.18);border-radius:16px;
+  background:linear-gradient(145deg,var(--panel),rgba(215,183,95,.025));
+}
+#appRoot .commEyebrow{font-size:8px;font-weight:900;letter-spacing:.18em;color:#d7b75f}
+#appRoot .commHeader h2{margin:5px 0 4px;font-size:20px}
+#appRoot .commHeader p{margin:0;font-size:10px;color:var(--muted)}
+#appRoot .commLegend{
+  padding:8px 11px;border:1px solid rgba(95,199,142,.22);border-radius:999px;
+  font-size:9px;font-weight:900;color:#9edbb7;white-space:nowrap
+}
+#appRoot .commKpis{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:11px 0
+}
+#appRoot .commKpi{
+  padding:13px;border:1px solid rgba(215,183,95,.16);border-radius:13px;background:var(--panel)
+}
+#appRoot .commKpi span{display:block;font-size:8px;font-weight:900;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+#appRoot .commKpi strong{display:block;margin-top:7px;font-size:20px}
+#appRoot .commTypeGrid{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:11px
+}
+#appRoot .commTypeGrid>div{
+  display:flex;justify-content:space-between;align-items:center;padding:9px 11px;
+  border:1px solid var(--line);border-radius:10px;background:var(--panel-soft)
+}
+#appRoot .commTypeGrid span{font-size:9px;color:var(--muted);font-weight:800}
+#appRoot .commTypeGrid strong{font-size:14px}
+#appRoot .commTableWrap{
+  overflow:auto;border:1px solid rgba(215,183,95,.16);border-radius:15px;background:var(--panel)
+}
+#appRoot .commTable{width:100%;border-collapse:collapse;min-width:980px}
+#appRoot .commTable th{position:sticky;top:0;z-index:1;background:var(--panel-soft);font-size:8px;letter-spacing:.08em;text-transform:uppercase}
+#appRoot .commTable th,#appRoot .commTable td{padding:10px 11px;border-bottom:1px solid var(--line);text-align:left}
+#appRoot .commTable td{font-size:10px}
+#appRoot .commAmount{font-weight:900;white-space:nowrap}
+#appRoot .commYes{
+  display:inline-flex;align-items:center;justify-content:center;min-width:44px;padding:4px 7px;
+  border-radius:999px;background:rgba(95,199,142,.11);border:1px solid rgba(95,199,142,.22);
+  color:#9edbb7;font-size:8px;font-weight:950
+}
+#appRoot .commNo{color:var(--muted)}
+#appRoot .commEmpty{text-align:center!important;padding:30px!important;color:var(--muted)}
+@media(max-width:850px){
+  #appRoot .commKpis,#appRoot .commTypeGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #appRoot .commHeader{align-items:flex-start;flex-direction:column}
+}
+@media(max-width:520px){
+  #appRoot .commKpis,#appRoot .commTypeGrid{grid-template-columns:1fr}
+}
+</style>
+
+<style>
+/* ===== TRANSACTIONS FILTER DECK — EXACT 9 x 2 DESKTOP GRID ===== */
+@media (min-width:1500px){
+  #appRoot section.filters.dashboardFilterBar:not(.hidden){
+    grid-template-columns:repeat(9,minmax(0,1fr))!important;
+    gap:7px!important;
+    padding:10px!important;
+    margin-bottom:12px!important;
+  }
+}
+@media (min-width:1201px) and (max-width:1499px){
+  #appRoot section.filters.dashboardFilterBar:not(.hidden){
+    grid-template-columns:repeat(6,minmax(0,1fr))!important;
+    gap:7px!important;
+    padding:10px!important;
+  }
+}
+#appRoot section.filters.dashboardFilterBar .dashboardFilterName{
+  margin:0 0 4px 2px!important;
+}
+#appRoot section.filters.dashboardFilterBar .multiBtn,
+#appRoot section.filters.dashboardFilterBar .dashboardSearchBox,
+#appRoot section.filters.dashboardFilterBar .dashboardClearAll{
+  min-height:38px!important;
+  height:38px!important;
+}
+#appRoot section.filters.dashboardFilterBar .multiBtn{
+  padding:7px 9px!important;
+}
+#appRoot section.filters.dashboardFilterBar .dashboardSearchBox input{
+  min-height:36px!important;
+  height:36px!important;
+  padding-top:7px!important;
+  padding-bottom:7px!important;
+}
+</style>
+
+<style id="eden-filter-clienttype-fix-v4">
+/* FIX 1 — checkbox controls must NOT inherit the 40px filter-input height. */
+#appRoot .dashboardFilterBar .multiPanel .checkRow{
+  display:flex!important;
+  align-items:center!important;
+  gap:8px!important;
+  min-height:28px!important;
+  height:auto!important;
+  padding:4px 6px!important;
+  margin:0!important;
+  line-height:18px!important;
+}
+#appRoot .dashboardFilterBar .multiPanel .checkRow input[type="checkbox"]{
+  appearance:auto!important;
+  -webkit-appearance:checkbox!important;
+  width:14px!important;
+  height:14px!important;
+  min-width:14px!important;
+  min-height:14px!important;
+  max-width:14px!important;
+  max-height:14px!important;
+  padding:0!important;
+  margin:0!important;
+  border-radius:2px!important;
+  flex:0 0 14px!important;
+}
+#appRoot .dashboardFilterBar .multiPanel .checkRow span{
+  display:block!important;
+  margin:0!important;
+  padding:0!important;
+  line-height:18px!important;
+}
+
+/* Compact dropdown chrome too. */
+#appRoot .dashboardFilterBar .multiPanel{
+  padding:8px!important;
+}
+#appRoot .dashboardFilterBar .multiActions{
+  margin-bottom:6px!important;
+}
+#appRoot .dashboardFilterBar .multiSearchWrap{
+  padding-bottom:6px!important;
+}
+#appRoot .dashboardFilterBar .multiSearchInput{
+  min-height:32px!important;
+  height:32px!important;
+  padding:6px 8px!important;
+}
+
+/* Keep the filter deck compact. */
+#appRoot section.filters.dashboardFilterBar{
+  gap:7px!important;
+  padding:10px!important;
+}
+@media(min-width:1500px){
+  #appRoot section.filters.dashboardFilterBar{grid-template-columns:repeat(9,minmax(0,1fr))!important}
+}
+@media(min-width:1201px) and (max-width:1499px){
+  #appRoot section.filters.dashboardFilterBar{grid-template-columns:repeat(6,minmax(0,1fr))!important}
+}
+</style>
+
+
+<style>
+/* =========================================================
+   EDEN BI — EXECUTIVE KPI CARDS V2
+   Scope: .cards > .card only
+   ========================================================= */
+.cards{
+  display:grid!important;
+  grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  gap:12px!important;
+  margin-bottom:18px!important;
+}
+.cards .card{
+  position:relative!important;
+  display:grid!important;
+  grid-template-columns:44px minmax(0,1fr) 24px!important;
+  grid-template-rows:auto auto auto!important;
+  column-gap:12px!important;
+  align-items:center!important;
+  min-width:0!important;
+  min-height:104px!important;
+  padding:14px 14px!important;
+  overflow:hidden!important;
+  border:1px solid #284158!important;
+  border-radius:15px!important;
+  background:linear-gradient(145deg,#12263a 0%,#0d1d2d 62%,#0a1724 100%)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.025),0 8px 22px rgba(0,0,0,.14)!important;
+}
+.cards .card::before{
+  content:""!important;
+  position:static!important;
+  grid-column:1!important;
+  grid-row:1/4!important;
+  width:42px!important;
+  height:42px!important;
+  align-self:center!important;
+  justify-self:center!important;
+  border-radius:12px!important;
+  border:1px solid rgba(100,180,255,.15)!important;
+  background:
+    radial-gradient(circle at 35% 28%,rgba(255,255,255,.12),transparent 30%),
+    rgba(70,150,230,.13)!important;
+  opacity:1!important;
+}
+.cards .card::after{
+  content:""!important;
+  position:static!important;
+  grid-column:3!important;
+  grid-row:1/4!important;
+  width:22px!important;
+  height:25px!important;
+  align-self:center!important;
+  justify-self:end!important;
+  background:
+    linear-gradient(to top,#7386c8 0 100%) 0 100%/4px 8px no-repeat,
+    linear-gradient(to top,#8495dd 0 100%) 9px 100%/4px 15px no-repeat,
+    linear-gradient(to top,#98a5ed 0 100%) 18px 100%/4px 23px no-repeat!important;
+  opacity:.95!important;
+}
+.cards .label,
+.cards .value,
+.cards .small{
+  grid-column:2!important;
+  min-width:0!important;
+  position:relative!important;
+  z-index:2!important;
+}
+.cards .label{
+  grid-row:1!important;
+  align-self:end!important;
+  margin:0!important;
+  color:#9cb4ca!important;
+  font-size:9px!important;
+  line-height:1.15!important;
+  font-weight:900!important;
+  letter-spacing:.035em!important;
+  text-transform:uppercase!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+.cards .value{
+  grid-row:2!important;
+  align-self:center!important;
+  margin:5px 0 3px!important;
+  color:#f0c85d!important;
+  font-size:23px!important;
+  line-height:1!important;
+  font-weight:950!important;
+  letter-spacing:-.035em!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  text-shadow:0 0 16px rgba(240,200,93,.10)!important;
+}
+.cards .small{
+  grid-row:3!important;
+  align-self:start!important;
+  margin:0!important;
+  color:#6f8da8!important;
+  font-size:8px!important;
+  line-height:1.25!important;
+  font-weight:650!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+
+/* Real icon is drawn inside its own grid cell; it can never overlap the value. */
+.cards .label::before{
+  position:absolute!important;
+  left:-46px!important;
+  top:20px!important;
+  width:20px!important;
+  text-align:center!important;
+  transform:none!important;
+  color:#65b8ff!important;
+  font-size:17px!important;
+  line-height:1!important;
+  font-weight:950!important;
+  letter-spacing:0!important;
+  text-transform:none!important;
+  pointer-events:none!important;
+}
+.cards .card:nth-child(5n+1) .label::before{content:"◆"!important;color:#62b6ff!important}
+.cards .card:nth-child(5n+2) .label::before{content:"$"!important;color:#e5bd58!important;font-size:18px!important}
+.cards .card:nth-child(5n+3) .label::before{content:"●"!important;color:#4fd39a!important;font-size:15px!important}
+.cards .card:nth-child(5n+4) .label::before{content:"▦"!important;color:#ad83ff!important}
+.cards .card:nth-child(5n+5) .label::before{content:"▣"!important;color:#6da7ff!important}
+
+.cards .card:nth-child(5n+1)::before{background:rgba(58,143,226,.14)!important;border-color:rgba(98,182,255,.15)!important}
+.cards .card:nth-child(5n+2)::before{background:rgba(221,181,78,.13)!important;border-color:rgba(229,189,88,.15)!important}
+.cards .card:nth-child(5n+3)::before{background:rgba(57,200,139,.13)!important;border-color:rgba(79,211,154,.15)!important}
+.cards .card:nth-child(5n+4)::before{background:rgba(157,105,240,.13)!important;border-color:rgba(173,131,255,.15)!important}
+.cards .card:nth-child(5n+5)::before{background:rgba(87,130,229,.14)!important;border-color:rgba(109,167,255,.15)!important}
+
+.cards .card:nth-child(5n+2)::after{filter:hue-rotate(32deg) saturate(1.2)}
+.cards .card:nth-child(5n+3)::after{filter:hue-rotate(80deg) saturate(1.25)}
+.cards .card:nth-child(5n+4)::after{filter:hue-rotate(285deg) saturate(1.2)}
+.cards .card:nth-child(5n+5)::after{filter:hue-rotate(255deg) saturate(1.15)}
+
+.cards .card:hover{
+  transform:translateY(-2px)!important;
+  border-color:#3a5c78!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035),0 13px 28px rgba(0,0,0,.22)!important;
+}
+
+/* 19 cards => 5 + 5 + 5 + 4. Center the final four instead of leaving one card alone. */
+.cards .card:nth-last-child(4):nth-child(5n+1){grid-column:1}
+.cards .card:nth-last-child(4):nth-child(5n+1) ~ .card:last-child{}
+
+/* responsive */
+@media(max-width:1550px){
+  .cards{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+}
+@media(max-width:1220px){
+  .cards{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+}
+@media(max-width:850px){
+  .cards{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:520px){
+  .cards{grid-template-columns:1fr!important}
+}
+</style>
+
+
+<style>
+/* =========================================================
+   DEALS DETAILS COMPACT V15 — correct target: #mainTable
+   ========================================================= */
+
+/* The previous version targeted #tableBox, but Deals Details
+   uses class="tableBox" and the actual table id is mainTable. */
+#mainTable{
+  width:max-content !important;
+  min-width:100% !important;
+  table-layout:auto !important;
+}
+
+#mainTable th,
+#mainTable td{
+  padding:7px 4px !important;
+  font-size:11px !important;
+  line-height:1.1 !important;
+}
+
+/* Remove unnecessary minimum width from compact columns */
+#mainTable th,
+#mainTable td{
+  min-width:0 !important;
+}
+
+/* Client name stays readable without wasting excessive width */
+#mainTable th:nth-child(2),
+#mainTable td:nth-child(2){
+  min-width:205px !important;
+  max-width:250px !important;
+}
+
+/* Mobile */
+#mainTable th:nth-child(3),
+#mainTable td:nth-child(3){
+  min-width:92px !important;
+}
+
+/* Very compact fields */
+#mainTable th:nth-child(7), #mainTable td:nth-child(7),
+#mainTable th:nth-child(9), #mainTable td:nth-child(9),
+#mainTable th:nth-child(10), #mainTable td:nth-child(10),
+#mainTable th:nth-child(12), #mainTable td:nth-child(12),
+#mainTable th:nth-child(13), #mainTable td:nth-child(13),
+#mainTable th:nth-child(14), #mainTable td:nth-child(14),
+#mainTable th:nth-child(15), #mainTable td:nth-child(15),
+#mainTable th:nth-child(16), #mainTable td:nth-child(16),
+#mainTable th:nth-child(17), #mainTable td:nth-child(17),
+#mainTable th:nth-child(18), #mainTable td:nth-child(18),
+#mainTable th:nth-child(19), #mainTable td:nth-child(19){
+  padding-left:3px !important;
+  padding-right:3px !important;
+}
+
+/* Status pill */
+#mainTable .chip{
+  padding:3px 6px !important;
+  font-size:9px !important;
+}
+
+/* Deals Details wrapper: horizontal scroll only when truly needed */
+#mainTable.closest-table-placeholder{display:initial}
+.tableBox:has(#mainTable) .tableWrap{
+  overflow-x:auto;
+}
+</style>
+
+
+<style>
+/* =========================================================
+   DEALS DETAILS — TRUE COMPACT WIDTH V16
+   Fixes V15 table expansion.
+   ========================================================= */
+
+/* Do NOT force the table to fill 100% width.
+   Let every column take only the width its content needs. */
+#mainTable{
+  width:auto !important;
+  min-width:0 !important;
+  table-layout:auto !important;
+  border-collapse:collapse !important;
+  white-space:nowrap !important;
+}
+
+#mainTable th,
+#mainTable td{
+  min-width:0 !important;
+  width:auto !important;
+  padding:7px 5px !important;
+  white-space:nowrap !important;
+}
+
+/* Project */
+#mainTable th:nth-child(1),
+#mainTable td:nth-child(1){
+  padding-left:5px !important;
+  padding-right:8px !important;
+}
+
+/* Client Name — enough room, but no giant empty gap */
+#mainTable th:nth-child(2),
+#mainTable td:nth-child(2){
+  min-width:0 !important;
+  max-width:260px !important;
+  padding-left:8px !important;
+  padding-right:10px !important;
+}
+
+/* Mobile — remove the large forced width */
+#mainTable th:nth-child(3),
+#mainTable td:nth-child(3){
+  min-width:0 !important;
+  padding-left:6px !important;
+  padding-right:10px !important;
+}
+
+/* Compact all remaining fields */
+#mainTable th:nth-child(n+4),
+#mainTable td:nth-child(n+4){
+  padding-left:5px !important;
+  padding-right:5px !important;
+}
+
+/* Numeric fields can be even tighter */
+#mainTable th:nth-child(10),
+#mainTable td:nth-child(10),
+#mainTable th:nth-child(12),
+#mainTable td:nth-child(12),
+#mainTable th:nth-child(13),
+#mainTable td:nth-child(13),
+#mainTable th:nth-child(14),
+#mainTable td:nth-child(14),
+#mainTable th:nth-child(15),
+#mainTable td:nth-child(15),
+#mainTable th:nth-child(16),
+#mainTable td:nth-child(16),
+#mainTable th:nth-child(17),
+#mainTable td:nth-child(17),
+#mainTable th:nth-child(18),
+#mainTable td:nth-child(18),
+#mainTable th:nth-child(19),
+#mainTable td:nth-child(19){
+  padding-left:3px !important;
+  padding-right:3px !important;
+}
+
+#mainTable .chip{
+  padding:3px 6px !important;
+}
+
+/* The wrapper scrolls only after all columns have used their natural compact width. */
+.tableBox:has(#mainTable) .tableWrap{
+  overflow-x:auto !important;
+}
+</style>
+
+
+<style>
+/* =========================================================
+   DEALS DETAILS — SHRINK-TO-CONTENT V17
+   Prevent the browser from stretching columns to fill the screen.
+   ========================================================= */
+#mainTable{
+  display:inline-table !important;
+  width:max-content !important;
+  min-width:max-content !important;
+  max-width:none !important;
+  table-layout:auto !important;
+}
+
+/* Every cell uses only its content width + small padding */
+#mainTable th,
+#mainTable td{
+  width:1% !important;
+  min-width:0 !important;
+  max-width:none !important;
+  padding-left:4px !important;
+  padding-right:4px !important;
+  white-space:nowrap !important;
+}
+
+/* Client Name needs only a little breathing room */
+#mainTable th:nth-child(2),
+#mainTable td:nth-child(2){
+  width:1% !important;
+  min-width:0 !important;
+  max-width:none !important;
+  padding-left:5px !important;
+  padding-right:8px !important;
+}
+
+/* Mobile: explicitly prevent the huge empty column */
+#mainTable th:nth-child(3),
+#mainTable td:nth-child(3){
+  width:1% !important;
+  min-width:0 !important;
+  max-width:115px !important;
+  padding-left:4px !important;
+  padding-right:8px !important;
+}
+
+/* The table wrapper owns horizontal scrolling */
+.tableBox:has(#mainTable) .tableWrap{
+  overflow-x:auto !important;
+  text-align:left !important;
+}
+</style>
+
+
+<style id="eden-smart-filter-search-v21">
+/* Search fix: previous .checkRow display:flex!important prevented JS inline display:none. */
+#appRoot .dashboardFilterBar .multiPanel .checkRow.edenSearchHidden,
+.multiPanel .checkRow.edenSearchHidden{
+  display:none!important;
+}
+
+/* Predictive autocomplete suggestion */
+.multiSearchWrap{
+  position:relative;
+}
+.edenFilterSuggestion{
+  width:100%;
+  margin:5px 0 7px;
+  min-height:32px;
+  border:1px solid var(--line);
+  border-radius:9px;
+  background:var(--panel2);
+  color:var(--text);
+  display:flex;
+  align-items:center;
+  gap:7px;
+  padding:6px 8px;
+  cursor:pointer;
+  text-align:left;
+}
+.edenFilterSuggestion[hidden]{
+  display:none!important;
+}
+.edenFilterSuggestion span{
+  color:var(--muted);
+  font-size:9px;
+  text-transform:uppercase;
+  letter-spacing:.6px;
+}
+.edenFilterSuggestion b{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  flex:1;
+  font-size:11px;
+}
+.edenFilterSuggestion small{
+  color:var(--gold);
+  font-size:9px;
+  white-space:nowrap;
+}
+</style>
+
+<style id="eden-broker-performance-center-v22">
+.brokerPerformanceCenter{margin:18px 0;background:var(--panel);border:1px solid var(--line);border-radius:18px;overflow:hidden}
+.brokerCenterHead{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;padding:18px;border-bottom:1px solid var(--line)}
+.brokerCenterHead h3{margin:3px 0 4px;font-size:18px}.brokerEyebrow{font-size:9px;letter-spacing:1.2px;color:var(--gold);font-weight:900}
+.brokerCenterActions select{min-width:210px;background:var(--input-bg);color:var(--text);border:1px solid var(--line);border-radius:9px;padding:9px 10px}
+.brokerKpiGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--line)}
+.brokerKpiGrid article{background:var(--panel-soft);border:1px solid var(--line);border-radius:12px;padding:12px;min-width:0}
+.brokerKpiGrid span{display:block;color:var(--muted);font-size:9px;font-weight:900;letter-spacing:.7px}
+.brokerKpiGrid b{display:block;font-size:18px;margin:5px 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.brokerKpiGrid small{color:var(--muted);font-size:9px}
+.brokerCenterTableWrap{overflow:auto;max-height:540px;position:relative}.brokerCenterTable{width:max-content;min-width:100%;border-collapse:collapse}
+.brokerCenterTable th,.brokerCenterTable td{padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap;text-align:left;font-size:11px}
+.brokerCenterTable th{position:sticky;top:0;z-index:2;background:#18283d;color:#b8d7fa}
+.brokerRank{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;border-radius:7px;background:var(--panel-soft);border:1px solid var(--line);font-weight:900}
+.brokerCompanyLink{border:0;background:transparent;color:var(--text);font:inherit;font-weight:900;padding:0;cursor:pointer}.brokerCompanyLink:hover{color:var(--gold);text-decoration:underline}
+.brokerMoney{font-weight:800}.brokerRate{display:inline-block;padding:3px 7px;border-radius:999px;font-weight:900;font-size:9px}
+.brokerRate.good{background:rgba(45,180,110,.14);color:#7fe0aa}.brokerRate.warn{background:rgba(225,169,59,.14);color:#f0c66b}.brokerRate.bad{background:rgba(220,70,70,.14);color:#ff9a9a}
+@media(max-width:900px){.brokerKpiGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.brokerCenterHead{align-items:stretch;flex-direction:column}.brokerCenterActions select{width:100%}}
+</style>
+
+
+<style id="eden-broker-dashboard-v24">
+/* Broker Performance is a dedicated BROKERS page. */
+.brokerPerformanceCenter{
+  margin:0 0 18px;
+  background:transparent;
+  border:0;
+  border-radius:0;
+  overflow:visible;
+}
+.brokerCenterHead{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:16px;
+  padding:16px 17px;
+  margin-bottom:10px;
+  border:1px solid var(--line);
+  border-radius:15px;
+  background:var(--panel);
+}
+.brokerCenterHead h3{margin:3px 0 4px;font-size:19px}
+.brokerCenterActions{display:flex;gap:8px;flex-wrap:wrap}
+.brokerCenterActions select{
+  min-width:205px;
+  background:var(--input-bg);
+  color:var(--text);
+  border:1px solid var(--line);
+  border-radius:9px;
+  padding:9px 10px;
+}
+
+.brokerPerfFilters{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(150px,1fr)) auto;
+  gap:8px;
+  align-items:end;
+  padding:11px 12px;
+  margin-bottom:10px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:var(--panel);
+}
+.brokerPerfFilters label{display:flex;flex-direction:column;gap:5px;min-width:0}
+.brokerPerfFilters label>span{
+  color:var(--muted);font-size:9px;font-weight:900;letter-spacing:.065em;text-transform:uppercase;
+}
+.brokerPerfFilters select{
+  width:100%;height:39px;
+  border:1px solid var(--line);border-radius:9px;
+  background:var(--input-bg);color:var(--text);padding:0 9px;outline:none;
+}
+.brokerPerfClear{
+  height:39px;border:1px solid rgba(240,201,94,.28);border-radius:9px;
+  background:rgba(240,201,94,.08);color:var(--gold);font-weight:900;cursor:pointer;padding:0 14px;
+}
+
+.brokerKpiGridV24{
+  display:grid;
+  grid-template-columns:repeat(7,minmax(125px,1fr));
+  gap:9px;
+  padding:0;
+  margin-bottom:10px;
+  border:0;
+}
+.brokerKpiGridV24 article{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:13px;
+  padding:12px 13px;
+  min-width:0;
+}
+.brokerKpiGridV24 span{display:block;color:var(--muted);font-size:8px;font-weight:950;letter-spacing:.06em}
+.brokerKpiGridV24 b{
+  display:block;margin:5px 0 2px;color:var(--text);font-size:17px;font-weight:950;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.brokerKpiGridV24 article:nth-child(4) b,
+.brokerKpiGridV24 article:nth-child(5) b{color:var(--gold)}
+.brokerKpiGridV24 small{color:var(--muted);font-size:8px}
+
+.brokerChartGrid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+  margin-bottom:10px;
+}
+.brokerChartCard{
+  min-width:0;
+  padding:13px 14px 10px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:var(--panel);
+}
+.brokerChartCard.brokerSpan2{grid-column:span 2}
+.brokerChartHead{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px;
+}
+.brokerChartHead span,.brokerTableTitle span{
+  display:block;color:var(--muted);font-size:8px;font-weight:950;letter-spacing:.075em;
+}
+.brokerChartHead h4,.brokerTableTitle h4{
+  margin:3px 0 0;color:var(--text);font-size:13px;
+}
+.brokerChartHead>b{color:var(--gold);font-size:9px}
+.brokerChartCanvas{height:270px;position:relative}
+.brokerChartCard.brokerSpan2 .brokerChartCanvas{height:300px}
+.brokerTrendCanvas{height:285px!important}
+.brokerMatrixCanvas{height:310px!important}
+
+.brokerTableTitle{
+  display:flex;align-items:flex-end;justify-content:space-between;gap:12px;
+  padding:14px 16px 10px;border:1px solid var(--line);border-bottom:0;
+  border-radius:14px 14px 0 0;background:var(--panel);
+}
+.brokerTableTitle small{color:var(--muted);font-size:9px}
+.brokerCenterTableWrap{
+  overflow:auto;
+  max-height:560px;
+  position:relative;
+  border:1px solid var(--line);
+  border-radius:0 0 14px 14px;
+  background:var(--panel);
+}
+.brokerCenterTable{width:max-content;min-width:100%;border-collapse:collapse}
+.brokerCenterTable th,.brokerCenterTable td{
+  padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap;text-align:left;font-size:11px
+}
+.brokerCenterTable th{position:sticky;top:0;z-index:2;background:#18283d;color:#b8d7fa}
+.brokerRank{
+  display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;
+  border-radius:7px;background:var(--panel-soft);border:1px solid var(--line);font-weight:900
+}
+.brokerCompanyLink{
+  border:0;background:transparent;color:var(--text);font:inherit;font-weight:900;padding:0;cursor:pointer
+}
+.brokerCompanyLink:hover{color:var(--gold);text-decoration:underline}
+.brokerMoney{font-weight:800}
+.brokerRate{display:inline-block;padding:3px 7px;border-radius:999px;font-weight:900;font-size:9px}
+.brokerRate.good{background:rgba(45,180,110,.14);color:#7fe0aa}
+.brokerRate.warn{background:rgba(225,169,59,.14);color:#f0c66b}
+.brokerRate.bad{background:rgba(220,70,70,.14);color:#ff9a9a}
+
+@media(max-width:1450px){
+  .brokerKpiGridV24{grid-template-columns:repeat(4,minmax(130px,1fr))}
+  .brokerPerfFilters{grid-template-columns:repeat(3,minmax(150px,1fr))}
+}
+@media(max-width:950px){
+  .brokerCenterHead{align-items:stretch;flex-direction:column}
+  .brokerCenterActions select{width:100%}
+  .brokerPerfFilters{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .brokerKpiGridV24{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .brokerChartGrid{grid-template-columns:1fr}
+  .brokerChartCard.brokerSpan2{grid-column:auto}
+}
+@media(max-width:620px){
+  .brokerPerfFilters,.brokerKpiGridV24{grid-template-columns:1fr}
+  .brokerTableTitle{align-items:flex-start;flex-direction:column}
+}
+</style>
+
+<style id="eden-broker-company-360-v25">
+.brokerLegacyCompanyLink{
+  border:0;background:transparent;color:var(--text);font:inherit;font-weight:900;
+  padding:0;cursor:pointer;text-decoration:none
+}
+.brokerLegacyCompanyLink:hover{color:var(--gold);text-decoration:underline}
+
+.brokerCompanyDetailPanel{margin:0 0 18px}
+.brokerCompanyDetailHead{
+  display:flex;align-items:flex-start;gap:16px;padding:16px 17px;margin-bottom:10px;
+  border:1px solid var(--line);border-radius:15px;background:var(--panel)
+}
+.brokerBackBtn{
+  flex:0 0 auto;height:38px;border:1px solid rgba(240,201,94,.28);border-radius:9px;
+  background:rgba(240,201,94,.08);color:var(--gold);padding:0 13px;font-weight:900;cursor:pointer
+}
+.brokerBackBtn:hover{background:rgba(240,201,94,.15)}
+.brokerCompanyDetailTitle{min-width:0}
+.brokerCompanyDetailTitle>span,.brokerCompanyBoxHead span{
+  display:block;color:var(--muted);font-size:8px;font-weight:950;letter-spacing:.085em
+}
+.brokerCompanyDetailTitle h2{margin:4px 0;color:var(--text);font-size:20px}
+.brokerCompanyDetailTitle p{margin:0;color:var(--muted);font-size:10px;line-height:1.5}
+
+.brokerCompanyDetailKpis{
+  display:grid;grid-template-columns:repeat(6,minmax(125px,1fr));gap:9px;margin-bottom:10px
+}
+.brokerCompanyDetailKpis article{
+  min-width:0;padding:12px 13px;border:1px solid var(--line);border-radius:13px;background:var(--panel)
+}
+.brokerCompanyDetailKpis span{display:block;color:var(--muted);font-size:8px;font-weight:950;letter-spacing:.06em}
+.brokerCompanyDetailKpis b{
+  display:block;margin:5px 0 2px;color:var(--text);font-size:16px;font-weight:950;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+.brokerCompanyDetailKpis article:nth-child(2) b,
+.brokerCompanyDetailKpis article:nth-child(3) b{color:var(--gold)}
+.brokerCompanyDetailKpis small{color:var(--muted);font-size:8px}
+
+.brokerCompanyProfileBox,.brokerCompanyDealsBox{
+  border:1px solid var(--line);border-radius:14px;background:var(--panel);margin-bottom:10px;overflow:hidden
+}
+.brokerCompanyBoxHead{
+  display:flex;align-items:flex-end;justify-content:space-between;gap:12px;
+  padding:13px 15px;border-bottom:1px solid var(--line)
+}
+.brokerCompanyBoxHead h3{margin:3px 0 0;font-size:13px;color:var(--text)}
+.brokerCompanyStatus{
+  display:inline-flex;padding:5px 8px;border:1px solid var(--line);border-radius:999px;
+  background:var(--panel-soft);color:var(--text);font-size:9px;font-weight:900
+}
+.brokerCompanyProfileGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;padding:4px 15px 14px}
+.brokerCompanyProfileItem{min-width:0;padding:11px 12px;border-bottom:1px solid rgba(120,153,181,.11)}
+.brokerCompanyProfileItem span{
+  display:block;color:var(--muted);font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:.05em
+}
+.brokerCompanyProfileItem b{
+  display:block;margin-top:5px;color:var(--text);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+.brokerCompanyExternal{color:var(--gold);text-decoration:none}
+.brokerCompanyExternal:hover{text-decoration:underline}
+
+.brokerCompanyDealsWrap{overflow:auto;max-height:560px;position:relative}
+.brokerCompanyDealsTable{width:max-content;min-width:100%;border-collapse:collapse}
+.brokerCompanyDealsTable th,.brokerCompanyDealsTable td{
+  padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap;text-align:left;font-size:11px
+}
+.brokerCompanyDealsTable th{position:sticky;top:0;z-index:2;background:#18283d;color:#b8d7fa}
+.brokerCompanyDealMoney{font-weight:900;color:var(--gold)}
+.brokerCompanyDealsEmpty{padding:32px;text-align:center;color:var(--muted);font-size:11px}
+
+@media(max-width:1300px){
+  .brokerCompanyDetailKpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .brokerCompanyProfileGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:760px){
+  .brokerCompanyDetailHead{flex-direction:column}
+  .brokerBackBtn{width:100%}
+  .brokerCompanyDetailKpis,.brokerCompanyProfileGrid{grid-template-columns:1fr}
+}
+</style>
+
+<style id="eden-broker-workspace-v28">
+.brokerUtilityPanel{margin:0 0 18px}
+.brokerUtilityHead{
+  display:flex;align-items:flex-end;justify-content:space-between;gap:16px;
+  padding:16px 17px;margin-bottom:10px;border:1px solid var(--line);border-radius:15px;background:var(--panel)
+}
+.brokerUtilityHead>div:first-child>span,.brokerUtilityTableHead span{
+  display:block;color:var(--muted);font-size:8px;font-weight:950;letter-spacing:.085em
+}
+.brokerUtilityHead h2{margin:4px 0;color:var(--text);font-size:20px}
+.brokerUtilityHead p{margin:0;color:var(--muted);font-size:10px}
+.brokerUtilityCount{color:var(--gold);font-size:11px;font-weight:900;white-space:nowrap}
+
+.brokerUtilityKpis{
+  display:grid;grid-template-columns:repeat(5,minmax(130px,1fr));gap:9px;margin-bottom:10px
+}
+.brokerUtilityKpis article{
+  min-width:0;padding:12px 13px;border:1px solid var(--line);border-radius:13px;background:var(--panel)
+}
+.brokerUtilityKpis span{display:block;color:var(--muted);font-size:8px;font-weight:950;letter-spacing:.06em}
+.brokerUtilityKpis b{
+  display:block;margin:5px 0 2px;color:var(--text);font-size:17px;font-weight:950;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+.brokerUtilityKpis small{color:var(--muted);font-size:8px}
+
+.brokerUtilityTableBox{border:1px solid var(--line);border-radius:14px;background:var(--panel);overflow:hidden}
+.brokerUtilityTableHead{
+  display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:13px 15px;border-bottom:1px solid var(--line)
+}
+.brokerUtilityTableHead h3{margin:3px 0 0;font-size:13px;color:var(--text)}
+.brokerUtilityTableWrap{overflow:auto;max-height:610px}
+.brokerUtilityTable{width:max-content;min-width:100%;border-collapse:collapse}
+.brokerUtilityTable th,.brokerUtilityTable td{
+  padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap;text-align:left;font-size:11px
+}
+.brokerUtilityTable th{position:sticky;top:0;z-index:2;background:#18283d;color:#b8d7fa}
+.brokerUtilityTable tr:hover{background:rgba(255,255,255,.025)}
+
+.brokerDirectoryCompany{
+  border:0;background:transparent;color:var(--text);font:inherit;font-weight:900;padding:0;cursor:pointer
+}
+.brokerDirectoryCompany:hover{color:var(--gold);text-decoration:underline}
+.brokerDirectoryLink{color:var(--gold);text-decoration:none;font-weight:800}
+.brokerDirectoryLink:hover{text-decoration:underline}
+
+.brokerUtilityEmpty{padding:34px;text-align:center;color:var(--muted);font-size:11px}
+.brokerUtilityProgress{
+  width:120px;height:6px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;margin-bottom:4px
+}
+.brokerUtilityProgress i{display:block;height:100%;background:var(--gold);border-radius:999px}
+.brokerUtilityHealth{
+  display:inline-flex;padding:4px 8px;border-radius:999px;font-size:9px;font-weight:900
+}
+.brokerUtilityHealth.good{background:rgba(45,180,110,.14);color:#7fe0aa}
+.brokerUtilityHealth.warn{background:rgba(225,169,59,.14);color:#f0c66b}
+.brokerUtilityIssues{max-width:420px;white-space:normal!important;line-height:1.45;color:var(--muted)}
+
+@media(max-width:1200px){
+  .brokerUtilityKpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:760px){
+  .brokerUtilityHead{align-items:flex-start;flex-direction:column}
+  .brokerUtilityKpis{grid-template-columns:1fr}
+}
+</style>
+
+<style id="eden-broker-overview-v29">
+.brokerOverviewCharts{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+  margin-bottom:10px;
+}
+.brokerOverviewChartCard{
+  min-width:0;
+  padding:13px 14px 10px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:var(--panel);
+}
+.brokerOverviewChartHead span{
+  display:block;
+  color:var(--muted);
+  font-size:8px;
+  font-weight:950;
+  letter-spacing:.075em;
+}
+.brokerOverviewChartHead h3{
+  margin:3px 0 8px;
+  color:var(--text);
+  font-size:13px;
+}
+.brokerOverviewCanvas{
+  position:relative;
+  height:265px;
+}
+@media(max-width:900px){
+  .brokerOverviewCharts{grid-template-columns:1fr}
+}
+</style>
+
+<style id="eden-broker-sales-overview-v30">
+.brokerOverviewSalesWorkspace{margin-bottom:10px}
+
+.brokerOverviewFilterBar{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(140px,1fr)) auto;
+  gap:8px;
+  align-items:end;
+  padding:11px 12px;
+  margin-bottom:10px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:var(--panel);
+}
+.brokerOverviewFilterBar label{
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  min-width:0;
+}
+.brokerOverviewFilterBar label>span{
+  color:var(--muted);
+  font-size:9px;
+  font-weight:950;
+  letter-spacing:.07em;
+  text-transform:uppercase;
+}
+.brokerOverviewFilterBar select{
+  width:100%;
+  height:40px;
+  padding:0 9px;
+  border:1px solid var(--line);
+  border-radius:9px;
+  background:var(--input-bg);
+  color:var(--text);
+  outline:none;
+}
+.brokerOverviewClear{
+  height:40px;
+  padding:0 14px;
+  border:1px solid rgba(240,201,94,.28);
+  border-radius:9px;
+  background:rgba(240,201,94,.08);
+  color:var(--gold);
+  font-weight:900;
+  cursor:pointer;
+}
+
+.brokerOverviewSalesKpis{
+  display:grid;
+  grid-template-columns:repeat(6,minmax(130px,1fr));
+  gap:9px;
+  margin-bottom:10px;
+}
+.brokerOverviewSalesKpis article{
+  min-width:0;
+  padding:12px 13px;
+  border:1px solid var(--line);
+  border-radius:13px;
+  background:var(--panel);
+}
+.brokerOverviewSalesKpis span{
+  display:block;
+  color:var(--muted);
+  font-size:8px;
+  font-weight:950;
+  letter-spacing:.06em;
+}
+.brokerOverviewSalesKpis b{
+  display:block;
+  margin:5px 0 2px;
+  color:var(--text);
+  font-size:17px;
+  font-weight:950;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.brokerOverviewSalesKpis article:nth-child(3) b,
+.brokerOverviewSalesKpis article:nth-child(4) b{
+  color:var(--gold);
+}
+.brokerOverviewSalesKpis small{
+  display:block;
+  color:var(--muted);
+  font-size:8px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.brokerOverviewSalesCharts{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+  margin-bottom:10px;
+}
+.brokerOverviewSalesCard{
+  min-width:0;
+  padding:13px 14px 10px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:var(--panel);
+}
+.brokerOverviewSalesCard.brokerOverviewWide{
+  grid-column:span 2;
+}
+.brokerOverviewSalesHead{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:10px;
+  margin-bottom:8px;
+}
+.brokerOverviewSalesHead span{
+  display:block;
+  color:var(--muted);
+  font-size:8px;
+  font-weight:950;
+  letter-spacing:.075em;
+}
+.brokerOverviewSalesHead h3{
+  margin:3px 0 0;
+  color:var(--text);
+  font-size:13px;
+}
+.brokerOverviewSalesHead>b{
+  color:var(--gold);
+  font-size:9px;
+}
+.brokerOverviewSalesCanvas{
+  position:relative;
+  height:285px;
+}
+.brokerOverviewWide .brokerOverviewSalesCanvas{
+  height:310px;
+}
+.brokerOverviewTrendCanvas{
+  height:300px!important;
+}
+.brokerOverviewDealMoney{
+  color:var(--gold);
+  font-weight:900;
+}
+
+@media(max-width:1450px){
+  .brokerOverviewFilterBar{grid-template-columns:repeat(3,minmax(140px,1fr))}
+  .brokerOverviewSalesKpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:900px){
+  .brokerOverviewSalesCharts{grid-template-columns:1fr}
+  .brokerOverviewSalesCard.brokerOverviewWide{grid-column:auto}
+  .brokerOverviewFilterBar{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:620px){
+  .brokerOverviewFilterBar,
+  .brokerOverviewSalesKpis{grid-template-columns:1fr}
+}
+</style>
+
+
+<style id="eden-broker-overview-hard-isolation-v31">
+/* V31: Broker Overview is a sales-performance workspace only. */
+body.broker-sales-overview-mode #brokerFilters,
+body.broker-sales-overview-mode #cards,
+body.broker-sales-overview-mode #salesCurvePanel,
+body.broker-sales-overview-mode #chartsSection,
+body.broker-sales-overview-mode #transactionTableBox,
+body.broker-sales-overview-mode #newClientsYearSection{
+  display:none!important;
+}
+
+/* The custom Broker Overview workspace is the only overview content surface. */
+body.broker-sales-overview-mode #brokerUtilityPanel{
+  display:block!important;
+}
+body.broker-sales-overview-mode #brokerOverviewSalesWorkspace{
+  display:block!important;
+}
+
+/* Keep the custom sales filters directly under the Broker Overview heading. */
+body.broker-sales-overview-mode #brokerUtilityKpis{
+  display:none!important;
+}
+</style>
+
+
+<style id="eden-broker-sections-hard-clean-v32">
+/*
+  V32
+  A later global rule ".cards { display:grid!important }" was overriding
+  the normal ".hidden { display:none!important }" because both selectors
+  had the same specificity and the grid rule came later.
+*/
+
+/* General correctness: a hidden KPI grid must actually be hidden. */
+#cards.hidden,
+.cards.hidden{
+  display:none!important;
+}
+
+/* BROKERS must never expose generic Transactions UI. */
+body.broker-module-mode #cards,
+body.broker-module-mode #salesCurvePanel,
+body.broker-module-mode #chartsSection,
+body.broker-module-mode #transactionTableBox,
+body.broker-module-mode #newClientsYearSection{
+  display:none!important;
+}
+
+/* Broker-specific pages remain available. */
+body.broker-module-mode #brokerUtilityPanel:not(.hidden),
+body.broker-module-mode #brokerPerformanceCenter:not(.hidden),
+body.broker-module-mode #brokerCompanyDetailPanel:not(.hidden){
+  display:block!important;
+}
+</style>
+
+<style id="eden-broker-live-filters-v33">
+/* V33 — same live + predictive multi-select behavior used by Transactions. */
+.brokerLiveFilterGrid{
+  display:grid!important;
+  grid-template-columns:repeat(5,minmax(150px,1fr))!important;
+  gap:9px!important;
+  align-items:end!important;
+  padding:12px!important;
+  overflow:visible!important;
+}
+
+.brokerLiveMulti{
+  min-width:0;
+  position:relative;
+}
+.brokerLiveFilterName{
+  margin:0 0 6px 2px;
+  color:var(--muted);
+  font-size:9px;
+  font-weight:950;
+  letter-spacing:.07em;
+  text-transform:uppercase;
+}
+.brokerLiveBtn{
+  height:42px!important;
+  min-height:42px!important;
+  padding:0 11px!important;
+  border-radius:10px!important;
+  background:var(--input-bg)!important;
+}
+.brokerLivePanel{
+  top:68px!important;
+  right:auto!important;
+  width:310px!important;
+  max-height:390px!important;
+  z-index:250!important;
+}
+.brokerLiveActions{
+  display:flex;
+  gap:7px;
+  margin-bottom:8px;
+}
+.brokerLiveActions button{
+  flex:1;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:var(--panel2);
+  color:var(--text);
+  padding:7px 8px;
+  font-size:10px;
+  font-weight:850;
+  cursor:pointer;
+}
+.brokerLiveActions button:hover{
+  border-color:rgba(240,201,94,.45);
+  color:var(--gold);
+}
+.brokerLivePanel .multiSearchWrap{
+  margin-bottom:8px;
+}
+.brokerLivePanel .multiSearchInput{
+  width:100%;
+  height:36px;
+  min-height:36px!important;
+  padding:0 10px!important;
+  border:1px solid var(--line)!important;
+  border-radius:8px!important;
+  background:#08121e!important;
+  color:var(--text)!important;
+}
+.brokerLivePanel .checkRow{
+  display:flex!important;
+  align-items:center;
+  gap:8px;
+}
+.brokerLivePanel .checkRow.edenSearchHidden{
+  display:none!important;
+}
+.brokerLiveClear{
+  height:42px!important;
+  align-self:end;
+}
+
+.brokerOverviewLiveGrid{
+  grid-template-columns:repeat(4,minmax(155px,1fr))!important;
+}
+.brokerOverviewLiveGrid .brokerLiveClear{
+  min-width:120px;
+}
+
+@media(max-width:1450px){
+  .brokerLiveFilterGrid,
+  .brokerOverviewLiveGrid{
+    grid-template-columns:repeat(3,minmax(145px,1fr))!important;
+  }
+}
+@media(max-width:950px){
+  .brokerLiveFilterGrid,
+  .brokerOverviewLiveGrid{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+}
+@media(max-width:620px){
+  .brokerLiveFilterGrid,
+  .brokerOverviewLiveGrid{
+    grid-template-columns:1fr!important;
+  }
+  .brokerLivePanel{
+    width:min(310px,calc(100vw - 38px))!important;
+  }
+}
+</style>
+
+
+<style id="eden-broker-filter-transaction-parity-v34">
+/*
+  BROKER FILTERS = TRANSACTIONS FILTERS
+  Keep Broker live/predictive logic, but use the exact Transactions visual system.
+*/
+
+/* Deck */
+#appRoot .brokerLiveFilterGrid.dashboardFilterBar{
+  gap:7px!important;
+  padding:10px!important;
+  margin-bottom:12px!important;
+  border-radius:15px!important;
+  overflow:visible!important;
+  align-items:end!important;
+}
+
+/* Same compact filter title used by Transactions. */
+#appRoot .brokerLiveFilterGrid .brokerLiveFilterName.dashboardFilterName{
+  margin:0 0 4px 2px!important;
+  font-size:8px!important;
+  line-height:1.1!important;
+  letter-spacing:.1em!important;
+  color:var(--muted)!important;
+  text-transform:uppercase!important;
+  font-weight:900!important;
+}
+
+/* Same trigger button proportions. */
+#appRoot .brokerLiveFilterGrid .brokerLiveBtn.multiBtn{
+  width:100%!important;
+  min-height:38px!important;
+  height:38px!important;
+  padding:7px 9px!important;
+  border:1px solid var(--line)!important;
+  border-radius:9px!important;
+  background:var(--input-bg)!important;
+  color:var(--text)!important;
+  font-size:11px!important;
+  font-weight:700!important;
+  text-align:left!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:7px!important;
+}
+#appRoot .brokerLiveFilterGrid .brokerLiveBtn.multiBtn span{
+  min-width:0!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+#appRoot .brokerLiveFilterGrid .brokerLiveBtn.multiBtn b{
+  flex:0 0 auto!important;
+  color:var(--gold)!important;
+  font-size:9px!important;
+}
+
+/* Exact Transactions dropdown geometry. */
+#appRoot .brokerLiveFilterGrid .brokerLivePanel.multiPanel{
+  top:calc(100% + 6px)!important;
+  left:0!important;
+  right:auto!important;
+  width:100%!important;
+  min-width:230px!important;
+  max-width:340px!important;
+  max-height:260px!important;
+  overflow:auto!important;
+  padding:8px!important;
+  border:1px solid var(--line)!important;
+  border-radius:14px!important;
+  background:var(--panel)!important;
+  box-shadow:0 18px 44px var(--shadow)!important;
+  z-index:9999!important;
+}
+#appRoot .brokerLiveFilterGrid .filterGroup.open{
+  z-index:10000!important;
+}
+
+/* Same Select all / Clear buttons as Transactions. */
+#appRoot .brokerLiveFilterGrid .brokerLiveActions.multiActions{
+  display:flex!important;
+  align-items:center!important;
+  gap:8px!important;
+  margin:0 0 6px!important;
+}
+#appRoot .brokerLiveFilterGrid .brokerLiveActions.multiActions .miniBtn{
+  flex:0 0 auto!important;
+  width:auto!important;
+  min-width:0!important;
+  min-height:0!important;
+  height:auto!important;
+  margin:0!important;
+  padding:7px 9px!important;
+  border:1px solid var(--line)!important;
+  border-radius:10px!important;
+  background:var(--chip)!important;
+  color:var(--text)!important;
+  font-size:11px!important;
+  line-height:1.2!important;
+  font-weight:800!important;
+  cursor:pointer!important;
+}
+
+/* Same search box. */
+#appRoot .brokerLiveFilterGrid .multiSearchWrap{
+  position:sticky!important;
+  top:0!important;
+  z-index:4!important;
+  padding:0 0 6px!important;
+  margin:0!important;
+  background:var(--panel)!important;
+}
+#appRoot .brokerLiveFilterGrid .multiSearchInput{
+  width:100%!important;
+  min-height:32px!important;
+  height:32px!important;
+  padding:6px 8px!important;
+  margin:0!important;
+  border:1px solid var(--line)!important;
+  border-radius:9px!important;
+  background:var(--input-bg)!important;
+  color:var(--text)!important;
+  outline:none!important;
+  font-size:12px!important;
+}
+#appRoot .brokerLiveFilterGrid .multiSearchInput::placeholder{
+  color:#7898b6!important;
+}
+#appRoot .brokerLiveFilterGrid .multiSearchInput:focus{
+  border-color:var(--gold)!important;
+}
+
+/* Same left-aligned compact options and checkbox sizing. */
+#appRoot .brokerLiveFilterGrid .brokerLivePanel .checkRow{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  gap:8px!important;
+  width:100%!important;
+  min-height:28px!important;
+  height:auto!important;
+  margin:0!important;
+  padding:4px 6px!important;
+  border-radius:8px!important;
+  color:var(--text)!important;
+  line-height:18px!important;
+  text-align:left!important;
+  cursor:pointer!important;
+}
+#appRoot .brokerLiveFilterGrid .brokerLivePanel .checkRow:hover{
+  background:var(--hover-bg)!important;
+}
+#appRoot .brokerLiveFilterGrid .brokerLivePanel .checkRow.edenSearchHidden{
+  display:none!important;
+}
+#appRoot .brokerLiveFilterGrid .brokerLivePanel .checkRow input[type="checkbox"]{
+  appearance:auto!important;
+  -webkit-appearance:checkbox!important;
+  width:14px!important;
+  height:14px!important;
+  min-width:14px!important;
+  min-height:14px!important;
+  max-width:14px!important;
+  max-height:14px!important;
+  padding:0!important;
+  margin:0!important;
+  border-radius:2px!important;
+  flex:0 0 14px!important;
+}
+#appRoot .brokerLiveFilterGrid .brokerLivePanel .checkRow span{
+  display:block!important;
+  flex:1 1 auto!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:0!important;
+  color:var(--text)!important;
+  font-size:12px!important;
+  line-height:18px!important;
+  font-weight:400!important;
+  text-align:left!important;
+}
+
+/* Scrollbar to match the Transactions dropdown behavior. */
+#appRoot .brokerLiveFilterGrid .brokerLivePanel{
+  scrollbar-width:thin;
+  scrollbar-color:#8d949b transparent;
+}
+#appRoot .brokerLiveFilterGrid .brokerLivePanel::-webkit-scrollbar{
+  width:10px;
+}
+#appRoot .brokerLiveFilterGrid .brokerLivePanel::-webkit-scrollbar-track{
+  background:transparent;
+}
+#appRoot .brokerLiveFilterGrid .brokerLivePanel::-webkit-scrollbar-thumb{
+  background:#8d949b;
+  border-radius:10px;
+  border:2px solid var(--panel);
+}
+
+/* Same compact clear-all height. */
+#appRoot .brokerLiveFilterGrid .brokerLiveClear{
+  min-height:38px!important;
+  height:38px!important;
+  padding:7px 11px!important;
+  border-radius:9px!important;
+  align-self:end!important;
+}
+
+/* Desktop density follows Transactions. */
+@media(min-width:1500px){
+  #appRoot .brokerPerfFilters.brokerLiveFilterGrid{
+    grid-template-columns:repeat(9,minmax(0,1fr))!important;
+  }
+  #appRoot .brokerOverviewFilterBar.brokerLiveFilterGrid{
+    grid-template-columns:repeat(8,minmax(0,1fr))!important;
+  }
+}
+@media(min-width:1201px) and (max-width:1499px){
+  #appRoot .brokerPerfFilters.brokerLiveFilterGrid,
+  #appRoot .brokerOverviewFilterBar.brokerLiveFilterGrid{
+    grid-template-columns:repeat(6,minmax(0,1fr))!important;
+  }
+}
+@media(max-width:1200px){
+  #appRoot .brokerPerfFilters.brokerLiveFilterGrid,
+  #appRoot .brokerOverviewFilterBar.brokerLiveFilterGrid{
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  }
+}
+@media(max-width:760px){
+  #appRoot .brokerPerfFilters.brokerLiveFilterGrid,
+  #appRoot .brokerOverviewFilterBar.brokerLiveFilterGrid{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+}
+@media(max-width:520px){
+  #appRoot .brokerPerfFilters.brokerLiveFilterGrid,
+  #appRoot .brokerOverviewFilterBar.brokerLiveFilterGrid{
+    grid-template-columns:1fr!important;
+  }
+}
+</style>
