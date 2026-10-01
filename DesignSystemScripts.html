@@ -88,7 +88,7 @@ function edenMountHero_(){
   if(!tpl||!main||!topbar||document.getElementById('dsHero'))return;
   topbar.parentNode.insertBefore(tpl.content.cloneNode(true),topbar);
 
-  document.querySelectorAll('#dsHero .dsProjCard').forEach(card=>{
+  document.querySelectorAll('#dsProjects .dsProjCard').forEach(card=>{
     card.addEventListener('click',()=>{
       const keys=String(card.dataset.projectMatch||'').split('|').map(k=>k.trim().toUpperCase()).filter(Boolean);
       const options=[...document.querySelectorAll('input[name="project"]')].map(cb=>String(cb.value));
@@ -109,6 +109,7 @@ function edenUpdateHero_(){
   const view=(typeof currentView!=='undefined')?currentView:'dashboard';
   const show=view==='dashboard';
   hero.classList.toggle('hidden',!show);
+  document.getElementById('dsProjects')?.classList.toggle('hidden',!show);
   document.getElementById('appRoot')?.classList.toggle('dsHasHero',show);
   if(!show)return;
   const now=new Date();
