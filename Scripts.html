@@ -6,6 +6,7 @@ console.info('EDEN BI: OLD V50 DESIGN + SHARE');
 // Keep business calculations available for the next rebuild, but skip legacy visual rendering.
 const EDEN_REBUILD_KPI_CHARTS = false;
 
+let STATUS_BASE_ROWS=[];
 let rawRows=[], filtered=[], brokerRows=[], brokerFiltered=[], currentView='dashboard', charts=[];
 let SALES_CURVE_CHART=null;
 let SALES_YEAR_COMPARE_CHART=null;
@@ -1596,7 +1597,8 @@ function applyFilters(){
         years=getMulti('year'),
         q=document.getElementById('search').value.toLowerCase();
 
-  filtered=rawRows.filter(r=>
+  // Rows matching every filter except Status (used for the Sales Status chip counts).
+  STATUS_BASE_ROWS=rawRows.filter(r=>
     (!projects.length||projects.includes(String(r.project))) &&
     (!unitCategories.length||unitCategories.includes(String(r.unitType))) &&
     (!sales.length||salesMatchesDeal_(r,sales)) &&
@@ -1606,7 +1608,6 @@ function applyFilters(){
     (!nationalities.length||nationalities.includes(String(r.nationality))) &&
     (!clientTypes.length||clientTypes.some(v=>String(v).trim().toLowerCase()===String(r.clientType||'').trim().toLowerCase())) &&
     (!branches.length||branches.includes(String(r.branch))) &&
-    (!statuses.length||statuses.includes(String(r.status))) &&
     (!renovations.length||renovations.includes(String(r.renovationStatus))) &&
     (!mainSources.length||mainSources.includes(String(r.mainSource))) &&
     (!sourceTypes.length||sourceTypes.includes(String(r.sourceType))) &&
@@ -1620,6 +1621,7 @@ function applyFilters(){
     (!years.length||years.includes(String(r.year))) &&
     (!q||Object.values(r).join(' ').toLowerCase().includes(q))
   );
+  filtered=STATUS_BASE_ROWS.filter(r=>!statuses.length||statuses.includes(String(r.status)));
 
   const bEden=getMulti('brokerEden'),bCreatedBy=getMulti('brokerCreatedBy'),bLastSales=getMulti('brokerLastSales'),bLink=getMulti('brokerLink'),bStatus=getMulti('brokerStatus'),bDays=getMulti('brokerDay'),bMonths=getMulti('brokerMonth'),bYears=getMulti('brokerYear'),bq=document.getElementById('brokerSearch').value.toLowerCase();
   brokerFiltered=brokerRows.filter(r=>(!bEden.length||bEden.includes(String(r.edenSales)))&&(!bCreatedBy.length||bCreatedBy.includes(String(r.createdBy)))&&(!bLastSales.length||bLastSales.includes(String(r.lastSales)))&&(!bLink.length||bLink.includes(String(r.linkStatus)))&&(!bStatus.length||bStatus.includes(String(r.status)))&&(!bDays.length||bDays.includes(String(r.day)))&&(!bMonths.length||bMonths.includes(String(r.month)))&&(!bYears.length||bYears.includes(String(r.year)))&&(!bq||Object.values(r).join(' ').toLowerCase().includes(bq)));

@@ -80,6 +80,96 @@ function initEdenDesignSystem_(){
 }
 initEdenDesignSystem_();
 
+/* ---------- Sales Status quick filter (multi-select chips) ----------
+   Mirrors the existing Status filter checkboxes, so the dropdown, Reset and
+   Clear all stay in sync. Counts respect every other active filter. */
+const EDEN_STATUS_ORDER=['closed','reservation','renovation','client signed','part of dp'];
+function edenStatusTone_(v){
+  const s=String(v||'').trim().toLowerCase();
+  if(s==='cancel'||s==='cancelled'||s==='canceled')return 'red';
+  if(s.includes('closed')||s.includes('sold')||s.includes('signed'))return 'green';
+  if(s.includes('reserv'))return 'gold';
+  if(s.includes('renov')||s.includes('progress')||s.includes('dp'))return 'blue';
+  return 'grey';
+}
+function edenStatusChipsMount_(){
+  if(document.getElementById('dsStatusBar'))return;
+  const filters=document.querySelector('#appRoot section.filters');
+  if(!filters)return;
+  const bar=document.createElement('section');
+  bar.id='dsStatusBar';
+  bar.className='dsStatusBar';
+  bar.setAttribute('aria-label','Sales status');
+  bar.innerHTML=`
+    <div class="dsStatusHead">
+      <span class="dsStatusTitle">Sales Status</span>
+      <span class="dsStatusHint">Select one or more</span>
+    </div>
+    <div class="dsStatusChips" id="dsStatusChips" role="group"></div>`;
+  filters.insertAdjacentElement('afterend',bar);
+  bar.addEventListener('click',e=>{
+    const chip=e.target.closest('.dsStatusChip');
+    if(!chip)return;
+    const value=chip.dataset.status;
+    const boxes=[...document.querySelectorAll('input[name="status"]')];
+    if(value==='__all__'){
+      boxes.forEach(b=>b.checked=false);
+    }else{
+      const box=boxes.find(b=>String(b.value)===value);
+      if(box)box.checked=!box.checked;
+    }
+    if(typeof updateMultiLabels==='function')updateMultiLabels();
+    if(typeof applyFilters==='function')applyFilters();
+  });
+}
+function edenStatusChipsRender_(){
+  const bar=document.getElementById('dsStatusBar');
+  const wrap=document.getElementById('dsStatusChips');
+  if(!bar||!wrap)return;
+  const filters=document.querySelector('#appRoot section.filters');
+  const visible=!!filters&&!filters.classList.contains('hidden')&&getComputedStyle(filters).display!=='none';
+  bar.classList.toggle('hidden',!visible);
+  if(!visible)return;
+
+  const boxes=[...document.querySelectorAll('input[name="status"]')];
+  const base=(typeof STATUS_BASE_ROWS!=='undefined'&&STATUS_BASE_ROWS.length)?STATUS_BASE_ROWS:[];
+  const counts={};
+  base.forEach(r=>{const k=String(r.status||'');counts[k]=(counts[k]||0)+1;});
+  const rank=v=>{
+    const s=String(v).trim().toLowerCase();
+    if(edenStatusTone_(v)==='red')return 999;
+    const i=EDEN_STATUS_ORDER.indexOf(s);
+    return i<0?100:i;
+  };
+  const values=boxes.map(b=>String(b.value)).filter(Boolean)
+    .sort((a,b)=>rank(a)-rank(b)||(counts[b]||0)-(counts[a]||0)||a.localeCompare(b));
+  const selected=new Set(boxes.filter(b=>b.checked).map(b=>String(b.value)));
+  const activeCount=base.filter(r=>edenStatusTone_(r.status)!=='red').length;
+  const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const fmt=n=>Number(n||0).toLocaleString('en-US');
+
+  wrap.innerHTML=
+    `<button type="button" class="dsStatusChip all${selected.size?'':' on'}" data-status="__all__" aria-pressed="${!selected.size}" title="All statuses except Cancel (default)">
+       <span>All active</span><b>${fmt(activeCount)}</b>
+     </button>`+
+    values.map(v=>{
+      const on=selected.has(v);
+      const label=boxes.find(b=>String(b.value)===v)?.dataset.label||v;
+      return `<button type="button" class="dsStatusChip tone-${edenStatusTone_(v)}${on?' on':''}" data-status="${esc(v)}" aria-pressed="${on}">
+        <i></i><span>${esc(label)}</span><b>${fmt(counts[v]||0)}</b>
+      </button>`;
+    }).join('');
+}
+(function initEdenStatusChips_(){
+  edenStatusChipsMount_();
+  if(typeof render==='function'&&!render.__dsStatus){
+    const original=render;
+    render=function(){const r=original.apply(this,arguments);try{edenStatusChipsRender_();}catch(e){console.error(e);}return r;};
+    render.__dsStatus=true;
+  }
+  edenStatusChipsRender_();
+})();
+
 /* ---------- Home hero (Overview page only) ---------- */
 function edenMountHero_(){
   const tpl=document.getElementById('edenHeroTpl');

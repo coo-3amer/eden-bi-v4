@@ -391,6 +391,40 @@ html[data-theme] #appRoot .chip.status-Reservation,html[data-theme] #appRoot .in
 html[data-theme] #appRoot .chip.status-Renovation,html[data-theme] #appRoot .dealAlert.info{background:var(--ds-blue-soft)!important;color:var(--ds-blue)!important}
 html[data-theme] #appRoot .invOther{background:var(--ds-surface-3)!important;color:var(--ds-muted)!important}
 
+/* ---------- 9b. Sales Status quick filter ---------- */
+html[data-theme] #appRoot .dsStatusBar{
+  display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin:-4px 0 18px;padding:12px 16px;
+  background:var(--ds-surface);border:1px solid var(--ds-line);border-radius:var(--ds-r-lg);box-shadow:var(--ds-shadow);
+}
+html[data-theme] #appRoot .dsStatusHead{display:flex;flex-direction:column;gap:2px;min-width:118px}
+html[data-theme] #appRoot .dsStatusTitle{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ds-gold-strong)}
+html[data-theme] #appRoot .dsStatusHint{font-size:11px;color:var(--ds-subtle)}
+html[data-theme] #appRoot .dsStatusChips{display:flex;flex-wrap:wrap;gap:8px;flex:1}
+html[data-theme] #appRoot .dsStatusChip{
+  all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 6px 0 14px;
+  border-radius:999px;border:1px solid var(--ds-line);background:var(--ds-surface-2);color:var(--ds-text);
+  font-size:13px;font-weight:600;transition:background .15s ease,border-color .15s ease,color .15s ease,box-shadow .15s ease;
+}
+html[data-theme] #appRoot .dsStatusChip:hover{border-color:var(--ds-gold-line);background:var(--ds-hover)}
+html[data-theme] #appRoot .dsStatusChip:focus-visible{box-shadow:0 0 0 3px var(--ds-gold-soft)}
+html[data-theme] #appRoot .dsStatusChip i{width:8px;height:8px;border-radius:50%;background:var(--ds-subtle);flex:0 0 8px}
+html[data-theme] #appRoot .dsStatusChip.tone-green i{background:var(--ds-green)}
+html[data-theme] #appRoot .dsStatusChip.tone-gold i{background:var(--ds-gold)}
+html[data-theme] #appRoot .dsStatusChip.tone-red i{background:var(--ds-red)}
+html[data-theme] #appRoot .dsStatusChip.tone-blue i{background:var(--ds-blue)}
+html[data-theme] #appRoot .dsStatusChip b{
+  min-width:28px;height:24px;padding:0 8px;border-radius:999px;display:inline-grid;place-items:center;
+  font-size:12px;font-weight:700;background:var(--ds-surface);color:var(--ds-muted);border:1px solid var(--ds-line);
+}
+html[data-theme] #appRoot .dsStatusChip.all{padding-left:16px}
+html[data-theme] #appRoot .dsStatusChip.on{
+  background:var(--ds-gold-grad);border-color:transparent;color:var(--ds-on-gold);
+  box-shadow:0 1px 0 rgba(255,255,255,.25) inset,0 6px 14px rgba(150,110,40,.22);
+}
+html[data-theme] #appRoot .dsStatusChip.on i{background:var(--ds-on-gold);box-shadow:0 0 0 2px rgba(255,255,255,.35)}
+html[data-theme] #appRoot .dsStatusChip.on b{background:rgba(255,255,255,.22);border-color:transparent;color:var(--ds-on-gold)}
+@media(max-width:760px){html[data-theme] #appRoot .dsStatusBar{gap:10px}html[data-theme] #appRoot .dsStatusHead{flex-direction:row;gap:8px;align-items:baseline}}
+
 /* ---------- 10. Loader ---------- */
 html[data-theme] .loader{background:color-mix(in srgb,var(--ds-bg) 92%,transparent)!important;color:var(--ds-gold-strong)!important;font-family:var(--ds-serif)!important}
 
