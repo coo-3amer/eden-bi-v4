@@ -1,0 +1,398 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="eden-design-system">
+/* =====================================================================
+   EDEN BI DESIGN SYSTEM  (v5)
+   Loaded after Styles.html. Defines Light + Dark themes as tokens and
+   maps the legacy variables onto them, so every existing component
+   follows the active theme. Theme is set on <html data-theme="light|dark">.
+   ===================================================================== */
+
+/* ---------- 1. Tokens ---------- */
+html[data-theme="light"]{
+  --ds-bg:#f4f0e8;
+  --ds-surface:#fffdf9;
+  --ds-surface-2:#f9f5ee;
+  --ds-surface-3:#f1ebe0;
+  --ds-line:#e8e0d1;
+  --ds-line-strong:#d9cdb8;
+  --ds-text:#2a2621;
+  --ds-heading:#16130f;
+  --ds-muted:#83796b;
+  --ds-subtle:#a99f90;
+  --ds-gold:#b08a42;
+  --ds-gold-strong:#8f6d2c;
+  --ds-gold-soft:rgba(176,138,66,.12);
+  --ds-gold-line:rgba(176,138,66,.32);
+  --ds-on-gold:#ffffff;
+  --ds-green:#2f9e62;
+  --ds-red:#d64545;
+  --ds-blue:#3b6fd8;
+  --ds-violet:#7b5cc9;
+  --ds-green-soft:rgba(47,158,98,.12);
+  --ds-red-soft:rgba(214,69,69,.11);
+  --ds-blue-soft:rgba(59,111,216,.11);
+  --ds-amber-soft:rgba(196,140,30,.14);
+  --ds-sidebar:#fbf8f2;
+  --ds-input:#fffdf9;
+  --ds-hover:#f3ede2;
+  --ds-shadow-sm:0 1px 2px rgba(60,44,18,.05);
+  --ds-shadow:0 1px 2px rgba(60,44,18,.04),0 8px 24px rgba(60,44,18,.06);
+  --ds-shadow-lg:0 18px 50px rgba(60,44,18,.14);
+  --ds-grid:rgba(60,44,18,.08);
+  --ds-chart-1:#b08a42;--ds-chart-2:#7a746b;--ds-chart-3:#5d8a6e;--ds-chart-4:#4f74b0;
+  --ds-chart-5:#c0714f;--ds-chart-6:#8a72b8;--ds-chart-7:#3f9a96;--ds-chart-8:#d1b06a;
+  color-scheme:light;
+}
+html[data-theme="dark"]{
+  --ds-bg:#0f0e0c;
+  --ds-surface:#181714;
+  --ds-surface-2:#1e1c19;
+  --ds-surface-3:#26241f;
+  --ds-line:#2e2b26;
+  --ds-line-strong:#3d3932;
+  --ds-text:#e9e3d7;
+  --ds-heading:#fbf6ec;
+  --ds-muted:#9d9384;
+  --ds-subtle:#766e62;
+  --ds-gold:#d3ae66;
+  --ds-gold-strong:#e7c47f;
+  --ds-gold-soft:rgba(211,174,102,.13);
+  --ds-gold-line:rgba(211,174,102,.34);
+  --ds-on-gold:#1a1408;
+  --ds-green:#4cc386;
+  --ds-red:#ef7070;
+  --ds-blue:#72a4f2;
+  --ds-violet:#a98cf0;
+  --ds-green-soft:rgba(76,195,134,.14);
+  --ds-red-soft:rgba(239,112,112,.14);
+  --ds-blue-soft:rgba(114,164,242,.14);
+  --ds-amber-soft:rgba(231,196,127,.15);
+  --ds-sidebar:#131210;
+  --ds-input:#141311;
+  --ds-hover:#23211c;
+  --ds-shadow-sm:0 1px 2px rgba(0,0,0,.3);
+  --ds-shadow:0 1px 2px rgba(0,0,0,.25),0 10px 28px rgba(0,0,0,.28);
+  --ds-shadow-lg:0 20px 60px rgba(0,0,0,.5);
+  --ds-grid:rgba(255,255,255,.07);
+  --ds-chart-1:#d3ae66;--ds-chart-2:#a39b8d;--ds-chart-3:#6fb58a;--ds-chart-4:#7ea3e0;
+  --ds-chart-5:#e08e6a;--ds-chart-6:#a990e0;--ds-chart-7:#5cc0ba;--ds-chart-8:#f0d394;
+  color-scheme:dark;
+}
+html[data-theme="light"],html[data-theme="dark"]{
+  --ds-font:'Inter','Segoe UI',system-ui,-apple-system,Arial,sans-serif;
+  --ds-serif:'Cormorant Garamond','Playfair Display',Georgia,'Times New Roman',serif;
+  --ds-r-sm:8px; --ds-r:12px; --ds-r-lg:16px; --ds-r-xl:20px;
+  --ds-gold-grad:linear-gradient(135deg,#cfac62 0%,#b08a42 55%,#9a7634 100%);
+
+  /* Legacy variables → design tokens (keeps every old component in sync) */
+  --bg:var(--ds-bg);
+  --panel:var(--ds-surface);
+  --panel2:var(--ds-surface-2);
+  --line:var(--ds-line);
+  --text:var(--ds-text);
+  --heading:var(--ds-heading);
+  --muted:var(--ds-muted);
+  --subtle:var(--ds-subtle);
+  --gold:var(--ds-gold);
+  --gold-strong:var(--ds-gold-strong);
+  --green:var(--ds-green);
+  --red:var(--ds-red);
+  --blue:var(--ds-blue);
+  --chip:var(--ds-surface-3);
+  --sidebar-bg:var(--ds-sidebar);
+  --input-bg:var(--ds-input);
+  --table-head:var(--ds-surface-2);
+  --hover-bg:var(--ds-hover);
+  --card-value:var(--ds-heading);
+  --shadow:rgba(60,44,18,.10);
+  --accent-gradient:var(--ds-gold-grad);
+  --panel-gradient:linear-gradient(var(--ds-surface),var(--ds-surface));
+}
+
+/* ---------- 2. Base ---------- */
+html[data-theme] body{
+  background:var(--ds-bg)!important;
+  color:var(--ds-text)!important;
+  font-family:var(--ds-font)!important;
+  font-size:14px;
+  -webkit-font-smoothing:antialiased;
+}
+html[data-theme] #appRoot,
+html[data-theme] #appRoot button,
+html[data-theme] #appRoot input,
+html[data-theme] #appRoot select,
+html[data-theme] #appRoot textarea{font-family:var(--ds-font)}
+html[data-theme] ::selection{background:var(--ds-gold-soft)}
+html[data-theme] #appRoot *{scrollbar-color:var(--ds-line-strong) transparent}
+html[data-theme] #appRoot ::-webkit-scrollbar{width:10px;height:10px}
+html[data-theme] #appRoot ::-webkit-scrollbar-thumb{background:var(--ds-line-strong);border-radius:10px;border:3px solid transparent;background-clip:padding-box}
+
+/* Headings use the brand serif */
+html[data-theme] #appRoot .title,
+html[data-theme] #appRoot .box h3,
+html[data-theme] #appRoot .tableHead h3,
+html[data-theme] #appRoot .panelHead h3,
+html[data-theme] #appRoot .dealWizardHead h3,
+html[data-theme] #appRoot .inventoryToolbar h3,
+html[data-theme] #appRoot .edenSalesCurveTop h2,
+html[data-theme] #appRoot .edenSalesCurveTop h3,
+html[data-theme] #appRoot .edenInsightHead h3,
+html[data-theme] #appRoot .commHeader h2,
+html[data-theme] #appRoot h2.dsSerif{
+  font-family:var(--ds-serif)!important;
+  font-weight:700!important;
+  letter-spacing:.005em!important;
+  color:var(--ds-heading)!important;
+  text-transform:none!important;
+}
+
+/* ---------- 3. Shell: sidebar ---------- */
+html[data-theme] #appRoot .sidebar{
+  background:var(--ds-sidebar)!important;
+  border-right:1px solid var(--ds-line)!important;
+  box-shadow:none!important;
+  padding:24px 14px 18px!important;
+  display:flex!important;flex-direction:column;
+}
+html[data-theme] #appRoot .dsLogo{display:block;padding:2px 10px 4px}
+html[data-theme] #appRoot .dsLogo img{display:block;width:150px;height:auto}
+html[data-theme] #appRoot .dsLogo .dsLogoWhite{display:none}
+html[data-theme="dark"] #appRoot .dsLogo .dsLogoDark{display:none}
+html[data-theme="dark"] #appRoot .dsLogo .dsLogoWhite{display:block}
+html[data-theme] #appRoot .dsLogoSub{font-size:10px;letter-spacing:.32em;color:var(--ds-muted);margin:10px 10px 22px;text-transform:uppercase;font-weight:600}
+
+html[data-theme] #appRoot .nav{flex:1}
+html[data-theme] #appRoot .sectionDivider{background:transparent!important;height:4px!important;margin:0!important;border:0!important}
+html[data-theme] #appRoot .module{margin-bottom:2px!important}
+html[data-theme] #appRoot .moduleHeader{
+  background:transparent!important;
+  color:var(--ds-text)!important;
+  border:0!important;border-radius:var(--ds-r)!important;
+  padding:11px 12px!important;margin:0!important;
+  font-weight:600!important;font-size:14px!important;letter-spacing:0!important;text-transform:none!important;
+  box-shadow:none!important;
+}
+html[data-theme] #appRoot .moduleHeader>span:first-child{display:flex;align-items:center;gap:12px}
+html[data-theme] #appRoot .moduleHeader:hover{background:var(--ds-hover)!important}
+html[data-theme] #appRoot .moduleHeader.open{background:transparent!important;color:var(--ds-heading)!important}
+html[data-theme] #appRoot .moduleArrow{color:var(--ds-muted)!important;font-size:0!important;width:16px;height:16px;display:inline-block;transition:transform .2s ease}
+html[data-theme] #appRoot .moduleArrow::before{content:"";display:block;width:7px;height:7px;margin:3px auto 0;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;transform:rotate(-45deg)}
+html[data-theme] #appRoot .moduleHeader.open .moduleArrow{transform:rotate(90deg)}
+html[data-theme] #appRoot .moduleMenu{
+  border-left:1px solid var(--ds-line)!important;
+  margin:2px 0 8px 22px!important;padding:2px 0 2px 10px!important;
+}
+html[data-theme] #appRoot .moduleMenu button,
+html[data-theme] #appRoot .nav button:not(.moduleHeader){
+  background:transparent!important;color:var(--ds-muted)!important;
+  border:0!important;border-radius:var(--ds-r-sm)!important;
+  padding:8px 10px!important;margin:0 0 2px!important;
+  font-weight:500!important;font-size:13px!important;text-align:left;box-shadow:none!important;
+}
+html[data-theme] #appRoot .moduleMenu button:hover{background:var(--ds-hover)!important;color:var(--ds-heading)!important}
+html[data-theme] #appRoot .moduleMenu button.active{
+  background:var(--ds-gold-soft)!important;color:var(--ds-gold-strong)!important;font-weight:650!important;
+  border:0!important;box-shadow:inset 2px 0 0 var(--ds-gold)!important;
+}
+html[data-theme] #appRoot .dsIco{width:18px;height:18px;flex:0 0 18px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+html[data-theme] #appRoot .moduleHeader.open .dsIco{color:var(--ds-gold)}
+
+/* User card pinned to the bottom of the sidebar */
+html[data-theme] #appRoot .dsUserCard{
+  margin-top:14px;padding:12px;border:1px solid var(--ds-line);border-radius:var(--ds-r-lg);
+  background:var(--ds-surface);display:flex;align-items:center;gap:10px;box-shadow:var(--ds-shadow-sm);
+}
+html[data-theme] #appRoot .dsAvatar{
+  width:38px;height:38px;border-radius:50%;flex:0 0 38px;display:grid;place-items:center;
+  background:var(--ds-gold-grad);color:var(--ds-on-gold);font-weight:700;font-size:13px;letter-spacing:.04em;
+}
+html[data-theme] #appRoot .dsUserCard .userBox{
+  all:unset;flex:1;min-width:0;font-size:12px;font-weight:600;color:var(--ds-heading);line-height:1.35;
+  overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+}
+html[data-theme] #appRoot .dsUserCard .logoutBtn{
+  all:unset;cursor:pointer;width:32px;height:32px;border-radius:var(--ds-r-sm);display:grid;place-items:center;color:var(--ds-muted);flex:0 0 32px;
+}
+html[data-theme] #appRoot .dsUserCard .logoutBtn:hover{background:var(--ds-hover);color:var(--ds-red)}
+html[data-theme] #appRoot .themeSwitcher{display:none!important}
+
+/* ---------- 4. Shell: main + app bar ---------- */
+html[data-theme] #appRoot .main{background:transparent!important;padding:18px 26px 32px!important}
+html[data-theme] #appRoot .dsAppBar{
+  display:flex;align-items:center;gap:12px;margin:0 0 20px;position:sticky;top:0;z-index:40;
+  padding:12px 0;background:var(--ds-bg);box-shadow:0 10px 14px -12px var(--ds-bg);
+}
+html[data-theme] #appRoot .dsSearch{
+  flex:1;max-width:520px;display:flex;align-items:center;gap:10px;height:42px;padding:0 12px 0 14px;
+  background:var(--ds-surface);border:1px solid var(--ds-line);border-radius:var(--ds-r);color:var(--ds-muted);cursor:text;
+  box-shadow:var(--ds-shadow-sm);
+}
+html[data-theme] #appRoot .dsSearch:focus-within{border-color:var(--ds-gold-line);box-shadow:0 0 0 3px var(--ds-gold-soft)}
+html[data-theme] #appRoot .dsSearch input{all:unset;flex:1;min-width:0;color:var(--ds-text);font-size:13px}
+html[data-theme] #appRoot .dsSearch input::placeholder{color:var(--ds-subtle)}
+html[data-theme] #appRoot .dsKbd{font-size:11px;color:var(--ds-muted);border:1px solid var(--ds-line);border-radius:6px;padding:2px 7px;background:var(--ds-surface-2);white-space:nowrap}
+html[data-theme] #appRoot .dsAppBarRight{margin-left:auto;display:flex;align-items:center;gap:10px}
+html[data-theme] #appRoot .dsSeg{display:flex;padding:3px;border-radius:999px;background:var(--ds-surface);border:1px solid var(--ds-line);box-shadow:var(--ds-shadow-sm)}
+html[data-theme] #appRoot .dsSeg button{
+  all:unset;cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;font-size:12px;font-weight:600;color:var(--ds-muted);
+}
+html[data-theme] #appRoot .dsSeg button[aria-pressed="true"]{background:var(--ds-gold-soft);color:var(--ds-gold-strong)}
+html[data-theme] #appRoot .dsSeg .dsIco{width:15px;height:15px;flex-basis:15px}
+html[data-theme] #appRoot .dsIconBtn{
+  all:unset;cursor:pointer;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;
+  background:var(--ds-surface);border:1px solid var(--ds-line);color:var(--ds-text);box-shadow:var(--ds-shadow-sm);
+}
+html[data-theme] #appRoot .dsIconBtn:hover{color:var(--ds-gold-strong);border-color:var(--ds-gold-line)}
+html[data-theme] #appRoot .dsIconBtn.spinning .dsIco{animation:dsSpin .8s linear infinite}
+@keyframes dsSpin{to{transform:rotate(360deg)}}
+html[data-theme] #appRoot .dsLive{
+  display:flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:999px;font-size:12px;font-weight:600;
+  background:var(--ds-surface);border:1px solid var(--ds-line);color:var(--ds-text);box-shadow:var(--ds-shadow-sm);white-space:nowrap;
+}
+html[data-theme] #appRoot .dsLive i{width:8px;height:8px;border-radius:50%;background:var(--ds-green);box-shadow:0 0 0 3px var(--ds-green-soft)}
+html[data-theme] #appRoot .dsLive small{color:var(--ds-muted);font-weight:500;font-size:11px}
+
+/* Page header */
+html[data-theme] #appRoot .topbar{margin:0 0 18px!important;align-items:flex-end!important;padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important}
+html[data-theme] #appRoot .title{font-size:34px!important;line-height:1.1!important;margin:0!important}
+html[data-theme] #appRoot .desc{color:var(--ds-muted)!important;font-size:13px!important;margin-top:6px!important;font-weight:500!important}
+html[data-theme] #appRoot .actions{gap:8px!important;flex-wrap:wrap}
+
+/* ---------- 5. Buttons ---------- */
+html[data-theme] #appRoot .btn,
+html[data-theme] #appRoot .loginBtn{
+  background:var(--ds-gold-grad)!important;color:var(--ds-on-gold)!important;border:0!important;
+  border-radius:var(--ds-r)!important;padding:10px 16px!important;font-weight:650!important;font-size:13px!important;
+  box-shadow:0 1px 0 rgba(255,255,255,.25) inset,0 6px 16px rgba(150,110,40,.22)!important;letter-spacing:0!important;text-transform:none!important;
+}
+html[data-theme] #appRoot .btn:hover{filter:brightness(1.05)}
+html[data-theme] #appRoot .btn.secondary,
+html[data-theme] #appRoot .miniBtn,
+html[data-theme] #appRoot .miniAction,
+html[data-theme] #appRoot .dashboardClearAll{
+  background:var(--ds-surface)!important;color:var(--ds-text)!important;border:1px solid var(--ds-line)!important;
+  box-shadow:var(--ds-shadow-sm)!important;font-weight:600!important;
+}
+html[data-theme] #appRoot .btn.secondary:hover,
+html[data-theme] #appRoot .miniBtn:hover,
+html[data-theme] #appRoot .dashboardClearAll:hover{border-color:var(--ds-gold-line)!important;color:var(--ds-gold-strong)!important}
+html[data-theme] #appRoot .miniAction.danger{background:var(--ds-red-soft)!important;color:var(--ds-red)!important;border-color:transparent!important}
+
+/* ---------- 6. Form controls & filter bars ---------- */
+html[data-theme] #appRoot input:not([type=checkbox]):not([type=radio]):not([type=range]),
+html[data-theme] #appRoot select,
+html[data-theme] #appRoot textarea,
+html[data-theme] #appRoot .multiBtn{
+  background:var(--ds-input)!important;color:var(--ds-text)!important;border:1px solid var(--ds-line)!important;
+  border-radius:var(--ds-r-sm)!important;box-shadow:none!important;
+}
+html[data-theme] #appRoot .dsSearch input#dsGlobalSearch,
+html[data-theme] #appRoot .dashboardSearchBox input#search{border:0!important;background:transparent!important;padding:0!important;box-shadow:none!important;min-height:0!important;height:auto!important}
+html[data-theme] #appRoot input:focus,
+html[data-theme] #appRoot select:focus,
+html[data-theme] #appRoot textarea:focus,
+html[data-theme] #appRoot .filterGroup.open .multiBtn{border-color:var(--ds-gold-line)!important;box-shadow:0 0 0 3px var(--ds-gold-soft)!important;outline:none}
+html[data-theme] #appRoot .multiBtn{font-weight:500!important;font-size:12.5px!important}
+html[data-theme] #appRoot .multiBtn b{color:var(--ds-muted)!important}
+html[data-theme] #appRoot input[type=checkbox]{accent-color:var(--ds-gold)}
+html[data-theme] #appRoot .dashboardSearchBox{background:var(--ds-input)!important;border:1px solid var(--ds-line)!important;color:var(--ds-muted)!important;box-shadow:none!important}
+
+html[data-theme] #appRoot .dashboardFilterBar,
+html[data-theme] #appRoot .inventoryFilterBar,
+html[data-theme] #appRoot .inventoryFilters,
+html[data-theme] #appRoot .filters{
+  background:var(--ds-surface)!important;border:1px solid var(--ds-line)!important;border-radius:var(--ds-r-lg)!important;
+  box-shadow:var(--ds-shadow)!important;
+}
+html[data-theme] #appRoot .dashboardFilterName,
+html[data-theme] #appRoot .inventoryFilterName,
+html[data-theme] #appRoot .filterHint{color:var(--ds-muted)!important;font-weight:600!important;letter-spacing:.04em!important}
+html[data-theme] #appRoot .multiPanel{
+  background:var(--ds-surface)!important;border:1px solid var(--ds-line)!important;border-radius:var(--ds-r)!important;
+  box-shadow:var(--ds-shadow-lg)!important;
+}
+html[data-theme] #appRoot .checkRow{color:var(--ds-text)!important}
+html[data-theme] #appRoot .checkRow:hover{background:var(--ds-hover)!important}
+
+/* ---------- 7. Surfaces: cards, boxes, panels ---------- */
+html[data-theme] #appRoot .card,
+html[data-theme] #appRoot .box,
+html[data-theme] #appRoot .tableBox,
+html[data-theme] #appRoot .usersPanel,
+html[data-theme] #appRoot .dealEntryPanel,
+html[data-theme] #appRoot .inventoryCard,
+html[data-theme] #appRoot .edenInsightCard,
+html[data-theme] #appRoot .edenSalesCurvePanel,
+html[data-theme] #appRoot .edenCurveExecBox,
+html[data-theme] #appRoot .edenCurveYearCard,
+html[data-theme] #appRoot .commKpi,
+html[data-theme] #appRoot .commissionsPanel,
+html[data-theme] #appRoot .panel{
+  background:var(--ds-surface)!important;border:1px solid var(--ds-line)!important;
+  border-radius:var(--ds-r-lg)!important;box-shadow:var(--ds-shadow)!important;color:var(--ds-text)!important;
+}
+html[data-theme] #appRoot .card::before,
+html[data-theme] #appRoot .card::after{opacity:0!important}
+html[data-theme] #appRoot .edenCurveExecBox,
+html[data-theme] #appRoot .edenCurveYearCard{background:var(--ds-surface-2)!important;box-shadow:none!important}
+
+/* KPI cards */
+html[data-theme] #appRoot .label,
+html[data-theme] #appRoot .inventoryCardTitle,
+html[data-theme] #appRoot .commKpi span{
+  color:var(--ds-muted)!important;font-weight:600!important;font-size:11.5px!important;letter-spacing:.02em!important;text-transform:none!important;
+}
+html[data-theme] #appRoot .value,
+html[data-theme] #appRoot .inventoryCardValue,
+html[data-theme] #appRoot .commKpi strong{
+  color:var(--ds-heading)!important;font-weight:700!important;letter-spacing:-.01em!important;background:none!important;-webkit-text-fill-color:currentColor!important;text-shadow:none!important;
+}
+html[data-theme] #appRoot .small{color:var(--ds-muted)!important}
+html[data-theme] #appRoot .edenKpiCard .value{font-size:clamp(19px,1.45vw,25px)!important;white-space:nowrap}
+html[data-theme] #appRoot .edenKpiIcon{
+  background:var(--ds-gold-soft)!important;color:var(--ds-gold-strong)!important;border:1px solid var(--ds-gold-line)!important;
+  border-radius:50%!important;box-shadow:none!important;
+}
+html[data-theme] #appRoot .edenKpiDelta.up,
+html[data-theme] #appRoot .up{color:var(--ds-green)!important}
+html[data-theme] #appRoot .edenKpiDelta.down,
+html[data-theme] #appRoot .down{color:var(--ds-red)!important}
+
+/* ---------- 8. Tables ---------- */
+html[data-theme] #appRoot .tableHead{border-bottom:1px solid var(--ds-line)!important;background:transparent!important}
+html[data-theme] #appRoot table{color:var(--ds-text)!important}
+html[data-theme] #appRoot th{
+  background:var(--ds-surface-2)!important;color:var(--ds-muted)!important;font-weight:600!important;
+  font-size:11px!important;letter-spacing:.06em!important;text-transform:uppercase!important;border-bottom:1px solid var(--ds-line)!important;
+}
+html[data-theme] #appRoot td{border-bottom:1px solid var(--ds-line)!important;color:var(--ds-text)!important;font-size:12.5px!important}
+html[data-theme] #appRoot tbody tr:hover,
+html[data-theme] #appRoot tr:hover{background:var(--ds-hover)!important}
+
+/* ---------- 9. Chips & statuses ---------- */
+html[data-theme] #appRoot .chip{background:var(--ds-surface-3)!important;color:var(--ds-text)!important;font-weight:600!important;font-size:11.5px!important;border:0!important;padding:4px 10px!important}
+html[data-theme] #appRoot .chip.status-Closed,html[data-theme] #appRoot .invAvailable,html[data-theme] #appRoot .dealAlert.success,html[data-theme] #appRoot .inventoryMessage.success{background:var(--ds-green-soft)!important;color:var(--ds-green)!important}
+html[data-theme] #appRoot .chip.status-Cancel,html[data-theme] #appRoot .invClosed,html[data-theme] #appRoot .dealAlert.error,html[data-theme] #appRoot .inventoryMessage.error{background:var(--ds-red-soft)!important;color:var(--ds-red)!important}
+html[data-theme] #appRoot .chip.status-Reservation,html[data-theme] #appRoot .invReserved,html[data-theme] #appRoot .dealAlert.warning,html[data-theme] #appRoot .inventoryMessage.warning{background:var(--ds-amber-soft)!important;color:var(--ds-gold-strong)!important}
+html[data-theme] #appRoot .chip.status-Renovation,html[data-theme] #appRoot .dealAlert.info{background:var(--ds-blue-soft)!important;color:var(--ds-blue)!important}
+html[data-theme] #appRoot .invOther{background:var(--ds-surface-3)!important;color:var(--ds-muted)!important}
+
+/* ---------- 10. Loader ---------- */
+html[data-theme] .loader{background:color-mix(in srgb,var(--ds-bg) 92%,transparent)!important;color:var(--ds-gold-strong)!important;font-family:var(--ds-serif)!important}
+
+/* ---------- 11. Responsive ---------- */
+@media(max-width:1200px){
+  html[data-theme] #appRoot .dsSearch{max-width:none}
+  html[data-theme] #appRoot .dsLive small,
+  html[data-theme] #appRoot .dsSeg span{display:none}
+}
+@media(max-width:760px){
+  html[data-theme] #appRoot .main{padding:12px 14px 24px!important}
+  html[data-theme] #appRoot .dsAppBar{flex-wrap:wrap}
+  html[data-theme] #appRoot .dsKbd,
+  html[data-theme] #appRoot .dsLive{display:none}
+  html[data-theme] #appRoot .title{font-size:26px!important}
+}
+</style>

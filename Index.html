@@ -4,8 +4,10 @@
   <base target="_top">
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>EDEN BI Dashboard</title>
+  <script>(function(){var m='light';try{m=localStorage.getItem('EDEN_BI_THEME_MODE')||'light'}catch(e){}if(m!=='dark')m='light';document.documentElement.setAttribute('data-theme',m)})();</script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <?!= include('Styles'); ?>
+  <?!= include('DesignSystem'); ?>
 </head>
 <body>
 <div class="loginScreen edenAccessScreen hidden" id="loginScreen">
@@ -43,4 +45,5 @@
 <?!= include('Loader'); ?>
 <div class="app hidden" id="appRoot"><?!= include('Sidebar'); ?><?!= include('MainContent'); ?></div>
 <?!= include('Scripts'); ?>
+<?!= include('DesignSystemScripts'); ?>
 </body></html>

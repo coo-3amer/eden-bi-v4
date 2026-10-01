@@ -1,0 +1,82 @@
+<script>
+/* =====================================================================
+   EDEN BI DESIGN SYSTEM — client helpers (v5)
+   Theme switching (Light / Dark), app bar search, avatar, live time.
+   Loaded after Scripts.html; does not change any data logic.
+   ===================================================================== */
+const EDEN_THEME_MODE_KEY='EDEN_BI_THEME_MODE';
+
+function edenThemeMode_(){
+  let m='light';
+  try{m=localStorage.getItem(EDEN_THEME_MODE_KEY)||'light';}catch(e){}
+  return m==='dark'?'dark':'light';
+}
+
+/* Replaces the legacy single-theme setAppTheme(). */
+function setAppTheme(mode){
+  const next=(mode==='dark'||mode==='light')?mode:edenThemeMode_();
+  const changed=document.documentElement.getAttribute('data-theme')!==next;
+  document.documentElement.setAttribute('data-theme',next);
+  try{localStorage.setItem(EDEN_THEME_MODE_KEY,next);}catch(e){}
+  document.querySelectorAll('[data-ds-theme]').forEach(b=>
+    b.setAttribute('aria-pressed',String(b.getAttribute('data-ds-theme')===next)));
+  // Charts read their colours from CSS variables, so redraw them in the new theme.
+  if(changed && typeof render==='function' && typeof rawRows!=='undefined' && rawRows.length){
+    try{render();}catch(e){console.error('Theme re-render failed:',e);}
+  }
+}
+function initAppTheme(){setAppTheme(edenThemeMode_());}
+
+function edenInitials_(text){
+  const name=String(text||'').split('•')[0].trim();
+  const parts=name.split(/\s+/).filter(Boolean);
+  if(!parts.length)return 'ED';
+  return ((parts[0][0]||'')+(parts.length>1?parts[parts.length-1][0]:'')).toUpperCase();
+}
+function edenSyncAvatar_(){
+  const box=document.getElementById('loggedUserBox');
+  const av=document.getElementById('dsUserAvatar');
+  if(box&&av)av.textContent=edenInitials_(box.textContent);
+}
+function edenUpdateLiveTime_(){
+  const el=document.getElementById('dsLiveTime');
+  if(el)el.textContent=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+}
+
+function initEdenDesignSystem_(){
+  setAppTheme(edenThemeMode_());
+
+  document.querySelectorAll('[data-ds-theme]').forEach(b=>
+    b.addEventListener('click',()=>setAppTheme(b.getAttribute('data-ds-theme'))));
+
+  // App bar search mirrors the Transactions search box.
+  const g=document.getElementById('dsGlobalSearch');
+  const s=document.getElementById('search');
+  if(g&&s){
+    g.addEventListener('input',()=>{
+      s.value=g.value;
+      if(typeof applyFilters==='function')applyFilters();
+    });
+    s.addEventListener('input',()=>{if(g.value!==s.value)g.value=s.value;});
+  }
+  document.addEventListener('keydown',e=>{
+    if((e.ctrlKey||e.metaKey)&&String(e.key).toLowerCase()==='k'){
+      e.preventDefault();
+      g?.focus();g?.select();
+    }
+  });
+
+  // Reload keeps the session (token lives in sessionStorage).
+  document.getElementById('dsRefreshBtn')?.addEventListener('click',e=>{
+    e.currentTarget.classList.add('spinning');
+    location.reload();
+  });
+
+  const box=document.getElementById('loggedUserBox');
+  if(box)new MutationObserver(edenSyncAvatar_).observe(box,{childList:true,characterData:true,subtree:true});
+  edenSyncAvatar_();
+  edenUpdateLiveTime_();
+  setInterval(edenUpdateLiveTime_,30000);
+}
+initEdenDesignSystem_();
+</script>
