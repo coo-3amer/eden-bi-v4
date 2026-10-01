@@ -53,7 +53,7 @@
 <style id="eden-hero">
 /* Hero band */
 html[data-theme] #appRoot .dsHero{position:relative;overflow:hidden;border-radius:var(--ds-r-xl);margin:0 0 22px;min-height:clamp(250px,17vw,340px);background:radial-gradient(120% 140% at 0% 0%,#1d2130 0%,#0c0e15 62%);color:#fff;box-shadow:var(--ds-shadow)}
-html[data-theme] #appRoot .dsHeroBg{position:absolute;top:0;bottom:0;right:0;left:30%;background-size:cover;background-position:center 30%;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 28%);mask-image:linear-gradient(90deg,transparent 0,#000 28%)}
+html[data-theme] #appRoot .dsHeroBg{position:absolute;top:0;bottom:0;right:0;left:auto;height:100%;aspect-ratio:2.69/1;max-width:72%;background-color:transparent;background-repeat:no-repeat;background-size:auto 172%;background-position:50% 44%;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 28%);mask-image:linear-gradient(90deg,transparent 0,#000 28%)}
 html[data-theme] #appRoot .dsHero::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(10,12,18,.55) 0%,rgba(10,12,18,.2) 40%,rgba(10,12,18,0) 70%)}
 html[data-theme] #appRoot .dsHeroInner{position:relative;z-index:1;padding:clamp(30px,2.6vw,48px) 40px;max-width:980px}
 html[data-theme] #appRoot .dsHeroWelcome{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.88)}
@@ -86,7 +86,6 @@ html[data-theme] #appRoot .dsProjCard:hover .dsProjGo{background:#c9a65b;border-
 
 html[data-theme] #appRoot.dsHasHero .topbar .title{font-size:26px!important}
 @media(max-width:1250px){html[data-theme] #appRoot .dsProjRow{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:1900px){html[data-theme] #appRoot .dsHeroBg{left:44%}}
 @media(max-width:900px){html[data-theme] #appRoot .dsHeroBg{left:0;opacity:.45}}
 @media(max-width:700px){
   html[data-theme] #appRoot .dsHeroInner{padding:24px 20px}
