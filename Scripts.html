@@ -1,4 +1,5 @@
 <script>
+console.info('EDEN BI: OLD V50 DESIGN + SHARE');
 
 // ===== CLEAN TRANSACTIONS BASE =====
 // KPI cards and Transactions charts were intentionally removed from MainContent.
@@ -104,6 +105,49 @@ function applyEgyptViewerUi_(){
 const money=n=>Number(n||0).toLocaleString('en-US');
 const by=(arr,key)=>arr.reduce((m,r)=>{const k=r[key]||'Not Assigned';(m[k]=m[k]||[]).push(r);return m},{});
 const sum=(arr,key)=>arr.reduce((a,r)=>a+(Number(r[key])||0),0);
+
+const edenNormName_=v=>String(v||'').trim().toLowerCase().replace(/\s+/g,' ');
+
+function isShareDeal_(row){
+  return String(row?.dealStatus||'').trim().toLowerCase()==='share' &&
+         String(row?.sharedWith||'').trim() &&
+         edenNormName_(row?.sharedWith)!==edenNormName_(row?.salesName);
+}
+
+function salesMatchesDeal_(row,salesNames){
+  const wanted=(salesNames||[]).map(edenNormName_);
+  if(!wanted.length)return true;
+  const primary=edenNormName_(row?.salesName);
+  const shared=isShareDeal_(row)?edenNormName_(row?.sharedWith):'';
+  return wanted.includes(primary) || (!!shared && wanted.includes(shared));
+}
+
+function salesManagerLookup_(){
+  const map=new Map();
+  (rawRows||[]).forEach(r=>{
+    const sales=String(r.salesName||'').trim();
+    const manager=String(r.salesManager||'').trim();
+    if(sales && manager && !map.has(edenNormName_(sales)))map.set(edenNormName_(sales),manager);
+  });
+  return map;
+}
+
+function salesCreditRows_(rows){
+  const managerMap=salesManagerLookup_();
+  const out=[];
+  (rows||[]).forEach(r=>{
+    const primary=String(r.salesName||'').trim()||'Not Assigned';
+    const shared=String(r.sharedWith||'').trim();
+    if(!isShareDeal_(r)){
+      out.push({...r,salesName:primary,salesCredit:1,dealCredit:1,shareRole:'Solo / Primary'});
+      return;
+    }
+    out.push({...r,salesName:primary,amount:(Number(r.amount)||0)/2,area:(Number(r.area)||0)/2,salesCredit:.5,dealCredit:.5,shareRole:'Primary Share'});
+    out.push({...r,salesName:shared,salesManager:managerMap.get(edenNormName_(shared))||r.salesManager||'',amount:(Number(r.amount)||0)/2,area:(Number(r.area)||0)/2,salesCredit:.5,dealCredit:.5,shareRole:'Shared With'});
+  });
+  return out;
+}
+
 const isClosed=r=>String(r.status||'').toLowerCase()==='closed';
 
 const USD_PROJECTS = new Set(['CCG','CITY CENTER GLDANI','CITY CENTRE GLDANI','KOBULETI']);
@@ -1170,6 +1214,14 @@ function fillFilters(o){
   setChecks('unitCategoryChecks',sortUnitTypesClient(transactionUnitTypes).map(x=>({value:x,label:x})),'unitCategory');
   setChecks('salesChecks',(o.sales||[]).map(x=>({value:x,label:x})),'sales');
   setChecks('salesManagerChecks',(o.salesManagers||[]).map(x=>({value:x,label:x})),'salesManager');
+
+  const dealTypes=[...new Set((rawRows||[]).map(r=>String(r.dealStatus||'').trim()).filter(Boolean))]
+    .sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:'base'}));
+  setChecks('dealTypeChecks',(dealTypes.length?dealTypes:['Solo','Share']).map(x=>({value:x,label:x})),'dealType');
+
+  const sharedSales=[...new Set((rawRows||[]).map(r=>String(r.sharedWith||'').trim()).filter(Boolean))]
+    .sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:'base'}));
+  setChecks('sharedWithChecks',sharedSales.map(x=>({value:x,label:x})),'sharedWith');
   const nationalities=[...new Set(rawRows.map(r=>String(r.nationality||'').trim()).filter(Boolean))]
     .sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base'}));
   setChecks('nationalityChecks',nationalities.map(x=>({value:x,label:x})),'nationality');
@@ -1408,7 +1460,7 @@ function refreshSalesFilterByManager_(){
 }
 function getMulti(name){return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(x=>String(x.value))}
 function updateMultiLabels(){
-  setMultiLabel('project','projectLabel','All Projects');setMultiLabel('unitCategory','unitCategoryLabel','All Unit Types');setMultiLabel('sales','salesLabel','All Sales');setMultiLabel('salesManager','salesManagerLabel','All Sales Managers');setMultiLabel('nationality','nationalityLabel','All Nationalities');setMultiLabel('clientType','clientTypeLabel','All Client Types');setMultiLabel('branch','branchLabel','All Branches');setMultiLabel('status','statusLabel','All Status');setMultiLabel('renovation','renovationLabel','All Renovation');setMultiLabel('mainSource','mainSourceLabel','All Main Sources');setMultiLabel('sourceType','sourceTypeLabel','All Source Types');setMultiLabel('campaignName','campaignNameLabel','All Campaigns');setMultiLabel('mediaBuyer','mediaBuyerLabel','All Media Buyers');setMultiLabel('day','dayLabel','All Days');setMultiLabel('month','monthLabel','All Months');setMultiLabel('year','yearLabel','All Years');
+  setMultiLabel('project','projectLabel','All Projects');setMultiLabel('unitCategory','unitCategoryLabel','All Unit Types');setMultiLabel('sales','salesLabel','All Sales');setMultiLabel('salesManager','salesManagerLabel','All Sales Managers');setMultiLabel('dealType','dealTypeLabel','All Deal Types');setMultiLabel('sharedWith','sharedWithLabel','All Shared Sales');setMultiLabel('nationality','nationalityLabel','All Nationalities');setMultiLabel('clientType','clientTypeLabel','All Client Types');setMultiLabel('branch','branchLabel','All Branches');setMultiLabel('status','statusLabel','All Status');setMultiLabel('renovation','renovationLabel','All Renovation');setMultiLabel('mainSource','mainSourceLabel','All Main Sources');setMultiLabel('sourceType','sourceTypeLabel','All Source Types');setMultiLabel('campaignName','campaignNameLabel','All Campaigns');setMultiLabel('mediaBuyer','mediaBuyerLabel','All Media Buyers');setMultiLabel('day','dayLabel','All Days');setMultiLabel('month','monthLabel','All Months');setMultiLabel('year','yearLabel','All Years');
   setMultiLabel('brokerEden','brokerEdenLabel','All Eden Sales');setMultiLabel('brokerCreatedBy','brokerCreatedByLabel','All Created By');setMultiLabel('brokerLastSales','brokerLastSalesLabel','All Last Sales');setMultiLabel('brokerLink','brokerLinkLabel','All Link Status');setMultiLabel('brokerStatus','brokerStatusLabel','All Broker Status');setMultiLabel('brokerDay','brokerDayLabel','All Creation Days');setMultiLabel('brokerMonth','brokerMonthLabel','All Creation Months');setMultiLabel('brokerYear','brokerYearLabel','All Creation Years');
 }
 function setMultiLabel(name,labelId,emptyText){const selected=Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(x=>x.dataset.label||x.value);document.getElementById(labelId).innerText=selected.length?selected.join(' • '):emptyText}
@@ -1517,7 +1569,7 @@ function setView(v,btn){
 function resetFilters(){
   document.getElementById('search').value='';
   document.getElementById('brokerSearch').value='';
-  document.querySelectorAll('input[name="project"],input[name="unitCategory"],input[name="sales"],input[name="salesManager"],input[name="nationality"],input[name="clientType"],input[name="branch"],input[name="status"],input[name="renovation"],input[name="mainSource"],input[name="sourceType"],input[name="campaignName"],input[name="mediaBuyer"],input[name="day"],input[name="month"],input[name="year"],input[name="brokerEden"],input[name="brokerCreatedBy"],input[name="brokerLastSales"],input[name="brokerLink"],input[name="brokerStatus"],input[name="brokerDay"],input[name="brokerMonth"],input[name="brokerYear"]').forEach(cb=>cb.checked=false);
+  document.querySelectorAll('input[name="project"],input[name="unitCategory"],input[name="sales"],input[name="salesManager"],input[name="dealType"],input[name="sharedWith"],input[name="nationality"],input[name="clientType"],input[name="branch"],input[name="status"],input[name="renovation"],input[name="mainSource"],input[name="sourceType"],input[name="campaignName"],input[name="mediaBuyer"],input[name="day"],input[name="month"],input[name="year"],input[name="brokerEden"],input[name="brokerCreatedBy"],input[name="brokerLastSales"],input[name="brokerLink"],input[name="brokerStatus"],input[name="brokerDay"],input[name="brokerMonth"],input[name="brokerYear"]').forEach(cb=>cb.checked=false);
   refreshSalesFilterByManager_();updateMultiLabels();applyFilters();
 }
 function applyFilters(){
@@ -1525,6 +1577,8 @@ function applyFilters(){
         unitCategories=getMulti('unitCategory'),
         sales=getMulti('sales'),
         salesManagers=getMulti('salesManager'),
+        dealTypes=getMulti('dealType'),
+        sharedWithSales=getMulti('sharedWith'),
         nationalities=getMulti('nationality'),
         clientTypes=getMulti('clientType'),
         branches=getMulti('branch'),
@@ -1545,8 +1599,10 @@ function applyFilters(){
   filtered=rawRows.filter(r=>
     (!projects.length||projects.includes(String(r.project))) &&
     (!unitCategories.length||unitCategories.includes(String(r.unitType))) &&
-    (!sales.length||sales.includes(String(r.salesName))) &&
+    (!sales.length||salesMatchesDeal_(r,sales)) &&
     (!salesManagers.length||salesManagers.includes(String(r.salesManager))) &&
+    (!dealTypes.length||dealTypes.includes(String(r.dealStatus||''))) &&
+    (!sharedWithSales.length||sharedWithSales.includes(String(r.sharedWith||''))) &&
     (!nationalities.length||nationalities.includes(String(r.nationality))) &&
     (!clientTypes.length||clientTypes.some(v=>String(v).trim().toLowerCase()===String(r.clientType||'').trim().toLowerCase())) &&
     (!branches.length||branches.includes(String(r.branch))) &&
@@ -3150,7 +3206,22 @@ function initSalesCurveFilters_(){
 }
 function syncSalesCurveSales_(){
   const managers=edenCurveMultiValues_('curveManagerMulti');
-  const names=[...new Set(rawRows.filter(r=>!managers.length||managers.includes(String(r.salesManager||''))).map(r=>String(r.salesName||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  const managerMap=salesManagerLookup_();
+  const names=[...new Set(
+    rawRows
+      .flatMap(r=>{
+        const out=[];
+        const primary=String(r.salesName||'').trim();
+        const shared=isShareDeal_(r)?String(r.sharedWith||'').trim():'';
+        if(primary && (!managers.length||managers.includes(String(r.salesManager||''))))out.push(primary);
+        if(shared){
+          const sharedManager=managerMap.get(edenNormName_(shared))||'';
+          if(!managers.length||managers.includes(sharedManager))out.push(shared);
+        }
+        return out;
+      })
+      .filter(Boolean)
+  )].sort((a,b)=>a.localeCompare(b));
   edenCurveBuildMulti_('curveSalesMulti',names,'All Sales',()=>renderSalesCurve_());
 }
 function syncSalesCurveMonths_(){
@@ -3195,12 +3266,10 @@ function edenSalesCurveScope_(){
     ? rawRows
     : rawRows.filter(r=>String(r.status||'').trim().toLowerCase()!=='cancel');
 
-  return baseRows.filter(r=>{
+  const rawScope=baseRows.filter(r=>{
     const p=edenCurveDateParts_(r);
     const y=edenCurveYear_(r);
     return (
-      (!managers.length||managers.includes(String(r.salesManager||''))) &&
-      (!sales.length||sales.includes(String(r.salesName||''))) &&
       (!years.length||(y&&years.includes(String(y)))) &&
       (!months.length||(p&&months.includes(String(p.month)))) &&
       (!projects.length||projects.includes(String(r.project||'').trim())) &&
@@ -3208,6 +3277,12 @@ function edenSalesCurveScope_(){
       (!dealStatuses.length||dealStatuses.includes(edenCurveDealStatus_(r)))
     );
   });
+
+  const credits=salesCreditRows_(rawScope);
+  return credits.filter(r=>
+    (!managers.length||managers.includes(String(r.salesManager||''))) &&
+    (!sales.length||sales.includes(String(r.salesName||'')))
+  );
 }
 function renderSalesCurve_(){
   const canvas=document.getElementById('salesCurveChart'),empty=document.getElementById('salesCurveEmpty');
@@ -3241,7 +3316,7 @@ function renderSalesCurve_(){
     groupField='salesManager';
   }else{
     series=[...new Set(dealRows.map(r=>String(r.salesName||'').trim()).filter(Boolean))]
-      .map(name=>({name,total:(metric==='deals'?dealRows:rows).filter(r=>String(r.salesName||'').trim()===name).reduce((a,r)=>a+(metric==='deals'?1:Number(r.amount||0)),0)}))
+      .map(name=>({name,total:(metric==='deals'?dealRows:rows).filter(r=>String(r.salesName||'').trim()===name).reduce((a,r)=>a+(metric==='deals'?Number(r.dealCredit??1):Number(r.amount||0)),0)}))
       .sort((a,b)=>b.total-a.total).slice(0,8).map(x=>x.name);
     groupField='salesName';
   }
@@ -3250,7 +3325,7 @@ function renderSalesCurve_(){
   const summary=document.getElementById('curveSeriesSummary');
   if(summary){
     summary.innerHTML=series.map(name=>{
-      const count=dealRows.filter(r=>String(r[groupField]||'').trim()===name).length;
+      const count=dealRows.filter(r=>String(r[groupField]||'').trim()===name).reduce((a,r)=>a+Number(r.dealCredit??1),0);
       return `<div class="edenCurveSeriesStat"><span class="name">${escapeHtml(name)}</span><span class="count">${Number(count).toLocaleString('en-US')}<small>DEALS</small></span></div>`;
     }).join('');
   }
@@ -3261,7 +3336,7 @@ function renderSalesCurve_(){
     const stats=series.map(name=>{
       const valueRows=rows.filter(r=>String(r[groupField]||'').trim()===name);
       const countRows=dealRows.filter(r=>String(r[groupField]||'').trim()===name);
-      return {name,deals:countRows.length,valueDeals:valueRows.length,value:valueRows.reduce((a,r)=>a+Number(r.amount||0),0)};
+      return {name,deals:countRows.reduce((a,r)=>a+Number(r.dealCredit??1),0),valueDeals:valueRows.reduce((a,r)=>a+Number(r.dealCredit??1),0),value:valueRows.reduce((a,r)=>a+Number(r.amount||0),0)};
     }).sort((a,b)=>b.value-a.value);
     const leader=stats[0]||{name:'—',deals:0,valueDeals:0,value:0};
     const totalDeals=stats.reduce((a,x)=>a+x.deals,0);
@@ -3286,12 +3361,12 @@ function renderSalesCurve_(){
   dealRows.forEach(r=>{
     const y=edenCurveYear_(r); if(!y)return;
     if(!yearMap[y])yearMap[y]={deals:0,valueDeals:0,value:0};
-    yearMap[y].deals++;
+    yearMap[y].deals+=Number(r.dealCredit??1);
   });
   rows.forEach(r=>{
     const y=edenCurveYear_(r); if(!y)return;
     if(!yearMap[y])yearMap[y]={deals:0,valueDeals:0,value:0};
-    yearMap[y].valueDeals++;
+    yearMap[y].valueDeals+=Number(r.dealCredit??1);
     yearMap[y].value+=Number(r.amount||0);
   });
   const annualYears=Object.keys(yearMap).map(Number).sort((a,b)=>a-b);
@@ -3362,7 +3437,7 @@ function renderSalesCurve_(){
   const palette=['#f0c95e','#55a8ff','#4fd39a','#a77cff','#ff7d9f','#59c8d8','#8092e8','#f59b55','#d47fce','#8fc45d','#e08d63','#75b6a5'];
   const datasets=series.map((name,i)=>{
     const seriesRows=chartRows.filter(r=>String(r[groupField]||'').trim()===name);
-    const dealsCount=dealRows.filter(r=>String(r[groupField]||'').trim()===name).length;
+    const dealsCount=dealRows.filter(r=>String(r[groupField]||'').trim()===name).reduce((a,r)=>a+Number(r.dealCredit??1),0);
     return {
       // Make the count impossible to miss: it appears in the legend beside each manager/person.
       label:`${name} — ${Number(dealsCount).toLocaleString('en-US')} Deals`,
@@ -3371,7 +3446,7 @@ function renderSalesCurve_(){
       data:periods.map(period=>seriesRows.filter(r=>{
         const p=edenCurveDateParts_(r);
         return `${p.year}-${String(p.month).padStart(2,'0')}`===period;
-      }).reduce((a,r)=>a+(metric==='deals'?1:Number(r.amount||0)),0)),
+      }).reduce((a,r)=>a+(metric==='deals'?Number(r.dealCredit??1):Number(r.amount||0)),0)),
       borderColor:palette[i%palette.length],backgroundColor:palette[i%palette.length],
       pointRadius:3,pointHoverRadius:5,borderWidth:2,tension:.34,fill:false
     };
@@ -3387,7 +3462,6 @@ function renderSalesCurve_(){
         y:{beginAtZero:true,grid:{color:'rgba(120,153,181,.09)'},ticks:{color:'#8ca4b9',font:{size:9},callback:v=>edenCompact_(v)}}}}
   });
 }
-
 function edenNonDateScopeRows_(){
   const projects=getMulti('project'),
         unitCategories=getMulti('unitCategory'),
@@ -3516,6 +3590,17 @@ function renderCards(){
   const actualPaidEGP=sumN(egp,'actualPaid'), actualPaidUSD=sumN(usd,'actualPaid');
   const remainEGP=sumN(egp,'remain'), remainUSD=sumN(usd,'remain');
 
+  const sharedRows=rows.filter(isShareDeal_);
+  const sharedEGP=sharedRows.filter(r=>projectCurrency_(r)==='EGP');
+  const sharedUSD=sharedRows.filter(r=>projectCurrency_(r)==='USD');
+  const visibleSalesNames=new Set();
+  rows.forEach(r=>{
+    const primary=String(r.salesName||'').trim();
+    const shared=isShareDeal_(r)?String(r.sharedWith||'').trim():'';
+    if(primary)visibleSalesNames.add(primary);
+    if(shared)visibleSalesNames.add(shared);
+  });
+
   const fmt=(n,d=0)=>Number(n||0).toLocaleString('en-US',{maximumFractionDigits:d});
   const money=(n,c)=>`${fmt(n,0)} ${c}`;
   const avg=(total,count)=>count?total/count:0;
@@ -3533,7 +3618,10 @@ function renderCards(){
     ['UNITS',fmt(unitKeys.size),'Distinct unit codes','units','units'],
     ['METERS',fmt(sumN(rows,'area'),0),'Total filtered area','meters','meters'],
     ['PROJECTS',fmt(uniqN(rows,'project')),'Projects in current scope','projects',null],
-    ['SALES',fmt(uniqN(rows,'salesName')),'Salespeople in current scope','sales',null],
+    ['SALES',fmt(visibleSalesNames.size),'Primary + shared salespeople','sales',null],
+    ['SHARED DEALS',fmt(sharedRows.length),'Deals with a second salesperson','share',null],
+    ['SHARED VALUE EGP',money(sumN(sharedEGP,'amount'),'EGP'),'Full deal value before 50/50 sales credit','shareValue',null],
+    ['SHARED VALUE USD',money(sumN(sharedUSD,'amount'),'USD'),'Full deal value before 50/50 sales credit','shareValue',null],
     ['BRANCHES',fmt(uniqN(rows,'branch')),'Branches in current scope','branches',null],
     ['AVG DEAL EGP',money(avg(totalEGP,egp.length),'EGP'),'Average EGP deal value','avg',null],
     ['AVG DEAL USD',money(avg(totalUSD,usd.length),'USD'),'Average USD deal value','avg',null],
@@ -3545,7 +3633,7 @@ function renderCards(){
     ['REMAIN USD',money(remainUSD,'USD'),'Remaining down payment','remain',null]
   ];
 
-  const icon={deals:'◆',egp:'£',usd:'$',clients:'●',units:'▣',meters:'↔',projects:'▦',sales:'♟',branches:'⌂',avg:'≈',dp:'↓',paid:'✓',cash:'✓',remain:'…'};
+  const icon={deals:'◆',egp:'£',usd:'$',clients:'●',units:'▣',meters:'↔',projects:'▦',sales:'♟',share:'⇄',shareValue:'½',branches:'⌂',avg:'≈',dp:'↓',paid:'✓',cash:'✓',remain:'…'};
 
   host.innerHTML=kpis.map(([label,value,sub,type,compareKey])=>{
     let delta='';
@@ -4147,7 +4235,14 @@ function renderCharts(){
   edenInsightBar_('projectChart',edenRankRows_(rows,'project','count',8),'Deals',{horizontal:true,metaId:'projectChartMeta'});
   edenInsightBar_('valueEgpChart',edenRankRows_(egpRows,'project','amount',8),'EGP',{horizontal:true,money:true,metaId:'valueEgpMeta'});
   edenInsightBar_('valueUsdChart',edenRankRows_(usdRows,'project','amount',8),'USD',{horizontal:true,money:true,metaId:'valueUsdMeta'});
-  edenInsightBar_('salesChart',edenRankRows_(rows,'salesName','count',10),'Deals',{horizontal:true,metaId:'salesChartMeta'});
+  const salesCredits_=salesCreditRows_(rows);
+  const salesRank_=Object.values(salesCredits_.reduce((m,r)=>{
+    const name=String(r.salesName||'Not Assigned');
+    if(!m[name])m[name]={name,value:0};
+    m[name].value+=Number(r.dealCredit??1);
+    return m;
+  },{})).sort((a,b)=>b.value-a.value).slice(0,10);
+  edenInsightBar_('salesChart',salesRank_,'Deal Credit',{horizontal:true,metaId:'salesChartMeta'});
   // Brokerage companies: rank by sales value and show BOTH value + deal count.
   // EGP and USD are intentionally kept separate so currencies are never added together.
   const brokerageRows_=rows.filter(r=>String(r.brokerageCompany||'').trim());
@@ -4426,7 +4521,7 @@ function renderDownPaymentSummaryPanel_(rows){
 
 function renderTable(){
   let rows=filtered;
-  let cols=['project','clientName','mobile','clientType','nationality','unitCode','status','renovationStatus','monthName','year','amount','currency','dpPercent','actualDP','dpPaid','actualPaid','remain','area','salesName','branch','date','unitCategory','unitType','mainSource','sourceType','campaignName','mediaBuyer','brokerageCompany','bcSales','bcManager'];
+  let cols=['project','clientName','mobile','clientType','nationality','unitCode','status','renovationStatus','monthName','year','amount','currency','dpPercent','actualDP','dpPaid','actualPaid','remain','area','salesName','dealStatus','sharedWith','branch','date','unitCategory','unitType','mainSource','sourceType','campaignName','mediaBuyer','brokerageCompany','bcSales','bcManager'];
   let title='Deals Details';
   if(currentView==='projects'){
     rows=groupRows('project');cols=['name','deals','valueEGP','valueUSD','meters','units','uniqueClients','salesCount'];title='Projects Summary'
@@ -4481,7 +4576,43 @@ function drawMoneyBar(id,data,label,currency){
     }
   }));
 }
-function groupRows(key){const g=by(statusScopeRows(),key);return Object.keys(g).map(k=>{const a=g[k];return {name:k,deals:a.length,valueEGP:sum(a.filter(r=>projectCurrency_(r)==='EGP'),'amount'),valueUSD:sum(a.filter(r=>projectCurrency_(r)==='USD'),'amount'),meters:sum(a,'area'),units:a.filter(r=>r.unitCode).length,uniqueClients:new Set(a.map(r=>r.clientName)).size,salesCount:new Set(a.map(r=>r.salesName)).size,projectsCount:new Set(a.map(r=>r.project)).size,branchesCount:new Set(a.map(r=>r.branch)).size}}).sort((a,b)=>b.deals-a.deals)}
+function groupRows(key){
+  const base=statusScopeRows();
+  if(key==='salesName'){
+    const credits=salesCreditRows_(base);
+    const g=by(credits,'salesName');
+    return Object.keys(g).map(k=>{
+      const a=g[k];
+      return {
+        name:k,
+        deals:a.reduce((n,r)=>n+Number(r.dealCredit??1),0),
+        valueEGP:sum(a.filter(r=>projectCurrency_(r)==='EGP'),'amount'),
+        valueUSD:sum(a.filter(r=>projectCurrency_(r)==='USD'),'amount'),
+        meters:sum(a,'area'),
+        units:a.reduce((n,r)=>n+Number(r.dealCredit??1),0),
+        uniqueClients:new Set(a.map(r=>r.clientName)).size,
+        salesCount:1,
+        projectsCount:new Set(a.map(r=>r.project)).size,
+        branchesCount:new Set(a.map(r=>r.branch)).size
+      };
+    }).sort((a,b)=>b.valueEGP-a.valueEGP||b.valueUSD-a.valueUSD||b.deals-a.deals);
+  }
+  const g=by(base,key);
+  return Object.keys(g).map(k=>{
+    const a=g[k];
+    return {
+      name:k,deals:a.length,
+      valueEGP:sum(a.filter(r=>projectCurrency_(r)==='EGP'),'amount'),
+      valueUSD:sum(a.filter(r=>projectCurrency_(r)==='USD'),'amount'),
+      meters:sum(a,'area'),
+      units:a.filter(r=>r.unitCode).length,
+      uniqueClients:new Set(a.map(r=>r.clientName)).size,
+      salesCount:new Set(a.map(r=>r.salesName)).size,
+      projectsCount:new Set(a.map(r=>r.project)).size,
+      branchesCount:new Set(a.map(r=>r.branch)).size
+    };
+  }).sort((a,b)=>b.deals-a.deals);
+}
 function normalizeClientName(s){return String(s||'').toLowerCase().replace(/[\u064B-\u065F\u0670]/g,'').replace(/[إأآا]/g,'ا').replace(/[ى]/g,'ي').replace(/[ة]/g,'ه').replace(/[^\p{L}\p{N}]+/gu,' ').replace(/\s+/g,' ').trim()}
 function clientKeyOf(r){return r.clientKey || normalizeClientName(r.clientName)}
 function uniq(arr){return [...new Set(arr.filter(Boolean))]}
@@ -4767,7 +4898,7 @@ function cell(c,v){
   if(c==='status')return `<td><span class="chip status-${String(v).split(' ')[0]}">${v||''}</span></td>`;
   return `<td>${v??''}</td>`;
 }
-function label(c){return {name:'Name',deals:'Deals',valueEGP:'Total Value EGP',valueUSD:'Total Value USD',meters:'Sold Meters',units:'Sold Units',uniqueClients:'Unique Clients',salesCount:'Sales Count',projectsCount:'Projects Count',branchesCount:'Branches Count',clientName:'Client Name',project:'Project',clientType:'Client Type',nationality:'Nationality',unitCode:'Unit Code',status:'Status',renovationStatus:'Renovation',amount:'Final Price',currency:'Currency',area:'Area',salesName:'Sales Name',branch:'Branch',date:'Date',monthName:'Month',year:'Year',unitCategory:'Unit Type Category',unitType:'Unit Type',mainSource:'Main Source',sourceType:'Source Type',campaignName:'Campaign Name',mediaBuyer:'Media Buyer',brokerageCompany:'Brokerage Company',bcSales:'BC Sales',bcManager:'BC Manager',dpPercent:'DP %',actualDP:'Actual DP',dpPaid:'DP Paid',actualPaid:'Actual Paid',remain:'Remain',analysisType:'Analysis Type',projects:'Projects',customerValue:'Customer Value',customerJourney:'Customer Journey',sales:'Sales',branches:'Branches',statuses:'Statuses',unitCodes:'Unit Codes',company:'Company',creationDate:'Creation Date',lastSales:'Last Sales',createdBy:'Created By',edenSales:'Eden Sales',admin:'Admin',mobile:'Mobile',brokerSales:'Broker Sales',groupLink:'Group Link',companies:'Companies',withGroups:'WhatsApp Groups',withoutGroups:'Without Link',admins:'Admins',edenSalesCount:'Eden Sales Count',linkStatusLabel:'Link Status',healthStatus:'Health Status',severity:'Severity',issues:'Issues',row:'Sheet Row',orientationNo:'Orientation',orientationDate:'Orientation Date',sales:'Sales Who Made Orientation',orientations:'Orientations',firstOrientation:'First Orientation',lastOrientation:'Last Orientation'}[c]||c}
+function label(c){return {name:'Name',deals:'Deals',valueEGP:'Total Value EGP',valueUSD:'Total Value USD',meters:'Sold Meters',units:'Sold Units',uniqueClients:'Unique Clients',salesCount:'Sales Count',projectsCount:'Projects Count',branchesCount:'Branches Count',clientName:'Client Name',project:'Project',clientType:'Client Type',nationality:'Nationality',unitCode:'Unit Code',status:'Status',renovationStatus:'Renovation',amount:'Final Price',currency:'Currency',area:'Area',salesName:'Sales Name',dealStatus:'Deal Type',sharedWith:'Shared With',branch:'Branch',date:'Date',monthName:'Month',year:'Year',unitCategory:'Unit Type Category',unitType:'Unit Type',mainSource:'Main Source',sourceType:'Source Type',campaignName:'Campaign Name',mediaBuyer:'Media Buyer',brokerageCompany:'Brokerage Company',bcSales:'BC Sales',bcManager:'BC Manager',dpPercent:'DP %',actualDP:'Actual DP',dpPaid:'DP Paid',actualPaid:'Actual Paid',remain:'Remain',analysisType:'Analysis Type',projects:'Projects',customerValue:'Customer Value',customerJourney:'Customer Journey',sales:'Sales',branches:'Branches',statuses:'Statuses',unitCodes:'Unit Codes',company:'Company',creationDate:'Creation Date',lastSales:'Last Sales',createdBy:'Created By',edenSales:'Eden Sales',admin:'Admin',mobile:'Mobile',brokerSales:'Broker Sales',groupLink:'Group Link',companies:'Companies',withGroups:'WhatsApp Groups',withoutGroups:'Without Link',admins:'Admins',edenSalesCount:'Eden Sales Count',linkStatusLabel:'Link Status',healthStatus:'Health Status',severity:'Severity',issues:'Issues',row:'Sheet Row',orientationNo:'Orientation',orientationDate:'Orientation Date',sales:'Sales Who Made Orientation',orientations:'Orientations',firstOrientation:'First Orientation',lastOrientation:'Last Orientation'}[c]||c}
 
 
 // ===== TRANSACTIONS DATA HEALTH =====
