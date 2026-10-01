@@ -3414,7 +3414,10 @@ function renderSalesCurve_(){
         data:{labels:annualYears.map(String),datasets:[{
           label:metric==='deals'?'Deals Count':`Sales Value ${annualCurrency}`,
           data:values,
+          backgroundColor:values.map((_,i)=>i===values.length-1?edenDS_('chart-1'):hexToRgba_(edenDS_('chart-2'),.45)),
+          hoverBackgroundColor:values.map((_,i)=>i===values.length-1?edenDS_('chart-1'):edenDS_('chart-2')),
           borderRadius:7,
+          maxBarThickness:64,
           borderSkipped:false
         }]},
         options:{
