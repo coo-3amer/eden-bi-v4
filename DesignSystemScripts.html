@@ -79,4 +79,60 @@ function initEdenDesignSystem_(){
   setInterval(edenUpdateLiveTime_,30000);
 }
 initEdenDesignSystem_();
+
+/* ---------- Home hero (Overview page only) ---------- */
+function edenMountHero_(){
+  const tpl=document.getElementById('edenHeroTpl');
+  const main=document.querySelector('#appRoot .main');
+  const topbar=main&&main.querySelector('.topbar');
+  if(!tpl||!main||!topbar||document.getElementById('dsHero'))return;
+  topbar.parentNode.insertBefore(tpl.content.cloneNode(true),topbar);
+
+  document.querySelectorAll('#dsHero .dsProjCard').forEach(card=>{
+    card.addEventListener('click',()=>{
+      const keys=String(card.dataset.projectMatch||'').split('|').map(k=>k.trim().toUpperCase()).filter(Boolean);
+      const options=[...document.querySelectorAll('input[name="project"]')].map(cb=>String(cb.value));
+      const match=options.find(v=>keys.some(k=>v.toUpperCase().includes(k)));
+      if(!match){alert('This project has no transactions in the loaded data yet.');return;}
+      if(typeof selectProject==='function')selectProject(match);
+      const navBtn=[...document.querySelectorAll('.moduleMenu button')]
+        .find(b=>String(b.getAttribute('onclick')||'').includes("'projects'"));
+      document.querySelectorAll('.moduleMenu button').forEach(b=>b.classList.remove('active'));
+      navBtn?.classList.add('active');
+      window.scrollTo({top:0,behavior:'smooth'});
+    });
+  });
+}
+function edenUpdateHero_(){
+  const hero=document.getElementById('dsHero');
+  if(!hero)return;
+  const view=(typeof currentView!=='undefined')?currentView:'dashboard';
+  const show=view==='dashboard';
+  hero.classList.toggle('hidden',!show);
+  document.getElementById('appRoot')?.classList.toggle('dsHasHero',show);
+  if(!show)return;
+  const now=new Date();
+  const set=(id,v)=>{const el=document.getElementById(id);if(el&&el.textContent!==v)el.textContent=v;};
+  set('dsHeroDate',now.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'}));
+  set('dsHeroTime',now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}));
+  set('dsHeroBranch',document.getElementById('branchLabel')?.textContent?.trim()||'All Branches');
+  const box=document.getElementById('loggedUserBox');
+  const name=String(box?.textContent||'').split('•')[0].trim().split(/\s+/)[0]||'there';
+  set('dsHeroName',name);
+}
+(function initEdenHero_(){
+  edenMountHero_();
+  // Keep the hero in step with navigation without changing setView itself.
+  if(typeof setView==='function'&&!setView.__dsHero){
+    const original=setView;
+    setView=function(){const r=original.apply(this,arguments);edenUpdateHero_();return r;};
+    setView.__dsHero=true;
+  }
+  const box=document.getElementById('loggedUserBox');
+  if(box)new MutationObserver(edenUpdateHero_).observe(box,{childList:true,characterData:true,subtree:true});
+  const branch=document.getElementById('branchLabel');
+  if(branch)new MutationObserver(edenUpdateHero_).observe(branch,{childList:true,characterData:true,subtree:true});
+  edenUpdateHero_();
+  setInterval(edenUpdateHero_,30000);
+})();
 </script>
