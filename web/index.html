@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EDEN BI Dashboard</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2316130f'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='38' font-weight='700' fill='%23d3ae66' text-anchor='middle'%3EE%3C/text%3E%3C/svg%3E">
+<style>
+  html,body{margin:0;height:100%;background:#16130f}
+  iframe{position:fixed;inset:0;width:100%;height:100%;border:0;display:block;background:#16130f}
+  .boot{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#d3ae66;font:600 13px/1.4 Georgia,serif;letter-spacing:.3em;text-transform:uppercase;transition:opacity .4s ease}
+  .boot b{font-size:34px;letter-spacing:.35em;color:#fff;font-weight:700}
+  .boot.done{opacity:0;pointer-events:none}
+</style>
+</head>
+<body>
+<div class="boot" id="boot"><b>EDEN</b>Business Intelligence</div>
+<iframe id="app" title="EDEN BI Dashboard" allow="clipboard-read; clipboard-write; fullscreen"></iframe>
+<script>
+  // The live Apps Script web app (the /exec link of the main deployment).
+  const APP_URL = 'PASTE_EXEC_URL_HERE';
+  const f = document.getElementById('app');
+  f.addEventListener('load', () => document.getElementById('boot').classList.add('done'));
+  f.src = APP_URL;
+</script>
+</body>
+</html>
