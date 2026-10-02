@@ -1,6 +1,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=Great+Vibes&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style id="eden-design-system">
 /* =====================================================================
    EDEN BI DESIGN SYSTEM  (v5)
@@ -46,38 +46,38 @@ html[data-theme="light"]{
   color-scheme:light;
 }
 html[data-theme="dark"]{
-  --ds-bg:#0a0f1c;
-  --ds-surface:#101829;
-  --ds-surface-2:#162036;
-  --ds-surface-3:#1d2944;
-  --ds-line:#1f2b45;
-  --ds-line-strong:#2d3b5c;
-  --ds-text:#dfe5f1;
-  --ds-heading:#f8f6f0;
-  --ds-muted:#8f9ab5;
-  --ds-subtle:#67718d;
-  --ds-gold:#d6a64f;
-  --ds-gold-strong:#ecc77f;
-  --ds-gold-soft:rgba(214,166,79,.14);
-  --ds-gold-line:rgba(214,166,79,.38);
+  --ds-bg:#0f0e0c;
+  --ds-surface:#181714;
+  --ds-surface-2:#1e1c19;
+  --ds-surface-3:#26241f;
+  --ds-line:#2e2b26;
+  --ds-line-strong:#3d3932;
+  --ds-text:#e9e3d7;
+  --ds-heading:#fbf6ec;
+  --ds-muted:#9d9384;
+  --ds-subtle:#766e62;
+  --ds-gold:#d3ae66;
+  --ds-gold-strong:#e7c47f;
+  --ds-gold-soft:rgba(211,174,102,.13);
+  --ds-gold-line:rgba(211,174,102,.34);
   --ds-on-gold:#1a1408;
-  --ds-green:#3fd08a;
-  --ds-red:#f07a7a;
-  --ds-blue:#3f8cff;
-  --ds-violet:#9a6bff;
-  --ds-green-soft:rgba(63,208,138,.14);
-  --ds-red-soft:rgba(240,122,122,.14);
-  --ds-blue-soft:rgba(63,140,255,.16);
-  --ds-amber-soft:rgba(236,199,127,.15);
-  --ds-sidebar:#0b1222;
-  --ds-input:#0d1527;
-  --ds-hover:#18223a;
-  --ds-shadow-sm:0 1px 2px rgba(0,0,0,.35);
-  --ds-shadow:0 1px 0 rgba(255,255,255,.03) inset,0 14px 34px rgba(0,0,0,.35);
-  --ds-shadow-lg:0 20px 60px rgba(0,0,0,.55);
+  --ds-green:#4cc386;
+  --ds-red:#ef7070;
+  --ds-blue:#72a4f2;
+  --ds-violet:#a98cf0;
+  --ds-green-soft:rgba(76,195,134,.14);
+  --ds-red-soft:rgba(239,112,112,.14);
+  --ds-blue-soft:rgba(114,164,242,.14);
+  --ds-amber-soft:rgba(231,196,127,.15);
+  --ds-sidebar:#131210;
+  --ds-input:#141311;
+  --ds-hover:#23211c;
+  --ds-shadow-sm:0 1px 2px rgba(0,0,0,.3);
+  --ds-shadow:0 1px 2px rgba(0,0,0,.25),0 10px 28px rgba(0,0,0,.28);
+  --ds-shadow-lg:0 20px 60px rgba(0,0,0,.5);
   --ds-grid:rgba(255,255,255,.07);
-  --ds-chart-1:#d6a64f;--ds-chart-2:#3f8cff;--ds-chart-3:#2fbfae;--ds-chart-4:#9a6bff;
-  --ds-chart-5:#e0795b;--ds-chart-6:#5a6cff;--ds-chart-7:#3fd08a;--ds-chart-8:#ecc77f;
+  --ds-chart-1:#d3ae66;--ds-chart-2:#a39b8d;--ds-chart-3:#6fb58a;--ds-chart-4:#7ea3e0;
+  --ds-chart-5:#e08e6a;--ds-chart-6:#a990e0;--ds-chart-7:#5cc0ba;--ds-chart-8:#f0d394;
   color-scheme:dark;
 }
 html[data-theme="light"],html[data-theme="dark"]{
@@ -173,7 +173,7 @@ html[data-theme] #appRoot .dsLogo img{display:block;width:150px;height:auto}
 html[data-theme] #appRoot .dsLogo .dsLogoWhite{display:none}
 html[data-theme="dark"] #appRoot .dsLogo .dsLogoDark{display:none}
 html[data-theme="dark"] #appRoot .dsLogo .dsLogoWhite{display:block}
-html[data-theme] #appRoot .dsLogoSub{font-size:12px;letter-spacing:.34em;color:var(--ds-gold-strong);margin:12px 10px 24px;text-transform:uppercase;font-weight:600;display:flex;flex-direction:column;gap:6px}html[data-theme] #appRoot .dsLogoSub small{font-size:8.5px;letter-spacing:.16em;color:var(--ds-muted);font-weight:600}
+html[data-theme] #appRoot .dsLogoSub{font-size:10px;letter-spacing:.32em;color:var(--ds-muted);margin:10px 10px 22px;text-transform:uppercase;font-weight:600}
 
 html[data-theme] #appRoot .nav{flex:1}
 html[data-theme] #appRoot .sectionDivider{background:transparent!important;height:4px!important;margin:0!important;border:0!important}
@@ -441,11 +441,4 @@ html[data-theme] .loader{background:color-mix(in srgb,var(--ds-bg) 92%,transpare
   html[data-theme] #appRoot .dsLive{display:none}
   html[data-theme] #appRoot .title{font-size:26px!important}
 }
-</style>
-
-<style id="eden-dark-ambience">
-/* Dark theme: night-sky ambience like the reference */
-html[data-theme="dark"] body{background:radial-gradient(1200px 600px at 75% -10%,rgba(214,166,79,.10),transparent 60%),radial-gradient(900px 500px at 10% 0%,rgba(63,140,255,.10),transparent 60%),#0a0f1c!important;background-attachment:fixed!important}
-html[data-theme="dark"] #appRoot .dsAppBar{background:transparent;box-shadow:none;backdrop-filter:blur(8px)}
-html[data-theme="dark"] #appRoot .dsKpi,html[data-theme="dark"] #appRoot .dsPanel,html[data-theme="dark"] #appRoot .card,html[data-theme="dark"] #appRoot .tableBox,html[data-theme="dark"] #appRoot .edenSalesCurvePanel,html[data-theme="dark"] #appRoot .edenInsightCard,html[data-theme="dark"] #appRoot .dashboardFilterBar,html[data-theme="dark"] #appRoot .dsStatusBar{background:linear-gradient(180deg,rgba(22,32,54,.92),rgba(14,21,38,.92))!important;border-color:rgba(120,150,210,.16)!important}
 </style>
