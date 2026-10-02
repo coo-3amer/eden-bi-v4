@@ -81,12 +81,6 @@ function cancelledStatus_(value) {
 
 function getDashboardData(authToken) {
   const authUser = validateAuthToken_(authToken);
-  return buildDashboardData_(authUser);
-}
-
-// Builds the Transactions payload for a given (already authenticated) user.
-// Also used by the scheduled Daily Report with full access.
-function buildDashboardData_(authUser) {
   const egyptViewer = isEgyptViewerUser_(authUser);
 
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
