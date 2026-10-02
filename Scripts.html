@@ -3216,7 +3216,7 @@ function initSalesCurveFilters_(){
   const dealStatuses=[...new Set(rawRows.map(edenCurveDealStatus_).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
   const projects=[...new Set(rawRows.map(r=>String(r.project||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
   const branches=[...new Set(rawRows.map(edenCurveBranch_).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
-  edenCurveBuildMulti_('curveProjectMulti',projects,'All Projects',()=>renderSalesCurve_());
+  edenCurveBuildMulti_('curveProjectMulti',projects,'All Projects',()=>{syncSalesCurveSales_();renderSalesCurve_()});
   edenCurveBuildMulti_('curveBranchMulti',branches,'All Branches',()=>renderSalesCurve_());
   edenCurveBuildMulti_('curveManagerMulti',managers,'All Managers',()=>{syncSalesCurveSales_();renderSalesCurve_()});
   edenCurveBuildMulti_('curveYearMulti',years,'All Years',()=>{syncSalesCurveMonths_();renderSalesCurve_()});
@@ -3225,9 +3225,11 @@ function initSalesCurveFilters_(){
 }
 function syncSalesCurveSales_(){
   const managers=edenCurveMultiValues_('curveManagerMulti');
+  const curveProjects=edenCurveMultiValues_('curveProjectMulti');
   const managerMap=salesManagerLookup_();
   const names=[...new Set(
     rawRows
+      .filter(r=>!curveProjects.length||curveProjects.includes(String(r.project||'').trim()))
       .flatMap(r=>{
         const out=[];
         const primary=String(r.salesName||'').trim();

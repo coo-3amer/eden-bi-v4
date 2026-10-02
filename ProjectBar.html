@@ -145,6 +145,22 @@ function dsCascadeFilters_(){
   return cleared;
 }
 
+/* Keep the Sales Performance Curve's Project filter in step with the
+   project buttons: picking a project shows that project's sales team. */
+let DS_CURVE_PROJECT_KEY=null;
+function dsSyncCurveProjects_(){
+  const box=document.getElementById('curveProjectMulti');
+  if(!box||typeof getMulti!=='function')return;
+  const projects=getMulti('project').map(v=>String(v).trim());
+  const key=projects.slice().sort().join('|');
+  if(key===DS_CURVE_PROJECT_KEY)return;
+  DS_CURVE_PROJECT_KEY=key;
+  box.querySelectorAll('.edenCurveMultiMenu input[type="checkbox"]').forEach(cb=>{cb.checked=projects.includes(String(cb.value).trim());});
+  if(typeof edenCurveMultiLabel_==='function')edenCurveMultiLabel_('curveProjectMulti','All Projects');
+  if(typeof syncSalesCurveSales_==='function')syncSalesCurveSales_();
+  if(typeof renderSalesCurve_==='function')renderSalesCurve_();
+}
+
 (function initEdenProjectBar_(){
   dsProjBarMount_();
   if(typeof applyFilters==='function'&&!applyFilters.__dsCascade){
@@ -159,7 +175,7 @@ function dsCascadeFilters_(){
   }
   if(typeof render==='function'&&!render.__dsProjBar){
     const original=render;
-    render=function(){const r=original.apply(this,arguments);try{dsProjBarRender_();}catch(e){console.error(e);}return r;};
+    render=function(){const r=original.apply(this,arguments);try{dsProjBarRender_();}catch(e){console.error(e);}try{dsSyncCurveProjects_();}catch(e){console.error('Curve project sync',e);}return r;};
     render.__dsProjBar=true;
   }
   try{dsCascadeFilters_();}catch(e){}
