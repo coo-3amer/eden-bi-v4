@@ -4900,12 +4900,24 @@ function clientRows(){
   const analysis=getClientAnalysis();
   return [...analysis.same, ...analysis.multi];
 }
+// One cell can hold several phone numbers ("0100… - 0111…"): show each on its own line.
+function splitPhoneNumbers_(v){
+  const raw=String(v??'').trim();
+  if(!raw)return [];
+  const parts=raw.split(/\s*(?:\s-\s|[\/,;|\n]|\s+و\s+|\s{2,})\s*/).map(x=>x.trim()).filter(Boolean);
+  const digits=x=>x.replace(/\D/g,'').length;
+  return parts.length>1&&parts.every(x=>digits(x)>=7)?parts:[raw];
+}
+function mobileCellHtml_(v){
+  return splitPhoneNumbers_(v).map(n=>`<span class="mobileNum">${escapeHtml(n)}</span>`).join('');
+}
 function cell(c,v){
   if(['amount','valueEGP','valueUSD','actualDP','dpPaid','actualPaid','remain','meters','area','meterPrice','brokerSales','companies','withGroups','withoutGroups','admins','edenSalesCount','orientations'].includes(c))return `<td>${money(v)}</td>`;
   if(c==='groupLink')return `<td>${v?`<a class="chip" href="${v}" target="_blank">Open Group</a>`:''}</td>`;
   if(c==='healthStatus'||c==='severity'){const cls=String(v||'').toLowerCase().replace(/\s+/g,'-');return `<td><span class="healthBadge health-${cls}">${escapeHtml(v||'')}</span></td>`;}
   if(c==='issues')return `<td class="healthIssuesCell">${escapeHtml(v||'')}</td>`;
   if(c==='dpPercent')return `<td>${Number(v||0).toLocaleString('en-US')}%</td>`;
+  if(c==='mobile')return `<td class="mobileCell" title="${escapeHtml(v??'')}">${mobileCellHtml_(v)}</td>`;
   if(c==='status')return `<td><span class="chip status-${String(v).split(' ')[0]}">${v||''}</span></td>`;
   return `<td>${v??''}</td>`;
 }
