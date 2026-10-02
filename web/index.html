@@ -39,7 +39,14 @@
         return r.json();
       }).then(function (j) {
         if (!j || !j.ok) throw new Error((j && j.error) || 'Request failed');
-        return j.result;
+        if (!j.chunked) return j.result;
+        var reqs = [];
+        for (var i = 0; i < j.parts; i++) {
+          reqs.push(fetch(API + '?view=chunk&id=' + encodeURIComponent(j.chunked) + '&i=' + i, { credentials: 'omit', redirect: 'follow' })
+            .then(function (r) { return r.json(); })
+            .then(function (c) { if (typeof c.data !== 'string') throw new Error(c.error || 'Missing data'); return c.data; }));
+        }
+        return Promise.all(reqs).then(function (parts) { return JSON.parse(parts.join('')); });
       });
     }
     function runner(ok, fail, user) {
@@ -69,13 +76,24 @@
     location.replace(APP_URL);
   }
 
-  fetch(APP_URL + '?view=raw', { credentials: 'omit', redirect: 'follow' })
-    .then(function (r) { return r.text(); })
-    .then(function (text) {
-      var data;
-      try { data = JSON.parse(text); } catch (e) { data = null; }
-      if (!data || typeof data.html !== 'string') { startIframe(); return; }
-      var html = data.html.replace(/<head([^>]*)>/i, function (m) {
+  function getJson(url) {
+    return fetch(url, { credentials: 'omit', redirect: 'follow' })
+      .then(function (r) { return r.text(); })
+      .then(function (t) { return JSON.parse(t); });
+  }
+
+  getJson(APP_URL + '?view=raw')
+    .then(function (first) {
+      if (!first || typeof first.html !== 'string') throw new Error('No page');
+      var reqs = [Promise.resolve(first.html)];
+      for (var i = 1; i < (first.parts || 1); i++) {
+        reqs.push(getJson(APP_URL + '?view=chunk&id=' + encodeURIComponent(first.id) + '&i=' + i)
+          .then(function (c) { if (typeof c.data !== 'string') throw new Error('Missing part'); return c.data; }));
+      }
+      return Promise.all(reqs);
+    })
+    .then(function (parts) {
+      var html = parts.join('').replace(/<head([^>]*)>/i, function (m) {
         var icon = document.querySelector('link[rel="icon"]');
         return m + (icon ? icon.outerHTML : '') + '<script>' + SHIM + '<\/script>';
       });

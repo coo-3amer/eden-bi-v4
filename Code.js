@@ -14,7 +14,7 @@ function include(filename) {
 
 function doGet(e) {
   // Custom-domain page (dashboard.edenalkhalij.com) asks for the raw page; see Api.js.
-  if (e && e.parameter && e.parameter.view === 'raw') return apiRawPage_();
+  if (e && e.parameter && e.parameter.view) return apiDoGet_(e);
 
   // Ensure the lightweight Users sheet exists before the login screen loads.
   // This does not read dashboard data and will not slow down the dashboard.
