@@ -8,34 +8,85 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2316130f'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='38' font-weight='700' fill='%23d3ae66' text-anchor='middle'%3EE%3C/text%3E%3C/svg%3E">
 <style>
   html,body{margin:0;height:100%;background:#16130f}
-  iframe{position:fixed;inset:0;width:100%;height:100%;border:0;display:block;background:#16130f}
-  .boot{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#d3ae66;font:600 13px/1.4 Georgia,serif;letter-spacing:.3em;text-transform:uppercase;transition:opacity .4s ease}
+  .boot{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#d3ae66;font:600 13px/1.4 Georgia,serif;letter-spacing:.3em;text-transform:uppercase}
   .boot b{font-size:34px;letter-spacing:.35em;color:#fff;font-weight:700}
-  .boot.done{opacity:0;pointer-events:none}
-  .help{position:fixed;right:16px;bottom:16px;z-index:5;display:none;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;background:rgba(22,19,15,.92);border:1px solid rgba(211,174,102,.4);color:#e9e3d7;font:500 12px/1.4 Arial,sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.4)}
-  .help.show{display:flex}
-  .help a{color:#16130f;background:#d3ae66;text-decoration:none;font-weight:700;padding:7px 11px;border-radius:8px;white-space:nowrap}
-  .help button{all:unset;cursor:pointer;color:#a99f90;font-size:16px;padding:0 4px}
+  .boot i{width:120px;height:2px;background:linear-gradient(90deg,transparent,#d3ae66,transparent);animation:edenBar 1.2s ease-in-out infinite}
+  @keyframes edenBar{0%{opacity:.2;transform:scaleX(.3)}50%{opacity:1;transform:scaleX(1)}100%{opacity:.2;transform:scaleX(.3)}}
+  iframe{position:fixed;inset:0;width:100%;height:100%;border:0;display:block}
 </style>
 </head>
 <body>
-<div class="boot" id="boot"><b>EDEN</b>Business Intelligence</div>
- <div class="help" id="help" role="status">
-  <span>Not loading? Browsers signed into several Google accounts can block it.</span>
-  <a id="direct" href="#" target="_blank" rel="noopener">Open directly</a>
-  <button type="button" aria-label="Dismiss" onclick="this.parentNode.classList.remove('show')">×</button>
-</div>
-<iframe id="app" title="EDEN BI Dashboard" allow="clipboard-read; clipboard-write; fullscreen"></iframe>
+<div class="boot" id="boot"><b>EDEN</b>Business Intelligence<i></i></div>
 <script>
-  // The live Apps Script web app (the /exec link of the main deployment).
-  const APP_URL = 'https://script.google.com/macros/s/AKfycbwiiwJuFH4nopIhra_uSZjCIrH4_W5WaQWZ94fD0FBiXXZnxp6Y-u8976ij-QALXXHj/exec';
-  const f = document.getElementById('app');
-  f.addEventListener('load', () => document.getElementById('boot').classList.add('done'));
-  f.src = APP_URL;
-  document.getElementById('direct').href = APP_URL;
-  // Offer a direct link a few seconds in, for browsers where the embedded app fails.
-  setTimeout(() => document.getElementById('help').classList.add('show'), 6000);
-  setTimeout(() => document.getElementById('help').classList.remove('show'), 20000);
+/* EDEN BI — custom-domain loader
+   Loads the dashboard page from Apps Script and runs it here, so it never
+   depends on the visitor's Google sign-in. Server calls go to the same
+   Apps Script web app as a small JSON API (see Api.js). */
+(function () {
+  var APP_URL = 'https://script.google.com/macros/s/AKfycbwiiwJuFH4nopIhra_uSZjCIrH4_W5WaQWZ94fD0FBiXXZnxp6Y-u8976ij-QALXXHj/exec';
+
+  // google.script.run stand-in: same chaining API, calls the JSON API.
+  var SHIM = '(' + function (API) {
+    function call(fn, args) {
+      return fetch(API, {
+        method: 'POST',
+        credentials: 'omit',
+        redirect: 'follow',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ fn: fn, args: args })
+      }).then(function (r) {
+        if (!r.ok) throw new Error('Server error ' + r.status);
+        return r.json();
+      }).then(function (j) {
+        if (!j || !j.ok) throw new Error((j && j.error) || 'Request failed');
+        return j.result;
+      });
+    }
+    function runner(ok, fail, user) {
+      return new Proxy({}, {
+        get: function (_, key) {
+          if (key === 'withSuccessHandler') return function (h) { return runner(h, fail, user); };
+          if (key === 'withFailureHandler') return function (h) { return runner(ok, h, user); };
+          if (key === 'withUserObject') return function (u) { return runner(ok, fail, u); };
+          if (typeof key !== 'string') return undefined;
+          return function () {
+            var args = Array.prototype.slice.call(arguments);
+            call(key, args).then(
+              function (res) { if (ok) ok(res, user); },
+              function (err) { if (fail) fail(err, user); else console.error(err); }
+            );
+          };
+        }
+      });
+    }
+    window.google = window.google || {};
+    window.google.script = { run: runner(null, null, null), host: { close: function () {}, setHeight: function () {}, setWidth: function () {} } };
+  } + ')(' + JSON.stringify(APP_URL) + ');';
+
+  function startIframe() {
+    var f = document.createElement('iframe');
+    f.title = 'EDEN BI Dashboard';
+    f.allow = 'clipboard-read; clipboard-write; fullscreen';
+    f.src = APP_URL;
+    document.body.appendChild(f);
+  }
+
+  fetch(APP_URL + '?view=raw', { credentials: 'omit', redirect: 'follow' })
+    .then(function (r) { return r.text(); })
+    .then(function (text) {
+      var data;
+      try { data = JSON.parse(text); } catch (e) { data = null; }
+      if (!data || typeof data.html !== 'string') { startIframe(); return; }
+      var html = data.html.replace(/<head([^>]*)>/i, function (m) {
+        var icon = document.querySelector('link[rel="icon"]');
+        return m + (icon ? icon.outerHTML : '') + '<script>' + SHIM + '<\/script>';
+      });
+      document.open();
+      document.write(html);
+      document.close();
+    })
+    .catch(startIframe);
+})();
 </script>
 </body>
 </html>
