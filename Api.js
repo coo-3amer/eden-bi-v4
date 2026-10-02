@@ -8,6 +8,7 @@
  *
  *   GET  /exec?view=ping                  -> {ok:true}
  *   GET  /exec?view=raw                   -> {id, parts, html}: first slice of the page
+ *   GET  /exec?view=pagever               -> {id, parts, hash}: current page version
  *   GET  /exec?view=chunk&id=X&i=N        -> {data}: one slice of a large result
  *   POST /exec  {fn, args}                -> {ok, result} | {ok, chunked, parts} | {ok:false, error}
  *
@@ -19,7 +20,7 @@
  ************************************************/
 
 const API_SLICE_CHARS_ = 90000;      // < 100 KB CacheService value limit
-const API_CACHE_SECONDS_ = 600;
+const API_CACHE_SECONDS_ = 1200;
 
 const API_ALLOWED_FUNCTIONS_ = {
   loginUser: true,
@@ -75,12 +76,31 @@ function apiReadSlice_(id, i) {
   return v;
 }
 
-function apiRawPage_() {
+// The rendered page is cached for a short time so most visits skip rendering.
+const API_PAGE_META_KEY_ = 'PAGE_META_V1';
+const API_PAGE_SECONDS_ = 900;
+
+function apiPageMeta_() {
+  const cache = CacheService.getScriptCache();
+  const cached = cache.get(API_PAGE_META_KEY_);
+  if (cached) {
+    const meta = JSON.parse(cached);
+    if (cache.get(meta.id + ':0') !== null) return meta;
+  }
   getUsersSheet_();
   const html = HtmlService.createTemplateFromFile('Index').evaluate().getContent();
-  const id = 'P' + Utilities.getUuid().replace(/-/g, '');
+  const hash = Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, html, Utilities.Charset.UTF_8)
+    .map(b => ('0' + (b & 255).toString(16)).slice(-2)).join('');
+  const id = 'P' + hash;
   const parts = apiStoreSlices_(id, html);
-  return apiJson_({ id: id, parts: parts, html: apiReadSlice_(id, 0) });
+  const meta = { id: id, parts: parts, hash: hash };
+  cache.put(API_PAGE_META_KEY_, JSON.stringify(meta), API_PAGE_SECONDS_);
+  return meta;
+}
+
+function apiRawPage_() {
+  const meta = apiPageMeta_();
+  return apiJson_({ id: meta.id, parts: meta.parts, hash: meta.hash, html: apiReadSlice_(meta.id, 0) });
 }
 
 function apiDoGet_(e) {
@@ -88,6 +108,7 @@ function apiDoGet_(e) {
   try {
     if (view === 'ping') return apiJson_({ ok: true, time: new Date().toISOString() });
     if (view === 'raw') return apiRawPage_();
+    if (view === 'pagever') { const m = apiPageMeta_(); return apiJson_({ id: m.id, parts: m.parts, hash: m.hash }); }
     if (view === 'chunk') return apiJson_({ data: apiReadSlice_(e.parameter.id, e.parameter.i) });
   } catch (err) {
     return apiJson_({ ok: false, error: (err && err.message) ? err.message : String(err) });
