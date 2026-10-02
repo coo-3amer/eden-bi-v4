@@ -1,0 +1,152 @@
+<style id="eden-project-bar">
+/* ===== Project buttons (replace the Project dropdown) ===== */
+html[data-theme] #appRoot .dsProjBar{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin:0 0 12px;padding:12px 16px;background:var(--ds-surface);border:1px solid var(--ds-line);border-radius:var(--ds-r-lg);box-shadow:var(--ds-shadow)}
+html[data-theme] #appRoot .dsProjBarHead{display:flex;flex-direction:column;gap:2px;min-width:118px}
+html[data-theme] #appRoot .dsProjBarHead b{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ds-gold-strong)}
+html[data-theme] #appRoot .dsProjBarHead span{font-size:11px;color:var(--ds-subtle)}
+html[data-theme] #appRoot .dsProjBtns{display:flex;flex-wrap:wrap;gap:10px;flex:1}
+html[data-theme] #appRoot .dsProjBtn{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;gap:10px;height:46px;padding:0 8px 0 5px;border-radius:999px;border:1px solid var(--ds-line);background:var(--ds-surface-2);color:var(--ds-text);font-size:13px;font-weight:700;letter-spacing:.02em;transition:background .15s ease,border-color .15s ease,box-shadow .15s ease}
+html[data-theme] #appRoot .dsProjBtn.all{padding-left:16px}
+html[data-theme] #appRoot .dsProjBtn:hover{border-color:var(--ds-gold-line);background:var(--ds-hover)}
+html[data-theme] #appRoot .dsProjBtn:focus-visible{box-shadow:0 0 0 3px var(--ds-gold-soft)}
+html[data-theme] #appRoot .dsProjBtn img,html[data-theme] #appRoot .dsProjBtn .dsProjDot{width:36px;height:36px;border-radius:50%;object-fit:cover;flex:0 0 36px;background:var(--ds-surface-3)}
+html[data-theme] #appRoot .dsProjBtn .dsProjDot{display:grid;place-items:center;font-size:12px;color:var(--ds-muted)}
+html[data-theme] #appRoot .dsProjBtn b{min-width:30px;height:26px;padding:0 9px;border-radius:999px;display:inline-grid;place-items:center;font-size:12px;font-weight:700;background:var(--ds-surface);color:var(--ds-muted);border:1px solid var(--ds-line)}
+html[data-theme] #appRoot .dsProjBtn.on{background:var(--ds-gold-grad);border-color:transparent;color:var(--ds-on-gold);box-shadow:0 1px 0 rgba(255,255,255,.25) inset,0 6px 14px rgba(150,110,40,.22)}
+html[data-theme] #appRoot .dsProjBtn.on img{box-shadow:0 0 0 2px rgba(255,255,255,.7)}
+html[data-theme] #appRoot .dsProjBtn.on b{background:rgba(255,255,255,.22);border-color:transparent;color:var(--ds-on-gold)}
+html[data-theme] #appRoot .dsProjBtn.empty{opacity:.55}
+/* The Project dropdown is replaced by the buttons. */
+html[data-theme] #appRoot section.filters #projectMulti{display:none!important}
+/* Options not available in the selected project(s). */
+html[data-theme] #appRoot .checkRow.dsCascadeHidden{display:none!important}
+@media(max-width:760px){html[data-theme] #appRoot .dsProjBar{gap:10px}html[data-theme] #appRoot .dsProjBarHead{flex-direction:row;gap:8px;align-items:baseline}}
+</style>
+
+<script>
+/* =====================================================================
+   EDEN BI — Project buttons + cascading filters
+   - One button per project (multi-select) replaces the Project dropdown;
+     it drives the existing Project checkboxes, so Reset / Clear all work.
+   - The other filters only offer values that exist in the selected
+     project(s); a selected value that no longer exists is cleared.
+   ===================================================================== */
+const DS_CASCADE_FIELDS={
+  unitCategory:r=>r.unitType,
+  sales:r=>[r.salesName,r.sharedWith],
+  salesManager:r=>r.salesManager,
+  dealType:r=>r.dealStatus,
+  sharedWith:r=>r.sharedWith,
+  nationality:r=>r.nationality,
+  clientType:r=>String(r.clientType||'').trim().toLowerCase(),
+  branch:r=>r.branch,
+  status:r=>r.status,
+  renovation:r=>r.renovationStatus,
+  mainSource:r=>r.mainSource,
+  sourceType:r=>r.sourceType,
+  campaignName:r=>r.campaignName,
+  mediaBuyer:r=>r.mediaBuyer,
+  brokerageCompany:r=>r.brokerageCompany,
+  bcSales:r=>r.bcSales,
+  bcManager:r=>r.bcManager,
+  day:r=>r.day,
+  month:r=>r.month,
+  year:r=>r.year
+};
+let DS_CASCADE_KEY='';
+
+function dsProjEsc_(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function dsProjThumb_(name){
+  const n=String(name||'').toUpperCase();
+  const card=[...document.querySelectorAll('#dsProjects .dsProjCard')].find(c=>
+    String(c.dataset.projectMatch||'').split('|').some(k=>k&&n.includes(k.trim().toUpperCase())));
+  return card?.querySelector('img')?.getAttribute('src')||'';
+}
+
+function dsProjBarMount_(){
+  if(document.getElementById('dsProjBar'))return;
+  const filters=document.querySelector('#appRoot section.filters');
+  if(!filters)return;
+  const bar=document.createElement('section');
+  bar.id='dsProjBar';bar.className='dsProjBar';bar.setAttribute('aria-label','Projects');
+  bar.innerHTML=`<div class="dsProjBarHead"><b>Projects</b><span>Select one or more</span></div><div class="dsProjBtns" role="group" id="dsProjBtns"></div>`;
+  filters.parentNode.insertBefore(bar,filters);
+  bar.addEventListener('click',e=>{
+    const btn=e.target.closest('.dsProjBtn');if(!btn)return;
+    const boxes=[...document.querySelectorAll('input[name="project"]')];
+    if(btn.dataset.project==='__all__')boxes.forEach(b=>b.checked=false);
+    else{const b=boxes.find(x=>String(x.value)===btn.dataset.project);if(b)b.checked=!b.checked;}
+    if(typeof updateMultiLabels==='function')updateMultiLabels();
+    if(typeof applyFilters==='function')applyFilters();
+  });
+}
+
+function dsProjBarRender_(){
+  const bar=document.getElementById('dsProjBar'),wrap=document.getElementById('dsProjBtns');
+  if(!bar||!wrap)return;
+  const filters=document.querySelector('#appRoot section.filters');
+  const visible=!!filters&&!filters.classList.contains('hidden')&&getComputedStyle(filters).display!=='none';
+  bar.classList.toggle('hidden',!visible);
+  if(!visible)return;
+
+  const boxes=[...document.querySelectorAll('input[name="project"]')];
+  const base=(typeof PROJECT_BASE_ROWS!=='undefined')?PROJECT_BASE_ROWS:[];
+  const noStatus=typeof getMulti==='function'&&!getMulti('status').length;
+  const cancelled=v=>typeof isCancelledStatus_==='function'&&isCancelledStatus_(v);
+  const counts={};let total=0;
+  base.forEach(r=>{if(noStatus&&cancelled(r.status))return;const k=String(r.project||'');counts[k]=(counts[k]||0)+1;total++;});
+  const selected=new Set(boxes.filter(b=>b.checked).map(b=>String(b.value)));
+  const fmt=n=>Number(n||0).toLocaleString('en-US');
+
+  wrap.innerHTML=
+    `<button type="button" class="dsProjBtn all${selected.size?'':' on'}" data-project="__all__" aria-pressed="${!selected.size}">All projects<b>${fmt(total)}</b></button>`+
+    boxes.map(b=>{
+      const v=String(b.value),label=b.dataset.label||v,on=selected.has(v),n=counts[v]||0,img=dsProjThumb_(v);
+      return `<button type="button" class="dsProjBtn${on?' on':''}${!n&&!on?' empty':''}" data-project="${dsProjEsc_(v)}" aria-pressed="${on}">`+
+        (img?`<img src="${img}" alt="">`:`<span class="dsProjDot" aria-hidden="true">${dsProjEsc_(label.slice(0,1))}</span>`)+
+        `${dsProjEsc_(label)}<b>${fmt(n)}</b></button>`;
+    }).join('');
+}
+
+/* Narrow the other filters to the selected project(s). Returns true if a
+   selection had to be cleared (the caller re-applies the filters). */
+function dsCascadeFilters_(){
+  const projects=(typeof getMulti==='function')?getMulti('project'):[];
+  const key=projects.slice().sort().join('|');
+  const rows=(typeof rawRows!=='undefined'?rawRows:[]).filter(r=>!projects.length||projects.includes(String(r.project)));
+  let cleared=false;
+  Object.entries(DS_CASCADE_FIELDS).forEach(([name,get])=>{
+    const allowed=new Set();
+    rows.forEach(r=>{[].concat(get(r)).forEach(v=>{const s=String(v??'').trim();if(s)allowed.add(name==='clientType'?s.toLowerCase():s);});});
+    document.querySelectorAll(`input[name="${name}"]`).forEach(box=>{
+      const v=String(box.value);
+      const ok=!projects.length||allowed.has(name==='clientType'?v.trim().toLowerCase():v.trim());
+      box.closest('.checkRow')?.classList.toggle('dsCascadeHidden',!ok);
+      if(!ok&&box.checked&&key!==DS_CASCADE_KEY){box.checked=false;cleared=true;}
+    });
+  });
+  DS_CASCADE_KEY=key;
+  return cleared;
+}
+
+(function initEdenProjectBar_(){
+  dsProjBarMount_();
+  if(typeof applyFilters==='function'&&!applyFilters.__dsCascade){
+    const original=applyFilters;
+    applyFilters=function(){
+      let cleared=false;
+      try{cleared=dsCascadeFilters_();}catch(e){console.error('Cascade filters',e);}
+      if(cleared&&typeof updateMultiLabels==='function')updateMultiLabels();
+      return original.apply(this,arguments);
+    };
+    applyFilters.__dsCascade=true;
+  }
+  if(typeof render==='function'&&!render.__dsProjBar){
+    const original=render;
+    render=function(){const r=original.apply(this,arguments);try{dsProjBarRender_();}catch(e){console.error(e);}return r;};
+    render.__dsProjBar=true;
+  }
+  try{dsCascadeFilters_();}catch(e){}
+  dsProjBarRender_();
+})();
+</script>

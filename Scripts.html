@@ -7,6 +7,7 @@ console.info('EDEN BI: OLD V50 DESIGN + SHARE');
 const EDEN_REBUILD_KPI_CHARTS = false;
 
 let STATUS_BASE_ROWS=[];
+let PROJECT_BASE_ROWS=[];
 let rawRows=[], filtered=[], brokerRows=[], brokerFiltered=[], currentView='dashboard', charts=[];
 let SALES_CURVE_CHART=null;
 let SALES_YEAR_COMPARE_CHART=null;
@@ -173,6 +174,11 @@ function enhanceDashboardFilterLayout_(){
     unitCategoryMulti:'Unit Type',
     salesMulti:'Sales',
     salesManagerMulti:'Sales Manager',
+    dealTypeMulti:'Deal Type',
+    sharedWithMulti:'Shared With',
+    brokerageCompanyMulti:'Brokerage Company',
+    bcSalesMulti:'BC Sales',
+    bcManagerMulti:'BC Manager',
     nationalityMulti:'Nationality',
     clientTypeMulti:'Client Type',
     branchMulti:'Branch',
@@ -1597,9 +1603,8 @@ function applyFilters(){
         years=getMulti('year'),
         q=document.getElementById('search').value.toLowerCase();
 
-  // Rows matching every filter except Status (used for the Sales Status chip counts).
-  STATUS_BASE_ROWS=rawRows.filter(r=>
-    (!projects.length||projects.includes(String(r.project))) &&
+  // Every filter except Project and Status; reused for the chip counts.
+  const restMatch=r=>
     (!unitCategories.length||unitCategories.includes(String(r.unitType))) &&
     (!sales.length||salesMatchesDeal_(r,sales)) &&
     (!salesManagers.length||salesManagers.includes(String(r.salesManager))) &&
@@ -1619,9 +1624,15 @@ function applyFilters(){
     (!days.length||days.includes(String(r.day))) &&
     (!months.length||months.includes(String(r.month))) &&
     (!years.length||years.includes(String(r.year))) &&
-    (!q||Object.values(r).join(' ').toLowerCase().includes(q))
-  );
-  filtered=STATUS_BASE_ROWS.filter(r=>!statuses.length||statuses.includes(String(r.status)));
+    (!q||Object.values(r).join(' ').toLowerCase().includes(q));
+  const projectMatch=r=>!projects.length||projects.includes(String(r.project));
+  const statusMatch=r=>!statuses.length||statuses.includes(String(r.status));
+  const rest=rawRows.filter(restMatch);
+  // Rows matching every filter except Project (Project button counts).
+  PROJECT_BASE_ROWS=rest.filter(statusMatch);
+  // Rows matching every filter except Status (Sales Status chip counts).
+  STATUS_BASE_ROWS=rest.filter(projectMatch);
+  filtered=STATUS_BASE_ROWS.filter(statusMatch);
 
   const bEden=getMulti('brokerEden'),bCreatedBy=getMulti('brokerCreatedBy'),bLastSales=getMulti('brokerLastSales'),bLink=getMulti('brokerLink'),bStatus=getMulti('brokerStatus'),bDays=getMulti('brokerDay'),bMonths=getMulti('brokerMonth'),bYears=getMulti('brokerYear'),bq=document.getElementById('brokerSearch').value.toLowerCase();
   brokerFiltered=brokerRows.filter(r=>(!bEden.length||bEden.includes(String(r.edenSales)))&&(!bCreatedBy.length||bCreatedBy.includes(String(r.createdBy)))&&(!bLastSales.length||bLastSales.includes(String(r.lastSales)))&&(!bLink.length||bLink.includes(String(r.linkStatus)))&&(!bStatus.length||bStatus.includes(String(r.status)))&&(!bDays.length||bDays.includes(String(r.day)))&&(!bMonths.length||bMonths.includes(String(r.month)))&&(!bYears.length||bYears.includes(String(r.year)))&&(!bq||Object.values(r).join(' ').toLowerCase().includes(bq)));
