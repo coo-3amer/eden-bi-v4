@@ -12,7 +12,10 @@ function include(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
-function doGet() {
+function doGet(e) {
+  // JSON API for the dashboard page hosted on GitHub Pages (see Api.js).
+  if (e && e.parameter && e.parameter.api) return apiDoGet_(e);
+
   // Ensure the lightweight Users sheet exists before the login screen loads.
   // This does not read dashboard data and will not slow down the dashboard.
   getUsersSheet_();

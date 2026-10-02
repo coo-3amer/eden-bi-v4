@@ -4,3 +4,7 @@ _assets/**
 Docs/**
 package.json
 package-lock.json
+docs/**
+web/**
+tools/**
+.github/**
