@@ -63,12 +63,10 @@
     window.google.script = { run: runner(null, null, null), host: { close: function () {}, setHeight: function () {}, setWidth: function () {} } };
   } + ')(' + JSON.stringify(APP_URL) + ');';
 
+  // If the API is not available, open the app directly (never inside an
+  // iframe, where Google shows "unable to open the file" for multi-account browsers).
   function startIframe() {
-    var f = document.createElement('iframe');
-    f.title = 'EDEN BI Dashboard';
-    f.allow = 'clipboard-read; clipboard-write; fullscreen';
-    f.src = APP_URL;
-    document.body.appendChild(f);
+    location.replace(APP_URL);
   }
 
   fetch(APP_URL + '?view=raw', { credentials: 'omit', redirect: 'follow' })
