@@ -3366,7 +3366,8 @@ function renderSalesCurve_(){
     const avg=totalValueDeals?totalValue/totalValueDeals:0;
     const currency=metric==='valueUSD'?'USD':metric==='valueEGP'?'EGP':'';
     exec.innerHTML=
-      `<div class="edenCurveExecBox"><span>TOP BY VALUE</span><strong class="gold">${escapeHtml(leader.name)}</strong></div>`+
+      `<div class="edenCurveExecBox edenCurveExecTop"><span>TOP BY VALUE</span><div class="edenCurveTopRow"><strong class="gold">${escapeHtml(leader.name)}</strong>`+
+        `<em>${metric==='deals'?Number(leader.deals).toLocaleString('en-US')+' Deals':Number(leader.value).toLocaleString('en-US',{maximumFractionDigits:0})+' '+currency+' · '+Number(leader.valueDeals).toLocaleString('en-US')+' Deals'}</em></div></div>`+
       `<div class="edenCurveExecBox"><span>COMBINED DEALS</span><strong>${Number(totalDeals).toLocaleString('en-US')}</strong></div>`+
       `<div class="edenCurveExecBox"><span>COMBINED VALUE</span><strong>${metric==='deals'?'—':Number(totalValue).toLocaleString('en-US',{maximumFractionDigits:0})+' '+currency}</strong></div>`+
       `<div class="edenCurveExecBox"><span>AVG DEAL VALUE</span><strong>${metric==='deals'?'—':Number(avg).toLocaleString('en-US',{maximumFractionDigits:0})+' '+currency}</strong></div>`;
