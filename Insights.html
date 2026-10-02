@@ -1,0 +1,345 @@
+<style id="eden-insights">
+/* ===== Alerts strip (Overview) ===== */
+html[data-theme] #appRoot .dsAlerts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:0 0 18px}
+html[data-theme] #appRoot .dsAlert{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:14px;padding:14px 16px;border-radius:16px;background:var(--ds-surface);border:1px solid var(--ds-line);box-shadow:var(--ds-shadow);transition:border-color .2s ease,transform .2s ease}
+html[data-theme] #appRoot .dsAlert:hover{border-color:var(--tone-line);transform:translateY(-2px)}
+html[data-theme] #appRoot .dsAlert:focus-visible{outline:2px solid var(--ds-gold);outline-offset:2px}
+html[data-theme] #appRoot .dsAlert.tone-amber{--tone:var(--ds-gold-strong);--tone-soft:var(--ds-amber-soft);--tone-line:var(--ds-gold-line)}
+html[data-theme] #appRoot .dsAlert.tone-red{--tone:var(--ds-red);--tone-soft:var(--ds-red-soft);--tone-line:color-mix(in srgb,var(--ds-red) 45%,transparent)}
+html[data-theme] #appRoot .dsAlert.tone-blue{--tone:var(--ds-blue);--tone-soft:var(--ds-blue-soft);--tone-line:color-mix(in srgb,var(--ds-blue) 45%,transparent)}
+html[data-theme] #appRoot .dsAlert.tone-ok{--tone:var(--ds-green);--tone-soft:var(--ds-green-soft);--tone-line:color-mix(in srgb,var(--ds-green) 45%,transparent)}
+html[data-theme] #appRoot .dsAlertIco{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:var(--tone-soft);color:var(--tone)}
+html[data-theme] #appRoot .dsAlertIco .dsIco{width:22px;height:22px;flex-basis:22px}
+html[data-theme] #appRoot .dsAlertText{display:flex;flex-direction:column;gap:2px;min-width:0}
+html[data-theme] #appRoot .dsAlertText b{font-size:14px;font-weight:700;color:var(--ds-heading)}
+html[data-theme] #appRoot .dsAlertText span{font-size:12px;color:var(--ds-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html[data-theme] #appRoot .dsAlertNum{font-size:28px;font-weight:700;color:var(--tone);letter-spacing:-.02em}
+
+/* ===== Drawer (alert details) ===== */
+html[data-theme] .dsDrawer{position:fixed;inset:0;z-index:120;display:flex;justify-content:flex-end;background:rgba(10,8,5,.45)}
+html[data-theme] .dsDrawer.hidden{display:none}
+html[data-theme] .dsDrawerPanel{width:min(920px,100%);height:100%;display:flex;flex-direction:column;background:var(--ds-surface);border-left:1px solid var(--ds-line);box-shadow:var(--ds-shadow-lg);font-family:var(--ds-font);color:var(--ds-text)}
+html[data-theme] .dsDrawerHead{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:22px 24px 16px;border-bottom:1px solid var(--ds-line)}
+html[data-theme] .dsDrawerHead h3{margin:0;font-family:var(--ds-serif);font-size:26px;font-weight:700;color:var(--ds-heading)}
+html[data-theme] .dsDrawerHead p{margin:4px 0 0;font-size:13px;color:var(--ds-muted)}
+html[data-theme] .dsDrawerClose{all:unset;cursor:pointer;width:40px;height:40px;border-radius:10px;display:grid;place-items:center;border:1px solid var(--ds-line);color:var(--ds-text)}
+html[data-theme] .dsDrawerClose:hover{border-color:var(--ds-gold-line);color:var(--ds-gold-strong)}
+html[data-theme] .dsDrawer .dsIco{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+html[data-theme] .dsDrawerBody{flex:1;overflow:auto;padding:8px 12px 24px}
+
+/* ===== Shared table ===== */
+html[data-theme] .dsTable{width:100%;border-collapse:collapse;font-size:13px}
+html[data-theme] .dsTable th{position:sticky;top:0;background:var(--ds-surface-2);color:var(--ds-muted);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;text-align:left;padding:10px;border-bottom:1px solid var(--ds-line);white-space:nowrap}
+html[data-theme] .dsTable th.num,html[data-theme] .dsTable td.num{text-align:right}
+html[data-theme] .dsTable th button{all:unset;cursor:pointer}
+html[data-theme] .dsTable th button:hover{color:var(--ds-gold-strong)}
+html[data-theme] .dsTable td{padding:10px;border-bottom:1px solid var(--ds-line);color:var(--ds-text);white-space:nowrap}
+html[data-theme] .dsTable tr:hover td{background:var(--ds-hover)}
+html[data-theme] .dsTable td small{display:block;color:var(--ds-muted);font-size:11px}
+html[data-theme] .dsAge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:700}
+html[data-theme] .dsAge.a0{background:var(--ds-green-soft);color:var(--ds-green)}
+html[data-theme] .dsAge.a1{background:var(--ds-amber-soft);color:var(--ds-gold-strong)}
+html[data-theme] .dsAge.a2{background:color-mix(in srgb,#e0795b 18%,transparent);color:#d0663f}
+html[data-theme] .dsAge.a3{background:var(--ds-red-soft);color:var(--ds-red)}
+html[data-theme] .dsEmpty{padding:30px;text-align:center;color:var(--ds-muted)}
+
+/* ===== Collections page ===== */
+html[data-theme] #appRoot .dsCollections{display:flex;flex-direction:column;gap:16px;margin-bottom:24px}
+html[data-theme] #appRoot .dsCollKpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+html[data-theme] #appRoot .dsCollKpi{padding:16px 18px;border-radius:16px;background:var(--ds-surface);border:1px solid var(--ds-line);box-shadow:var(--ds-shadow);display:flex;flex-direction:column;gap:4px}
+html[data-theme] #appRoot .dsCollKpi span{font-size:12px;font-weight:600;color:var(--ds-muted)}
+html[data-theme] #appRoot .dsCollKpi strong{font-size:clamp(20px,1.7vw,28px);font-weight:700;color:var(--ds-heading);letter-spacing:-.01em}
+html[data-theme] #appRoot .dsCollKpi small{font-size:12px;color:var(--ds-muted)}
+html[data-theme] #appRoot .dsCollKpi.hl strong{color:var(--ds-red)}
+html[data-theme] #appRoot .dsCollGrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:16px}
+html[data-theme] #appRoot .dsCollPanel{padding:18px 20px;border-radius:16px;background:var(--ds-surface);border:1px solid var(--ds-line);box-shadow:var(--ds-shadow);min-width:0}
+html[data-theme] #appRoot .dsCollPanel h3{margin:0 0 14px;font-family:var(--ds-serif)!important;font-size:21px!important;font-weight:700!important;color:var(--ds-heading)!important}
+html[data-theme] #appRoot .dsCollPanelHead{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+html[data-theme] #appRoot .dsCollPanelHead h3{margin:0}
+html[data-theme] #appRoot .dsCollTools{display:flex;gap:8px;flex-wrap:wrap}
+html[data-theme] #appRoot .dsCollTools input{height:38px;min-width:220px;padding:0 12px;font-size:13px}
+html[data-theme] #appRoot .dsAging{display:flex;flex-direction:column;gap:14px}
+html[data-theme] #appRoot .dsAgingRow{display:grid;grid-template-columns:96px minmax(0,1fr) 130px;align-items:center;gap:12px;font-size:13px}
+html[data-theme] #appRoot .dsAgingRow b{font-weight:600;color:var(--ds-heading)}
+html[data-theme] #appRoot .dsAgingRow em{font-style:normal;text-align:right;color:var(--ds-text);white-space:nowrap}
+html[data-theme] #appRoot .dsAgingRow em small{display:block;color:var(--ds-muted);font-size:11px}
+html[data-theme] #appRoot .dsAgingTrack{height:10px;border-radius:999px;background:var(--ds-surface-3);overflow:hidden}
+html[data-theme] #appRoot .dsAgingTrack i{display:block;height:100%;border-radius:999px;background:var(--c)}
+html[data-theme] #appRoot .dsCollTableWrap{max-height:560px;overflow:auto;border-radius:10px;border:1px solid var(--ds-line)}
+html[data-theme] #appRoot .dsCollNote{font-size:12px;color:var(--ds-muted);margin:10px 2px 0}
+
+@media(max-width:1200px){
+  html[data-theme] #appRoot .dsAlerts{grid-template-columns:1fr}
+  html[data-theme] #appRoot .dsCollKpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  html[data-theme] #appRoot .dsCollGrid{grid-template-columns:1fr}
+}
+</style>
+
+<script>
+/* =====================================================================
+   EDEN BI — Collections page + stuck-deal alerts
+   Uses the already-loaded Transactions rows only (no server calls).
+   ===================================================================== */
+const EDEN_STALE_RESERVATION_DAYS=30;
+let EDEN_COLL_SORT={key:'remain',dir:-1};
+let EDEN_COLL_QUERY='';
+
+function dsIco_(p){return `<svg class="dsIco" viewBox="0 0 24 24" aria-hidden="true">${p}</svg>`;}
+const DS_ICONS={
+  clock:dsIco_('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
+  pen:dsIco_('<path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/>'),
+  speed:dsIco_('<path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4-6"/>'),
+  wallet:dsIco_('<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M16 12.5h2M3 9h18"/>'),
+  close:dsIco_('<path d="M6 6l12 12M18 6L6 18"/>'),
+};
+function dsEsc_(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function dsNum_(n,d=0){return Number(n||0).toLocaleString('en-US',{maximumFractionDigits:d});}
+function dsShort_(n){
+  const a=Math.abs(Number(n)||0),s=n<0?'-':'';
+  if(a>=1e9)return s+(a/1e9).toFixed(2).replace(/\.?0+$/,'')+'B';
+  if(a>=1e6)return s+(a/1e6).toFixed(1).replace(/\.0$/,'')+'M';
+  if(a>=1e3)return s+(a/1e3).toFixed(1).replace(/\.0$/,'')+'K';
+  return dsNum_(n);
+}
+function dsIsUsd_(r){return String(r.currency||'').toUpperCase()==='USD';}
+function dsCancelled_(v){
+  if(typeof isCancelledStatus_==='function')return isCancelledStatus_(v);
+  const s=String(v||'').trim().toLowerCase();return s==='cancel'||s==='cancelled'||s==='canceled';
+}
+function dsScopeRows_(){
+  const rows=(typeof statusScopeRows==='function')?statusScopeRows():(typeof filtered!=='undefined'?filtered:[]);
+  return rows.filter(r=>!dsCancelled_(r.status));
+}
+function dsDealDate_(r){
+  const y=Number(r.year),m=Number(r.month);
+  if(!y||!m)return null;
+  return new Date(y,m-1,Number(r.day)||1);
+}
+function dsAgeDays_(r){
+  const d=dsDealDate_(r);if(!d)return null;
+  return Math.max(0,Math.floor((Date.now()-d.getTime())/86400000));
+}
+function dsAgeBucket_(days){
+  if(days===null)return {i:-1,label:'No date'};
+  if(days<=30)return {i:0,label:'0–30 days'};
+  if(days<=60)return {i:1,label:'31–60 days'};
+  if(days<=90)return {i:2,label:'61–90 days'};
+  return {i:3,label:'90+ days'};
+}
+function dsFmtDate_(r){const d=dsDealDate_(r);return d?d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'—';}
+function dsBlank_(v){const s=String(v??'').trim().toLowerCase();return !s||s==='-'||s==='—'||s==='false'||s==='n/a';}
+
+/* ---------------- Alerts ---------------- */
+function dsAlertSets_(){
+  const rows=dsScopeRows_();
+  const stale=rows.filter(r=>String(r.status||'').toLowerCase().includes('reserv')&&(dsAgeDays_(r)??0)>EDEN_STALE_RESERVATION_DAYS)
+    .sort((a,b)=>(dsAgeDays_(b)||0)-(dsAgeDays_(a)||0));
+  const awaiting=rows.filter(r=>!dsBlank_(r.clientSignDate)&&dsBlank_(r.companySignDate))
+    .sort((a,b)=>(dsAgeDays_(b)||0)-(dsAgeDays_(a)||0));
+  const by={};
+  rows.forEach(r=>{const d=Number(r.daysToClose);if(!(d>0))return;const k=String(r.salesName||'').trim();if(!k||k==='Not Assigned')return;(by[k]=by[k]||[]).push(d);});
+  const closers=Object.entries(by).map(([name,ds])=>({name,deals:ds.length,avg:ds.reduce((a,b)=>a+b,0)/ds.length})).sort((a,b)=>b.avg-a.avg);
+  const all=Object.values(by).flat();
+  const teamAvg=all.length?all.reduce((a,b)=>a+b,0)/all.length:0;
+  return {stale,awaiting,closers,teamAvg};
+}
+function dsAlertsMount_(){
+  if(document.getElementById('dsAlerts'))return;
+  const anchor=document.getElementById('dsStatusBar')||document.querySelector('#appRoot section.filters');
+  if(!anchor)return;
+  const el=document.createElement('section');
+  el.id='dsAlerts';el.className='dsAlerts';el.setAttribute('aria-label','Alerts');
+  el.innerHTML=`
+    <button type="button" class="dsAlert" data-alert="stale"><span class="dsAlertIco">${DS_ICONS.clock}</span><span class="dsAlertText"><b>Stale reservations</b><span>Reserved more than ${EDEN_STALE_RESERVATION_DAYS} days ago</span></span><span class="dsAlertNum" data-n>0</span></button>
+    <button type="button" class="dsAlert" data-alert="awaiting"><span class="dsAlertIco">${DS_ICONS.pen}</span><span class="dsAlertText"><b>Awaiting company signature</b><span>Client signed, company not yet</span></span><span class="dsAlertNum" data-n>0</span></button>
+    <button type="button" class="dsAlert" data-alert="closers"><span class="dsAlertIco">${DS_ICONS.speed}</span><span class="dsAlertText"><b>Average days to close</b><span data-sub>Team average</span></span><span class="dsAlertNum" data-n>—</span></button>`;
+  anchor.insertAdjacentElement('afterend',el);
+  el.addEventListener('click',e=>{const b=e.target.closest('[data-alert]');if(b)dsOpenAlert_(b.dataset.alert);});
+}
+function dsAlertsRender_(){
+  const el=document.getElementById('dsAlerts');if(!el)return;
+  const show=(typeof currentView==='undefined'?'dashboard':currentView)==='dashboard';
+  el.classList.toggle('hidden',!show);
+  if(!show)return;
+  const s=dsAlertSets_();
+  const set=(k,n,tone,sub)=>{
+    const b=el.querySelector(`[data-alert="${k}"]`);if(!b)return;
+    b.className='dsAlert tone-'+tone;
+    b.querySelector('[data-n]').textContent=n;
+    if(sub!==undefined)b.querySelector('[data-sub]').textContent=sub;
+  };
+  set('stale',s.stale.length,s.stale.length?'amber':'ok');
+  set('awaiting',s.awaiting.length,s.awaiting.length?'red':'ok');
+  const slow=s.closers[0];
+  set('closers',s.teamAvg?Math.round(s.teamAvg)+'d':'—','blue',slow?`Slowest: ${slow.name} · ${Math.round(slow.avg)} days`:'No “Days to Close” data');
+}
+
+/* ---------------- Drawer ---------------- */
+function dsDrawer_(){
+  let d=document.getElementById('dsDrawer');
+  if(d)return d;
+  d=document.createElement('div');
+  d.id='dsDrawer';d.className='dsDrawer hidden';d.setAttribute('role','dialog');d.setAttribute('aria-modal','true');
+  d.innerHTML=`<div class="dsDrawerPanel"><div class="dsDrawerHead"><div><h3 data-t></h3><p data-s></p></div><button type="button" class="dsDrawerClose" aria-label="Close">${DS_ICONS.close}</button></div><div class="dsDrawerBody" data-b></div></div>`;
+  document.body.appendChild(d);
+  const close=()=>d.classList.add('hidden');
+  d.addEventListener('click',e=>{if(e.target===d||e.target.closest('.dsDrawerClose'))close();});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!d.classList.contains('hidden'))close();});
+  return d;
+}
+function dsDealRowsTable_(rows,{age=true}={}){
+  if(!rows.length)return '<div class="dsEmpty">Nothing to show for the current filters.</div>';
+  return `<table class="dsTable"><thead><tr><th>Date</th><th>Client</th><th>Project · Unit</th><th>Sales</th><th>Status</th><th class="num">Value</th>${age?'<th class="num">Age</th>':''}</tr></thead><tbody>`+
+    rows.map(r=>{
+      const a=dsAgeDays_(r),b=dsAgeBucket_(a);
+      return `<tr><td>${dsFmtDate_(r)}</td><td>${dsEsc_(r.clientName)}<small>${dsEsc_(r.mobile||'')}</small></td><td>${dsEsc_(r.project)}<small>${dsEsc_(r.unitCode)}</small></td><td>${dsEsc_(r.salesName)}</td><td>${dsEsc_(r.status)}</td><td class="num">${dsNum_(r.amount)} <small>${dsEsc_(r.currency)}</small></td>${age?`<td class="num">${a===null?'—':`<span class="dsAge a${Math.max(0,b.i)}">${a} days</span>`}</td>`:''}</tr>`;
+    }).join('')+'</tbody></table>';
+}
+function dsOpenAlert_(kind){
+  const s=dsAlertSets_(),d=dsDrawer_();
+  const t=d.querySelector('[data-t]'),sub=d.querySelector('[data-s]'),body=d.querySelector('[data-b]');
+  if(kind==='stale'){
+    t.textContent='Stale reservations';
+    sub.textContent=`${s.stale.length} reservation(s) older than ${EDEN_STALE_RESERVATION_DAYS} days in the current filters — follow up or release the unit.`;
+    body.innerHTML=dsDealRowsTable_(s.stale);
+  }else if(kind==='awaiting'){
+    t.textContent='Awaiting company signature';
+    sub.textContent=`${s.awaiting.length} deal(s) where the client signed and the company has not.`;
+    body.innerHTML=dsDealRowsTable_(s.awaiting);
+  }else{
+    t.textContent='Days to close by salesperson';
+    sub.textContent=s.teamAvg?`Team average: ${Math.round(s.teamAvg)} days, from the “Days to Close” column.`:'No “Days to Close” values in the current filters.';
+    body.innerHTML=s.closers.length?`<table class="dsTable"><thead><tr><th>#</th><th>Salesperson</th><th class="num">Deals</th><th class="num">Avg days to close</th><th class="num">vs team</th></tr></thead><tbody>`+
+      s.closers.map((c,i)=>{const diff=c.avg-s.teamAvg;return `<tr><td>${i+1}</td><td>${dsEsc_(c.name)}</td><td class="num">${c.deals}</td><td class="num">${Math.round(c.avg)}</td><td class="num"><span class="dsAge ${diff>5?'a3':diff<-5?'a0':'a1'}">${diff>0?'+':''}${Math.round(diff)} d</span></td></tr>`;}).join('')+'</tbody></table>'
+      :'<div class="dsEmpty">No data.</div>';
+  }
+  d.classList.remove('hidden');
+  d.querySelector('.dsDrawerClose').focus();
+}
+
+/* ---------------- Collections page ---------------- */
+function dsCollectionsMount_(){
+  const menu=document.querySelector('#transactionsModule .moduleMenu');
+  if(menu&&!menu.querySelector('[data-ds-collections]')){
+    const btn=document.createElement('button');
+    btn.type='button';btn.dataset.dsCollections='1';btn.textContent='Collections';
+    btn.addEventListener('click',()=>setView('collections',btn));
+    const after=[...menu.querySelectorAll('button')].find(b=>String(b.getAttribute('onclick')||'').includes("'deals'"));
+    if(after)after.insertAdjacentElement('afterend',btn);else menu.appendChild(btn);
+  }
+  if(document.getElementById('dsCollections'))return;
+  const anchor=document.getElementById('dsStatusBar')||document.querySelector('#appRoot section.filters');
+  if(!anchor)return;
+  const el=document.createElement('section');
+  el.id='dsCollections';el.className='dsCollections hidden';
+  el.innerHTML=`
+    <div class="dsCollKpis">
+      <div class="dsCollKpi hl"><span>Outstanding EGP</span><strong data-k="outEgp">0</strong><small data-k="outEgpN"></small></div>
+      <div class="dsCollKpi hl"><span>Outstanding USD</span><strong data-k="outUsd">0</strong><small data-k="outUsdN"></small></div>
+      <div class="dsCollKpi"><span>Clients with a balance</span><strong data-k="clients">0</strong><small data-k="deals"></small></div>
+      <div class="dsCollKpi"><span>Overdue 90+ days</span><strong data-k="old">0</strong><small data-k="oldV"></small></div>
+    </div>
+    <div class="dsCollGrid">
+      <div class="dsCollPanel"><h3>Aging of remaining balance</h3><div class="dsAging" data-k="aging"></div><p class="dsCollNote">Age is counted from the deal date. Amounts use the “Remain” column.</p></div>
+      <div class="dsCollPanel"><h3>By salesperson</h3><div class="dsCollTableWrap" style="max-height:320px"><table class="dsTable"><thead><tr><th>Salesperson</th><th class="num">Deals</th><th class="num">EGP</th><th class="num">USD</th><th class="num">Oldest</th></tr></thead><tbody data-k="bySales"></tbody></table></div></div>
+    </div>
+    <div class="dsCollPanel">
+      <div class="dsCollPanelHead"><h3>Clients with a remaining balance</h3>
+        <div class="dsCollTools"><label class="sr-only" for="dsCollSearch" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Search</label><input id="dsCollSearch" type="search" placeholder="Search client, unit or sales…"><button type="button" class="btn secondary" data-k="export">Export CSV</button></div>
+      </div>
+      <div class="dsCollTableWrap"><table class="dsTable"><thead><tr>
+        <th><button type="button" data-sort="date">Date</button></th><th><button type="button" data-sort="client">Client</button></th><th>Project · Unit</th><th><button type="button" data-sort="sales">Sales</button></th><th>Status</th>
+        <th class="num"><button type="button" data-sort="dp">Contracted DP</button></th><th class="num"><button type="button" data-sort="paid">Paid</button></th><th class="num"><button type="button" data-sort="remain">Remaining ▾</button></th><th class="num"><button type="button" data-sort="age">Age</button></th>
+      </tr></thead><tbody data-k="list"></tbody></table></div>
+    </div>`;
+  anchor.insertAdjacentElement('afterend',el);
+  el.querySelector('#dsCollSearch').addEventListener('input',e=>{EDEN_COLL_QUERY=e.target.value.trim().toLowerCase();dsCollectionsRender_();});
+  el.querySelector('thead').addEventListener('click',e=>{
+    const b=e.target.closest('[data-sort]');if(!b)return;
+    const k=b.dataset.sort;
+    EDEN_COLL_SORT=EDEN_COLL_SORT.key===k?{key:k,dir:-EDEN_COLL_SORT.dir}:{key:k,dir:['client','sales'].includes(k)?1:-1};
+    el.querySelectorAll('thead [data-sort]').forEach(x=>x.textContent=x.textContent.replace(/ [▾▴]$/,''));
+    b.textContent+=EDEN_COLL_SORT.dir<0?' ▾':' ▴';
+    dsCollectionsRender_();
+  });
+  el.querySelector('[data-k="export"]').addEventListener('click',dsCollectionsExport_);
+}
+function dsCollRows_(){
+  return dsScopeRows_().filter(r=>Number(r.remain)>0);
+}
+function dsCollectionsRender_(){
+  const el=document.getElementById('dsCollections');if(!el)return;
+  const view=(typeof currentView==='undefined'?'':currentView);
+  const show=view==='collections';
+  el.classList.toggle('hidden',!show);
+  if(!show)return;
+
+  ['cards','salesCurvePanel','chartsSection','transactionTableBox','trendAnalysisSection','newClientsYearSection','dsAlerts'].forEach(id=>document.getElementById(id)?.classList.add('hidden'));
+  const title=document.getElementById('pageTitle'),desc=document.getElementById('pageDesc');
+  if(title)title.innerText='Collections';
+  const rows=dsCollRows_();
+  if(desc)desc.innerText=`Remaining balances on ${dsNum_(rows.length)} deals in the current filters`;
+
+  const egp=rows.filter(r=>!dsIsUsd_(r)),usd=rows.filter(dsIsUsd_);
+  const sum=rs=>rs.reduce((a,r)=>a+(Number(r.remain)||0),0);
+  const k=n=>el.querySelector(`[data-k="${n}"]`);
+  k('outEgp').textContent=dsShort_(sum(egp));k('outEgpN').textContent=`${dsNum_(egp.length)} deals`;
+  k('outUsd').textContent=dsShort_(sum(usd));k('outUsdN').textContent=`${dsNum_(usd.length)} deals`;
+  k('clients').textContent=dsNum_(new Set(rows.map(r=>r.clientKey||r.clientName).filter(Boolean)).size);
+  k('deals').textContent=`${dsNum_(rows.length)} deals`;
+  const old=rows.filter(r=>(dsAgeDays_(r)??0)>90);
+  k('old').textContent=dsNum_(old.length);
+  k('oldV').textContent=`${dsShort_(sum(old.filter(r=>!dsIsUsd_(r))))} EGP · ${dsShort_(sum(old.filter(dsIsUsd_)))} USD`;
+
+  const buckets=[0,1,2,3].map(i=>({i,egp:0,usd:0,n:0}));
+  const labels=['0–30 days','31–60 days','61–90 days','90+ days'],colors=['var(--ds-green)','var(--ds-gold)','#e0795b','var(--ds-red)'];
+  rows.forEach(r=>{const b=dsAgeBucket_(dsAgeDays_(r));if(b.i<0)return;const x=buckets[b.i];x.n++;x[dsIsUsd_(r)?'usd':'egp']+=Number(r.remain)||0;});
+  const mx=Math.max(1,...buckets.map(b=>b.n));
+  k('aging').innerHTML=buckets.map(b=>`<div class="dsAgingRow"><b>${labels[b.i]}</b><span class="dsAgingTrack"><i style="width:${b.n/mx*100}%;--c:${colors[b.i]}"></i></span><em>${dsNum_(b.n)} deals<small>${dsShort_(b.egp)} EGP · ${dsShort_(b.usd)} USD</small></em></div>`).join('');
+
+  const bySales={};
+  rows.forEach(r=>{const n=String(r.salesName||'Not Assigned').trim();const x=bySales[n]=bySales[n]||{n,deals:0,egp:0,usd:0,oldest:0};x.deals++;x[dsIsUsd_(r)?'usd':'egp']+=Number(r.remain)||0;x.oldest=Math.max(x.oldest,dsAgeDays_(r)||0);});
+  k('bySales').innerHTML=Object.values(bySales).sort((a,b)=>b.egp-a.egp||b.usd-a.usd).map(x=>`<tr><td>${dsEsc_(x.n)}</td><td class="num">${x.deals}</td><td class="num">${dsShort_(x.egp)}</td><td class="num">${dsShort_(x.usd)}</td><td class="num"><span class="dsAge a${Math.max(0,dsAgeBucket_(x.oldest).i)}">${x.oldest} d</span></td></tr>`).join('')
+    ||'<tr><td colspan="5" class="dsEmpty">No remaining balances.</td></tr>';
+
+  const q=EDEN_COLL_QUERY;
+  const list=rows.filter(r=>!q||[r.clientName,r.mobile,r.unitCode,r.salesName,r.project].join(' ').toLowerCase().includes(q));
+  const val={date:r=>dsDealDate_(r)?.getTime()||0,client:r=>String(r.clientName||'').toLowerCase(),sales:r=>String(r.salesName||'').toLowerCase(),dp:r=>Number(r.actualDP)||0,paid:r=>Number(r.actualPaid||r.dpPaid)||0,remain:r=>Number(r.remain)||0,age:r=>dsAgeDays_(r)||0}[EDEN_COLL_SORT.key];
+  list.sort((a,b)=>{const x=val(a),y=val(b);return (x<y?-1:x>y?1:0)*EDEN_COLL_SORT.dir;});
+  k('list').innerHTML=list.map(r=>{
+    const a=dsAgeDays_(r),b=dsAgeBucket_(a);
+    return `<tr><td>${dsFmtDate_(r)}</td><td>${dsEsc_(r.clientName)}<small>${dsEsc_(r.mobile||'')}</small></td><td>${dsEsc_(r.project)}<small>${dsEsc_(r.unitCode)}</small></td><td>${dsEsc_(r.salesName)}</td><td>${dsEsc_(r.status)}</td><td class="num">${dsNum_(r.actualDP)}</td><td class="num">${dsNum_(r.actualPaid||r.dpPaid)}</td><td class="num"><b>${dsNum_(r.remain)}</b> <small>${dsEsc_(r.currency)}</small></td><td class="num">${a===null?'—':`<span class="dsAge a${Math.max(0,b.i)}">${a} days</span>`}</td></tr>`;
+  }).join('')||'<tr><td colspan="9" class="dsEmpty">No remaining balances in the current filters.</td></tr>';
+}
+function dsCollectionsExport_(){
+  const rows=dsCollRows_();
+  const head=['Date','Client','Mobile','Project','Unit','Sales','Status','Currency','Contracted DP','Paid','Remaining','Age (days)'];
+  const q=v=>`"${String(v??'').replace(/"/g,'""')}"`;
+  const lines=[head.map(q).join(',')].concat(rows.map(r=>[dsFmtDate_(r),r.clientName,r.mobile,r.project,r.unitCode,r.salesName,r.status,r.currency,r.actualDP,r.actualPaid||r.dpPaid,r.remain,dsAgeDays_(r)??''].map(q).join(',')));
+  const blob=new Blob(['﻿'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`EDEN_Collections_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+
+/* ---------------- Wiring ---------------- */
+(function initEdenInsights_(){
+  dsAlertsMount_();
+  dsCollectionsMount_();
+  const after=()=>{
+    try{
+      const btn=document.querySelector('[data-ds-collections]');
+      if(btn&&typeof isEgyptViewer_==='function')btn.style.display=isEgyptViewer_()?'none':'';
+      dsAlertsRender_();dsCollectionsRender_();
+    }catch(e){console.error('Insights',e);}
+  };
+  if(typeof render==='function'&&!render.__dsInsights){
+    const original=render;
+    render=function(){const r=original.apply(this,arguments);after();return r;};
+    render.__dsInsights=true;
+  }
+  after();
+})();
+</script>
