@@ -16,6 +16,8 @@ html[data-theme] #appRoot .dsProjBtn.on{background:var(--ds-gold-grad);border-co
 html[data-theme] #appRoot .dsProjBtn.on img{box-shadow:0 0 0 2px rgba(255,255,255,.7)}
 html[data-theme] #appRoot .dsProjBtn.on b{background:rgba(255,255,255,.22);border-color:transparent;color:var(--ds-on-gold)}
 html[data-theme] #appRoot .dsProjBtn.empty{opacity:.55}
+html[data-theme] #appRoot .dsProjBtn.more{padding:0 16px;font-weight:600;color:var(--ds-gold-strong);border-style:dashed;background:transparent}
+html[data-theme] #appRoot .dsProjBtn.more:hover{background:var(--ds-hover)}
 /* The Project dropdown is replaced by the buttons. */
 html[data-theme] #appRoot section.filters #projectMulti{display:none!important}
 /* Options not available in the selected project(s). */
@@ -54,6 +56,12 @@ const DS_CASCADE_FIELDS={
   year:r=>r.year
 };
 let DS_CASCADE_KEY='';
+/* Projects removed from the bar entirely. */
+const DS_PROJ_REMOVED=['CROWNGLDANI'];
+/* Projects tucked behind "View more" (always shown while selected). */
+const DS_PROJ_SECONDARY=['CITYVIEW','SEQUOIA','KOBULETI','EONE','CCG'];
+let DS_PROJ_EXPANDED=false;
+const dsProjKey_=v=>String(v||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
 
 function dsProjEsc_(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function dsProjThumb_(name){
@@ -74,6 +82,7 @@ function dsProjBarMount_(){
   bar.addEventListener('click',e=>{
     const btn=e.target.closest('.dsProjBtn');if(!btn)return;
     const boxes=[...document.querySelectorAll('input[name="project"]')];
+    if(btn.dataset.project==='__more__'){DS_PROJ_EXPANDED=!DS_PROJ_EXPANDED;dsProjBarRender_();return;}
     if(btn.dataset.project==='__all__')boxes.forEach(b=>b.checked=false);
     else{const b=boxes.find(x=>String(x.value)===btn.dataset.project);if(b)b.checked=!b.checked;}
     if(typeof updateMultiLabels==='function')updateMultiLabels();
@@ -89,7 +98,7 @@ function dsProjBarRender_(){
   bar.classList.toggle('hidden',!visible);
   if(!visible)return;
 
-  const boxes=[...document.querySelectorAll('input[name="project"]')];
+  const boxes=[...document.querySelectorAll('input[name="project"]')].filter(b=>!DS_PROJ_REMOVED.includes(dsProjKey_(b.value)));
   const base=(typeof PROJECT_BASE_ROWS!=='undefined')?PROJECT_BASE_ROWS:[];
   const noStatus=typeof getMulti==='function'&&!getMulti('status').length;
   const cancelled=v=>typeof isCancelledStatus_==='function'&&isCancelledStatus_(v);
@@ -97,15 +106,22 @@ function dsProjBarRender_(){
   base.forEach(r=>{if(noStatus&&cancelled(r.status))return;const k=String(r.project||'');counts[k]=(counts[k]||0)+1;total++;});
   const selected=new Set(boxes.filter(b=>b.checked).map(b=>String(b.value)));
   const fmt=n=>Number(n||0).toLocaleString('en-US');
+  const isSecondary=b=>DS_PROJ_SECONDARY.includes(dsProjKey_(b.value));
+  const shown=boxes.filter(b=>DS_PROJ_EXPANDED||!isSecondary(b)||selected.has(String(b.value)));
+  const hiddenCount=boxes.length-shown.length;
+  const hasSecondary=boxes.some(isSecondary);
+  const moreBtn=!hasSecondary?'':DS_PROJ_EXPANDED
+    ?`<button type="button" class="dsProjBtn more" data-project="__more__" aria-expanded="true">View fewer</button>`
+    :(hiddenCount?`<button type="button" class="dsProjBtn more" data-project="__more__" aria-expanded="false">View more (${hiddenCount})</button>`:'');
 
   wrap.innerHTML=
     `<button type="button" class="dsProjBtn all${selected.size?'':' on'}" data-project="__all__" aria-pressed="${!selected.size}">All projects<b>${fmt(total)}</b></button>`+
-    boxes.map(b=>{
+    shown.map(b=>{
       const v=String(b.value),label=b.dataset.label||v,on=selected.has(v),n=counts[v]||0,img=dsProjThumb_(v);
       return `<button type="button" class="dsProjBtn${on?' on':''}${!n&&!on?' empty':''}" data-project="${dsProjEsc_(v)}" aria-pressed="${on}">`+
         (img?`<img src="${img}" alt="">`:`<span class="dsProjDot" aria-hidden="true">${dsProjEsc_(label.slice(0,1))}</span>`)+
         `${dsProjEsc_(label)}<b>${fmt(n)}</b></button>`;
-    }).join('');
+    }).join('')+moreBtn;
 }
 
 /* Narrow the other filters to the selected project(s). Returns true if a
