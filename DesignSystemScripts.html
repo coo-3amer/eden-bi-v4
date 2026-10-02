@@ -170,6 +170,86 @@ function edenStatusChipsRender_(){
   edenStatusChipsRender_();
 })();
 
+/* ---------- Project flip cards: back-face summary ----------
+   Sales figures come from the rows in the current filters (Cancel excluded
+   by default). Project size comes from the Inventory sheet, loaded once per
+   project on first hover. */
+const EDEN_INV_KEYS={'KOBULETI':'KOBULETI','GLDANI':'CITY_CENTER_GLDANI','EDEN WALK':'EDEN_WALK'};
+const EDEN_INV_CACHE={};
+function edenCompact_(n){
+  const a=Math.abs(Number(n)||0);
+  if(a>=1e9)return (n/1e9).toFixed(2).replace(/\.?0+$/,'')+'B';
+  if(a>=1e6)return (n/1e6).toFixed(1).replace(/\.0$/,'')+'M';
+  if(a>=1e3)return (n/1e3).toFixed(1).replace(/\.0$/,'')+'K';
+  return Number(n||0).toLocaleString('en-US');
+}
+function edenProjectRows_(card){
+  const keys=String(card.dataset.projectMatch||'').split('|').map(k=>k.trim().toUpperCase()).filter(Boolean);
+  const scope=(typeof statusScopeRows==='function')?statusScopeRows():(typeof filtered!=='undefined'?filtered:[]);
+  return scope.filter(r=>{const p=String(r.project||'').toUpperCase();return keys.some(k=>p.includes(k));});
+}
+function edenInvKeyFor_(card){
+  const name=String(card.dataset.projectName||'').toUpperCase();
+  const hit=Object.keys(EDEN_INV_KEYS).find(k=>name.includes(k));
+  return hit?EDEN_INV_KEYS[hit]:'';
+}
+function edenRenderSize_(card){
+  const box=card.querySelector('[data-f="size"]');if(!box)return;
+  const key=edenInvKeyFor_(card);
+  const entry=key?EDEN_INV_CACHE[key]:null;
+  if(!key){box.innerHTML='<span>Project size: inventory not linked yet</span>';return;}
+  if(!entry||entry.state==='loading'){box.innerHTML='<span>Loading project size…</span>';return;}
+  if(entry.state==='error'){box.innerHTML='<span>Project size unavailable right now</span>';return;}
+  const s=entry.stats||{};
+  const total=Number(s.totalUnits)||0;
+  if(!total){box.innerHTML='<span>No units in the inventory sheet</span>';return;}
+  const sold=Number(s.closed)||0,res=Number(s.reservation)||0,av=Number(s.available)||0;
+  const other=Math.max(0,total-sold-res-av);
+  const pct=v=>(v/total*100).toFixed(1);
+  box.innerHTML=
+    `<span>Project size: <b>${total.toLocaleString('en-US')} units</b> · ${Math.round(sold/total*100)}% sold</span>`+
+    `<span class="dsSizeBar"><i style="width:${pct(sold)}%;background:var(--ds-green)"></i><i style="width:${pct(res)}%;background:var(--ds-gold)"></i><i style="width:${pct(av)}%;background:var(--ds-blue)"></i><i style="width:${pct(other)}%;background:var(--ds-line-strong)"></i></span>`+
+    `<span class="dsSizeLegend"><span style="--c:var(--ds-green)">${sold} sold</span><span style="--c:var(--ds-gold)">${res} reserved</span><span style="--c:var(--ds-blue)">${av} available</span></span>`;
+}
+function edenLoadInventory_(card){
+  const key=edenInvKeyFor_(card);
+  if(!key||EDEN_INV_CACHE[key]||typeof google==='undefined'||!google.script||typeof AUTH_TOKEN==='undefined')return;
+  EDEN_INV_CACHE[key]={state:'loading'};
+  google.script.run
+    .withSuccessHandler(data=>{
+      EDEN_INV_CACHE[key]={state:'ok',stats:(data&&data.stats)||{}};
+      document.querySelectorAll('#dsProjects .dsProjCard').forEach(c=>{if(edenInvKeyFor_(c)===key)edenRenderSize_(c);});
+    })
+    .withFailureHandler(()=>{
+      EDEN_INV_CACHE[key]={state:'error'};
+      document.querySelectorAll('#dsProjects .dsProjCard').forEach(c=>{if(edenInvKeyFor_(c)===key)edenRenderSize_(c);});
+    })
+    .getInventoryData(AUTH_TOKEN,key,false);
+}
+function edenFillProjectBack_(card){
+  const rows=edenProjectRows_(card);
+  const usd=String(card.dataset.currency||'').toUpperCase()==='USD';
+  const cur=usd?'USD':'EGP';
+  const inCur=rows.filter(r=>(String(r.currency||'').toUpperCase()==='USD')===usd);
+  const value=inCur.reduce((a,r)=>a+(Number(r.amount)||0),0);
+  const units=new Set(rows.map(r=>r.unitCode).filter(Boolean)).size;
+  const area=rows.reduce((a,r)=>a+(Number(r.area)||0),0);
+  const clients=new Set(rows.map(r=>r.clientKey||r.clientName).filter(Boolean)).size;
+  const avg=inCur.length?value/inCur.length:0;
+  const stat=(label,v)=>`<span><small>${label}</small><strong>${v}</strong></span>`;
+  const box=card.querySelector('[data-f="stats"]');
+  if(box)box.innerHTML=rows.length
+    ? stat('Deals',rows.length.toLocaleString('en-US'))+
+      stat('Sales '+cur,edenCompact_(value))+
+      stat('Avg deal',edenCompact_(avg))+
+      stat('Units sold',units.toLocaleString('en-US'))+
+      stat('Area sold',edenCompact_(area)+' m²')+
+      stat('Clients',clients.toLocaleString('en-US'))
+    : '<span style="grid-column:1/-1;color:var(--ds-muted);font-size:12px">No deals in the current filters.</span>';
+  edenRenderSize_(card);
+  edenLoadInventory_(card);
+}
+
 /* ---------- Home hero (Overview page only) ---------- */
 function edenMountHero_(){
   const tpl=document.getElementById('edenHeroTpl');
@@ -179,6 +259,9 @@ function edenMountHero_(){
   topbar.parentNode.insertBefore(tpl.content.cloneNode(true),topbar);
 
   document.querySelectorAll('#dsProjects .dsProjCard').forEach(card=>{
+    const fill=()=>{try{edenFillProjectBack_(card);}catch(e){console.error('Project card summary',e);}};
+    card.addEventListener('mouseenter',fill);
+    card.addEventListener('focus',fill);
     card.addEventListener('click',()=>{
       const keys=String(card.dataset.projectMatch||'').split('|').map(k=>k.trim().toUpperCase()).filter(Boolean);
       const options=[...document.querySelectorAll('input[name="project"]')].map(cb=>String(cb.value));
