@@ -12,10 +12,19 @@
   .boot{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#d3ae66;font:600 13px/1.4 Georgia,serif;letter-spacing:.3em;text-transform:uppercase;transition:opacity .4s ease}
   .boot b{font-size:34px;letter-spacing:.35em;color:#fff;font-weight:700}
   .boot.done{opacity:0;pointer-events:none}
+  .help{position:fixed;right:16px;bottom:16px;z-index:5;display:none;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;background:rgba(22,19,15,.92);border:1px solid rgba(211,174,102,.4);color:#e9e3d7;font:500 12px/1.4 Arial,sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+  .help.show{display:flex}
+  .help a{color:#16130f;background:#d3ae66;text-decoration:none;font-weight:700;padding:7px 11px;border-radius:8px;white-space:nowrap}
+  .help button{all:unset;cursor:pointer;color:#a99f90;font-size:16px;padding:0 4px}
 </style>
 </head>
 <body>
 <div class="boot" id="boot"><b>EDEN</b>Business Intelligence</div>
+ <div class="help" id="help" role="status">
+  <span>Not loading? Browsers signed into several Google accounts can block it.</span>
+  <a id="direct" href="#" target="_blank" rel="noopener">Open directly</a>
+  <button type="button" aria-label="Dismiss" onclick="this.parentNode.classList.remove('show')">×</button>
+</div>
 <iframe id="app" title="EDEN BI Dashboard" allow="clipboard-read; clipboard-write; fullscreen"></iframe>
 <script>
   // The live Apps Script web app (the /exec link of the main deployment).
@@ -23,6 +32,10 @@
   const f = document.getElementById('app');
   f.addEventListener('load', () => document.getElementById('boot').classList.add('done'));
   f.src = APP_URL;
+  document.getElementById('direct').href = APP_URL;
+  // Offer a direct link a few seconds in, for browsers where the embedded app fails.
+  setTimeout(() => document.getElementById('help').classList.add('show'), 6000);
+  setTimeout(() => document.getElementById('help').classList.remove('show'), 20000);
 </script>
 </body>
 </html>
