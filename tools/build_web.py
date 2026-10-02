@@ -38,6 +38,9 @@ def main():
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / 'index.html').write_text(html, encoding='utf-8')
     (OUT / '.nojekyll').write_text('', encoding='utf-8')
+    cname = ROOT / 'web' / 'CNAME'
+    if cname.exists():  # custom domain for GitHub Pages
+        (OUT / 'CNAME').write_text(cname.read_text(encoding='utf-8').strip() + '\n', encoding='utf-8')
     print(f'wrote {OUT / "index.html"} ({len(html):,} chars)')
 
 
