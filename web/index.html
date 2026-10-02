@@ -28,13 +28,10 @@
   // google.script.run stand-in: same chaining API, calls the JSON API.
   var SHIM = '(' + function (API) {
     function call(fn, args) {
-      return fetch(API, {
-        method: 'POST',
-        credentials: 'omit',
-        redirect: 'follow',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ fn: fn, args: args })
-      }).then(function (r) {
+      var json = JSON.stringify({ fn: fn, args: args });
+      var b64 = btoa(unescape(encodeURIComponent(json))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      var url = API + '?view=call&q=' + b64 + '&_=' + Date.now() + Math.random().toString(36).slice(2, 7);
+      return fetch(url, { credentials: 'omit', redirect: 'follow', cache: 'no-store' }).then(function (r) {
         if (!r.ok) throw new Error('Server error ' + r.status);
         return r.json();
       }).then(function (j) {
@@ -42,7 +39,7 @@
         if (!j.chunked) return j.result;
         var reqs = [];
         for (var i = 0; i < j.parts; i++) {
-          reqs.push(fetch(API + '?view=chunk&id=' + encodeURIComponent(j.chunked) + '&i=' + i, { credentials: 'omit', redirect: 'follow' })
+          reqs.push(fetch(API + '?view=chunk&id=' + encodeURIComponent(j.chunked) + '&i=' + i, { credentials: 'omit', redirect: 'follow', cache: 'no-store' })
             .then(function (r) { return r.json(); })
             .then(function (c) { if (typeof c.data !== 'string') throw new Error(c.error || 'Missing data'); return c.data; }));
         }

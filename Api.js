@@ -10,6 +10,7 @@
  *   GET  /exec?view=raw                   -> {id, parts, html}: first slice of the page
  *   GET  /exec?view=pagever               -> {id, parts, hash}: current page version
  *   GET  /exec?view=chunk&id=X&i=N        -> {data}: one slice of a large result
+ *   GET  /exec?view=call&q=<b64url {fn,args}> -> same as POST
  *   POST /exec  {fn, args}                -> {ok, result} | {ok, chunked, parts} | {ok:false, error}
  *
  * Responses are kept small (Google's content server rejects large ones), so
@@ -109,6 +110,7 @@ function apiDoGet_(e) {
     if (view === 'ping') return apiJson_({ ok: true, time: new Date().toISOString() });
     if (view === 'raw') return apiRawPage_();
     if (view === 'pagever') { const m = apiPageMeta_(); return apiJson_({ id: m.id, parts: m.parts, hash: m.hash }); }
+    if (view === 'call') return apiCallFromGet_(e);
     if (view === 'chunk') return apiJson_({ data: apiReadSlice_(e.parameter.id, e.parameter.i) });
   } catch (err) {
     return apiJson_({ ok: false, error: (err && err.message) ? err.message : String(err) });
@@ -123,28 +125,42 @@ function doPost(e) {
   } catch (err) {
     return apiJson_({ ok: false, error: 'Invalid request.' });
   }
+  return apiJson_(apiDispatch_(req));
+}
 
-  const name = String(req.fn || '');
-  if (!Object.prototype.hasOwnProperty.call(API_ALLOWED_FUNCTIONS_, name)) {
-    return apiJson_({ ok: false, error: 'Function not allowed: ' + name });
+// GET /exec?view=call&q=<base64url JSON {fn,args}>  (used by the custom domain;
+// browsers can follow Google's redirect reliably only for GET).
+function apiCallFromGet_(e) {
+  let req;
+  try {
+    let q = String(e.parameter.q || '');
+    q += '===='.slice(0, (4 - q.length % 4) % 4);
+    const bytes = Utilities.base64DecodeWebSafe(q);
+    req = JSON.parse(Utilities.newBlob(bytes).getDataAsString('UTF-8'));
+  } catch (err) {
+    return apiJson_({ ok: false, error: 'Invalid request.' });
   }
+  return apiJson_(apiDispatch_(req));
+}
 
+function apiDispatch_(req) {
+  const name = String((req && req.fn) || '');
+  if (!Object.prototype.hasOwnProperty.call(API_ALLOWED_FUNCTIONS_, name)) {
+    return { ok: false, error: 'Function not allowed: ' + name };
+  }
   const fn = globalThis[name];
   if (typeof fn !== 'function') {
-    return apiJson_({ ok: false, error: 'Function not found: ' + name });
+    return { ok: false, error: 'Function not found: ' + name };
   }
-
   try {
     const args = Array.isArray(req.args) ? req.args : [];
     const result = fn.apply(null, args);
     const text = JSON.stringify(result === undefined ? null : result);
-    if (text.length <= API_SLICE_CHARS_) {
-      return apiJson_({ ok: true, result: JSON.parse(text) });
-    }
+    if (text.length <= API_SLICE_CHARS_) return { ok: true, result: JSON.parse(text) };
     const id = 'R' + Utilities.getUuid().replace(/-/g, '');
     const parts = apiStoreSlices_(id, text);
-    return apiJson_({ ok: true, chunked: id, parts: parts });
+    return { ok: true, chunked: id, parts: parts };
   } catch (err) {
-    return apiJson_({ ok: false, error: (err && err.message) ? err.message : String(err) });
+    return { ok: false, error: (err && err.message) ? err.message : String(err) };
   }
 }
