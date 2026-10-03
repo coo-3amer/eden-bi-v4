@@ -1,0 +1,13 @@
+name: tmp fetch chartjs
+on: { push: { branches: [tmp-fetch-chartjs] } }
+permissions: { contents: write }
+jobs:
+  f:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          curl -sSL https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js -o chart.umd.min.js
+          ls -la chart.umd.min.js
+          git config user.name bot; git config user.email bot@users.noreply.github.com
+          git add chart.umd.min.js && git commit -m "chart.js" && git push
