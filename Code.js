@@ -21,7 +21,7 @@ function doGet(e) {
   getUsersSheet_();
 
   return HtmlService.createTemplateFromFile('Index').evaluate()
-    .setTitle('EDEN DEVELOPMENT DASHBOARD')
+    .setTitle('EDEN DASHBOARD')
     .setFaviconUrl('https://raw.githubusercontent.com/coo-3amer/eden-bi-v4/redesign/web/favicon.png')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
