@@ -1,0 +1,230 @@
+<script>
+/* =====================================================================
+   EDEN BI — Chart polish
+   One Chart.js plugin that restyles every chart in the dashboard without
+   touching each chart's own code:
+   - Bars: soft gradient pills on a faint track, value labels at the end.
+   - Lines: smooth curves (no overshoot below zero), soft area glow,
+     points only on hover.
+   - Doughnuts: thin ring with rounded, separated segments and the total
+     in the middle.
+   - Quiet axes, dashed grid, dark rounded tooltips, gentle animation.
+   Colours come from the Light / Dark theme tokens.
+   ===================================================================== */
+(function(){
+  if(!window.Chart)return;
+  const tok=(n,f)=>(typeof edenDS_==='function'?edenDS_(n,f):f)||f;
+  const rgba=(c,a)=>(typeof hexToRgba_==='function'?hexToRgba_(c,a):c);
+  const FONT="'Inter','Segoe UI',Arial,sans-serif";
+  const compact=v=>{const n=Number(v||0),a=Math.abs(n);
+    if(a>=1e9)return (n/1e9).toFixed(a>=1e10?0:1).replace(/\.0$/,'')+'B';
+    if(a>=1e6)return (n/1e6).toFixed(a>=1e7?0:1).replace(/\.0$/,'')+'M';
+    if(a>=1e4)return (n/1e3).toFixed(0)+'K';
+    return n.toLocaleString('en-US',{maximumFractionDigits:1});};
+
+  /* Chart.js's own default colours mean "no colour was chosen". */
+  const DEFAULTS=/^(rgba?\(\s*(54,\s*162,\s*235|255,\s*99,\s*132|0,\s*0,\s*0)[^)]*\)|#36a2eb|#ff6384)$/i;
+  const isUnset=c=>c==null||c===''||(typeof c==='string'&&DEFAULTS.test(c.replace(/\s+/g,' ').trim()));
+
+  /* Global look */
+  const d=Chart.defaults;
+  d.font.family=FONT;d.font.size=11;
+  d.animation.duration=650;d.animation.easing='easeOutQuart';
+  d.plugins.legend.labels.usePointStyle=true;
+  d.plugins.legend.labels.pointStyle='circle';
+  d.plugins.legend.labels.boxWidth=7;d.plugins.legend.labels.boxHeight=7;
+  d.plugins.legend.labels.padding=14;
+
+  function styleTooltip(t){
+    const dark=document.documentElement.getAttribute('data-theme')==='dark';
+    Object.assign(t,{
+      backgroundColor:dark?'rgba(250,246,238,.97)':'rgba(24,20,14,.94)',
+      titleColor:dark?'#1d1812':'#f5efe3',bodyColor:dark?'#3b342a':'rgba(245,239,227,.86)',
+      borderColor:dark?'rgba(0,0,0,.08)':'rgba(226,194,122,.28)',borderWidth:1,
+      padding:{x:12,y:10},cornerRadius:10,caretSize:6,caretPadding:8,
+      titleFont:{family:FONT,size:12,weight:'700'},bodyFont:{family:FONT,size:12,weight:'500'},
+      titleMarginBottom:6,boxPadding:5,usePointStyle:true
+    });
+  }
+
+  function styleScales(o,isBar,horizontal){
+    if(!o.scales||!Object.keys(o.scales).length)o.scales={x:{},y:{}};
+    const scales=o.scales;
+    Object.keys(scales).forEach(id=>{
+      const s=scales[id];if(!s||s.type==='radialLinear')return;
+      const isCategory=horizontal?id.startsWith('y'):id.startsWith('x');
+      s.border=Object.assign({},s.border,{display:false});
+      s.grid=Object.assign({},s.grid);
+      if(isBar&&isCategory)s.grid.display=false;
+      else if(s.grid.display!==false){
+        s.grid.color=tok('grid','rgba(60,44,18,.08)');
+        s.grid.drawTicks=false;
+        s.border.dash=[3,4];
+      }
+      s.ticks=Object.assign({},s.ticks);
+      s.ticks.padding=8;
+      if(!s.ticks.color)s.ticks.color=tok('muted','#83796b');
+      s.ticks.font=Object.assign({family:FONT,size:11},s.ticks.font||{});
+      if(isCategory&&isBar&&horizontal)s.ticks.font=Object.assign({},s.ticks.font,{weight:'600'});
+      if(!isCategory&&!s.ticks.callback&&s.type!=='category')s.ticks.callback=v=>compact(v);
+      if(!isCategory&&s.ticks.maxTicksLimit==null)s.ticks.maxTicksLimit=6;
+    });
+  }
+
+  /* Gradient for one bar, from a soft tint at the base to the full colour. */
+  function barGradient(ctx,horizontal,color){
+    const chart=ctx.chart,area=chart.chartArea;
+    if(!area||typeof color!=='string')return color;
+    const g=horizontal
+      ?chart.ctx.createLinearGradient(area.left,0,area.right,0)
+      :chart.ctx.createLinearGradient(0,area.bottom,0,area.top);
+    g.addColorStop(0,rgba(color,.55));g.addColorStop(1,color);
+    return g;
+  }
+
+  function styleBars(ds,di,horizontal,single){
+    if(!ds.__edenBase){
+      let base=ds.backgroundColor;
+      if(isUnset(base)||(Array.isArray(base)&&base.every(isUnset))){
+        // No colour chosen: gold for the leader, warm grey for the rest.
+        base=single?(ctx=>ctx.dataIndex===0?tok('chart-1','#b08a42'):rgba(tok('chart-2','#7a746b'),.75))
+                   :(()=>{const p=typeof edenChartPalette_==='function'?edenChartPalette_():['#b08a42'];return p[di%p.length];})();
+      }
+      ds.__edenBase=base;
+    }
+    const base=ds.__edenBase;
+    const pick=ctx=>{let c=base;
+      if(typeof c==='function')c=c(ctx);
+      if(Array.isArray(c))c=c[ctx.dataIndex%c.length];
+      return c;};
+    ds.backgroundColor=ctx=>barGradient(ctx,horizontal,pick(ctx));
+    ds.hoverBackgroundColor=ctx=>pick(ctx);
+    ds.borderWidth=0;
+    ds.borderSkipped=false;
+    ds.borderRadius=horizontal?20:{topLeft:8,topRight:8,bottomLeft:3,bottomRight:3};
+    if(ds.maxBarThickness==null||ds.maxBarThickness>(horizontal?20:40))ds.maxBarThickness=horizontal?18:38;
+    if(ds.barThickness&&ds.barThickness>(horizontal?20:40))ds.barThickness=horizontal?18:38;
+    if(ds.categoryPercentage==null)ds.categoryPercentage=horizontal?.78:.62;
+  }
+
+  function styleLine(cfg,ds){
+    const color=typeof ds.borderColor==='string'&&!isUnset(ds.borderColor)?ds.borderColor:tok('chart-1','#b08a42');
+    ds.borderColor=color;
+    ds.borderWidth=ds.borderWidth&&ds.borderWidth>3?ds.borderWidth:2.5;
+    ds.tension=.38;ds.cubicInterpolationMode='monotone';
+    ds.pointRadius=0;ds.pointHoverRadius=5;ds.pointHitRadius=12;
+    ds.pointBackgroundColor=color;ds.pointBorderColor=tok('surface','#fff');ds.pointHoverBorderWidth=2;
+    const many=cfg.data.datasets.filter(x=>(x.type||cfg.type)==='line').length>3;
+    ds.fill=ds.fill===false&&many?false:'origin';
+    ds.backgroundColor=ctx=>{
+      const area=ctx.chart.chartArea;if(!area)return rgba(color,.1);
+      const g=ctx.chart.ctx.createLinearGradient(0,area.top,0,area.bottom);
+      g.addColorStop(0,rgba(color,many?.10:.22));g.addColorStop(1,rgba(color,0));
+      return g;
+    };
+  }
+
+  function styleDoughnut(cfg,ds){
+    ds.borderWidth=0;ds.spacing=3;ds.borderRadius=6;ds.hoverOffset=6;
+    cfg.options.cutout='72%';
+    if(isUnset(ds.backgroundColor)||!ds.backgroundColor){
+      const p=typeof edenChartPalette_==='function'?edenChartPalette_():['#b08a42'];
+      ds.backgroundColor=(cfg.data.labels||[]).map((_,i)=>p[i%p.length]);
+    }
+  }
+
+  /* Restyle a chart's config before Chart.js builds it. */
+  function polishConfig(cfg){
+    if(!cfg||!cfg.data||cfg.__edenPolished)return cfg;
+    cfg.__edenPolished=true;
+    try{
+      const type=cfg.type,o=cfg.options=cfg.options||{};
+      const horizontal=o.indexAxis==='y',isBar=type==='bar';
+      o.plugins=o.plugins||{};
+      styleTooltip(o.plugins.tooltip=o.plugins.tooltip||{});
+      const lg=o.plugins.legend=o.plugins.legend||{};
+      const l=lg.labels=lg.labels||{};
+      l.usePointStyle=true;l.pointStyle='circle';l.boxWidth=7;l.boxHeight=7;
+      l.color=l.color||tok('text','#2b241a');l.font=Object.assign({family:FONT,size:11,weight:'500'},l.font||{});
+      const sets=cfg.data.datasets||[];
+      if(type==='doughnut'||type==='pie'){sets.forEach(ds=>styleDoughnut(cfg,ds));return cfg;}
+      if(type!=='bar'&&type!=='line')return cfg;
+      styleScales(o,isBar,horizontal);
+      sets.forEach((ds,i)=>{
+        const t=ds.type||type;
+        if(t==='bar')styleBars(ds,i,horizontal,sets.length===1);
+        else if(t==='line')styleLine(cfg,ds);
+      });
+      if(isBar&&horizontal&&sets.length===1){
+        const hasLabels=(cfg.plugins||[]).some(p=>p&&/label/i.test(p.id||''));
+        if(!hasLabels&&(cfg.data.labels||[]).length<=16){
+          o.plugins.edenPolish={valueLabels:true};
+          /* values are drawn inside the track; no extra padding */
+        }
+      }
+    }catch(e){console.warn('Chart polish',e);}
+    return cfg;
+  }
+
+  const polish={
+    id:'edenPolish',
+    /* Faint track behind horizontal bars. */
+    beforeDatasetsDraw(chart){
+      const o=chart.options;
+      if(chart.config.type!=='bar'||o.indexAxis!=='y'||chart.data.datasets.length!==1)return;
+      const meta=chart.getDatasetMeta(0),area=chart.chartArea,c=chart.ctx;
+      if(!meta||meta.hidden)return;
+      c.save();c.fillStyle=rgba(tok('chart-2','#7a746b'),.08);
+      meta.data.forEach(bar=>{
+        const h=bar.height||0;if(!h)return;
+        c.beginPath();
+        if(c.roundRect)c.roundRect(area.left,bar.y-h/2,area.right-area.left,h,h/2);else c.rect(area.left,bar.y-h/2,area.right-area.left,h);
+        c.fill();
+      });
+      c.restore();
+    },
+    /* Value at the end of each horizontal bar. */
+    afterDatasetsDraw(chart,args,opts){
+      if(!opts||!opts.valueLabels)return;
+      const meta=chart.getDatasetMeta(0),c=chart.ctx,ds=chart.data.datasets[0];
+      if(!meta||meta.hidden)return;
+      c.save();
+      c.font=`700 11px ${FONT}`;c.fillStyle=tok('text','#2b241a');c.textBaseline='middle';
+      const area=chart.chartArea;
+      c.textAlign='right';
+      meta.data.forEach((bar,i)=>{
+        const v=Number(ds.data[i]);if(!Number.isFinite(v))return;
+        const txt=compact(v),w=c.measureText(txt).width;
+        const onBar=bar.x>area.right-w-22;
+        c.fillStyle=onBar?'#fff':tok('text','#2b241a');
+        c.fillText(txt,onBar?bar.x-9:area.right-10,bar.y);
+      });
+      c.restore();
+    },
+    /* Total in the middle of doughnuts. */
+    afterDraw(chart){
+      const t=chart.config.type;
+      if((t!=='doughnut')||!chart.data.datasets.length)return;
+      const meta=chart.getDatasetMeta(0);if(!meta||!meta.data.length)return;
+      const arc=meta.data[0],ds=chart.data.datasets[0];
+      const total=(ds.data||[]).reduce((a,b,i)=>a+(chart.getDataVisibility(i)?Number(b)||0:0),0);
+      const c=chart.ctx,x=arc.x,y=arc.y,r=arc.innerRadius||0;
+      if(r<26)return;
+      c.save();c.textAlign='center';c.textBaseline='middle';
+      c.fillStyle=tok('heading',tok('text','#1d1812'));
+      c.font=`600 ${Math.round(Math.min(26,r*.42))}px 'Cormorant Garamond',Georgia,serif`;
+      c.fillText(compact(total),x,y-r*.1);
+      c.fillStyle=tok('muted','#83796b');
+      c.font=`700 ${Math.round(Math.min(10,r*.16))}px ${FONT}`;
+      c.fillText(String(ds.label||'TOTAL').toUpperCase().slice(0,18),x,y+r*.24);
+      c.restore();
+    }
+  };
+  Chart.register(polish);
+
+  /* Every `new Chart(...)` in the dashboard goes through polishConfig. */
+  const Base=window.Chart;
+  class EdenChart extends Base{constructor(item,cfg){super(item,polishConfig(cfg));}}
+  window.Chart=EdenChart;
+})();
+</script>
