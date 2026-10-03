@@ -1,0 +1,110 @@
+<style id="eden-export-picker">
+/* ===== Export: choose columns ===== */
+.dsExpBackdrop{position:fixed;inset:0;z-index:400;background:rgba(14,11,6,.45);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:16px;animation:dsExpFade .15s ease}
+.dsExpModal{width:min(720px,100%);max-height:min(86vh,760px);display:flex;flex-direction:column;background:var(--ds-surface);color:var(--ds-text);border:1px solid var(--ds-line);border-radius:18px;box-shadow:0 30px 80px rgba(0,0,0,.35);overflow:hidden;font-family:var(--ds-font,Inter,sans-serif)}
+.dsExpHead{padding:20px 22px 14px;border-bottom:1px solid var(--ds-line)}
+.dsExpHead small{display:block;font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ds-gold-strong)}
+.dsExpHead h3{margin:6px 0 4px;font-family:var(--ds-serif,Georgia,serif);font-size:24px;font-weight:600;color:var(--ds-heading)}
+.dsExpHead p{margin:0;font-size:13px;color:var(--ds-muted)}
+.dsExpTools{display:flex;gap:8px;align-items:center;padding:12px 22px;border-bottom:1px solid var(--ds-line);flex-wrap:wrap}
+.dsExpTools input{flex:1;min-width:160px;height:36px;padding:0 12px;border-radius:10px;border:1px solid var(--ds-line);background:var(--ds-surface-2);color:var(--ds-text);font-size:13px;outline:none}
+.dsExpTools input:focus{border-color:var(--ds-gold-line)}
+.dsExpTools button{height:36px;padding:0 14px;border-radius:10px;border:1px solid var(--ds-line);background:var(--ds-surface-2);color:var(--ds-text);font-size:12.5px;font-weight:600;cursor:pointer}
+.dsExpTools button:hover{background:var(--ds-hover)}
+.dsExpList{padding:14px 22px;overflow:auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.dsExpItem{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;border:1px solid var(--ds-line);background:var(--ds-surface-2);cursor:pointer;font-size:13px;user-select:none;min-width:0}
+.dsExpItem span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dsExpItem input{width:16px;height:16px;margin:0;accent-color:var(--ds-gold-strong,#a07a2c);flex:0 0 16px}
+.dsExpItem.off{opacity:.55;background:transparent}
+.dsExpItem.hide{display:none}
+.dsExpFoot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 22px;border-top:1px solid var(--ds-line);background:var(--ds-surface-2)}
+.dsExpFoot b{font-size:13px;color:var(--ds-muted);font-weight:600}
+.dsExpFoot div{display:flex;gap:8px}
+.dsExpFoot button{height:40px;padding:0 18px;border-radius:11px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid var(--ds-line);background:var(--ds-surface);color:var(--ds-text)}
+.dsExpFoot button.go{border:0;background:var(--ds-gold-grad,#b08a42);color:var(--ds-on-gold,#1a140a)}
+.dsExpFoot button.go:disabled{opacity:.45;cursor:not-allowed}
+@keyframes dsExpFade{from{opacity:0}to{opacity:1}}
+@media(max-width:640px){.dsExpList{grid-template-columns:repeat(2,minmax(0,1fr))}.dsExpHead h3{font-size:20px}}
+</style>
+
+<script>
+/* =====================================================================
+   EDEN BI — Export column picker
+   Before CSV / Excel / PDF export of a transactions table, ask which
+   columns to include. The last choice is remembered on this browser.
+   ===================================================================== */
+let EDEN_EXPORT_SELECTED=null;
+const EDEN_EXPORT_HIDDEN_KEY='EDEN_EXPORT_HIDDEN_COLS';
+
+function edenExportCols_(all){
+  if(!Array.isArray(EDEN_EXPORT_SELECTED))return all;
+  const keep=new Set(EDEN_EXPORT_SELECTED);
+  return all.filter(c=>keep.has(c));
+}
+function edenExportHidden_(){
+  try{return new Set(JSON.parse(localStorage.getItem(EDEN_EXPORT_HIDDEN_KEY)||'[]'));}catch(e){return new Set();}
+}
+function edenExportSaveHidden_(set){
+  try{localStorage.setItem(EDEN_EXPORT_HIDDEN_KEY,JSON.stringify([...set]));}catch(e){}
+}
+
+/* Returns true when the picker took over (it runs `run` after the user confirms). */
+function edenExportPicker_(kind,run){
+  try{
+    if(typeof isBrokerView==='function'&&isBrokerView())return false;
+    if(['isInventoryView','isAdminView','isAiView','isSettingsView'].some(f=>typeof window[f]==='function'&&window[f]()))return false;
+    if(typeof currentView!=='undefined'&&currentView==='dataHealth')return false;
+    if(typeof tableDataset_!=='function')return false;
+  }catch(e){return false;}
+  const {rows,cols,title}=tableDataset_();
+  if(!rows.length||!cols.length)return false;
+
+  const hidden=edenExportHidden_();
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const name=c=>(typeof label==='function'?label(c):c);
+  const back=document.createElement('div');
+  back.className='dsExpBackdrop';
+  back.innerHTML=`<div class="dsExpModal" role="dialog" aria-modal="true" aria-labelledby="dsExpTitle">
+    <div class="dsExpHead"><small>Export ${esc(kind)}</small><h3 id="dsExpTitle">Choose columns</h3><p>${esc(title)} · ${rows.length.toLocaleString('en-US')} rows with the current filters</p></div>
+    <div class="dsExpTools"><input type="search" placeholder="Find a column…" aria-label="Find a column"><button type="button" data-a="all">Select all</button><button type="button" data-a="none">Clear all</button></div>
+    <div class="dsExpList">${cols.map(c=>`<label class="dsExpItem${hidden.has(c)?' off':''}" data-name="${esc(name(c).toLowerCase())}"><input type="checkbox" value="${esc(c)}"${hidden.has(c)?'':' checked'}><span>${esc(name(c))}</span></label>`).join('')}</div>
+    <div class="dsExpFoot"><b data-count></b><div><button type="button" data-a="cancel">Cancel</button><button type="button" class="go" data-a="go">Export ${esc(kind)}</button></div></div>
+  </div>`;
+  document.body.appendChild(back);
+
+  const boxes=[...back.querySelectorAll('.dsExpList input')];
+  const count=back.querySelector('[data-count]'),go=back.querySelector('[data-a="go"]');
+  const sync=()=>{
+    const n=boxes.filter(b=>b.checked).length;
+    boxes.forEach(b=>b.closest('.dsExpItem').classList.toggle('off',!b.checked));
+    count.textContent=`${n} of ${boxes.length} columns`;
+    go.disabled=!n;
+  };
+  const close=()=>{document.removeEventListener('keydown',onKey);back.remove();};
+  const onKey=e=>{if(e.key==='Escape')close();};
+  document.addEventListener('keydown',onKey);
+  back.addEventListener('click',e=>{if(e.target===back)close();});
+  back.querySelector('.dsExpList').addEventListener('change',sync);
+  back.querySelector('input[type="search"]').addEventListener('input',e=>{
+    const q=e.target.value.trim().toLowerCase();
+    back.querySelectorAll('.dsExpItem').forEach(it=>it.classList.toggle('hide',!!q&&!it.dataset.name.includes(q)));
+  });
+  back.querySelector('[data-a="all"]').onclick=()=>{boxes.forEach(b=>b.checked=true);sync();};
+  back.querySelector('[data-a="none"]').onclick=()=>{boxes.forEach(b=>b.checked=false);sync();};
+  back.querySelector('[data-a="cancel"]').onclick=close;
+  go.onclick=()=>{
+    const picked=boxes.filter(b=>b.checked).map(b=>b.value);
+    if(!picked.length)return;
+    // Remember what was left out (columns not shown this time keep their old choice).
+    const keepHidden=new Set([...hidden].filter(c=>!cols.includes(c)));
+    boxes.filter(b=>!b.checked).forEach(b=>keepHidden.add(b.value));
+    edenExportSaveHidden_(keepHidden);
+    close();
+    EDEN_EXPORT_SELECTED=picked;
+    try{run();}finally{EDEN_EXPORT_SELECTED=null;}
+  };
+  sync();
+  setTimeout(()=>go.focus(),30);
+  return true;
+}
+</script>
