@@ -363,26 +363,10 @@ function ensureTransactionExportButtons_(){
   }
 }
 
+// Exports follow the table on screen: same view, filters, rows and columns.
 function transactionExportDataset_(){
-  const rows=statusScopeRows();
-
-  const headers=[
-    'Project','Client Name','Mobile','Client Type','Nationality',
-    'Unit Code','Status','Branch','Sales Name','Sales Manager','Date',
-    'Final Price','Currency',
-    'DP %','Actual DP','DP Paid','Actual Paid','Remain',
-    'Area','Unit Type','Main Source','Source Type','Campaign'
-  ];
-
-  const keys=[
-    'project','clientName','mobile','clientType','nationality',
-    'unitCode','status','branch','salesName','salesManager','date',
-    'amount','currency',
-    'dpPercent','actualDP','dpPaid','actualPaid','remain',
-    'area','unitType','mainSource','sourceType','campaignName'
-  ];
-
-  return {rows,headers,keys};
+  const {rows,cols,title}=tableDataset_();
+  return {rows,headers:cols.map(c=>label(c)),keys:cols,title,dealRows:statusScopeRows()};
 }
 
 function exportSafeText_(value){
@@ -810,35 +794,35 @@ function exportExcel(){
     return;
   }
 
-  const {rows,headers,keys}=transactionExportDataset_();
+  const {rows,headers,keys,title,dealRows}=transactionExportDataset_();
   if(!rows.length){
     alert('No transaction rows to export.');
     return;
   }
 
-  const egpRows=rows.filter(r=>projectCurrency_(r)==='EGP');
+  const egpRows=dealRows.filter(r=>projectCurrency_(r)==='EGP');
   const sumN=(arr,key)=>arr.reduce((a,r)=>a+Number(r?.[key]||0),0);
   const uniqN=(arr,key)=>new Set(
     arr.map(r=>String(r?.[key]||'').trim()).filter(Boolean)
   ).size;
 
   const uniqueClients=new Set(
-    rows.map(r=>clientKeyOf(r)).filter(Boolean)
+    dealRows.map(r=>clientKeyOf(r)).filter(Boolean)
   ).size;
 
   const units=new Set(
-    rows.map(r=>String(r.unitCode||'').trim()).filter(Boolean)
+    dealRows.map(r=>String(r.unitCode||'').trim()).filter(Boolean)
   ).size;
 
   const exportKpis=[
-    ['Total Deals', rows.length.toLocaleString('en-US')],
+    ['Total Deals', dealRows.length.toLocaleString('en-US')],
     ['Total Value EGP', `${money(sumN(egpRows,'amount'))} EGP`],
     ['Unique Clients', uniqueClients.toLocaleString('en-US')],
     ['Units', units.toLocaleString('en-US')],
-    ['Meters', money(sumN(rows,'area'))],
-    ['Projects', uniqN(rows,'project').toLocaleString('en-US')],
-    ['Sales', uniqN(rows,'salesName').toLocaleString('en-US')],
-    ['Branches', uniqN(rows,'branch').toLocaleString('en-US')]
+    ['Meters', money(sumN(dealRows,'area'))],
+    ['Projects', uniqN(dealRows,'project').toLocaleString('en-US')],
+    ['Sales', uniqN(dealRows,'salesName').toLocaleString('en-US')],
+    ['Branches', uniqN(dealRows,'branch').toLocaleString('en-US')]
   ];
 
   const summaryRows=[];
@@ -887,7 +871,7 @@ function exportExcel(){
     </style>
   </head>
   <body>
-    <h1>EDEN BI — Transactions Export</h1>
+    <h1>EDEN — ${exportSafeText_(title||"Transactions")}</h1>
     <div class="meta">Generated: ${exportSafeText_(new Date().toLocaleString())}</div>
     ${summaryTable}
     ${dataTable}
@@ -913,35 +897,35 @@ function exportPDF(){
     return;
   }
 
-  const {rows,headers,keys}=transactionExportDataset_();
+  const {rows,headers,keys,title,dealRows}=transactionExportDataset_();
   if(!rows.length){
     alert('No transaction rows to export.');
     return;
   }
 
-  const egpRows=rows.filter(r=>projectCurrency_(r)==='EGP');
+  const egpRows=dealRows.filter(r=>projectCurrency_(r)==='EGP');
   const sumN=(arr,key)=>arr.reduce((a,r)=>a+Number(r?.[key]||0),0);
   const uniqN=(arr,key)=>new Set(
     arr.map(r=>String(r?.[key]||'').trim()).filter(Boolean)
   ).size;
 
   const uniqueClients=new Set(
-    rows.map(r=>clientKeyOf(r)).filter(Boolean)
+    dealRows.map(r=>clientKeyOf(r)).filter(Boolean)
   ).size;
 
   const units=new Set(
-    rows.map(r=>String(r.unitCode||'').trim()).filter(Boolean)
+    dealRows.map(r=>String(r.unitCode||'').trim()).filter(Boolean)
   ).size;
 
   const exportKpis=[
-    ['Total Deals', rows.length.toLocaleString('en-US')],
+    ['Total Deals', dealRows.length.toLocaleString('en-US')],
     ['Total Value EGP', `${money(sumN(egpRows,'amount'))} EGP`],
     ['Unique Clients', uniqueClients.toLocaleString('en-US')],
     ['Units', units.toLocaleString('en-US')],
-    ['Meters', money(sumN(rows,'area'))],
-    ['Projects', uniqN(rows,'project').toLocaleString('en-US')],
-    ['Sales', uniqN(rows,'salesName').toLocaleString('en-US')],
-    ['Branches', uniqN(rows,'branch').toLocaleString('en-US')]
+    ['Meters', money(sumN(dealRows,'area'))],
+    ['Projects', uniqN(dealRows,'project').toLocaleString('en-US')],
+    ['Sales', uniqN(dealRows,'salesName').toLocaleString('en-US')],
+    ['Branches', uniqN(dealRows,'branch').toLocaleString('en-US')]
   ];
 
   const summaryHtml=`
@@ -989,7 +973,7 @@ function exportPDF(){
     </style>
   </head>
   <body>
-    <h1>EDEN BI — Transactions Export</h1>
+    <h1>EDEN — ${exportSafeText_(title||"Transactions")}</h1>
     <div class="meta">Generated: ${new Date().toLocaleString()}</div>
     ${summaryHtml}
     ${table}
@@ -4544,7 +4528,8 @@ function renderDownPaymentSummaryPanel_(rows){
     <div style="display:flex;gap:10px;flex-wrap:wrap">${cards}</div>`;
 }
 
-function renderTable(){
+// Rows and columns of the table currently on screen (also used by the exports).
+function tableDataset_(){
   let rows=filtered;
   let cols=['project','clientName','mobile','clientType','nationality','unitCode','status','renovationStatus','monthName','year','amount','currency','dpPercent','actualDP','dpPaid','actualPaid','remain','area','salesName','dealStatus','sharedWith','branch','date','unitCategory','unitType','mainSource','sourceType','campaignName','mediaBuyer','brokerageCompany','bcSales','bcManager'];
   let title='Deals Details';
@@ -4565,6 +4550,10 @@ function renderTable(){
     cols=cols.concat('reservationDays');
     rows=rows.map(r=>({...r,reservationDays:reservationDays_(r)}));
   }
+  return {rows,cols,title};
+}
+function renderTable(){
+  const {rows,cols,title}=tableDataset_();
   tableTitle.innerText=title;
   rowCount.innerText=`${rows.length.toLocaleString()} records`;
   renderDownPaymentSummaryPanel_(rows);
@@ -6139,10 +6128,12 @@ function exportCSV(){
     return;
   }
 
-  let rows=filtered,
-      headers=['Project','Client Name','Mobile','Client Type','Nationality','Unit Code','Status','Renovation','Amount','Currency','DP %','Actual DP','DP Paid','Actual Paid','Remain','Area','Sales Name','Branch','Date','Unit Type Category','Unit Type','Main Source','Source Type','Campaign'],
-      keys=['project','clientName','mobile','clientType','nationality','unitCode','status','renovationStatus','amount','currency','dpPercent','actualDP','dpPaid','actualPaid','remain','area','salesName','branch','date','unitCategory','unitType','mainSource','sourceType','campaignName'],
-      filename='eden_transactions_dashboard.csv';
+  // Same rows and columns as the table on screen.
+  const table=tableDataset_();
+  let rows=table.rows,
+      headers=table.cols.map(c=>label(c)),
+      keys=table.cols,
+      filename=`EDEN_${String(table.title||'Transactions').replace(/[^A-Za-z0-9]+/g,'_').replace(/^_|_$/g,'')}_${new Date().toISOString().slice(0,10)}.csv`;
 
   if(currentView==='dataHealth'){
     rows=dataHealthIssueRows_();

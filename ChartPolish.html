@@ -130,7 +130,8 @@
   }
 
   function styleDoughnut(cfg,ds){
-    ds.borderWidth=0;ds.spacing=3;ds.borderRadius=6;ds.hoverOffset=6;
+    const parts=(ds.data||[]).filter(v=>Number(v)>0).length;
+    ds.borderWidth=0;ds.spacing=parts>1?3:0;ds.borderRadius=parts>1?6:0;ds.hoverOffset=6;
     cfg.options.cutout='72%';
     if(isUnset(ds.backgroundColor)||!ds.backgroundColor){
       const p=typeof edenChartPalette_==='function'?edenChartPalette_():['#b08a42'];
@@ -229,7 +230,24 @@
 
   /* Every `new Chart(...)` in the dashboard goes through polishConfig. */
   const Base=window.Chart;
+  /* Horizontal bar charts with only a few bars get a shorter box, so a
+     chart with 1–3 bars doesn't sit in a mostly empty panel. */
+  function fitHeight(item,cfg){
+    try{
+      const canvas=item&&item.canvas?item.canvas:item;
+      const wrap=canvas&&canvas.parentElement;
+      if(!wrap||!wrap.classList||!wrap.classList.contains('edenChartCanvas'))return;
+      wrap.style.height='';wrap.style.minHeight='';
+      const o=cfg&&cfg.options||{};
+      if(!(cfg&&cfg.type==='bar'&&o.indexAxis==='y'))return;
+      const n=((cfg.data||{}).labels||[]).length;
+      const full=wrap.clientHeight;
+      const want=Math.max(110,n*34+52);
+      if(n&&full&&want<full){wrap.style.height=want+'px';wrap.style.minHeight=want+'px';}
+    }catch(e){}
+  }
   function EdenChart(item,cfg){
+    fitHeight(item,cfg);
     try{return new Base(item,polishConfig(cfg));}
     catch(e){
       // Never leave a half-built chart holding the canvas.

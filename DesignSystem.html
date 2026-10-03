@@ -455,4 +455,7 @@ html[data-theme] .edenCurveExecTop .edenCurveTopRow em{font-style:normal;font-si
 html[data-theme] #mainTable td.resDaysCell{text-align:right;color:var(--ds-subtle)}
 html[data-theme] #mainTable .resDays{display:inline-block;min-width:64px;padding:4px 10px;border-radius:999px;font-weight:700;font-size:12px;text-align:center;background:var(--ds-gold-soft);color:var(--ds-gold-strong)}
 html[data-theme] #mainTable .resDays.over{background:var(--ds-red-soft);color:var(--ds-red)}
+/* Chart cards: keep the chart centred when a short chart sits next to a tall one */
+html[data-theme] .edenInsightCard{display:flex;flex-direction:column}
+html[data-theme] .edenInsightCard>.edenChartCanvas{margin:auto 0;width:100%}
 </style>
