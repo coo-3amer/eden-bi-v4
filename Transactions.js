@@ -117,6 +117,9 @@ function getDashboardData(authToken) {
 
   const idx = buildIndex_(headers);
 
+  // CLIENT DOCUMENTS: the client name cells link to each client's papers.
+  const clientDocLinks = clientDocumentLinks_(sheet, idx, displayRows.length);
+
   // STABILITY V1: resolve Internal comm subheaders inside their own group.
   const internalCommIdx = groupedHeaderIndexes_(
     sheet,
@@ -389,6 +392,7 @@ function getDashboardData(authToken) {
       project,
       clientName,
       clientKey: normalizeClientKey_(clientName),
+      docsUrl: clientDocLinks[i] || '',
       mobile,
       nationality,
       clientType,
@@ -549,4 +553,45 @@ function getDashboardData(authToken) {
       : getBrokerDashboardData_(),
     access: egyptViewerAccessProfile_(authUser)
   };
+}
+
+
+/**
+ * Links on the client name cells (the client's documents folder / file).
+ * Reads both inserted links and =HYPERLINK() formulas. Returns one URL (or '')
+ * per data row; never throws, so the dashboard still loads without them.
+ */
+function clientDocumentLinks_(sheet, idx, rowCount) {
+  const out = new Array(rowCount).fill('');
+  if (!rowCount) return out;
+  const cols = ['Client Name', 'Final Client Name']
+    .map(n => idx[n] !== undefined ? idx[n] : idx[normalizeHeader_(n)])
+    .filter((c, i, a) => c !== undefined && a.indexOf(c) === i);
+  cols.forEach(c => {
+    try {
+      const range = sheet.getRange(DATA_START_ROW, c + 1, rowCount, 1);
+      const rich = range.getRichTextValues();
+      const formulas = range.getFormulas();
+      for (let i = 0; i < rowCount; i++) {
+        if (out[i]) continue;
+        let url = '';
+        const rt = rich[i] && rich[i][0];
+        if (rt) {
+          url = rt.getLinkUrl() || '';
+          if (!url) {
+            const runs = rt.getRuns();
+            for (let k = 0; k < runs.length && !url; k++) url = runs[k].getLinkUrl() || '';
+          }
+        }
+        if (!url) {
+          const m = String((formulas[i] && formulas[i][0]) || '').match(/HYPERLINK\(\s*"([^"]+)"/i);
+          if (m) url = m[1];
+        }
+        if (/^https?:\/\//i.test(url)) out[i] = url;
+      }
+    } catch (err) {
+      console.warn('Client document links: ' + err);
+    }
+  });
+  return out;
 }

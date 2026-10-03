@@ -458,4 +458,12 @@ html[data-theme] #mainTable .resDays.over{background:var(--ds-red-soft);color:va
 /* Chart cards: keep the chart centred when a short chart sits next to a tall one */
 html[data-theme] .edenInsightCard{display:flex;flex-direction:column}
 html[data-theme] .edenInsightCard>.edenChartCanvas{margin:auto 0;width:100%}
+/* Client documents column: pinned to the right edge of the Deals table */
+html[data-theme] #mainTable th.docsHead,html[data-theme] #mainTable td.docsCell{position:sticky;right:0;z-index:2;background:var(--ds-surface);box-shadow:-8px 0 12px -10px rgba(0,0,0,.25);text-align:center}
+html[data-theme] #mainTable thead th.docsHead{z-index:3;background:var(--ds-surface-2)}
+html[data-theme] #mainTable tr:hover td.docsCell{background:var(--ds-hover)}
+html[data-theme] #mainTable .docsBtn{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;border:1px solid var(--ds-gold-line);background:var(--ds-gold-soft);color:var(--ds-gold-strong);font-weight:700;font-size:12px;text-decoration:none;white-space:nowrap}
+html[data-theme] #mainTable .docsBtn:hover{background:var(--ds-gold-grad);color:var(--ds-on-gold);border-color:transparent}
+html[data-theme] #mainTable .docsBtn svg{width:15px;height:15px}
+html[data-theme] #mainTable .docsNone{color:var(--ds-subtle)}
 </style>
