@@ -30,6 +30,9 @@ def main():
         '<meta name="theme-color" content="#07090f">'
         '<meta name="apple-mobile-web-app-capable" content="yes">'
         '<meta name="mobile-web-app-capable" content="yes">'
+        '<meta name="apple-mobile-web-app-title" content="EDEN">'
+        '<link rel="apple-touch-icon" href="apple-touch-icon.png">'
+        '<link rel="manifest" href="manifest.webmanifest">'
         f'<script>window.EDEN_API_URL={json.dumps(cfg["apiUrl"])};</script>'
         f'<script>{shim}</script>'
     )
@@ -38,6 +41,8 @@ def main():
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / 'index.html').write_text(html, encoding='utf-8')
     (OUT / '.nojekyll').write_text('', encoding='utf-8')
+    for name in ('favicon.png', 'favicon-32.png', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'manifest.webmanifest'):
+        (OUT / name).write_bytes((ROOT / 'web' / name).read_bytes())
     cname = ROOT / 'web' / 'CNAME'
     if cname.exists():  # custom domain for GitHub Pages
         (OUT / 'CNAME').write_text(cname.read_text(encoding='utf-8').strip() + '\n', encoding='utf-8')
