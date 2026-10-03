@@ -4560,6 +4560,11 @@ function renderTable(){
   if(currentView==='clients'){
     rows=clientRows();cols=['analysisType','clientName','projects','deals','units','customerValue','customerJourney','valueEGP','valueUSD','sales','branches','statuses','unitCodes'];title='Clients Analysis - Repeated & Multi Project Clients'
   }
+  // Reservation filter on: show how many days each reservation has been held.
+  if(cols[0]==='project'&&getMulti('status').some(v=>/reserv/i.test(v))){
+    cols=cols.concat('reservationDays');
+    rows=rows.map(r=>({...r,reservationDays:reservationDays_(r)}));
+  }
   tableTitle.innerText=title;
   rowCount.innerText=`${rows.length.toLocaleString()} records`;
   renderDownPaymentSummaryPanel_(rows);
@@ -4925,7 +4930,20 @@ function splitPhoneNumbers_(v){
 function mobileCellHtml_(v){
   return splitPhoneNumbers_(v).map(n=>`<span class="mobileNum">${escapeHtml(n)}</span>`).join('');
 }
+// Days since the reservation date, for rows whose status is a reservation.
+function reservationDays_(r){
+  if(!/reserv/i.test(String(r.status||'')))return null;
+  const y=Number(r.year),m=Number(r.month);
+  if(!y||!m)return null;
+  const d=new Date(y,m-1,Number(r.day)||1);
+  return Math.max(0,Math.floor((Date.now()-d.getTime())/86400000));
+}
 function cell(c,v){
+  if(c==='reservationDays'){
+    if(v==null||v==='')return '<td class="resDaysCell">—</td>';
+    const limit=typeof EDEN_STALE_RESERVATION_DAYS!=='undefined'?EDEN_STALE_RESERVATION_DAYS:15;
+    return `<td class="resDaysCell"><span class="resDays${v>limit?' over':''}" title="${v>limit?'Over the '+limit+'-day limit':'Within the '+limit+'-day limit'}">${Number(v).toLocaleString('en-US')} ${v===1?'day':'days'}</span></td>`;
+  }
   if(['amount','valueEGP','valueUSD','actualDP','dpPaid','actualPaid','remain','meters','area','meterPrice','brokerSales','companies','withGroups','withoutGroups','admins','edenSalesCount','orientations'].includes(c))return `<td>${money(v)}</td>`;
   if(c==='groupLink')return `<td>${v?`<a class="chip" href="${v}" target="_blank">Open Group</a>`:''}</td>`;
   if(c==='healthStatus'||c==='severity'){const cls=String(v||'').toLowerCase().replace(/\s+/g,'-');return `<td><span class="healthBadge health-${cls}">${escapeHtml(v||'')}</span></td>`;}
@@ -4935,7 +4953,7 @@ function cell(c,v){
   if(c==='status')return `<td><span class="chip status-${String(v).split(' ')[0]}">${v||''}</span></td>`;
   return `<td>${v??''}</td>`;
 }
-function label(c){return {name:'Name',deals:'Deals',valueEGP:'Total Value EGP',valueUSD:'Total Value USD',meters:'Sold Meters',units:'Sold Units',uniqueClients:'Unique Clients',salesCount:'Sales Count',projectsCount:'Projects Count',branchesCount:'Branches Count',clientName:'Client Name',project:'Project',clientType:'Client Type',nationality:'Nationality',unitCode:'Unit Code',status:'Status',renovationStatus:'Renovation',amount:'Final Price',currency:'Currency',area:'Area',salesName:'Sales Name',dealStatus:'Deal Type',sharedWith:'Shared With',branch:'Branch',date:'Date',monthName:'Month',year:'Year',unitCategory:'Unit Type Category',unitType:'Unit Type',mainSource:'Main Source',sourceType:'Source Type',campaignName:'Campaign Name',mediaBuyer:'Media Buyer',brokerageCompany:'Brokerage Company',bcSales:'BC Sales',bcManager:'BC Manager',dpPercent:'DP %',actualDP:'Actual DP',dpPaid:'DP Paid',actualPaid:'Actual Paid',remain:'Remain',analysisType:'Analysis Type',projects:'Projects',customerValue:'Customer Value',customerJourney:'Customer Journey',sales:'Sales',branches:'Branches',statuses:'Statuses',unitCodes:'Unit Codes',company:'Company',creationDate:'Creation Date',lastSales:'Last Sales',createdBy:'Created By',edenSales:'Eden Sales',admin:'Admin',mobile:'Mobile',brokerSales:'Broker Sales',groupLink:'Group Link',companies:'Companies',withGroups:'WhatsApp Groups',withoutGroups:'Without Link',admins:'Admins',edenSalesCount:'Eden Sales Count',linkStatusLabel:'Link Status',healthStatus:'Health Status',severity:'Severity',issues:'Issues',row:'Sheet Row',orientationNo:'Orientation',orientationDate:'Orientation Date',sales:'Sales Who Made Orientation',orientations:'Orientations',firstOrientation:'First Orientation',lastOrientation:'Last Orientation'}[c]||c}
+function label(c){return {name:'Name',deals:'Deals',valueEGP:'Total Value EGP',valueUSD:'Total Value USD',meters:'Sold Meters',units:'Sold Units',uniqueClients:'Unique Clients',salesCount:'Sales Count',projectsCount:'Projects Count',branchesCount:'Branches Count',reservationDays:'Reservation Days',clientName:'Client Name',project:'Project',clientType:'Client Type',nationality:'Nationality',unitCode:'Unit Code',status:'Status',renovationStatus:'Renovation',amount:'Final Price',currency:'Currency',area:'Area',salesName:'Sales Name',dealStatus:'Deal Type',sharedWith:'Shared With',branch:'Branch',date:'Date',monthName:'Month',year:'Year',unitCategory:'Unit Type Category',unitType:'Unit Type',mainSource:'Main Source',sourceType:'Source Type',campaignName:'Campaign Name',mediaBuyer:'Media Buyer',brokerageCompany:'Brokerage Company',bcSales:'BC Sales',bcManager:'BC Manager',dpPercent:'DP %',actualDP:'Actual DP',dpPaid:'DP Paid',actualPaid:'Actual Paid',remain:'Remain',analysisType:'Analysis Type',projects:'Projects',customerValue:'Customer Value',customerJourney:'Customer Journey',sales:'Sales',branches:'Branches',statuses:'Statuses',unitCodes:'Unit Codes',company:'Company',creationDate:'Creation Date',lastSales:'Last Sales',createdBy:'Created By',edenSales:'Eden Sales',admin:'Admin',mobile:'Mobile',brokerSales:'Broker Sales',groupLink:'Group Link',companies:'Companies',withGroups:'WhatsApp Groups',withoutGroups:'Without Link',admins:'Admins',edenSalesCount:'Eden Sales Count',linkStatusLabel:'Link Status',healthStatus:'Health Status',severity:'Severity',issues:'Issues',row:'Sheet Row',orientationNo:'Orientation',orientationDate:'Orientation Date',sales:'Sales Who Made Orientation',orientations:'Orientations',firstOrientation:'First Orientation',lastOrientation:'Last Orientation'}[c]||c}
 
 
 // ===== TRANSACTIONS DATA HEALTH =====
