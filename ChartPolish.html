@@ -74,12 +74,15 @@
   /* Gradient for one bar, from a soft tint at the base to the full colour. */
   function barGradient(ctx,horizontal,color){
     const chart=ctx.chart,area=chart.chartArea;
-    if(!area||typeof color!=='string')return color;
-    const g=horizontal
-      ?chart.ctx.createLinearGradient(area.left,0,area.right,0)
-      :chart.ctx.createLinearGradient(0,area.bottom,0,area.top);
-    g.addColorStop(0,rgba(color,.55));g.addColorStop(1,color);
-    return g;
+    if(typeof color!=='string'||!color.trim())color=tok('chart-1','#b08a42')||'#b08a42';
+    if(!area)return color;
+    try{
+      const g=horizontal
+        ?chart.ctx.createLinearGradient(area.left,0,area.right,0)
+        :chart.ctx.createLinearGradient(0,area.bottom,0,area.top);
+      g.addColorStop(0,rgba(color,.55));g.addColorStop(1,color);
+      return g;
+    }catch(e){return color;}
   }
 
   function styleBars(ds,di,horizontal,single){
@@ -96,7 +99,7 @@
     const pick=ctx=>{let c=base;
       if(typeof c==='function')c=c(ctx);
       if(Array.isArray(c))c=c[ctx.dataIndex%c.length];
-      return c;};
+      return (typeof c==='string'&&c.trim())?c:(tok('chart-1','#b08a42')||'#b08a42');};
     ds.backgroundColor=ctx=>barGradient(ctx,horizontal,pick(ctx));
     ds.hoverBackgroundColor=ctx=>pick(ctx);
     ds.borderWidth=0;
@@ -108,7 +111,7 @@
   }
 
   function styleLine(cfg,ds){
-    const color=typeof ds.borderColor==='string'&&!isUnset(ds.borderColor)?ds.borderColor:tok('chart-1','#b08a42');
+    const color=(typeof ds.borderColor==='string'&&ds.borderColor.trim()&&!isUnset(ds.borderColor))?ds.borderColor:(tok('chart-1','#b08a42')||'#b08a42');
     ds.borderColor=color;
     ds.borderWidth=ds.borderWidth&&ds.borderWidth>3?ds.borderWidth:2.5;
     ds.tension=.38;ds.cubicInterpolationMode='monotone';
@@ -118,9 +121,11 @@
     ds.fill=ds.fill===false&&many?false:'origin';
     ds.backgroundColor=ctx=>{
       const area=ctx.chart.chartArea;if(!area)return rgba(color,.1);
-      const g=ctx.chart.ctx.createLinearGradient(0,area.top,0,area.bottom);
-      g.addColorStop(0,rgba(color,many?.10:.22));g.addColorStop(1,rgba(color,0));
-      return g;
+      try{
+        const g=ctx.chart.ctx.createLinearGradient(0,area.top,0,area.bottom);
+        g.addColorStop(0,rgba(color,many?.10:.22));g.addColorStop(1,rgba(color,0));
+        return g;
+      }catch(e){return 'rgba(176,138,66,.08)';}
     };
   }
 
@@ -224,7 +229,16 @@
 
   /* Every `new Chart(...)` in the dashboard goes through polishConfig. */
   const Base=window.Chart;
-  class EdenChart extends Base{constructor(item,cfg){super(item,polishConfig(cfg));}}
+  function EdenChart(item,cfg){
+    try{return new Base(item,polishConfig(cfg));}
+    catch(e){
+      // Never leave a half-built chart holding the canvas.
+      try{const left=Base.getChart(item);if(left)left.destroy();}catch(x){}
+      throw e;
+    }
+  }
+  Object.setPrototypeOf(EdenChart,Base);
+  EdenChart.prototype=Base.prototype;
   window.Chart=EdenChart;
 })();
 </script>
