@@ -4545,6 +4545,10 @@ function tableDataset_(){
   if(currentView==='clients'){
     rows=clientRows();cols=['analysisType','clientName','projects','deals','units','customerValue','customerJourney','valueEGP','valueUSD','sales','branches','statuses','unitCodes'];title='Clients Analysis - Repeated & Multi Project Clients'
   }
+  // EDEN WALK only: these columns don't apply (single currency, no renovation).
+  if(cols[0]==='project'&&rows.length&&rows.every(r=>String(r.project||'').trim().toUpperCase()==='EDEN WALK')){
+    cols=cols.filter(c=>!['renovationStatus','unitCategory','currency'].includes(c));
+  }
   // Reservation filter on: show how many days each reservation has been held.
   if(cols[0]==='project'&&getMulti('status').some(v=>/reserv/i.test(v))){
     cols=cols.concat('reservationDays');

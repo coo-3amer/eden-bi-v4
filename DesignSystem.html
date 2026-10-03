@@ -466,4 +466,8 @@ html[data-theme] #mainTable .docsBtn{display:inline-flex;align-items:center;gap:
 html[data-theme] #mainTable .docsBtn:hover{background:var(--ds-gold-grad);color:var(--ds-on-gold);border-color:transparent}
 html[data-theme] #mainTable .docsBtn svg{width:15px;height:15px}
 html[data-theme] #mainTable .docsNone{color:var(--ds-subtle)}
+/* Deals table: more room between columns so every header reads clearly */
+html[data-theme] #appRoot #mainTable th,html[data-theme] #appRoot #mainTable td{padding:10px 16px!important;white-space:nowrap}
+html[data-theme] #appRoot #mainTable th{letter-spacing:.06em}
+html[data-theme] #appRoot #mainTable th:first-child,html[data-theme] #appRoot #mainTable td:first-child{padding-left:20px!important}
 </style>
