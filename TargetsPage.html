@@ -154,6 +154,18 @@ function dsTgGroups_(rows){
     if(!exists&&String(t.name||'').trim())out.set(t.name,{name:t.name,v:0,n:0});
   });
   out.delete('Not Assigned');
+  // Sales roles: only themselves (and, for managers, their team).
+  const self=typeof dsSalesSelf_==='function'?dsSalesSelf_():null;
+  if(self){
+    const me=edenNormName_(self.name);
+    const team=new Set([me]);
+    if(self.scope==='Manager')rows.forEach(r=>{if(edenNormName_(r.salesManager)===me)team.add(edenNormName_(r.salesName));});
+    [...out.keys()].forEach(k=>{
+      const key=edenNormName_(k);
+      const keep=DS_TG.tab==='Sales'?team.has(key):DS_TG.tab==='Manager'?key===me:true;
+      if(!keep)out.delete(k);
+    });
+  }
   return [...out.values()];
 }
 
@@ -231,8 +243,18 @@ function dsTargetsRender_(){
 
   const years=[...new Set((typeof rawRows!=='undefined'?rawRows:[]).map(r=>Number(r.year)).filter(Boolean).concat([new Date().getFullYear()]))].sort((a,b)=>b-a);
   const cur=DS_TG.cur,rows=dsTgRows_(),pace=dsTgPace_(),admin=dsTgIsAdmin_();
-  const achieved=rows.reduce((a,r)=>a+(Number(r.amount)||0),0);
-  const company=dsTgTarget_('Company','EDEN Development');
+  const self=typeof dsSalesSelf_==='function'?dsSalesSelf_():null;
+  let achieved=rows.reduce((a,r)=>a+(Number(r.amount)||0),0);
+  let company=dsTgTarget_('Company','EDEN Development');
+  let heroKicker='Company',heroName='EDEN Development';
+  if(self){
+    // A salesperson's / manager's own target instead of the company's.
+    const me=edenNormName_(self.name);
+    const field=self.scope==='Manager'?'salesManager':'salesName';
+    achieved=salesCreditRows_(rows).filter(r=>edenNormName_(r[field])===me).reduce((a,r)=>a+(Number(r.amount)||0),0);
+    company=dsTgTarget_(self.scope,self.name);
+    heroKicker=self.scope==='Manager'?'My team':'My target';heroName=self.name;
+  }
   const pct=company.v?achieved/company.v*100:0;
   const remain=Math.max(0,company.v-achieved),daysLeft=dsTgDaysLeft_();
 
@@ -256,8 +278,8 @@ function dsTargetsRender_(){
     </div>
     <div class="dsTgHero">
       <div class="dsTgCard">
-        <div class="dsTgKicker">Company · ${dsTgEsc_(dsTgPeriodLabel_())}</div>
-        <h3>EDEN Development</h3>
+        <div class="dsTgKicker">${dsTgEsc_(heroKicker)} · ${dsTgEsc_(dsTgPeriodLabel_())}</div>
+        <h3>${dsTgEsc_(heroName)}</h3>
         <div class="dsTgBig"><strong>${dsTgFmt_(achieved)} ${cur}</strong><span>of ${company.v?dsTgFmt_(company.v)+' '+cur+(company.est?' (est.)':''):'no target set'}</span>${company.v?`<span class="dsTgPct">${pct.toFixed(1)}%</span>`:''}</div>
         <div class="dsTgTrack"><i class="${pct>=100?'done':''}" style="width:${Math.min(100,pct)}%"></i>${company.v&&pace>0&&pace<1?`<b style="left:${pace*100}%" data-l="Today ${Math.round(pace*100)}%"></b>`:''}</div>
         <div class="dsTgFacts">
@@ -265,7 +287,7 @@ function dsTargetsRender_(){
           <div><span>Days left</span><b>${daysLeft}</b></div>
           <div><span>Needed per day</span><b>${company.v&&daysLeft?dsTgFmt_(remain/daysLeft)+' '+cur:'—'}</b></div>
         </div>
-        ${!company.v&&admin?`<p class="dsTgNote">No company target for ${dsTgEsc_(dsTgPeriodLabel_())}. <button type="button" class="dsTgSet" data-tg="set:1" data-scope="Company" data-name="EDEN Development">Set target</button></p>`:''}
+        ${!company.v&&admin&&!self?`<p class="dsTgNote">No company target for ${dsTgEsc_(dsTgPeriodLabel_())}. <button type="button" class="dsTgSet" data-tg="set:1" data-scope="Company" data-name="EDEN Development">Set target</button></p>`:''}
       </div>
       <div class="dsTgCard">
         <div class="dsTgKicker">${dsTgEsc_(tabLabel)} with a target</div>

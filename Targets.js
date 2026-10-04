@@ -35,7 +35,13 @@ function targetsRequireAdmin_(token){
 }
 
 function getTargetsData(authToken){
-  validateAuthToken_(authToken);
+  const user=validateAuthToken_(authToken);
+  const out=getTargetsRows_();
+  if(isSalesScopedUser_(user))out.rows=scopeTargetsForSales_(out.rows,user);
+  return out;
+}
+
+function getTargetsRows_(){
   const sh=ensureTargetsSheet_();
   const last=sh.getLastRow();
   if(last<2)return {rows:[]};

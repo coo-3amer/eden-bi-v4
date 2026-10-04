@@ -1,0 +1,92 @@
+<style id="eden-sales-role">
+html[data-theme] .dsUserHint{grid-column:1/-1;font-size:12px;color:var(--ds-muted);margin:-2px 0 2px}
+html[data-theme] .dsUserHint b{color:var(--ds-gold-strong)}
+html[data-theme] #appRoot .dsScopeBadge{display:inline-flex;align-items:center;gap:6px;margin-left:10px;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--ds-gold-soft);color:var(--ds-gold-strong);vertical-align:middle}
+</style>
+<script>
+/* =====================================================================
+   EDEN BI — Sales roles in the browser
+   The server only sends a Sales / Sales Manager user their own data
+   (SalesAccess.js). Here we hide the modules they don't use, show their
+   own Sales Credit and target, and help admins create these users.
+   ===================================================================== */
+function dsSalesRole_(){
+  const r=String((AUTH_USER&&AUTH_USER.role)||'').trim().toLowerCase();
+  return r==='sales'?'sales':r==='sales manager'?'manager':'';
+}
+function dsSalesSelf_(){
+  const role=dsSalesRole_();if(!role)return null;
+  return {scope:role==='manager'?'Manager':'Sales',name:String(AUTH_USER.name||'').trim()};
+}
+function dsApplySalesRoleUi_(){
+  const role=dsSalesRole_();
+  document.body.classList.toggle('ds-sales-scope',!!role);
+  ['brokersModule','aiModule','settingsModule','systemModule'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.style.display=role?'none':'';
+  });
+  const title=document.getElementById('pageTitle');
+  if(title&&role&&!title.querySelector('.dsScopeBadge')){
+    title.insertAdjacentHTML('beforeend',`<span class="dsScopeBadge">${role==='manager'?'My team':'My deals'}</span>`);
+  }
+}
+
+/* Admin user form: Sales Manager role + name suggestions for sales roles. */
+function dsUserFormEnhance_(){
+  const role=document.getElementById('userRole'),name=document.getElementById('userName');
+  if(!role||!name)return;
+  if(![...role.options].some(o=>o.value==='Sales Manager')){
+    const o=document.createElement('option');o.value='Sales Manager';o.textContent='Sales Manager';
+    const sales=[...role.options].find(x=>x.value==='Sales');
+    if(sales)sales.insertAdjacentElement('afterend',o);else role.appendChild(o);
+  }
+  let list=document.getElementById('dsSalesNames');
+  if(!list){list=document.createElement('datalist');list.id='dsSalesNames';document.body.appendChild(list);}
+  let hint=document.getElementById('dsUserHint');
+  if(!hint){hint=document.createElement('div');hint.id='dsUserHint';hint.className='dsUserHint';role.closest('.formGrid')?.appendChild(hint);}
+  const sync=()=>{
+    const r=role.value;
+    const field=r==='Sales Manager'?'salesManager':'salesName';
+    const names=new Set();
+    (typeof rawRows!=='undefined'?rawRows:[]).forEach(x=>{const v=String(x[field]||'').trim();if(v&&v.toLowerCase()!=='not assigned')names.add(v);if(r==='Sales'&&typeof isShareDeal_==='function'&&isShareDeal_(x))names.add(String(x.sharedWith).trim());});
+    list.innerHTML=[...names].sort().map(n=>`<option value="${String(n).replace(/"/g,'&quot;')}">`).join('');
+    const scoped=r==='Sales'||r==='Sales Manager';
+    if(scoped)name.setAttribute('list','dsSalesNames');else name.removeAttribute('list');
+    hint.innerHTML=scoped?`<b>${r}:</b> sees ${r==='Sales'?'only their own deals (and shared deals)':'only their team’s deals'} and their own target. The <b>Full Name</b> must match the name in the Deals sheet exactly — pick it from the list.`:'';
+  };
+  if(!role.__ds){role.addEventListener('change',sync);role.__ds=true;}
+  sync();
+}
+
+(function initEdenSalesRoleUi_(){
+  // Sales Credit: a salesperson always sees their own card.
+  if(typeof dsSalesCreditRender_==='function'&&!dsSalesCreditRender_.__ds){
+    const original=dsSalesCreditRender_;
+    dsSalesCreditRender_=function(){
+      const self=dsSalesSelf_();
+      if(self&&self.scope==='Sales'&&typeof getMulti==='function'&&!getMulti('sales').length){
+        const prev=getMulti;
+        getMulti=name=>name==='sales'?[self.name]:prev(name);
+        try{return original.apply(this,arguments);}finally{getMulti=prev;}
+      }
+      return original.apply(this,arguments);
+    };
+    dsSalesCreditRender_.__ds=true;
+  }
+  if(typeof render==='function'&&!render.__dsSalesRole){
+    const original=render;
+    render=function(){const r=original.apply(this,arguments);try{dsApplySalesRoleUi_();}catch(e){console.error(e);}return r;};
+    render.__dsSalesRole=true;
+  }
+  ['openUserForm','editUser'].forEach(fn=>{
+    if(typeof window[fn]==='function'&&!window[fn].__ds){
+      const original=window[fn];
+      window[fn]=function(){const r=original.apply(this,arguments);try{dsUserFormEnhance_();}catch(e){}return r;};
+      window[fn].__ds=true;
+    }
+  });
+  try{dsApplySalesRoleUi_();dsUserFormEnhance_();}catch(e){}
+  // Data can arrive (saved copy) before every add-on above has loaded; this
+  // is the last add-on, so render once more with all of them in place.
+  try{if(typeof EDEN_BOOT_COMPLETE!=='undefined'&&EDEN_BOOT_COMPLETE&&typeof render==='function')render();}catch(e){console.error(e);}
+})();
+</script>

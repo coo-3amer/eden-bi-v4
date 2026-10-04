@@ -98,6 +98,7 @@ function getDashboardData(authToken, opts) {
     data = buildDashboardData_(authUser);
     dashCacheWrite_(scope, data);
   }
+  if (isSalesScopedUser_(authUser)) return scopeDashboardForSales_(data, authUser);
   data.access = egyptViewerAccessProfile_(authUser);
   return data;
 }
