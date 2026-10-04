@@ -84,7 +84,8 @@ function cancelledStatus_(value) {
  * the sheets. opts.fresh = true bypasses the cache (Reload button).
  * The cache is cleared when a deal is saved from the dashboard.
  */
-const DASH_CACHE_SECONDS_ = 300;
+const DASH_CACHE_SECONDS_ = 21600;      // kept up to 6 h (CacheService maximum)…
+const DASH_CACHE_MAX_AGE_MS_ = 15 * 60 * 1000; // …but rebuilt on a visit if older than 15 min
 const DASH_CACHE_SLICE_ = 90000;
 
 function getDashboardData(authToken, opts) {
@@ -107,6 +108,7 @@ function dashCacheRead_(scope) {
     const meta = cache.get('DASH_V1_' + scope);
     if (!meta) return null;
     const m = JSON.parse(meta);
+    if (!m.at || Date.now() - m.at > DASH_CACHE_MAX_AGE_MS_) return null;
     const keys = [];
     for (let i = 0; i < m.parts; i++) keys.push('DASH_V1_' + scope + '_' + m.id + '_' + i);
     const got = cache.getAll(keys);
@@ -131,10 +133,36 @@ function dashCacheWrite_(scope, data) {
     for (let i = 0; i < b64.length; i += DASH_CACHE_SLICE_) batch['DASH_V1_' + scope + '_' + id + '_' + (parts++)] = b64.slice(i, i + DASH_CACHE_SLICE_);
     const cache = CacheService.getScriptCache();
     cache.putAll(batch, DASH_CACHE_SECONDS_ + 60);
-    cache.put('DASH_V1_' + scope, JSON.stringify({ id: id, parts: parts }), DASH_CACHE_SECONDS_);
+    cache.put('DASH_V1_' + scope, JSON.stringify({ id: id, parts: parts, at: Date.now() }), DASH_CACHE_SECONDS_);
   } catch (err) {
     console.warn('Dashboard cache write: ' + err);
   }
+}
+
+/**
+ * Runs every 5 minutes (time-driven trigger) so the dashboard data is always
+ * ready when someone opens the dashboard: nobody waits for the sheets.
+ */
+function warmDashboardCache() {
+  dashCacheWrite_('ALL', buildDashboardData_({ role: 'Admin' }));
+  try {
+    dashCacheWrite_('EGV', buildDashboardData_({ role: 'Egypt Viewer' }));
+  } catch (err) {
+    console.warn('Egypt viewer warm-up: ' + err);
+  }
+}
+
+/**
+ * Run ONCE from the Apps Script editor (select it, then Run) to start the
+ * 5-minute warm-up. Running it again does not create duplicates.
+ */
+function setupDashboardWarmup() {
+  ScriptApp.getProjectTriggers()
+    .filter(t => t.getHandlerFunction() === 'warmDashboardCache')
+    .forEach(t => ScriptApp.deleteTrigger(t));
+  ScriptApp.newTrigger('warmDashboardCache').timeBased().everyMinutes(5).create();
+  warmDashboardCache();
+  return 'Dashboard warm-up is on (every 5 minutes).';
 }
 
 function clearDashboardCache_() {
