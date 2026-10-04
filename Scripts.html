@@ -5124,16 +5124,28 @@ function brokerCompanySourceRow_(company){
   return (brokerRows||[]).find(r=>brokerCompanyKey_(r.company)===key)||null;
 }
 
+// Where the company profile was opened from, so Back returns there.
+let BROKER_DETAIL_FROM={view:'brokerCompanies',scroll:0};
+const BROKER_VIEW_LABELS={brokerOverview:'Broker Overview',brokerPerformance:'Broker Performance',brokerCompanies:'Brokerage Companies',brokerSales:'Eden Sales',brokerOrientations:'Orientations',brokerHealth:'Company Health'};
+function brokerMenuBtn_(view){
+  return [...document.querySelectorAll('#brokersModule .moduleMenu button')]
+    .find(b=>String(b.getAttribute('onclick')||'').includes("'"+view+"'"))||null;
+}
+
 function openBrokerCompanyDetails_(company){
   const name=String(company||'').trim();
   if(!name)return;
+  if(currentView!=='brokerCompanyDetail'){
+    BROKER_DETAIL_FROM={view:BROKER_VIEW_LABELS[currentView]?currentView:'brokerCompanies',scroll:window.scrollY||0};
+  }
   BROKER_COMPANY_DETAIL_NAME=name;
   currentView='brokerCompanyDetail';
 
   document.querySelectorAll('.moduleMenu button').forEach(b=>b.classList.remove('active'));
-  const companiesBtn=[...document.querySelectorAll('#brokersModule .moduleMenu button')]
-    .find(b=>String(b.getAttribute('onclick')||'').includes("brokerCompanies"));
+  const companiesBtn=brokerMenuBtn_(BROKER_DETAIL_FROM.view);
   if(companiesBtn)companiesBtn.classList.add('active');
+  const back=document.querySelector('.brokerBackBtn');
+  if(back)back.textContent='← Back to '+(BROKER_VIEW_LABELS[BROKER_DETAIL_FROM.view]||'Brokerage Companies');
 
   openModule('brokersModule');
   render();
@@ -5142,10 +5154,10 @@ function openBrokerCompanyDetails_(company){
 
 function backToBrokerCompanies_(){
   BROKER_COMPANY_DETAIL_NAME='';
-  const btn=[...document.querySelectorAll('#brokersModule .moduleMenu button')]
-    .find(b=>String(b.getAttribute('onclick')||'').includes("brokerCompanies"));
-  setView('brokerCompanies',btn||null);
-  window.scrollTo({top:0,behavior:'smooth'});
+  const from=BROKER_DETAIL_FROM||{view:'brokerCompanies',scroll:0};
+  setView(from.view,brokerMenuBtn_(from.view));
+  // Back to where the list was scrolled.
+  setTimeout(()=>window.scrollTo({top:from.scroll||0,behavior:'auto'}),60);
 }
 
 function brokerCompanyProfileItem_(label,value,htmlValue=false){
