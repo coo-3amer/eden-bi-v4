@@ -452,6 +452,7 @@ function saveNewDeal(authToken, payload) {
     setDealCell_(sheet, row, 'DN', dealText_(payload.notes));
 
     SpreadsheetApp.flush();
+    clearDashboardCache_();
 
     return {
       success: true,

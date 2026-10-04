@@ -68,8 +68,12 @@ function initEdenDesignSystem_(){
 
   // Reload keeps the session (token lives in sessionStorage).
   document.getElementById('dsRefreshBtn')?.addEventListener('click',e=>{
-    e.currentTarget.classList.add('spinning');
-    location.reload();
+    const btn=e.currentTarget;
+    if(typeof reloadDashboardData_!=='function'||!EDEN_BOOT_COMPLETE){btn.classList.add('spinning');location.reload();return;}
+    btn.classList.add('spinning');
+    reloadDashboardData_();
+    const stop=()=>{if(!document.body.classList.contains('dsDataUpdating')){btn.classList.remove('spinning');clearInterval(t);}};
+    const t=setInterval(stop,300);
   });
 
   const box=document.getElementById('loggedUserBox');

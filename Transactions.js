@@ -79,8 +79,69 @@ function cancelledStatus_(value) {
   return s === 'cancel' || s === 'cancelled' || s === 'canceled';
 }
 
-function getDashboardData(authToken) {
+/**
+ * Dashboard data, cached for a few minutes so most visits skip re-reading
+ * the sheets. opts.fresh = true bypasses the cache (Reload button).
+ * The cache is cleared when a deal is saved from the dashboard.
+ */
+const DASH_CACHE_SECONDS_ = 300;
+const DASH_CACHE_SLICE_ = 90000;
+
+function getDashboardData(authToken, opts) {
   const authUser = validateAuthToken_(authToken);
+  const egyptViewer = isEgyptViewerUser_(authUser);
+  const scope = egyptViewer ? 'EGV' : 'ALL';
+  const fresh = !!(opts && opts.fresh);
+  let data = fresh ? null : dashCacheRead_(scope);
+  if (!data) {
+    data = buildDashboardData_(authUser);
+    dashCacheWrite_(scope, data);
+  }
+  data.access = egyptViewerAccessProfile_(authUser);
+  return data;
+}
+
+function dashCacheRead_(scope) {
+  try {
+    const cache = CacheService.getScriptCache();
+    const meta = cache.get('DASH_V1_' + scope);
+    if (!meta) return null;
+    const m = JSON.parse(meta);
+    const keys = [];
+    for (let i = 0; i < m.parts; i++) keys.push('DASH_V1_' + scope + '_' + m.id + '_' + i);
+    const got = cache.getAll(keys);
+    if (keys.some(k => got[k] == null)) return null;
+    const b64 = keys.map(k => got[k]).join('');
+    const text = Utilities.ungzip(Utilities.newBlob(Utilities.base64Decode(b64), 'application/x-gzip')).getDataAsString('UTF-8');
+    return JSON.parse(text);
+  } catch (err) {
+    console.warn('Dashboard cache read: ' + err);
+    return null;
+  }
+}
+
+function dashCacheWrite_(scope, data) {
+  try {
+    const copy = Object.assign({}, data);
+    delete copy.access;
+    const b64 = Utilities.base64Encode(Utilities.gzip(Utilities.newBlob(JSON.stringify(copy), 'application/json')).getBytes());
+    const id = Utilities.getUuid().slice(0, 8);
+    const batch = {};
+    let parts = 0;
+    for (let i = 0; i < b64.length; i += DASH_CACHE_SLICE_) batch['DASH_V1_' + scope + '_' + id + '_' + (parts++)] = b64.slice(i, i + DASH_CACHE_SLICE_);
+    const cache = CacheService.getScriptCache();
+    cache.putAll(batch, DASH_CACHE_SECONDS_ + 60);
+    cache.put('DASH_V1_' + scope, JSON.stringify({ id: id, parts: parts }), DASH_CACHE_SECONDS_);
+  } catch (err) {
+    console.warn('Dashboard cache write: ' + err);
+  }
+}
+
+function clearDashboardCache_() {
+  try { CacheService.getScriptCache().removeAll(['DASH_V1_ALL', 'DASH_V1_EGV']); } catch (err) {}
+}
+
+function buildDashboardData_(authUser) {
   const egyptViewer = isEgyptViewerUser_(authUser);
 
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);

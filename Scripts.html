@@ -31,6 +31,10 @@ let APP_EVENTS_BOUND=false;
 let LOGIN_PENDING_USER=null;
 
 let EDEN_BOOT_COMPLETE=false;
+// Fast start (see loadDashboard). Declared here: login runs before the rest of this file.
+const EDEN_DATA_DB='eden-bi',EDEN_DATA_STORE='dashboard';
+let EDEN_LAST_OPTIONS=null;
+let EDEN_LOADING=false;
 
 function edenBootShowLoader_(){
   document.getElementById('loginScreen')?.classList.add('hidden');
@@ -999,6 +1003,8 @@ function showAppAfterLogin(user){
 }
 function logout(){
   const token=AUTH_TOKEN;
+  edenDataClear_();
+  EDEN_BOOT_COMPLETE=false;
   AUTH_TOKEN='';AUTH_USER=null;
   sessionStorage.removeItem('EDEN_AUTH_TOKEN');
   sessionStorage.removeItem('EDEN_AUTH_USER');
@@ -1022,43 +1028,140 @@ initAppTheme();
 initLogin();
 setTimeout(edenBoot_,0);
 
-function loadDashboard(isSessionRestore=false){
-  document.getElementById('loader').classList.remove('hidden');
+/* ===== Fast start =====
+   The last dashboard data is kept in this browser (IndexedDB) for the
+   signed-in user. On the next visit it is shown at once while fresh data
+   loads in the background; it is wiped on logout. */
+function edenDataKey_(){const u=AUTH_USER||{};return 'v1:'+String(u.username||u.name||'').toLowerCase()+':'+String(u.role||'').toLowerCase();}
+function edenDataDb_(){
+  return new Promise((resolve,reject)=>{
+    if(!window.indexedDB){reject(new Error('no idb'));return;}
+    const req=indexedDB.open(EDEN_DATA_DB,1);
+    req.onupgradeneeded=()=>req.result.createObjectStore(EDEN_DATA_STORE);
+    req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
+  });
+}
+function edenDataGet_(key){
+  return edenDataDb_().then(db=>new Promise(res=>{
+    const r=db.transaction(EDEN_DATA_STORE,'readonly').objectStore(EDEN_DATA_STORE).get(key);
+    r.onsuccess=()=>res(r.result||null);r.onerror=()=>res(null);
+  })).catch(()=>null);
+}
+function edenDataPut_(key,data){
+  return edenDataDb_().then(db=>new Promise(res=>{
+    const tx=db.transaction(EDEN_DATA_STORE,'readwrite');
+    tx.objectStore(EDEN_DATA_STORE).clear();          // one user's data at a time
+    tx.objectStore(EDEN_DATA_STORE).put({at:Date.now(),data},key);
+    tx.oncomplete=()=>res(true);tx.onerror=()=>res(false);
+  })).catch(()=>false);
+}
+function edenDataClear_(){
+  return edenDataDb_().then(db=>new Promise(res=>{
+    const tx=db.transaction(EDEN_DATA_STORE,'readwrite');tx.objectStore(EDEN_DATA_STORE).clear();
+    tx.oncomplete=()=>res(true);tx.onerror=()=>res(false);
+  })).catch(()=>false);
+}
+function edenSetDataState_(state,text){
+  const live=document.querySelector('.dsLive span');
+  document.body.classList.toggle('dsDataUpdating',state==='updating');
+  if(live)live.textContent=text||(state==='updating'?'Updating…':'Live Data');
+}
+/* Swap in fresh data without resetting the user's filters or page. */
+function edenSoftUpdate_(data){
+  const prevOptions=JSON.stringify(EDEN_LAST_OPTIONS||null),nextOptions=JSON.stringify(data.options||{});
+  DASHBOARD_ACCESS=data.access||null;
+  rawRows=(data.rows||[]).map(repairTransactionClientFields_);
+  brokerRows=(data.brokers&&data.brokers.rows)||[];
+  brokerAvailableFields=(data.brokers&&data.brokers.availableFields)||{};
+  if(prevOptions!==nextOptions){
+    const checked=[...document.querySelectorAll('section.filters input[type="checkbox"]:checked')].map(b=>[b.name,String(b.value)]);
+    fillFilters(data.options||{});
+    bindMultiControls();
+    checked.forEach(([n,v])=>{const b=[...document.querySelectorAll(`input[name="${n}"]`)].find(x=>String(x.value)===v);if(b)b.checked=true;});
+    if(typeof updateMultiLabels==='function')updateMultiLabels();
+  }
+  EDEN_LAST_OPTIONS=data.options||{};
+  if(typeof initSalesCurveFilters_==='function')initSalesCurveFilters_();
+  applyFilters();
+}
 
+function loadDashboard(isSessionRestore=false,opts={}){
+  // One request at a time (boot used to start two identical loads).
+  if(EDEN_LOADING&&!opts.fresh)return;
+  EDEN_LOADING=true;
+  const key=edenDataKey_();
+  let fromCache=false,freshDone=false;
+  if(!EDEN_BOOT_COMPLETE)document.getElementById('loader').classList.remove('hidden');
+  else edenSetDataState_('updating');
+
+  // 1) Show the last saved data straight away (repeat visits).
+  if(!EDEN_BOOT_COMPLETE&&!opts.fresh){
+    edenDataGet_(key).then(saved=>{
+      if(!saved||freshDone||EDEN_BOOT_COMPLETE)return;
+      try{
+        init(saved.data);EDEN_LAST_OPTIONS=saved.data.options||{};
+        EDEN_BOOT_COMPLETE=true;fromCache=true;
+        showAppAfterLogin(LOGIN_PENDING_USER||AUTH_USER);
+        edenSetDataState_('updating');
+      }catch(e){console.warn('Saved data could not be shown',e);}
+      finally{document.getElementById('loader').classList.add('hidden');}
+    });
+  }
+
+  // 2) Load fresh data.
   google.script.run
     .withSuccessHandler(data=>{
+      freshDone=true;EDEN_LOADING=false;
       try{
-        init(data);
-        EDEN_BOOT_COMPLETE=true;
-        showAppAfterLogin(LOGIN_PENDING_USER||AUTH_USER);
+        if(EDEN_BOOT_COMPLETE){
+          edenSoftUpdate_(data);
+        }else{
+          init(data);EDEN_LAST_OPTIONS=data.options||{};
+          EDEN_BOOT_COMPLETE=true;
+          showAppAfterLogin(LOGIN_PENDING_USER||AUTH_USER);
+        }
         LOGIN_PENDING_USER=null;
+        edenSetDataState_('live');
+        edenDataPut_(key,data);
       }catch(error){
         console.error('Dashboard initialization failed:',error);
-        alert(error.message||String(error));
+        if(!fromCache)alert(error.message||String(error));
       }finally{
         document.getElementById('loader').classList.add('hidden');
       }
     })
     .withFailureHandler(error=>{
+      freshDone=true;EDEN_LOADING=false;
       document.getElementById('loader')?.classList.add('hidden');
       const message=error?.message||String(error);
       console.error('Dashboard loading failed:',error);
+      const sessionGone=/session|login|access denied/i.test(message);
 
-      if(isSessionRestore){
+      if(isSessionRestore||sessionGone){
         // Stored session is no longer valid: clear it and show login cleanly.
         AUTH_TOKEN='';
         AUTH_USER=null;
         LOGIN_PENDING_USER=null;
         sessionStorage.removeItem('EDEN_AUTH_TOKEN');
         sessionStorage.removeItem('EDEN_AUTH_USER');
+        edenDataClear_();
+        EDEN_BOOT_COMPLETE=false;
+        document.getElementById('appRoot')?.classList.add('hidden');
         edenBootShowLogin_();
         const err=document.getElementById('loginError');
         if(err)err.textContent='Your session has expired. Please sign in again.';
         return;
       }
+      if(fromCache){edenSetDataState_('live','Offline copy');return;}
       alert(message);
     })
-    .getDashboardData(AUTH_TOKEN);
+    .getDashboardData(AUTH_TOKEN,{fresh:!!opts.fresh});
+}
+
+/* Reload button: fresh data from the sheet, filters kept. */
+function reloadDashboardData_(){
+  if(!AUTH_TOKEN)return;
+  loadDashboard(false,{fresh:true});
 }
 
 
