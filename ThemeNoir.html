@@ -1,0 +1,60 @@
+<style id="eden-theme-noir">
+/* =====================================================================
+   EDEN BI — Noir theme (third theme: black & champagne gold)
+   A dark theme variant: <html data-theme="dark" data-variant="noir">.
+   Everything that follows the dark tokens follows these instead.
+   ===================================================================== */
+html[data-theme="dark"][data-variant="noir"]{
+  --ds-bg:#070605;
+  --ds-surface:#0f0d0a;
+  --ds-surface-2:#14110d;
+  --ds-surface-3:#1c1812;
+  --ds-line:rgba(201,168,98,.16);
+  --ds-line-strong:rgba(201,168,98,.30);
+  --ds-text:#ece2cc;
+  --ds-heading:#f8f0dc;
+  --ds-muted:#a8987a;
+  --ds-subtle:#7a6d55;
+  --ds-gold:#c9a862;
+  --ds-gold-strong:#e3c886;
+  --ds-gold-soft:rgba(201,168,98,.10);
+  --ds-gold-line:rgba(201,168,98,.42);
+  --ds-on-gold:#140f06;
+  --ds-green:#8fc9a0;
+  --ds-red:#e48a7a;
+  --ds-blue:#a9bfe0;
+  --ds-green-soft:rgba(143,201,160,.12);
+  --ds-red-soft:rgba(228,138,122,.12);
+  --ds-blue-soft:rgba(169,191,224,.12);
+  --ds-amber-soft:rgba(227,200,134,.12);
+  --ds-sidebar:#0a0907;
+  --ds-input:#0c0a08;
+  --ds-hover:#1a1610;
+  --ds-shadow-sm:0 1px 0 rgba(201,168,98,.06);
+  --ds-shadow:0 0 0 1px rgba(201,168,98,.04),0 14px 34px rgba(0,0,0,.55);
+  --ds-shadow-lg:0 24px 70px rgba(0,0,0,.7);
+  --ds-grid:rgba(201,168,98,.09);
+  --ds-gold-grad:linear-gradient(135deg,#f1dca0 0%,#c9a862 45%,#9c7a3a 100%);
+  --ds-chart-1:#d9bc7a;--ds-chart-2:#8a7f6c;--ds-chart-3:#a9c4a0;--ds-chart-4:#9fb4d6;
+  --ds-chart-5:#d49a7c;--ds-chart-6:#b9a3d6;--ds-chart-7:#8fbfba;--ds-chart-8:#f2dfae;
+}
+/* Background: a faint warm glow instead of flat black */
+html[data-theme="dark"][data-variant="noir"] body{
+  background:radial-gradient(1200px 700px at 85% -10%,rgba(201,168,98,.09),transparent 60%),radial-gradient(900px 600px at -10% 110%,rgba(201,168,98,.05),transparent 60%),var(--ds-bg)!important;
+  background-attachment:fixed!important;
+}
+/* Gold hairlines and serif headings */
+html[data-theme="dark"][data-variant="noir"] #appRoot :is(.box,.tableBox,.edenInsightCard,.card,.dsTgCard,.dsCreditCard,.dsProjBar,.dsCollPanel){border-color:rgba(201,168,98,.18)!important}
+html[data-theme="dark"][data-variant="noir"] #appRoot :is(h1,h2,h3,.title,#pageTitle){letter-spacing:.01em}
+html[data-theme="dark"][data-variant="noir"] #appRoot #pageTitle{font-family:var(--ds-serif)!important;font-weight:600!important}
+html[data-theme="dark"][data-variant="noir"] #appRoot .edenKpiGrid .card .value,
+html[data-theme="dark"][data-variant="noir"] #appRoot .dsCreditCell.total strong,
+html[data-theme="dark"][data-variant="noir"] #appRoot .dsTgBig strong{font-family:var(--ds-serif)!important;font-weight:600!important;letter-spacing:0!important;color:var(--ds-gold-strong)!important}
+html[data-theme="dark"][data-variant="noir"] #appRoot .edenKpiGrid .card .value{font-size:27px!important}
+html[data-theme="dark"][data-variant="noir"] #appRoot .edenKpiGrid .card:before{background:linear-gradient(var(--ds-gold),transparent)!important}
+html[data-theme="dark"][data-variant="noir"] #appRoot .sidebar{border-right:1px solid rgba(201,168,98,.14)!important}
+/* Gold buttons get a metallic sheen */
+html[data-theme="dark"][data-variant="noir"] #appRoot .btn:not(.secondary){background:var(--ds-gold-grad)!important;color:var(--ds-on-gold)!important;box-shadow:0 1px 0 rgba(255,255,255,.25) inset,0 8px 22px rgba(201,168,98,.18)!important}
+/* Tables: ivory text on near-black, gold header rule */
+html[data-theme="dark"][data-variant="noir"] #appRoot #mainTable thead th{color:var(--ds-gold)!important;border-bottom-color:rgba(201,168,98,.35)!important}
+</style>

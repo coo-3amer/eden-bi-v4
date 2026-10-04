@@ -9,14 +9,18 @@ const EDEN_THEME_MODE_KEY='EDEN_BI_THEME_MODE';
 function edenThemeMode_(){
   let m='light';
   try{m=localStorage.getItem(EDEN_THEME_MODE_KEY)||'light';}catch(e){}
-  return m==='dark'?'dark':'light';
+  return (m==='dark'||m==='noir')?m:'light';
 }
 
 /* Replaces the legacy single-theme setAppTheme(). */
 function setAppTheme(mode){
-  const next=(mode==='dark'||mode==='light')?mode:edenThemeMode_();
-  const changed=document.documentElement.getAttribute('data-theme')!==next;
-  document.documentElement.setAttribute('data-theme',next);
+  const next=(mode==='dark'||mode==='light'||mode==='noir')?mode:edenThemeMode_();
+  // Noir is a dark theme with its own palette (data-variant="noir").
+  const base=next==='light'?'light':'dark',variant=next==='noir'?'noir':'';
+  const root=document.documentElement;
+  const changed=root.getAttribute('data-theme')!==base||(root.getAttribute('data-variant')||'')!==variant;
+  root.setAttribute('data-theme',base);
+  if(variant)root.setAttribute('data-variant',variant);else root.removeAttribute('data-variant');
   try{localStorage.setItem(EDEN_THEME_MODE_KEY,next);}catch(e){}
   document.querySelectorAll('[data-ds-theme]').forEach(b=>
     b.setAttribute('aria-pressed',String(b.getAttribute('data-ds-theme')===next)));
