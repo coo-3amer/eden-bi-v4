@@ -296,22 +296,7 @@ function edenUpdateHero_(){
   set('dsHeroBranch',document.getElementById('branchLabel')?.textContent?.trim()||'All Branches');
   const box=document.getElementById('loggedUserBox');
   const name=String(box?.textContent||'').split('•')[0].trim().split(/\s+/)[0]||'there';
-  const welcome=document.querySelector('.dsHeroWelcome');
-  const gp=typeof edenGreetingParts_==='function'?edenGreetingParts_():null;
-  if(welcome){
-    const key=gp?'g:'+gp.lead.join(' ')+'|'+gp.hi.join(' '):'d';
-    if(welcome.dataset.dsGreet!==key){
-      welcome.dataset.dsGreet=key;
-      if(gp){
-        welcome.textContent=(gp.lead.length?gp.lead.join(' ')+' ':'');
-        const sp=document.createElement('span');sp.id='dsHeroName';sp.textContent=gp.hi.join(' ');
-        welcome.appendChild(sp);welcome.insertAdjacentHTML('beforeend',' <i>✦</i>');
-      }else{
-        welcome.innerHTML='Welcome back, <span id="dsHeroName">there</span> <i>✦</i>';
-      }
-    }
-  }
-  if(!gp)set('dsHeroName',name);
+  set('dsHeroName',name);
 }
 (function initEdenHero_(){
   edenMountHero_();
