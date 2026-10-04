@@ -2372,7 +2372,7 @@ function loadTargetsData_(){
       TARGETS_LOADED=false;
       renderPerformanceSuite_();
     })
-    .getTargetsData();
+    .getTargetsData(AUTH_TOKEN);
 }
 
 function targetContext_(){
@@ -2757,7 +2757,7 @@ function saveTargetFromUi_(){
   google.script.run
     .withSuccessHandler(()=>{resetTargetForm_();loadTargetsData_();})
     .withFailureHandler(err=>alert(err?.message||String(err)))
-    .saveTargetRecord(record);
+    .saveTargetRecord(AUTH_TOKEN,record);
 }
 
 function editTarget_(id){
@@ -2781,7 +2781,7 @@ function deleteTarget_(id){
   google.script.run
     .withSuccessHandler(()=>loadTargetsData_())
     .withFailureHandler(err=>alert(err?.message||String(err)))
-    .deleteTargetRecord(id);
+    .deleteTargetRecord(AUTH_TOKEN,id);
 }
 
 function resetTargetForm_(){

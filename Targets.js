@@ -26,7 +26,16 @@ function ensureTargetsSheet_(){
   return sh;
 }
 
-function getTargetsData(){
+// Signed-in users can read targets; only admins can change them.
+function targetsRequireAdmin_(token){
+  const user=validateAuthToken_(token);
+  const role=String(user&&user.role||'').trim().toLowerCase();
+  if(role!=='admin'&&role!=='super admin')throw new Error('Only admins can change targets.');
+  return user;
+}
+
+function getTargetsData(authToken){
+  validateAuthToken_(authToken);
   const sh=ensureTargetsSheet_();
   const last=sh.getLastRow();
   if(last<2)return {rows:[]};
@@ -48,7 +57,8 @@ function getTargetsData(){
   return {rows};
 }
 
-function saveTargetRecord(record){
+function saveTargetRecord(authToken,record){
+  targetsRequireAdmin_(authToken);
   const sh=ensureTargetsSheet_();
   record=record||{};
 
@@ -88,7 +98,8 @@ function saveTargetRecord(record){
   return {success:true,id};
 }
 
-function deleteTargetRecord(id){
+function deleteTargetRecord(authToken,id){
+  targetsRequireAdmin_(authToken);
   const sh=ensureTargetsSheet_();
   id=String(id||'').trim();
   if(!id)return {success:false};

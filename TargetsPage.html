@@ -1,0 +1,333 @@
+<style id="eden-targets-page">
+/* ===== Targets page ===== */
+html[data-theme] #appRoot .dsTg{display:grid;gap:14px;margin:6px 0 18px}
+html[data-theme] #appRoot .dsTgBar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--ds-line);border-radius:14px;background:var(--ds-surface);box-shadow:var(--ds-shadow)}
+html[data-theme] #appRoot .dsTgSeg{display:inline-flex;padding:3px;border-radius:999px;background:var(--ds-surface-2);border:1px solid var(--ds-line)}
+html[data-theme] #appRoot .dsTgSeg button{all:unset;cursor:pointer;padding:7px 14px;border-radius:999px;font-size:12.5px;font-weight:700;color:var(--ds-muted)}
+html[data-theme] #appRoot .dsTgSeg button.on{background:var(--ds-gold-grad);color:var(--ds-on-gold)}
+html[data-theme] #appRoot .dsTgBar select{height:36px;padding:0 12px;border-radius:10px;border:1px solid var(--ds-line);background:var(--ds-surface-2);color:var(--ds-text);font-weight:600;font-size:13px}
+html[data-theme] #appRoot .dsTgBar .grow{flex:1}
+html[data-theme] #appRoot .dsTgBtn{height:38px;padding:0 16px;border-radius:11px;border:0;background:var(--ds-gold-grad);color:var(--ds-on-gold);font-weight:700;font-size:13px;cursor:pointer}
+html[data-theme] #appRoot .dsTgHero{display:grid;grid-template-columns:1.4fr 1fr;gap:14px}
+html[data-theme] #appRoot .dsTgCard{border:1px solid var(--ds-line);border-radius:16px;background:var(--ds-surface);box-shadow:var(--ds-shadow);padding:18px 20px}
+html[data-theme] #appRoot .dsTgCard h3{margin:0;font-family:var(--ds-serif);font-size:22px;font-weight:600;color:var(--ds-heading)}
+html[data-theme] #appRoot .dsTgKicker{font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ds-gold-strong)}
+html[data-theme] #appRoot .dsTgBig{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin:14px 0 4px}
+html[data-theme] #appRoot .dsTgBig strong{font-size:34px;font-weight:700;color:var(--ds-heading);font-variant-numeric:tabular-nums}
+html[data-theme] #appRoot .dsTgBig span{font-size:14px;color:var(--ds-muted)}
+html[data-theme] #appRoot .dsTgPct{font-size:15px;font-weight:700;padding:3px 10px;border-radius:999px;background:var(--ds-gold-soft);color:var(--ds-gold-strong)}
+html[data-theme] #appRoot .dsTgTrack{position:relative;height:12px;border-radius:999px;background:var(--ds-surface-3);margin:12px 0 8px;overflow:visible}
+html[data-theme] #appRoot .dsTgTrack i{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:var(--ds-gold-grad)}
+html[data-theme] #appRoot .dsTgTrack i.done{background:linear-gradient(90deg,#4f9a6c,#6fc08d)}
+html[data-theme] #appRoot .dsTgTrack b{position:absolute;top:-5px;bottom:-5px;width:2px;background:var(--ds-heading);opacity:.55;border-radius:2px}
+html[data-theme] #appRoot .dsTgTrack b::after{content:attr(data-l);position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:10px;font-weight:700;color:var(--ds-muted);white-space:nowrap}
+html[data-theme] #appRoot .dsTgFacts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+html[data-theme] #appRoot .dsTgFacts div{padding:10px 12px;border-radius:12px;background:var(--ds-surface-2);border:1px solid var(--ds-line)}
+html[data-theme] #appRoot .dsTgFacts span{display:block;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ds-muted)}
+html[data-theme] #appRoot .dsTgFacts b{display:block;margin-top:4px;font-size:16px;color:var(--ds-heading);font-variant-numeric:tabular-nums}
+html[data-theme] #appRoot .dsTgSummary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+html[data-theme] #appRoot .dsTgSummary div{padding:14px;border-radius:12px;border:1px solid var(--ds-line);background:var(--ds-surface-2);text-align:center}
+html[data-theme] #appRoot .dsTgSummary b{display:block;font-size:26px;color:var(--ds-heading)}
+html[data-theme] #appRoot .dsTgSummary span{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ds-muted)}
+html[data-theme] #appRoot .dsTgSummary .g b{color:var(--ds-green)}
+html[data-theme] #appRoot .dsTgSummary .r b{color:var(--ds-red)}
+html[data-theme] #appRoot .dsTgList{display:grid;gap:8px;margin-top:14px}
+html[data-theme] #appRoot .dsTgRow{display:grid;grid-template-columns:34px minmax(150px,1.2fr) minmax(200px,2fr) 120px 110px 64px;align-items:center;gap:14px;padding:12px 14px;border-radius:12px;border:1px solid var(--ds-line);background:var(--ds-surface)}
+html[data-theme] #appRoot .dsTgRow:hover{background:var(--ds-hover)}
+html[data-theme] #appRoot .dsTgRank{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:12px;background:var(--ds-surface-3);color:var(--ds-muted)}
+html[data-theme] #appRoot .dsTgRow:nth-child(1) .dsTgRank{background:var(--ds-gold-grad);color:var(--ds-on-gold)}
+html[data-theme] #appRoot .dsTgName b{display:block;font-weight:700;color:var(--ds-heading);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html[data-theme] #appRoot .dsTgName small{font-size:12px;color:var(--ds-muted)}
+html[data-theme] #appRoot .dsTgRow .dsTgTrack{margin:0;height:9px}
+html[data-theme] #appRoot .dsTgRow .dsTgTrack b::after{display:none}
+html[data-theme] #appRoot .dsTgNums{font-variant-numeric:tabular-nums;text-align:right}
+html[data-theme] #appRoot .dsTgNums b{display:block;font-size:14px;color:var(--ds-heading)}
+html[data-theme] #appRoot .dsTgNums small{font-size:11.5px;color:var(--ds-muted)}
+html[data-theme] #appRoot .dsTgChip{justify-self:start;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap}
+html[data-theme] #appRoot .dsTgChip.ok{background:var(--ds-green-soft);color:var(--ds-green)}
+html[data-theme] #appRoot .dsTgChip.track{background:var(--ds-gold-soft);color:var(--ds-gold-strong)}
+html[data-theme] #appRoot .dsTgChip.behind{background:var(--ds-red-soft);color:var(--ds-red)}
+html[data-theme] #appRoot .dsTgChip.none{background:var(--ds-surface-3);color:var(--ds-muted)}
+html[data-theme] #appRoot .dsTgSet{all:unset;cursor:pointer;justify-self:end;font-size:12px;font-weight:700;color:var(--ds-gold-strong);padding:6px 10px;border-radius:8px}
+html[data-theme] #appRoot .dsTgSet:hover{background:var(--ds-gold-soft)}
+html[data-theme] #appRoot .dsTgNote{font-size:12px;color:var(--ds-muted);margin:10px 2px 0}
+html[data-theme] #appRoot .dsTgEmpty{padding:24px;text-align:center;color:var(--ds-muted);font-size:13px}
+@media(max-width:1000px){html[data-theme] #appRoot .dsTgHero{grid-template-columns:1fr}html[data-theme] #appRoot .dsTgRow{grid-template-columns:30px 1fr 90px;row-gap:8px}html[data-theme] #appRoot .dsTgRow .dsTgTrack{grid-column:2/-1;grid-row:2}html[data-theme] #appRoot .dsTgRow .dsTgNums{grid-column:2;grid-row:3;text-align:left}html[data-theme] #appRoot .dsTgRow .dsTgChip{grid-column:3;grid-row:3;justify-self:end}html[data-theme] #appRoot .dsTgRow .dsTgSet{grid-column:3;grid-row:1}html[data-theme] #appRoot .dsTgFacts{grid-template-columns:1fr}}
+</style>
+
+<script>
+/* =====================================================================
+   EDEN BI — Targets page
+   Targets from the Target Center (Targets sheet) against achieved sales
+   for a chosen month / quarter / year. Sales credit follows the share
+   rule: own deals 100%, shared deals 50%. Cancelled deals don't count.
+   ===================================================================== */
+const DS_TG_MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DS_TG={period:'Monthly',year:new Date().getFullYear(),month:new Date().getMonth()+1,quarter:Math.floor(new Date().getMonth()/3)+1,cur:'EGP',tab:'Sales'};
+
+function dsTgIsAdmin_(){return typeof isCurrentAdmin==='function'&&isCurrentAdmin();}
+function dsTgMonthsOf_(){
+  if(DS_TG.period==='Monthly')return [DS_TG.month];
+  if(DS_TG.period==='Quarterly'){const s=(DS_TG.quarter-1)*3+1;return [s,s+1,s+2];}
+  return [1,2,3,4,5,6,7,8,9,10,11,12];
+}
+function dsTgRowMonth_(r){
+  let m=Number(r.month);
+  if(!m){const t=String(r.month||'').trim().toLowerCase();m=DS_TG_MONTHS.findIndex(x=>x.toLowerCase()===t||x.slice(0,3).toLowerCase()===t)+1;}
+  return m;
+}
+function dsTgRows_(){
+  const months=new Set(dsTgMonthsOf_());
+  return (typeof rawRows!=='undefined'?rawRows:[]).filter(r=>
+    Number(r.year)===Number(DS_TG.year)&&months.has(dsTgRowMonth_(r))&&
+    !(typeof isCancelledStatus_==='function'?isCancelledStatus_(r.status):/^cancel/i.test(String(r.status||'')))&&
+    projectCurrency_(r)===DS_TG.cur);
+}
+/* Elapsed share of the period (0..1) for the pace marker. */
+function dsTgPace_(){
+  const ms=dsTgMonthsOf_(),start=new Date(DS_TG.year,ms[0]-1,1),end=new Date(DS_TG.year,ms[ms.length-1],1),now=new Date();
+  if(now<=start)return 0;if(now>=end)return 1;
+  return (now-start)/(end-start);
+}
+function dsTgDaysLeft_(){
+  const ms=dsTgMonthsOf_(),end=new Date(DS_TG.year,ms[ms.length-1],1),now=new Date();
+  return Math.max(0,Math.ceil((end-now)/86400000));
+}
+/* Target for one name in the chosen period. Falls back to the other
+   periods (sum of months, or a share of the quarter / year). */
+function dsTgTarget_(scope,name){
+  const key=DS_TG.cur==='USD'?'targetUSD':'targetEGP';
+  const all=(typeof TARGETS_DATA!=='undefined'?TARGETS_DATA:[]).filter(t=>
+    String(t.scope||'').trim().toLowerCase()===scope.toLowerCase()&&
+    edenNormName_(t.name)===edenNormName_(name)&&Number(t.year)===Number(DS_TG.year));
+  const val=list=>list.reduce((a,t)=>a+(Number(t[key])||0),0);
+  const per=p=>all.filter(t=>String(t.period||'Yearly').toLowerCase()===p);
+  const monthName=m=>DS_TG_MONTHS[m-1].toLowerCase();
+  const monthly=m=>per('monthly').filter(t=>String(t.month||'').trim().toLowerCase()===monthName(m));
+  const quarterly=q=>per('quarterly').filter(t=>String(t.quarter||'').trim().toUpperCase()==='Q'+q);
+  const yearly=val(per('yearly'));
+  if(DS_TG.period==='Monthly'){
+    const m=val(monthly(DS_TG.month));if(m)return {v:m,est:false};
+    const q=val(quarterly(Math.floor((DS_TG.month-1)/3)+1));if(q)return {v:q/3,est:true};
+    return yearly?{v:yearly/12,est:true}:{v:0,est:false};
+  }
+  if(DS_TG.period==='Quarterly'){
+    const q=val(quarterly(DS_TG.quarter));if(q)return {v:q,est:false};
+    const ms=dsTgMonthsOf_().map(m=>val(monthly(m)));if(ms.some(Boolean))return {v:ms.reduce((a,b)=>a+b,0),est:false};
+    return yearly?{v:yearly/4,est:true}:{v:0,est:false};
+  }
+  if(yearly)return {v:yearly,est:false};
+  const qs=[1,2,3,4].map(q=>val(quarterly(q)));if(qs.some(Boolean))return {v:qs.reduce((a,b)=>a+b,0),est:false};
+  const ms=[...Array(12)].map((_,i)=>val(monthly(i+1)));
+  return {v:ms.reduce((a,b)=>a+b,0),est:false};
+}
+function dsTgStatus_(pct,hasTarget,pace){
+  if(!hasTarget)return ['none','No target'];
+  if(pct>=100)return ['ok','Achieved'];
+  if(pace>=1)return ['behind','Missed'];
+  if(pace>0&&pct>=pace*100*.9)return ['track','On track'];
+  return pace>0?['behind','Behind']:['track','Not started'];
+}
+function dsTgFmt_(n){
+  const v=Number(n||0),a=Math.abs(v);
+  if(a>=1e6){let t=(v/1e6).toFixed(a>=1e8?0:2);if(t.includes('.'))t=t.replace(/0+$/,'').replace(/\.$/,'');return t+'M';}
+  if(a>=1e3)return Math.round(v/1e3).toLocaleString('en-US')+'K';
+  return Math.round(v).toLocaleString('en-US');
+}
+function dsTgEsc_(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+function dsTgGroups_(rows){
+  const out=new Map();
+  const add=(name,amt,deals)=>{name=String(name||'').trim()||'Not Assigned';const o=out.get(name)||{name,v:0,n:0};o.v+=amt;o.n+=deals;out.set(name,o);};
+  if(DS_TG.tab==='Sales'){
+    salesCreditRows_(rows).forEach(r=>add(r.salesName,Number(r.amount)||0,Number(r.dealCredit)||1));
+  }else if(DS_TG.tab==='Manager'){
+    salesCreditRows_(rows).forEach(r=>add(r.salesManager,Number(r.amount)||0,Number(r.dealCredit)||1));
+  }else{
+    rows.forEach(r=>add(r.branch,Number(r.amount)||0,1));
+  }
+  // names with a target but no sales yet
+  const scope=DS_TG.tab;
+  (typeof TARGETS_DATA!=='undefined'?TARGETS_DATA:[]).forEach(t=>{
+    if(String(t.scope||'').toLowerCase()!==scope.toLowerCase()||Number(t.year)!==Number(DS_TG.year))return;
+    const exists=[...out.keys()].some(k=>edenNormName_(k)===edenNormName_(t.name));
+    if(!exists&&String(t.name||'').trim())out.set(t.name,{name:t.name,v:0,n:0});
+  });
+  out.delete('Not Assigned');
+  return [...out.values()];
+}
+
+function dsTgPeriodLabel_(){
+  if(DS_TG.period==='Monthly')return `${DS_TG_MONTHS[DS_TG.month-1]} ${DS_TG.year}`;
+  if(DS_TG.period==='Quarterly')return `Q${DS_TG.quarter} ${DS_TG.year}`;
+  return String(DS_TG.year);
+}
+
+function dsTgMount_(){
+  const menu=document.querySelector('#transactionsModule .moduleMenu');
+  if(menu&&!menu.querySelector('[data-ds-targets]')){
+    const btn=document.createElement('button');
+    btn.type='button';btn.dataset.dsTargets='1';btn.textContent='Targets';
+    btn.addEventListener('click',()=>setView('targets',btn));
+    const after=menu.querySelector('[data-ds-collections]')||[...menu.querySelectorAll('button')].find(b=>String(b.getAttribute('onclick')||'').includes("'deals'"));
+    if(after)after.insertAdjacentElement('afterend',btn);else menu.appendChild(btn);
+  }
+  if(document.getElementById('dsTargets'))return;
+  const anchor=document.getElementById('dsCollections')||document.getElementById('dsStatusBar')||document.querySelector('#appRoot section.filters');
+  if(!anchor)return;
+  const el=document.createElement('section');
+  el.id='dsTargets';el.className='dsTg hidden';
+  anchor.insertAdjacentElement('afterend',el);
+  el.addEventListener('click',e=>{
+    const b=e.target.closest('[data-tg]');if(!b)return;
+    const [k,v]=b.dataset.tg.split(':');
+    if(k==='period')DS_TG.period=v;
+    else if(k==='cur')DS_TG.cur=v;
+    else if(k==='tab')DS_TG.tab=v;
+    else if(k==='manage'){if(typeof openTargetsManager_==='function')openTargetsManager_();return;}
+    else if(k==='set'){dsTgPrefill_(b.dataset.scope,b.dataset.name);return;}
+    dsTargetsRender_();
+  });
+  el.addEventListener('change',e=>{
+    const s=e.target.closest('select[data-tg-sel]');if(!s)return;
+    DS_TG[s.dataset.tgSel]=Number(s.value);
+    dsTargetsRender_();
+  });
+}
+
+/* Open the Target Center with this name and period filled in. */
+function dsTgPrefill_(scope,name){
+  if(typeof openTargetsManager_!=='function')return;
+  openTargetsManager_();
+  if(typeof resetTargetForm_==='function')resetTargetForm_();
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v;};
+  set('targetScope',scope);
+  if(typeof refreshTargetNameOptions_==='function')refreshTargetNameOptions_();
+  const nameSel=document.getElementById('targetName');
+  if(nameSel&&![...nameSel.options].some(o=>o.value===name))nameSel.insertAdjacentHTML('beforeend',`<option>${dsTgEsc_(name)}</option>`);
+  set('targetName',name);
+  set('targetPeriod',DS_TG.period);
+  set('targetYear',DS_TG.year);
+  if(DS_TG.period==='Monthly')set('targetMonth',DS_TG_MONTHS[DS_TG.month-1]);
+  if(DS_TG.period==='Quarterly')set('targetQuarter','Q'+DS_TG.quarter);
+  if(typeof toggleTargetPeriodFields_==='function')toggleTargetPeriodFields_();
+  const t=dsTgTarget_(scope,name);
+  if(!t.est&&t.v)set(DS_TG.cur==='USD'?'targetUSD':'targetEGP',t.v);
+  document.getElementById(DS_TG.cur==='USD'?'targetUSD':'targetEGP')?.focus();
+}
+
+function dsTargetsRender_(){
+  const el=document.getElementById('dsTargets');if(!el)return;
+  const show=(typeof currentView!=='undefined'&&currentView==='targets');
+  el.classList.toggle('hidden',!show);
+  document.querySelector('[data-ds-targets]')?.classList.toggle('active',show);
+  if(!show)return;
+  ['cards','salesCurvePanel','chartsSection','transactionTableBox','trendAnalysisSection','newClientsYearSection','dsAlerts','dsCollections','dsSalesCredit','dsProjBar','dsStatusBar'].forEach(id=>document.getElementById(id)?.classList.add('hidden'));
+  document.querySelector('#appRoot section.filters')?.classList.add('hidden');
+  document.querySelector('#appRoot .topbar .actions')?.classList.add('hidden');
+  const title=document.getElementById('pageTitle'),desc=document.getElementById('pageDesc');
+  if(title)title.innerText='Targets';
+  if(desc)desc.innerText='Achievement against targets · shared deals count 50% for each salesperson';
+
+  const years=[...new Set((typeof rawRows!=='undefined'?rawRows:[]).map(r=>Number(r.year)).filter(Boolean).concat([new Date().getFullYear()]))].sort((a,b)=>b-a);
+  const cur=DS_TG.cur,rows=dsTgRows_(),pace=dsTgPace_(),admin=dsTgIsAdmin_();
+  const achieved=rows.reduce((a,r)=>a+(Number(r.amount)||0),0);
+  const company=dsTgTarget_('Company','EDEN Development');
+  const pct=company.v?achieved/company.v*100:0;
+  const remain=Math.max(0,company.v-achieved),daysLeft=dsTgDaysLeft_();
+
+  const groups=dsTgGroups_(rows).map(g=>{const t=dsTgTarget_(DS_TG.tab,g.name);return {...g,t:t.v,est:t.est,pct:t.v?g.v/t.v*100:0};})
+    .sort((a,b)=>(b.t?1:0)-(a.t?1:0)||b.pct-a.pct||b.v-a.v);
+  const withT=groups.filter(g=>g.t);
+  const hit=withT.filter(g=>g.pct>=100).length,behind=withT.filter(g=>g.pct<100&&dsTgStatus_(g.pct,true,pace)[0]==='behind').length;
+  const sel=(k,opts,v)=>`<select data-tg-sel="${k}" aria-label="${k}">${opts.map(([val,lab])=>`<option value="${val}"${Number(val)===Number(v)?' selected':''}>${lab}</option>`).join('')}</select>`;
+  const seg=(k,vals,v)=>`<div class="dsTgSeg" role="group">${vals.map(([val,lab])=>`<button type="button" data-tg="${k}:${val}" class="${val===v?'on':''}" aria-pressed="${val===v}">${lab}</button>`).join('')}</div>`;
+  const tabLabel={Sales:'Salespeople',Manager:'Managers',Branch:'Branches'}[DS_TG.tab];
+
+  el.innerHTML=`
+    <div class="dsTgBar">
+      ${seg('period',[['Monthly','Month'],['Quarterly','Quarter'],['Yearly','Year']],DS_TG.period)}
+      ${DS_TG.period==='Monthly'?sel('month',DS_TG_MONTHS.map((m,i)=>[i+1,m]),DS_TG.month):''}
+      ${DS_TG.period==='Quarterly'?sel('quarter',[[1,'Q1'],[2,'Q2'],[3,'Q3'],[4,'Q4']],DS_TG.quarter):''}
+      ${sel('year',years.map(y=>[y,y]),DS_TG.year)}
+      ${seg('cur',[['EGP','EGP'],['USD','USD']],cur)}
+      <span class="grow"></span>
+      ${admin?'<button type="button" class="dsTgBtn" data-tg="manage:1">Manage targets</button>':''}
+    </div>
+    <div class="dsTgHero">
+      <div class="dsTgCard">
+        <div class="dsTgKicker">Company · ${dsTgEsc_(dsTgPeriodLabel_())}</div>
+        <h3>EDEN Development</h3>
+        <div class="dsTgBig"><strong>${dsTgFmt_(achieved)} ${cur}</strong><span>of ${company.v?dsTgFmt_(company.v)+' '+cur+(company.est?' (est.)':''):'no target set'}</span>${company.v?`<span class="dsTgPct">${pct.toFixed(1)}%</span>`:''}</div>
+        <div class="dsTgTrack"><i class="${pct>=100?'done':''}" style="width:${Math.min(100,pct)}%"></i>${company.v&&pace>0&&pace<1?`<b style="left:${pace*100}%" data-l="Today ${Math.round(pace*100)}%"></b>`:''}</div>
+        <div class="dsTgFacts">
+          <div><span>Remaining</span><b>${company.v?dsTgFmt_(remain)+' '+cur:'—'}</b></div>
+          <div><span>Days left</span><b>${daysLeft}</b></div>
+          <div><span>Needed per day</span><b>${company.v&&daysLeft?dsTgFmt_(remain/daysLeft)+' '+cur:'—'}</b></div>
+        </div>
+        ${!company.v&&admin?`<p class="dsTgNote">No company target for ${dsTgEsc_(dsTgPeriodLabel_())}. <button type="button" class="dsTgSet" data-tg="set:1" data-scope="Company" data-name="EDEN Development">Set target</button></p>`:''}
+      </div>
+      <div class="dsTgCard">
+        <div class="dsTgKicker">${dsTgEsc_(tabLabel)} with a target</div>
+        <h3>${withT.length} of ${groups.length}</h3>
+        <div class="dsTgSummary">
+          <div class="g"><b>${hit}</b><span>Achieved</span></div>
+          <div class="r"><b>${behind}</b><span>${pace>=1?'Missed':'Behind pace'}</span></div>
+        </div>
+        <p class="dsTgNote">${pace>=1?'This period has ended.':pace<=0?'This period has not started yet.':`“On track” = at least 90% of where they should be today (${Math.round(pace*100)}% of the period has passed).`}</p>
+      </div>
+    </div>
+    <div class="dsTgCard">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <h3>Leaderboard</h3>
+        ${seg('tab',[['Sales','Salespeople'],['Manager','Managers'],['Branch','Branches']],DS_TG.tab)}
+      </div>
+      <div class="dsTgList">${groups.length?groups.map((g,i)=>{
+        const [cls,txt]=dsTgStatus_(g.pct,!!g.t,pace);
+        return `<div class="dsTgRow">
+          <span class="dsTgRank">${i+1}</span>
+          <div class="dsTgName"><b title="${dsTgEsc_(g.name)}">${dsTgEsc_(g.name)}</b><small>${(Math.round(g.n*10)/10).toLocaleString('en-US')} deals${DS_TG.tab!=='Branch'?' credit':''}</small></div>
+          <div class="dsTgTrack"><i class="${g.pct>=100?'done':''}" style="width:${g.t?Math.min(100,g.pct):0}%"></i>${g.t&&pace>0&&pace<1?`<b style="left:${pace*100}%"></b>`:''}</div>
+          <div class="dsTgNums"><b>${dsTgFmt_(g.v)} ${cur}</b><small>${g.t?'of '+dsTgFmt_(g.t)+(g.est?' (est.)':'')+' · '+g.pct.toFixed(0)+'%':'no target'}</small></div>
+          <span class="dsTgChip ${cls}">${txt}</span>
+          ${admin?`<button type="button" class="dsTgSet" data-tg="set:1" data-scope="${DS_TG.tab}" data-name="${dsTgEsc_(g.name)}">${g.t&&!g.est?'Edit':'Set'}</button>`:'<span></span>'}
+        </div>`;}).join(''):`<div class="dsTgEmpty">No ${cur} sales in ${dsTgEsc_(dsTgPeriodLabel_())}.</div>`}</div>
+      <p class="dsTgNote">Achieved = deals in the period except Cancel. Salespeople and managers get 100% of their own deals and 50% of shared deals. “est.” = taken from a quarterly or yearly target.</p>
+    </div>`;
+}
+
+(function initEdenTargetsPage_(){
+  dsTgMount_();
+  // Target Center: offer everyone who sold, including shared partners.
+  if(typeof targetNameOptions_==='function'&&!targetNameOptions_.__ds){
+    const original=targetNameOptions_;
+    targetNameOptions_=function(scope){
+      if(scope!=='Sales')return original.apply(this,arguments);
+      const names=new Set();
+      (typeof rawRows!=='undefined'?rawRows:[]).forEach(r=>{[r.salesName,isShareDeal_(r)?r.sharedWith:''].forEach(n=>{n=String(n||'').trim();if(n&&n.toLowerCase()!=='not assigned')names.add(n);});});
+      return [...names].sort((a,b)=>a.localeCompare(b));
+    };
+    targetNameOptions_.__ds=true;
+  }
+  if(typeof renderTargetsManager_==='function'&&!renderTargetsManager_.__ds){
+    const original=renderTargetsManager_;
+    renderTargetsManager_=function(){const r=original.apply(this,arguments);try{dsTargetsRender_();}catch(e){console.error(e);}return r;};
+    renderTargetsManager_.__ds=true;
+  }
+  if(typeof render==='function'&&!render.__dsTargets){
+    const original=render;
+    render=function(){
+      // Leaving the Targets page: bring back what it hid.
+      if(typeof currentView!=='undefined'&&currentView!=='targets'){
+        document.querySelector('#appRoot section.filters')?.classList.remove('hidden');
+        document.querySelector('#appRoot .topbar .actions')?.classList.remove('hidden');
+        ['dsProjBar','dsStatusBar'].forEach(id=>document.getElementById(id)?.classList.remove('hidden'));
+      }
+      const r=original.apply(this,arguments);
+      try{dsTargetsRender_();}catch(e){console.error('Targets page',e);}
+      return r;
+    };
+    render.__dsTargets=true;
+  }
+})();
+</script>

@@ -72,7 +72,7 @@ function dsSalesCreditRender_(){
         <div class="dsCreditCell"><span>Own sales</span><strong>${fmt(s.ownV)} ${c}</strong><em>${deals(s.ownN)} · 100% credit</em></div>
         <div class="dsCreditCell"><span>Shared deals · full value</span><strong>${fmt(s.shareFull)} ${c}</strong><em>${deals(s.shareN)} with another salesperson</em></div>
         <div class="dsCreditCell"><span>Share credit · 50%</span><strong>${fmt(s.shareFull/2)} ${c}</strong><em>${deals(s.shareN/2)} credit</em></div>
-        <div class="dsCreditCell total"><span>Counts toward target</span><strong>${fmt(credit)} ${c}</strong><em>Own + 50% of shared · ${deals(creditN)}</em></div>
+        <div class="dsCreditCell total"><span>Counts toward target</span><strong>${fmt(credit)} ${c}</strong><em>${(()=>{const t=typeof targetValue_==='function'?targetValue_('Sales',name,c):0;return t?`Target ${fmt(t)} ${c} · <b>${(credit/t*100).toFixed(0)}%</b>`:`Own + 50% of shared · ${deals(creditN)}`;})()}</em></div>
       </div>`;
     }).join(''):`<div class="dsCreditRow"><div class="dsCreditCell" style="grid-column:1/-1"><em>No deals for ${esc(name)} with the current filters.</em></div></div>`;
     return `<article class="dsCreditCard">
