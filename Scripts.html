@@ -4566,8 +4566,8 @@ function renderTable(){
   tableTitle.innerText=title;
   rowCount.innerText=`${rows.length.toLocaleString()} records`;
   renderDownPaymentSummaryPanel_(rows);
-  const tagged=(c,html)=>html.replace(/^<td/,`<td data-col="${c}"`);
-  mainTable.innerHTML=`<thead><tr>${cols.map(c=>`<th data-col="${c}"${c==='docsUrl'?' class="docsHead"':''}>${label(c)}</th>`).join('')}</tr></thead><tbody>${rows.slice(0,1000).map(r=>`<tr>${cols.map(c=>tagged(c,cell(c,r[c]))).join('')}</tr>`).join('')}</tbody>`;
+  const tagged=(c,html,r)=>html.replace(/^<td/,`<td data-col="${c}"${c==='clientName'&&r&&clientKeyOf(r)?` data-ck="${escapeAttr(clientKeyOf(r))}"`:''}`);
+  mainTable.innerHTML=`<thead><tr>${cols.map(c=>`<th data-col="${c}"${c==='docsUrl'?' class="docsHead"':''}>${label(c)}</th>`).join('')}</tr></thead><tbody>${rows.slice(0,1000).map(r=>`<tr>${cols.map(c=>tagged(c,cell(c,r[c]),r)).join('')}</tr>`).join('')}</tbody>`;
   if(currentView==='clients')renderNewClientsByYear();
 }
 function drawMoneyBar(id,data,label,currency){

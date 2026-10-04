@@ -1,0 +1,150 @@
+<style id="eden-client-360">
+/* ===== Client 360 ===== */
+html[data-theme] #appRoot #mainTable td[data-ck]{cursor:pointer}
+html[data-theme] #appRoot #mainTable td[data-ck]:hover{color:var(--ds-gold-strong)!important;text-decoration:underline;text-underline-offset:3px}
+.c360Back{position:fixed;inset:0;z-index:380;background:rgba(14,11,6,.38);backdrop-filter:blur(2px);animation:c360Fade .15s ease}
+.c360{position:fixed;top:0;right:0;bottom:0;z-index:390;width:min(620px,100vw);display:flex;flex-direction:column;background:var(--ds-bg,#f6f1e7);color:var(--ds-text);box-shadow:-20px 0 60px rgba(0,0,0,.25);animation:c360In .22s ease;font-family:var(--ds-font,Inter,sans-serif)}
+.c360Head{padding:20px 22px 16px;background:var(--ds-surface);border-bottom:1px solid var(--ds-line)}
+.c360Top{display:flex;align-items:flex-start;gap:14px}
+.c360Av{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:17px;background:var(--ds-gold-grad);color:var(--ds-on-gold);flex:0 0 52px}
+.c360Who{flex:1;min-width:0}
+.c360Who small{font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ds-gold-strong)}
+.c360Who h2{margin:2px 0 6px;font-family:var(--ds-serif,Georgia,serif);font-size:26px;font-weight:600;color:var(--ds-heading);line-height:1.15}
+.c360Tags{display:flex;flex-wrap:wrap;gap:6px}
+.c360Tag{padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:600;background:var(--ds-surface-2);border:1px solid var(--ds-line);color:var(--ds-text)}
+.c360Tag.tier{background:var(--ds-gold-soft);border-color:var(--ds-gold-line);color:var(--ds-gold-strong)}
+.c360Close{all:unset;cursor:pointer;width:36px;height:36px;border-radius:10px;display:grid;place-items:center;font-size:22px;color:var(--ds-muted)}
+.c360Close:hover{background:var(--ds-hover)}
+.c360Phones{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.c360Phones a{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:10px;border:1px solid var(--ds-line);background:var(--ds-surface-2);color:var(--ds-text);text-decoration:none;font-size:13px;font-variant-numeric:tabular-nums}
+.c360Phones a:hover{border-color:var(--ds-gold-line)}
+.c360Body{flex:1;overflow:auto;padding:16px 22px 26px;display:grid;gap:14px;align-content:start}
+.c360Sum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.c360Sum div{padding:12px;border-radius:12px;background:var(--ds-surface);border:1px solid var(--ds-line);min-width:0}
+.c360Sum span{display:block;font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--ds-muted)}
+.c360Sum b{display:block;margin-top:5px;font-size:16px;color:var(--ds-heading);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c360Sum .rem b{color:var(--ds-red)}
+.c360Cur{font-size:10.5px;font-weight:700;letter-spacing:.14em;color:var(--ds-subtle);margin-bottom:-6px}
+.c360Meta{display:flex;flex-wrap:wrap;gap:18px;font-size:12.5px;color:var(--ds-muted)}
+.c360Meta b{color:var(--ds-heading)}
+.c360H{margin:6px 0 -2px;font-family:var(--ds-serif,Georgia,serif);font-size:19px;font-weight:600;color:var(--ds-heading)}
+.c360Deal{padding:14px 16px;border-radius:14px;background:var(--ds-surface);border:1px solid var(--ds-line);display:grid;gap:10px}
+.c360Deal.cancel{opacity:.55}
+.c360DealTop{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.c360DealTop b{display:block;font-weight:700;color:var(--ds-heading)}
+.c360DealTop small{font-size:12px;color:var(--ds-muted);font-family:ui-monospace,Menlo,Consolas,monospace}
+.c360Status{padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap;background:var(--ds-surface-3);color:var(--ds-text)}
+.c360Grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 14px;font-size:12.5px}
+.c360Grid span{display:block;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ds-muted)}
+.c360Grid b{font-weight:600;color:var(--ds-heading);font-variant-numeric:tabular-nums}
+.c360Pay{display:grid;gap:5px}
+.c360PayTrack{height:7px;border-radius:999px;background:var(--ds-surface-3);overflow:hidden}
+.c360PayTrack i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#4f9a6c,#6fc08d)}
+.c360PayTxt{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ds-muted);font-variant-numeric:tabular-nums}
+.c360Foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;font-size:12px;color:var(--ds-muted)}
+.c360Files{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;border:1px solid var(--ds-gold-line);background:var(--ds-gold-soft);color:var(--ds-gold-strong);font-weight:700;font-size:12px;text-decoration:none}
+.c360Files:hover{background:var(--ds-gold-grad);color:var(--ds-on-gold)}
+.c360Files svg{width:14px;height:14px}
+.c360Hold{padding:3px 9px;border-radius:999px;font-weight:700;font-size:11px;background:var(--ds-gold-soft);color:var(--ds-gold-strong)}
+.c360Hold.over{background:var(--ds-red-soft);color:var(--ds-red)}
+@keyframes c360In{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}
+@keyframes c360Fade{from{opacity:0}to{opacity:1}}
+@media(max-width:560px){.c360Sum{grid-template-columns:repeat(2,minmax(0,1fr))}.c360Grid{grid-template-columns:repeat(2,minmax(0,1fr))}.c360Who h2{font-size:22px}}
+</style>
+
+<script>
+/* =====================================================================
+   EDEN BI — Client 360
+   Click a client name in the Deals table to see everything about that
+   client in one panel: contacts, totals, payments and every unit across
+   all projects (not limited by the dashboard filters).
+   ===================================================================== */
+function c360Esc_(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function c360Num_(n){return Number(n||0).toLocaleString('en-US',{maximumFractionDigits:0});}
+function c360Date_(r){const y=Number(r.year),m=Number(r.month);if(!y||!m)return null;return new Date(y,m-1,Number(r.day)||1);}
+
+function c360Open_(key){
+  if(!key)return;
+  const rows=(typeof rawRows!=='undefined'?rawRows:[]).filter(r=>clientKeyOf(r)===key);
+  if(!rows.length)return;
+  c360Close_();
+  const cancelled=r=>typeof isCancelledStatus_==='function'?isCancelledStatus_(r.status):/^cancel/i.test(String(r.status||''));
+  const active=rows.filter(r=>!cancelled(r));
+  const sorted=rows.slice().sort((a,b)=>(cancelled(a)-cancelled(b))||((c360Date_(b)||0)-(c360Date_(a)||0)));
+  const name=String(rows.find(r=>r.clientName)?.clientName||'Client').trim();
+  const pick=k=>[...new Set(rows.map(r=>String(r[k]||'').trim()).filter(v=>v&&v.toLowerCase()!=='not assigned'))];
+  const phones=[...new Set(rows.flatMap(r=>typeof splitPhoneNumbers_==='function'?splitPhoneNumbers_(r.mobile):[String(r.mobile||'')]).map(s=>String(s).trim()).filter(Boolean))];
+  const n=active.length;
+  const tier=typeof tierByDeals==='function'?tierByDeals(n):'';
+  const first=active.map(c360Date_).filter(Boolean).sort((a,b)=>a-b)[0];
+  const sum=(rs,k)=>rs.reduce((a,r)=>a+(Number(r[k])||0),0);
+  const limit=typeof EDEN_STALE_RESERVATION_DAYS!=='undefined'?EDEN_STALE_RESERVATION_DAYS:15;
+  const initials=name.split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase();
+  const folder='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
+
+  const sums=['EGP','USD'].map(cur=>{
+    const rs=active.filter(r=>projectCurrency_(r)===cur);
+    if(!rs.length)return '';
+    return `<div class="c360Cur">${cur}</div><div class="c360Sum">
+      <div><span>Total value</span><b>${c360Num_(sum(rs,'amount'))}</b></div>
+      <div><span>Contracted DP</span><b>${c360Num_(sum(rs,'actualDP'))}</b></div>
+      <div><span>Paid</span><b>${c360Num_(sum(rs,'actualPaid'))}</b></div>
+      <div class="rem"><span>Remaining DP</span><b>${c360Num_(sum(rs,'remain'))}</b></div>
+    </div>`;
+  }).join('');
+
+  const deals=sorted.map(r=>{
+    const cur=projectCurrency_(r),dp=Number(r.actualDP)||0,paid=Number(r.actualPaid)||0,pct=dp?Math.min(100,paid/dp*100):0;
+    const d=c360Date_(r);
+    const shared=typeof isShareDeal_==='function'&&isShareDeal_(r);
+    const resDays=typeof reservationDays_==='function'?reservationDays_(r):null;
+    const url=String(r.docsUrl||'');
+    return `<article class="c360Deal${cancelled(r)?' cancel':''}">
+      <div class="c360DealTop"><div><b>${c360Esc_(r.project||'')}</b><small>${c360Esc_(r.unitCode||'')}${r.unitType?' · '+c360Esc_(r.unitType):''}${Number(r.area)?' · '+c360Num_(r.area)+' m²':''}</small></div>
+        <span class="c360Status chip status-${c360Esc_(String(r.status||'').split(' ')[0])}">${c360Esc_(r.status||'—')}</span></div>
+      <div class="c360Grid">
+        <div><span>Date</span><b>${d?d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'—'}</b></div>
+        <div><span>Final price</span><b>${c360Num_(r.amount)} ${cur}</b></div>
+        <div><span>Remaining DP</span><b>${c360Num_(r.remain)} ${cur}</b></div>
+      </div>
+      ${dp?`<div class="c360Pay"><div class="c360PayTrack"><i style="width:${pct}%"></i></div><div class="c360PayTxt"><span>Paid ${c360Num_(paid)} of ${c360Num_(dp)} DP</span><span>${pct.toFixed(0)}%</span></div></div>`:''}
+      <div class="c360Foot"><span>Sales: <b>${c360Esc_(r.salesName||'—')}</b>${shared?` + ${c360Esc_(r.sharedWith)} <em>(50/50)</em>`:''}${r.branch?' · '+c360Esc_(r.branch):''}</span>
+        <span style="display:inline-flex;gap:8px;align-items:center">${resDays!=null?`<span class="c360Hold${resDays>limit?' over':''}">Reserved ${resDays} days</span>`:''}${/^https?:\/\//i.test(url)?`<a class="c360Files" href="${c360Esc_(url)}" target="_blank" rel="noopener">${folder}Files</a>`:''}</span></div>
+    </article>`;
+  }).join('');
+
+  const back=document.createElement('div');back.className='c360Back';back.id='c360Back';
+  const panel=document.createElement('aside');panel.className='c360';panel.id='c360';
+  panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-label',name);
+  panel.innerHTML=`
+    <div class="c360Head">
+      <div class="c360Top"><div class="c360Av">${c360Esc_(initials)}</div>
+        <div class="c360Who"><small>Client</small><h2>${c360Esc_(name)}</h2>
+          <div class="c360Tags">${tier?`<span class="c360Tag tier">${c360Esc_(tier)}</span>`:''}${pick('nationality').map(v=>`<span class="c360Tag">${c360Esc_(v)}</span>`).join('')}${pick('clientType').map(v=>`<span class="c360Tag">${c360Esc_(v)}</span>`).join('')}</div>
+        </div>
+        <button type="button" class="c360Close" aria-label="Close">×</button></div>
+      ${phones.length?`<div class="c360Phones">${phones.map(p=>`<a href="tel:${c360Esc_(p.replace(/[^\d+]/g,''))}">☎ ${c360Esc_(p)}</a>`).join('')}</div>`:''}
+    </div>
+    <div class="c360Body">
+      <div class="c360Meta"><span><b>${n}</b> active ${n===1?'unit':'units'}</span><span><b>${pick('project').length}</b> ${pick('project').length===1?'project':'projects'}</span>${first?`<span>Client since <b>${first.toLocaleDateString('en-GB',{month:'short',year:'numeric'})}</b></span>`:''}${rows.length>n?`<span>${rows.length-n} cancelled</span>`:''}</div>
+      ${sums}
+      <h3 class="c360H">Units</h3>
+      ${deals}
+    </div>`;
+  document.body.appendChild(back);document.body.appendChild(panel);
+  const close=()=>c360Close_();
+  back.addEventListener('click',close);
+  panel.querySelector('.c360Close').addEventListener('click',close);
+  document.addEventListener('keydown',c360Key_);
+  setTimeout(()=>panel.querySelector('.c360Close').focus(),30);
+}
+function c360Key_(e){if(e.key==='Escape')c360Close_();}
+function c360Close_(){
+  document.getElementById('c360')?.remove();document.getElementById('c360Back')?.remove();
+  document.removeEventListener('keydown',c360Key_);
+}
+document.addEventListener('click',e=>{
+  const td=e.target.closest('#mainTable td[data-ck]');
+  if(td){c360Open_(td.dataset.ck);}
+});
+</script>
