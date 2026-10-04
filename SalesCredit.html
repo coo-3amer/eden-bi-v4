@@ -1,0 +1,93 @@
+<style id="eden-sales-credit">
+/* ===== Sales credit (selected salespeople) ===== */
+html[data-theme] #appRoot .dsCredit{margin:14px 0 4px;display:grid;gap:12px}
+html[data-theme] #appRoot .dsCreditCard{border:1px solid var(--ds-line);border-radius:16px;background:var(--ds-surface);box-shadow:var(--ds-shadow);overflow:hidden}
+html[data-theme] #appRoot .dsCreditHead{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;border-bottom:1px solid var(--ds-line);background:var(--ds-surface-2)}
+html[data-theme] #appRoot .dsCreditWho{display:flex;align-items:center;gap:12px;min-width:0}
+html[data-theme] #appRoot .dsCreditAv{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:13px;background:var(--ds-gold-grad);color:var(--ds-on-gold);flex:0 0 38px}
+html[data-theme] #appRoot .dsCreditWho b{display:block;font-family:var(--ds-serif);font-size:20px;font-weight:600;color:var(--ds-heading);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html[data-theme] #appRoot .dsCreditWho small{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ds-gold-strong);font-weight:700}
+html[data-theme] #appRoot .dsCreditNote{font-size:12px;color:var(--ds-muted);text-align:right}
+html[data-theme] #appRoot .dsCreditRow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--ds-line)}
+html[data-theme] #appRoot .dsCreditRow:first-of-type{border-top:0}
+html[data-theme] #appRoot .dsCreditCell{padding:14px 18px;border-left:1px solid var(--ds-line);min-width:0}
+html[data-theme] #appRoot .dsCreditCell:first-child{border-left:0}
+html[data-theme] #appRoot .dsCreditCell span{display:block;font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ds-muted)}
+html[data-theme] #appRoot .dsCreditCell strong{display:block;margin-top:6px;font-size:19px;font-weight:700;color:var(--ds-heading);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html[data-theme] #appRoot .dsCreditCell em{display:block;margin-top:3px;font-style:normal;font-size:12px;color:var(--ds-muted);font-variant-numeric:tabular-nums}
+html[data-theme] #appRoot .dsCreditCell.total{background:var(--ds-gold-soft)}
+html[data-theme] #appRoot .dsCreditCell.total span{color:var(--ds-gold-strong)}
+html[data-theme] #appRoot .dsCreditCell.total strong{color:var(--ds-gold-strong);font-size:21px}
+html[data-theme] #appRoot .dsCreditCur{grid-column:1/-1;padding:8px 18px 0;font-size:10.5px;font-weight:700;letter-spacing:.14em;color:var(--ds-subtle)}
+@media(max-width:900px){html[data-theme] #appRoot .dsCreditRow{grid-template-columns:repeat(2,minmax(0,1fr))}html[data-theme] #appRoot .dsCreditCell:nth-child(3){border-left:0}html[data-theme] #appRoot .dsCreditCell:nth-child(n+3){border-top:1px solid var(--ds-line)}html[data-theme] #appRoot .dsCreditHead{flex-direction:column;align-items:flex-start}html[data-theme] #appRoot .dsCreditNote{text-align:left}}
+</style>
+
+<script>
+/* =====================================================================
+   EDEN BI — Sales credit
+   When one or more salespeople are selected in the Sales filter, show for
+   each: own (solo) sales, shared deals at full value, the 50% share credit,
+   and the total that counts toward the target (own + 50% of shared).
+   ===================================================================== */
+function dsCreditStats_(name,rows){
+  const me=edenNormName_(name);
+  const empty=()=>({ownN:0,ownV:0,shareN:0,shareFull:0});
+  const by={EGP:empty(),USD:empty()};
+  rows.forEach(r=>{
+    const cur=projectCurrency_(r);if(!by[cur])return;
+    const primary=edenNormName_(r.salesName),shared=isShareDeal_(r)?edenNormName_(r.sharedWith):'';
+    const amt=Number(r.amount)||0;
+    if(shared&&(primary===me||shared===me)){by[cur].shareN++;by[cur].shareFull+=amt;}
+    else if(!shared&&primary===me){by[cur].ownN++;by[cur].ownV+=amt;}
+  });
+  return by;
+}
+function dsSalesCreditRender_(){
+  const cards=document.getElementById('cards');
+  let host=document.getElementById('dsSalesCredit');
+  if(!cards)return;
+  if(!host){
+    host=document.createElement('section');
+    host.id='dsSalesCredit';host.className='dsCredit';host.setAttribute('aria-label','Sales credit');
+    cards.parentNode.insertBefore(host,cards);
+  }
+  const selected=(typeof getMulti==='function'?getMulti('sales'):[]).filter(Boolean);
+  const visible=!cards.classList.contains('hidden')&&getComputedStyle(cards).display!=='none';
+  if(!selected.length||!visible){host.innerHTML='';host.hidden=true;return;}
+  host.hidden=false;
+
+  const rows=typeof statusScopeRows==='function'?statusScopeRows():[];
+  const fmt=n=>Number(n||0).toLocaleString('en-US',{maximumFractionDigits:0});
+  const deals=n=>{const v=Math.round(n*10)/10;return `${v.toLocaleString('en-US')} ${v===1?'deal':'deals'}`;};
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const initials=n=>String(n).trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase();
+
+  host.innerHTML=selected.map(name=>{
+    const by=dsCreditStats_(name,rows);
+    const curs=['EGP','USD'].filter(c=>by[c].ownN||by[c].shareN);
+    const body=curs.length?curs.map(c=>{
+      const s=by[c],credit=s.ownV+s.shareFull/2,creditN=s.ownN+s.shareN/2;
+      return (curs.length>1?`<div class="dsCreditCur">${c}</div>`:'')+
+      `<div class="dsCreditRow">
+        <div class="dsCreditCell"><span>Own sales</span><strong>${fmt(s.ownV)} ${c}</strong><em>${deals(s.ownN)} · 100% credit</em></div>
+        <div class="dsCreditCell"><span>Shared deals · full value</span><strong>${fmt(s.shareFull)} ${c}</strong><em>${deals(s.shareN)} with another salesperson</em></div>
+        <div class="dsCreditCell"><span>Share credit · 50%</span><strong>${fmt(s.shareFull/2)} ${c}</strong><em>${deals(s.shareN/2)} credit</em></div>
+        <div class="dsCreditCell total"><span>Counts toward target</span><strong>${fmt(credit)} ${c}</strong><em>Own + 50% of shared · ${deals(creditN)}</em></div>
+      </div>`;
+    }).join(''):`<div class="dsCreditRow"><div class="dsCreditCell" style="grid-column:1/-1"><em>No deals for ${esc(name)} with the current filters.</em></div></div>`;
+    return `<article class="dsCreditCard">
+      <div class="dsCreditHead"><div class="dsCreditWho"><div class="dsCreditAv">${esc(initials(name))}</div><div><small>Sales credit</small><b>${esc(name)}</b></div></div>
+      <div class="dsCreditNote">Shared deals count 50% of their value</div></div>
+      ${body}
+    </article>`;
+  }).join('');
+}
+(function initEdenSalesCredit_(){
+  if(typeof render==='function'&&!render.__dsCredit){
+    const original=render;
+    render=function(){const r=original.apply(this,arguments);try{dsSalesCreditRender_();}catch(e){console.error('Sales credit',e);}return r;};
+    render.__dsCredit=true;
+  }
+  try{dsSalesCreditRender_();}catch(e){}
+})();
+</script>
