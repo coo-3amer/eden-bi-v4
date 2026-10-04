@@ -200,7 +200,7 @@
       c.textAlign='right';
       meta.data.forEach((bar,i)=>{
         const v=Number(ds.data[i]);if(!Number.isFinite(v))return;
-        const txt=compact(v),w=c.measureText(txt).width;
+        const txt=(Array.isArray(ds.edenLabels)&&ds.edenLabels[i]!=null)?String(ds.edenLabels[i]):compact(v),w=c.measureText(txt).width;
         const onBar=bar.x>area.right-w-22;
         c.fillStyle=onBar?'#fff':tok('text','#2b241a');
         c.fillText(txt,onBar?bar.x-9:area.right-10,bar.y);

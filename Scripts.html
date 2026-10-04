@@ -4350,14 +4350,31 @@ function renderCharts(){
   edenInsightBar_('projectChart',edenRankRows_(rows,'project','count',8),'Deals',{horizontal:true,metaId:'projectChartMeta'});
   edenInsightBar_('valueEgpChart',edenRankRows_(egpRows,'project','amount',8),'EGP',{horizontal:true,money:true,metaId:'valueEgpMeta'});
   edenInsightBar_('valueUsdChart',edenRankRows_(usdRows,'project','amount',8),'USD',{horizontal:true,money:true,metaId:'valueUsdMeta'});
-  const salesCredits_=salesCreditRows_(rows);
-  const salesRank_=Object.values(salesCredits_.reduce((m,r)=>{
-    const name=String(r.salesName||'Not Assigned');
-    if(!m[name])m[name]={name,value:0};
-    m[name].value+=Number(r.dealCredit??1);
-    return m;
-  },{})).sort((a,b)=>b.value-a.value).slice(0,10);
-  edenInsightBar_('salesChart',salesRank_,'Deal Credit',{horizontal:true,metaId:'salesChartMeta'});
+  // Top salespeople: net value after share split (own deals in full + 50% of
+  // shared deals) and the number of deals, per currency (never mixed).
+  const salesRank_=topSalesNetRank_(rows,10);
+  const salesCur_=salesRank_.cur;
+  edenInsightBar_('salesChart',salesRank_.map(x=>({name:x.name,value:x[salesCur_]})),'Net '+salesCur_,{
+    horizontal:true,metaId:'salesChartMeta',money:true,
+    labels:salesRank_.map(x=>{
+      const other=salesCur_==='EGP'?'USD':'EGP';
+      const v=x[salesCur_]?`${edenCompact_(x[salesCur_])} ${salesCur_}`:(x[other]?`${edenCompact_(x[other])} ${other}`:'0');
+      return `${v} · ${x.deals} ${x.deals===1?'deal':'deals'}`;
+    }),
+    tooltip:i=>{
+      const x=salesRank_[i],lines=[];
+      ['EGP','USD'].forEach(c=>{
+        if(!x[c])return;
+        lines.push(`Net ${c}: ${money(Math.round(x[c]))}`);
+        lines.push(`   Own deals: ${money(Math.round(x.own[c]))}`);
+        if(x.share[c])lines.push(`   50% of shared: ${money(Math.round(x.share[c]))}`);
+      });
+      lines.push(`Deals: ${x.deals} (${x.solo} own, ${x.shared} shared)`);
+      return lines;
+    }
+  });
+  const salesMetaEl_=document.getElementById('salesChartMeta');
+  if(salesMetaEl_&&salesRank_.length)salesMetaEl_.textContent=`Net ${salesCur_} after share · deals`;
   // Brokerage companies: rank by sales value and show BOTH value + deal count.
   // EGP and USD are intentionally kept separate so currencies are never added together.
   const brokerageRows_=rows.filter(r=>String(r.brokerageCompany||'').trim());
@@ -4492,6 +4509,25 @@ function edenSetMeta_(id,data,label){
   el.textContent=data?.length?`${edenCompact_(total)} ${label}`:'NO DATA';
 }
 
+/* Per salesperson: own deals at full value + 50% of shared deals, by currency. */
+function topSalesNetRank_(rows,limit){
+  const m={};
+  salesCreditRows_(rows).forEach(r=>{
+    const name=String(r.salesName||'Not Assigned');
+    const x=m[name]||(m[name]={name,EGP:0,USD:0,own:{EGP:0,USD:0},share:{EGP:0,USD:0},deals:0,solo:0,shared:0});
+    const cur=projectCurrency_(r),amt=Number(r.amount)||0;
+    x[cur]+=amt;
+    if(Number(r.dealCredit??1)<1){x.share[cur]+=amt;x.shared++;}else{x.own[cur]+=amt;x.solo++;}
+    x.deals++;
+  });
+  const list=Object.values(m);
+  const hasEGP=list.some(x=>x.EGP),hasUSD=list.some(x=>x.USD);
+  const cur=!hasEGP&&hasUSD?'USD':'EGP',other=cur==='EGP'?'USD':'EGP';
+  const out=list.sort((a,b)=>(b[cur]-a[cur])||(b[other]-a[other])||(b.deals-a.deals)).slice(0,limit||10);
+  out.cur=cur;
+  return out;
+}
+
 function edenInsightBar_(id,data,label,opt={}){
   const el=document.getElementById(id);
   if(!el)return;
@@ -4513,7 +4549,8 @@ function edenInsightBar_(id,data,label,opt={}){
         borderWidth:1,
         borderRadius:6,
         barThickness:single?24:undefined,
-        maxBarThickness:26
+        maxBarThickness:26,
+        edenLabels:Array.isArray(opt.labels)?clean.map(x=>opt.labels[(data||[]).indexOf(x)]):undefined
       }]
     },
     options:{
@@ -4524,7 +4561,7 @@ function edenInsightBar_(id,data,label,opt={}){
       layout:{padding:{right:8}},
       plugins:{
         legend:{display:false},
-        tooltip:{callbacks:{label:c=>`${label}: ${Number(c.raw||0).toLocaleString('en-US',{maximumFractionDigits:2})}`}}
+        tooltip:{callbacks:{label:c=>typeof opt.tooltip==='function'?opt.tooltip((data||[]).indexOf(clean[c.dataIndex])):`${label}: ${Number(c.raw||0).toLocaleString('en-US',{maximumFractionDigits:2})}`}}
       },
       scales:{
         x:{
