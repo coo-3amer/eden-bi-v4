@@ -1,0 +1,65 @@
+<style id="eden-currency-scope">
+/* Cards / charts for a currency that isn't in the current selection. */
+html[data-theme] #appRoot .dsCurHide{display:none!important}
+/* The remaining "Value by Project" card takes the freed space. */
+html[data-theme] #appRoot .edenInsightCard.dsCurWide{grid-column:span 2}
+</style>
+<script>
+/* =====================================================================
+   EDEN BI — Currency scope
+   When the current selection only has EGP projects (e.g. EDEN WALK,
+   E-ONE), everything in USD is hidden — KPI cards, the USD "Value by
+   Project" chart and the USD option of the Sales Performance Curve —
+   and the other way round for USD-only selections.
+   ===================================================================== */
+function dsCurrencyScope_(){
+  if(typeof projectCurrency_!=='function')return null;
+  const rows=typeof statusScopeRows==='function'?statusScopeRows():(typeof filtered!=='undefined'?filtered:[]);
+  const set=new Set(rows.map(projectCurrency_).filter(c=>c==='EGP'||c==='USD'));
+  return set.size===1?[...set][0]:null;   // 'EGP' | 'USD' | null (both / none)
+}
+function dsApplyCurrencyScope_(){
+  const root=document.getElementById('appRoot');if(!root)return;
+  const only=dsCurrencyScope_();
+  const hideCur=only==='EGP'?'USD':only==='USD'?'EGP':null;
+  const re=hideCur?new RegExp('\\b'+hideCur+'\\b','i'):null;
+
+  // KPI and summary cards
+  root.querySelectorAll('.card').forEach(card=>{
+    const lab=card.querySelector('.label');
+    const hit=!!(re&&lab&&re.test(lab.textContent||''));
+    card.classList.toggle('dsCurHide',hit);
+  });
+
+  // "Value by Project" chart cards
+  const pairs={USD:'valueUsdChart',EGP:'valueEgpChart'};
+  Object.entries(pairs).forEach(([cur,id])=>{
+    const art=document.getElementById(id)?.closest('.edenInsightCard');
+    if(!art)return;
+    art.classList.toggle('dsCurHide',cur===hideCur);
+    art.classList.toggle('dsCurWide',!!hideCur&&cur!==hideCur);
+  });
+
+  // Sales Performance Curve metric
+  const sel=document.getElementById('curveMetric');
+  if(sel){
+    [...sel.options].forEach(o=>{
+      const off=(hideCur==='USD'&&o.value==='valueUSD')||(hideCur==='EGP'&&o.value==='valueEGP');
+      o.hidden=off;o.disabled=off;
+    });
+    const cur=sel.options[sel.selectedIndex];
+    if(cur&&cur.disabled){
+      sel.value=hideCur==='USD'?'valueEGP':'valueUSD';
+      if(typeof renderSalesCurve_==='function')renderSalesCurve_();
+    }
+  }
+}
+(function initEdenCurrencyScope_(){
+  if(typeof render==='function'&&!render.__dsCurrency){
+    const original=render;
+    render=function(){const r=original.apply(this,arguments);try{dsApplyCurrencyScope_();}catch(e){console.error('Currency scope',e);}return r;};
+    render.__dsCurrency=true;
+  }
+  try{dsApplyCurrencyScope_();}catch(e){}
+})();
+</script>
