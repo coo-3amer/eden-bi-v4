@@ -80,6 +80,7 @@ function loginUser(username, password) {
   const nIdx = idx('Name');
   const rIdx = idx('Role');
   const sIdx = idx('Status');
+  const gIdx = idx('Greeting');
 
   if (uIdx === -1 || pIdx === -1) {
     throw new Error('Users sheet must contain Username and Password columns.');
@@ -96,7 +97,8 @@ function loginUser(username, password) {
       const user = {
         username: rowUser,
         name: nIdx > -1 ? row[nIdx] : rowUser,
-        role: rIdx > -1 ? row[rIdx] : 'User'
+        role: rIdx > -1 ? row[rIdx] : 'User',
+        greeting: gIdx > -1 ? String(row[gIdx] || '').trim() : ''
       };
 
       CacheService.getScriptCache().put('LOGIN_' + token, JSON.stringify(user), 21600); // 6 hours
@@ -152,13 +154,15 @@ function getUsersList(authToken) {
   const nIdx = idx('Name');
   const rIdx = idx('Role');
   const sIdx = idx('Status');
+  const gIdx = idx('Greeting');
 
   return values.slice(1).filter(r => r.join('').trim() !== '').map((r, i) => ({
     rowNumber: i + 2,
     username: uIdx > -1 ? r[uIdx] : '',
     name: nIdx > -1 ? r[nIdx] : '',
     role: rIdx > -1 ? r[rIdx] : '',
-    status: sIdx > -1 ? r[sIdx] : ''
+    status: sIdx > -1 ? r[sIdx] : '',
+    greeting: gIdx > -1 ? r[gIdx] : ''
   }));
 }
 
@@ -185,7 +189,22 @@ function createUser(authToken, userData) {
   if (exists) throw new Error('Username already exists.');
 
   sheet.appendRow([username, password, name, role, status]);
+  const greeting = String(userData.greeting || '').trim();
+  if (greeting) {
+    const col = usersGreetingColumn_(sheet);
+    sheet.getRange(sheet.getLastRow(), col).setValue(greeting);
+  }
   return { success: true, message: 'User created successfully.' };
+}
+
+/* Column number of the optional "Greeting" column (added if missing). */
+function usersGreetingColumn_(sheet) {
+  const lastCol = Math.max(sheet.getLastColumn(), 1);
+  const headers = sheet.getRange(1, 1, 1, lastCol).getDisplayValues()[0].map(h => String(h || '').trim());
+  const i = headers.indexOf('Greeting');
+  if (i > -1) return i + 1;
+  sheet.getRange(1, lastCol + 1).setValue('Greeting');
+  return lastCol + 1;
 }
 
 function updateUser(authToken, userData) {
@@ -219,6 +238,10 @@ function updateUser(authToken, userData) {
   if (String(userData.password || '').trim()) setByHeader('Password', String(userData.password || '').trim());
   setByHeader('Role', String(userData.role || 'Viewer').trim());
   setByHeader('Status', String(userData.status || 'Active').trim());
+  if (userData.greeting !== undefined) {
+    const greeting = String(userData.greeting || '').trim();
+    if (greeting || idx('Greeting') > 0) sheet.getRange(rowNumber, usersGreetingColumn_(sheet)).setValue(greeting);
+  }
 
   return { success: true, message: 'User updated successfully.' };
 }
