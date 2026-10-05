@@ -1,0 +1,290 @@
+<style id="eden-data-check">
+html[data-theme] #appRoot .dsDcBadge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 6px;margin-left:8px;border-radius:999px;background:#c2410c;color:#fff;font-size:10.5px;font-weight:800;letter-spacing:0;vertical-align:middle}
+html[data-theme] #appRoot .dsDcBadge:empty{display:none}
+html[data-theme] #appRoot #dsDcBar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin:0 0 14px;padding:14px 16px;border-radius:16px;border:1px solid var(--ds-line);background:var(--ds-surface)}
+html[data-theme] #appRoot #dsDcBar.hasNew{border-color:rgba(194,65,12,.45);background:linear-gradient(90deg,rgba(194,65,12,.08),transparent 70%),var(--ds-surface)}
+html[data-theme] #appRoot #dsDcBar .dcMsg{flex:1 1 320px;font-size:13.5px;color:var(--ds-text);line-height:1.5}
+html[data-theme] #appRoot #dsDcBar .dcMsg b{font-weight:800}
+html[data-theme] #appRoot #dsDcBar .dcMsg small{display:block;color:var(--ds-muted);font-size:12px}
+html[data-theme] #appRoot #dsDcBar .dcBtns{display:flex;gap:8px;flex-wrap:wrap}
+html[data-theme] #appRoot #dsDcBar button{border:1px solid var(--ds-line);background:transparent;color:var(--ds-text);border-radius:999px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer}
+html[data-theme] #appRoot #dsDcBar button.on{background:var(--ds-gold-soft);border-color:var(--ds-gold-strong);color:var(--ds-gold-strong)}
+html[data-theme] #appRoot #dsDcBar button.primary{background:var(--ds-gold-strong);border-color:var(--ds-gold-strong);color:#fff}
+html[data-theme] #appRoot #mainTable .dcRow{white-space:nowrap;font-weight:800;color:var(--ds-gold-strong);text-decoration:none}
+html[data-theme] #appRoot #mainTable .dcRow:hover{text-decoration:underline}
+html[data-theme] #appRoot #mainTable .dcNew{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:#c2410c;color:#fff;font-size:10px;font-weight:800}
+html[data-theme] #appRoot #mainTable .dcSev{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:800;white-space:nowrap}
+html[data-theme] #appRoot #mainTable .dcSev.c{background:rgba(220,38,38,.12);color:#b91c1c}
+html[data-theme] #appRoot #mainTable .dcSev.w{background:rgba(217,119,6,.14);color:#b45309}
+html[data-theme] #appRoot #mainTable.dcTable th:nth-child(3),html[data-theme] #appRoot #mainTable td.dcIssuesTd{max-width:480px!important;min-width:340px!important}
+html[data-theme] #appRoot #mainTable td.dcIssuesTd{white-space:normal;padding-top:9px!important;padding-bottom:9px!important}
+html[data-theme] #appRoot #mainTable .dcIssues{display:flex;flex-wrap:wrap;gap:5px}
+html[data-theme] #appRoot #mainTable .dcIssue{padding:3px 9px;border-radius:8px;font-size:11.5px;line-height:1.35;background:rgba(217,119,6,.10);color:var(--ds-text)}
+html[data-theme] #appRoot #mainTable .dcIssue.c{background:rgba(220,38,38,.10);color:#b91c1c;font-weight:700}
+html[data-theme="dark"] #appRoot #mainTable .dcIssue.c,html[data-theme="dark"] #appRoot #mainTable .dcSev.c{color:#fca5a5}
+html[data-theme="dark"] #appRoot #mainTable .dcSev.w{color:#fcd34d}
+#dsDcToast{position:fixed;right:20px;bottom:20px;z-index:300;max-width:340px;padding:14px 16px;border-radius:14px;background:#1c1917;color:#fff;box-shadow:0 18px 40px rgba(0,0,0,.35);font:600 13px/1.45 Inter,system-ui,sans-serif;cursor:pointer;transform:translateY(20px);opacity:0;transition:.3s}
+#dsDcToast.show{transform:none;opacity:1}
+#dsDcToast b{color:#fdba74}
+#dsDcToast small{display:block;margin-top:4px;color:#d6d3d1;font-weight:500}
+</style>
+<script>
+/* =====================================================================
+   EDEN BI — Data Check
+   Finds rows in the Deals sheet that were entered wrongly:
+   missing fields, duplicate units, typos in names (e.g. "Ahmed Sabri"
+   next to "Ahmed Sabry"), prices that look off by a zero, paid more than
+   the price, dates in the future, share deals without a partner…
+   Rows added since the last review are marked NEW, the menu shows how
+   many of them have problems, and each row links straight to the sheet.
+   ===================================================================== */
+const DC_SHEET_URL_='https://docs.google.com/spreadsheets/d/1d7NLDM1Q5YCxFHcCxdifmTBTc7tSmScuVMapI_wnIWo/edit#gid=835779772';
+const DC_SEEN_KEY_='EDEN_DC_SEEN_ROW';
+let DC_ONLY_NEW_=false;
+
+function dcCanSee_(){
+  if(typeof isEgyptViewer_==='function'&&isEgyptViewer_())return false;
+  const r=String((typeof AUTH_USER!=='undefined'&&AUTH_USER&&AUTH_USER.role)||'').trim().toLowerCase();
+  return !!r&&r!=='sales'&&r!=='sales manager';
+}
+function dcSeenRow_(){try{const v=Number(localStorage.getItem(DC_SEEN_KEY_));return Number.isFinite(v)&&v>0?v:0;}catch(e){return 0;}}
+function dcSetSeenRow_(n){try{localStorage.setItem(DC_SEEN_KEY_,String(n));}catch(e){}}
+function dcMaxRow_(){return (typeof rawRows!=='undefined'?rawRows:[]).reduce((m,r)=>Math.max(m,Number(r.row)||0),0);}
+
+/* ---------- smart checks ---------- */
+const dcNorm_=v=>String(v??'').replace(/\s+/g,' ').trim();
+const dcKey_=v=>dcNorm_(v).toLowerCase();
+function dcEdit_(a,b){
+  if(Math.abs(a.length-b.length)>2)return 9;
+  let prev=Array.from({length:b.length+1},(_,i)=>i);
+  for(let i=1;i<=a.length;i++){
+    const cur=[i];
+    for(let j=1;j<=b.length;j++)cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));
+    prev=cur;
+  }
+  return prev[b.length];
+}
+/* field -> {label, critical} ; sharedWith is compared with the sales names. */
+const DC_TYPO_FIELDS_={
+  project:{label:'Project',critical:true},
+  salesName:{label:'Sales',critical:true},
+  sharedWith:{label:'Shared With',critical:true,ref:'salesName'},
+  salesManager:{label:'Sales Manager',critical:false},
+  status:{label:'Status',critical:true},
+  branch:{label:'Branch',critical:false},
+  mainSource:{label:'Main Source',critical:false},
+  sourceType:{label:'Source Type',critical:false},
+  nationality:{label:'Nationality',critical:false}
+};
+let DC_REF_CACHE_={src:null,len:-1,data:null};
+function dcReference_(){
+  const all=typeof rawRows!=='undefined'?rawRows:[];
+  if(DC_REF_CACHE_.src===all&&DC_REF_CACHE_.len===all.length)return DC_REF_CACHE_.data;
+  const counts={};
+  Object.keys(DC_TYPO_FIELDS_).forEach(f=>{
+    const m={};
+    all.forEach(r=>{const v=dcNorm_(r[f]);if(v&&v.toLowerCase()!=='not assigned')m[v]=(m[v]||0)+1;});
+    counts[f]=m;
+  });
+  // A rare spelling next to a common one = probable typo.
+  const typos={};
+  Object.keys(DC_TYPO_FIELDS_).forEach(f=>{
+    const own=counts[f],ref=counts[DC_TYPO_FIELDS_[f].ref||f];
+    const common=Object.keys(ref).filter(v=>ref[v]>=4);
+    const map={};
+    Object.keys(own).forEach(v=>{
+      if((ref[v]||own[v])>2)return;
+      const k=v.toLowerCase();
+      let best='',bestD=9;
+      common.forEach(c=>{
+        if(c===v)return;
+        const ck=c.toLowerCase();
+        const d=ck===k||ck.replace(/[^a-z0-9؀-ۿ]/g,'')===k.replace(/[^a-z0-9؀-ۿ]/g,'')?0:(k.length>=5?dcEdit_(k,ck):9);
+        if(d<bestD||(d===bestD&&ref[c]>(ref[best]||0))){best=c;bestD=d;}
+      });
+      if(best&&bestD<=(k.length>=9?2:1))map[v]=best;
+    });
+    typos[f]=map;
+  });
+  // Price per m² per project (median) to catch a missing / extra zero.
+  const per={};
+  all.forEach(r=>{const a=Number(r.amount)||0,s=Number(r.area)||0,p=dcKey_(r.project);if(a>0&&s>0&&p)(per[p]=per[p]||[]).push(a/s);});
+  const median={};
+  Object.keys(per).forEach(p=>{const v=per[p].sort((x,y)=>x-y);if(v.length>=5)median[p]=v[Math.floor(v.length/2)];});
+  const data={typos,median};
+  DC_REF_CACHE_={src:all,len:all.length,data};
+  return data;
+}
+function dcExtraIssues_(row,ref){
+  const critical=[],warning=[];
+  Object.keys(DC_TYPO_FIELDS_).forEach(f=>{
+    const v=dcNorm_(row[f]);if(!v)return;
+    const fix=ref.typos[f]&&ref.typos[f][v];
+    if(fix)(DC_TYPO_FIELDS_[f].critical?critical:warning).push(`Possible typo in ${DC_TYPO_FIELDS_[f].label}: "${v}" → "${fix}"?`);
+  });
+  const amount=Number(row.amount)||0,area=Number(row.area)||0,med=ref.median[dcKey_(row.project)];
+  if(med&&amount>0&&area>0){
+    const ratio=(amount/area)/med;
+    if(ratio>=4)critical.push(`Price looks too high (×${Math.round(ratio)} the project's usual m² price)`);
+    else if(ratio<=0.25)critical.push(`Price looks too low (1/${Math.round(1/ratio)} of the project's usual m² price)`);
+  }
+  const paid=Number(row.actualPaid)||0;
+  if(amount>0&&paid>amount*1.02)critical.push('Paid is more than the unit price');
+  const y=Number(row.year)||0,m=Number(row.month)||0,d=Number(row.day)||1;
+  if(y&&m){
+    const dt=new Date(y,m-1,d),now=new Date();
+    if(dt.getTime()>now.getTime()+86400000)critical.push('Date is in the future');
+    else if(y<2015)warning.push('Date looks too old');
+  }
+  const ds=dcKey_(row.dealStatus),sw=dcNorm_(row.sharedWith);
+  if(ds==='share'&&(!sw||sw.toLowerCase()==='not assigned'))critical.push('Share deal without "Shared With"');
+  else if(sw&&sw.toLowerCase()!=='not assigned'&&ds&&ds!=='share')warning.push('"Shared With" filled but Deal Status is not Share');
+  if(sw&&dcKey_(sw)===dcKey_(row.salesName))warning.push('Shared With is the same as the salesperson');
+  return {critical,warning};
+}
+
+/* ---------- hook into the existing Data Health page ---------- */
+(function initEdenDataCheck_(){
+  if(typeof dataHealthEvaluate_==='function'&&!dataHealthEvaluate_.__dc){
+    const original=dataHealthEvaluate_;
+    dataHealthEvaluate_=function(rows){
+      const base=original.apply(this,arguments),ref=dcReference_(),seen=dcSeenRow_();
+      return base.map(r=>{
+        const x=dcExtraIssues_(r,ref);
+        const crit=r.criticalCount?r.issueList.slice(0,r.criticalCount):[];
+        const warn=r.issueList.slice(r.criticalCount);
+        const c=[...new Set([...crit,...x.critical])],w=[...new Set([...warn,...x.warning])],all=[...c,...w];
+        const sev=c.length?'Critical':(w.length?'Needs Review':'Healthy');
+        return {...r,healthStatus:sev,severity:sev,issues:all.join(' | '),issueList:all,criticalCount:c.length,warningCount:w.length,isNew:!!seen&&Number(r.row)>seen};
+      });
+    };
+    dataHealthEvaluate_.__dc=true;
+  }
+  if(typeof dataHealthRows_==='function'&&!dataHealthRows_.__dc){
+    const original=dataHealthRows_;
+    dataHealthRows_=function(){const rows=original.apply(this,arguments);return DC_ONLY_NEW_?rows.filter(r=>r.isNew):rows;};
+    dataHealthRows_.__dc=true;
+  }
+  if(typeof dataHealthIssueRows_==='function'&&!dataHealthIssueRows_.__dc){
+    dataHealthIssueRows_=function(){
+      const rank={Critical:0,'Needs Review':1,Healthy:2};
+      return dataHealthRows_().filter(r=>r.healthStatus!=='Healthy')
+        .sort((a,b)=>(Number(b.isNew)-Number(a.isNew))||(rank[a.healthStatus]-rank[b.healthStatus])||Number(b.row)-Number(a.row));
+    };
+    dataHealthIssueRows_.__dc=true;
+  }
+  renderDataHealthTable=function(){
+    const rows=dataHealthIssueRows_();
+    const cols=['Row','Problem','What is wrong','Project','Client','Unit','Status','Price','Sales','Date'];
+    tableTitle.innerText='Deals sheet — rows to fix';
+    rowCount.innerText=`${rows.length.toLocaleString()} rows with problems`;
+    const esc=typeof escapeHtml==='function'?escapeHtml:(v=>String(v??''));
+    mainTable.classList.add('dcTable');
+    mainTable.innerHTML=`<thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${rows.slice(0,2000).map(r=>{
+      const crit=r.criticalCount||0;
+      const issues=r.issueList.map((t,i)=>`<span class="dcIssue${i<crit?' c':''}">${esc(t)}</span>`).join('');
+      const price=Number(r.amount)?`${Number(r.amount).toLocaleString('en-US')} ${esc(r.currency||'')}`:'—';
+      return `<tr>
+        <td><a class="dcRow" href="${DC_SHEET_URL_}&range=A${Number(r.row)}" target="_blank" rel="noopener" title="Open this row in the Deals sheet">Row ${Number(r.row)} ↗</a>${r.isNew?'<span class="dcNew">NEW</span>':''}</td>
+        <td><span class="dcSev ${crit?'c':'w'}">${crit?'Must fix':'Check'}</span></td>
+        <td class="dcIssuesTd"><div class="dcIssues">${issues}</div></td>
+        <td>${esc(r.project)}</td><td>${esc(r.clientName)}</td><td>${esc(r.unitCode)}</td><td>${esc(r.status)}</td>
+        <td style="white-space:nowrap">${price}</td><td>${esc(r.salesName)}</td><td style="white-space:nowrap">${esc(r.date)}</td>
+      </tr>`;
+    }).join('')}</tbody>`;
+  };
+  renderDataHealthCards=function(){
+    const host=document.getElementById('cards');
+    if(host){
+      const rows=dataHealthRows_(),bad=rows.filter(r=>r.healthStatus!=='Healthy');
+      const must=rows.filter(r=>r.healthStatus==='Critical').length,check=rows.filter(r=>r.healthStatus==='Needs Review').length;
+      const has=re=>rows.filter(r=>r.issueList.some(i=>re.test(i))).length;
+      const score=rows.length?Math.round((rows.length-bad.length)/rows.length*100):100;
+      const k=(label,value,sub,icon)=>`<article class="card edenKpiCard"><div class="edenKpiIcon">${icon}</div><div class="edenKpiBody"><div class="label">${label}</div><div class="value">${value}</div><div class="small">${sub}</div></div></article>`;
+      host.innerHTML=[
+        k('Rows checked',rows.length.toLocaleString(),`${score}% have no problems`,'✓'),
+        k('Must fix',must.toLocaleString(),'Wrong or missing data that changes the reports','!'),
+        k('To check',check.toLocaleString(),'Incomplete or unusual entries','?'),
+        k('Possible typos',has(/^Possible typo/),'Names spelled differently from the rest','Aa'),
+        k('Price problems',has(/Price|Paid is more/),'Missing, off by a zero, or paid > price','$'),
+        k('Duplicate units',has(/Duplicate Active Unit/),'Same unit sold in two active rows','⧉')
+      ].join('');
+    }
+    try{dcRenderBar_();}catch(e){console.error(e);}
+  };
+  if(typeof render==='function'&&!render.__dc){
+    const original=render;
+    render=function(){
+      const r=original.apply(this,arguments);
+      try{if(typeof currentView!=='undefined'&&currentView!=='dataHealth'){document.getElementById('dsDcBar')?.remove();document.getElementById('mainTable')?.classList.remove('dcTable');}dcUpdateMenu_();}catch(e){console.error(e);}
+      return r;
+    };
+    render.__dc=true;
+  }
+})();
+
+/* ---------- menu item + badge + alert ---------- */
+let DC_LAST_ALERT_=-1;
+function dcNewProblemRows_(){
+  const seen=dcSeenRow_(),all=typeof rawRows!=='undefined'?rawRows:[];
+  if(!seen||!all.length)return {added:0,bad:[]};
+  const fresh=all.filter(r=>Number(r.row)>seen);
+  if(!fresh.length)return {added:0,bad:[]};
+  const keep=DC_ONLY_NEW_;DC_ONLY_NEW_=false;
+  let bad=[];
+  try{
+    const freshRows=new Set(fresh.map(r=>Number(r.row)));
+    bad=dataHealthEvaluate_(all).filter(r=>freshRows.has(Number(r.row))&&r.healthStatus!=='Healthy');
+  }finally{DC_ONLY_NEW_=keep;}
+  return {added:fresh.length,bad};
+}
+function dcUpdateMenu_(){
+  const menu=document.querySelector('#transactionsModule .moduleMenu');if(!menu)return;
+  let btn=document.getElementById('dsDcMenuBtn');
+  if(!dcCanSee_()){if(btn)btn.style.display='none';return;}
+  if(!btn){
+    btn=document.createElement('button');btn.id='dsDcMenuBtn';btn.type='button';
+    btn.innerHTML='Data Check<span class="dsDcBadge"></span>';
+    btn.onclick=function(){setView('dataHealth',this);};
+    const after=[...menu.querySelectorAll('button')].find(b=>/'deals'/.test(b.getAttribute('onclick')||''));
+    if(after)after.insertAdjacentElement('afterend',btn);else menu.appendChild(btn);
+  }
+  btn.style.display='';
+  const all=typeof rawRows!=='undefined'?rawRows:[];
+  if(!all.length)return;
+  if(!dcSeenRow_())dcSetSeenRow_(dcMaxRow_());   // first visit: everything so far counts as reviewed
+  const st=dcNewProblemRows_();
+  const badge=btn.querySelector('.dsDcBadge');
+  if(badge)badge.textContent=st.bad.length?String(st.bad.length):'';
+  btn.title=st.bad.length?`${st.bad.length} new row(s) in the Deals sheet need fixing`:'Check the Deals sheet for wrong entries';
+  if(st.bad.length&&st.bad.length!==DC_LAST_ALERT_&&currentView!=='dataHealth')dcToast_(st.bad.length,st.added);
+  DC_LAST_ALERT_=st.bad.length;
+}
+function dcToast_(bad,added){
+  let t=document.getElementById('dsDcToast');
+  if(!t){t=document.createElement('div');t.id='dsDcToast';document.body.appendChild(t);}
+  t.innerHTML=`⚠ <b>${bad} new deal${bad===1?'':'s'}</b> in the Deals sheet ${bad===1?'has':'have'} a problem.<small>${added} new row${added===1?'':'s'} added since your last check · tap to review</small>`;
+  t.onclick=()=>{t.classList.remove('show');const b=document.getElementById('dsDcMenuBtn');setView('dataHealth',b);};
+  requestAnimationFrame(()=>t.classList.add('show'));
+  clearTimeout(t.__h);t.__h=setTimeout(()=>t.classList.remove('show'),9000);
+}
+
+/* ---------- bar on top of the Data Check page ---------- */
+function dcRenderBar_(){
+  const cardsEl=document.getElementById('cards');if(!cardsEl)return;
+  let bar=document.getElementById('dsDcBar');
+  if(!bar){bar=document.createElement('div');bar.id='dsDcBar';cardsEl.parentNode.insertBefore(bar,cardsEl);}
+  const seen=dcSeenRow_(),st=dcNewProblemRows_();
+  bar.classList.toggle('hasNew',!!st.bad.length);
+  const msg=st.added
+    ? `<b>${st.added} new row${st.added===1?'':'s'}</b> added to the Deals sheet since your last check${st.bad.length?` — <b style="color:#c2410c">${st.bad.length} with problems</b>`:' — all look fine ✓'}.<small>Last checked up to row ${seen}. Click a row number to open it in the sheet.</small>`
+    : `No new rows since your last check (row ${seen||'—'}).<small>Every row below can be opened in the Deals sheet by clicking its row number.</small>`;
+  bar.innerHTML=`<div class="dcMsg">${msg}</div><div class="dcBtns">
+    ${st.added?`<button type="button" class="${DC_ONLY_NEW_?'on':''}" onclick="DC_ONLY_NEW_=!DC_ONLY_NEW_;render()">${DC_ONLY_NEW_?'Showing new rows only':'Show new rows only'}</button>`:''}
+    ${st.added?`<button type="button" class="primary" onclick="dcMarkReviewed_()">Mark all as checked</button>`:''}
+  </div>`;
+}
+function dcMarkReviewed_(){
+  dcSetSeenRow_(dcMaxRow_());DC_ONLY_NEW_=false;DC_LAST_ALERT_=0;render();
+}
+</script>

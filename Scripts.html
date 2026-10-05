@@ -3129,7 +3129,7 @@ function updateTitle(){
     return;
   }
   const projects=getMulti('project');const p=projects.length===1?projects[0]:'';
-  const titles={dashboard:'Transactions Dashboard',projects:p?`${p} PROJECT DASHBOARD`:'PROJECTS DASHBOARD',sales:'SALES PERFORMANCE',branches:'BRANCHES PERFORMANCE',clients:'CLIENTS ANALYSIS',deals:'DEALS DETAILS',commissions:'COMMISSIONS',dataHealth:'TRANSACTIONS DATA HEALTH'};
+  const titles={dashboard:'Transactions Dashboard',projects:p?`${p} PROJECT DASHBOARD`:'PROJECTS DASHBOARD',sales:'SALES PERFORMANCE',branches:'BRANCHES PERFORMANCE',clients:'CLIENTS ANALYSIS',deals:'DEALS DETAILS',commissions:'COMMISSIONS',dataHealth:'DATA CHECK'};
   pageTitle.innerText=titles[currentView]||'Transactions Dashboard';
   pageDesc.innerText=currentView==='commissions'
     ?'Internal commissions issued from 2026 onward'
