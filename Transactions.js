@@ -145,15 +145,38 @@ function dashCacheWrite_(scope, data) {
  * ready when someone opens the dashboard: nobody waits for the sheets.
  */
 function warmDashboardCache() {
-  // Inventories too, so Add New Deal / unit checks never wait for the sheets.
-  try { Object.keys(INVENTORY_SOURCES).forEach(k => { try { inventoryDataCached_(k, true, false); } catch (e) { console.warn('Inventory warm ' + k + ': ' + e); } }); } catch (e) {}
-  try { warmDealEntryOptions_(); } catch (e) { console.warn('Deal options warm: ' + e); }
-  dashCacheWrite_('ALL', buildDashboardData_({ role: 'Admin' }));
+  // Never run two warm-ups at the same time (a slow run used to overlap the next one).
+  // A cache flag, not a script lock, so saving a deal never waits for the warm-up.
+  const cache = CacheService.getScriptCache();
+  if (cache.get('WARM_RUNNING')) return;
+  cache.put('WARM_RUNNING', '1', 240);
+  const t0 = Date.now(), elapsed = () => Date.now() - t0;
   try {
-    dashCacheWrite_('EGV', buildDashboardData_({ role: 'Egypt Viewer' }));
-  } catch (err) {
-    console.warn('Egypt viewer warm-up: ' + err);
+    // 1) What every visitor needs first.
+    dashCacheWrite_('ALL', buildDashboardData_({ role: 'Admin' }));
+    if (dashCacheAge_('EGV') > 12 * 60 * 1000) {
+      try { dashCacheWrite_('EGV', buildDashboardData_({ role: 'Egypt Viewer' })); } catch (err) { console.warn('Egypt viewer warm-up: ' + err); }
+    }
+    // 2) Inventories (Add New Deal + Inventory pages), only when getting old, while time allows.
+    const order = ['EDEN_WALK', 'CITY_CENTER_GLDANI'].concat(Object.keys(INVENTORY_SOURCES).filter(k => k !== 'EDEN_WALK' && k !== 'CITY_CENTER_GLDANI'));
+    order.forEach(k => {
+      if (elapsed() > 150000 || dashCacheAge_('INV_' + k) < 9 * 60 * 1000) return;
+      try { inventoryDataCached_(k, true, false); } catch (e) { console.warn('Inventory warm ' + k + ': ' + e); }
+    });
+    // 3) Add New Deal dropdowns (hourly).
+    if (elapsed() < 150000) { try { warmDealEntryOptions_(); } catch (e) { console.warn('Deal options warm: ' + e); } }
+  } finally {
+    cache.remove('WARM_RUNNING');
+    console.log('Warm-up took ' + elapsed() + ' ms');
   }
+}
+
+/* Age in ms of a cached block (Infinity when missing). */
+function dashCacheAge_(scope) {
+  try {
+    const meta = CacheService.getScriptCache().get('DASH_V1_' + scope);
+    return meta ? Date.now() - (JSON.parse(meta).at || 0) : Infinity;
+  } catch (e) { return Infinity; }
 }
 
 /**

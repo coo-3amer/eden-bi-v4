@@ -31,6 +31,7 @@ let APP_EVENTS_BOUND=false;
 let LOGIN_PENDING_USER=null;
 
 let EDEN_BOOT_COMPLETE=false;
+let EDEN_DATA_RETRY_=0;
 // Fast start (see loadDashboard). Declared here: login runs before the rest of this file.
 const EDEN_DATA_DB='eden-bi',EDEN_DATA_STORE='dashboard';
 let EDEN_LAST_OPTIONS=null;
@@ -1121,7 +1122,7 @@ function loadDashboard(isSessionRestore=false,opts={}){
           showAppAfterLogin(LOGIN_PENDING_USER||AUTH_USER);
         }
         LOGIN_PENDING_USER=null;
-        edenSetDataState_('live');
+        edenSetDataState_('live');EDEN_DATA_RETRY_=0;
         edenDataPut_(key,data);
       }catch(error){
         console.error('Dashboard initialization failed:',error);
@@ -1152,7 +1153,13 @@ function loadDashboard(isSessionRestore=false,opts={}){
         if(err)err.textContent='Your session has expired. Please sign in again.';
         return;
       }
-      if(fromCache){edenSetDataState_('live','Offline copy');return;}
+      if(fromCache||EDEN_BOOT_COMPLETE){
+        edenSetDataState_('live','Offline copy');
+        // Try again on our own a few times so the copy is replaced as soon as the server answers.
+        EDEN_DATA_RETRY_=(EDEN_DATA_RETRY_||0)+1;
+        if(EDEN_DATA_RETRY_<=3)setTimeout(()=>{if(!EDEN_LOADING&&AUTH_TOKEN)loadDashboard(false,{});},15000*EDEN_DATA_RETRY_);
+        return;
+      }
       alert(message);
     })
     .getDashboardData(AUTH_TOKEN,{fresh:!!opts.fresh});

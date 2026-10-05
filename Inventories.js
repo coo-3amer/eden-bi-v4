@@ -259,7 +259,7 @@ function getInventoryData(authToken, project, forceRefresh) {
   return inventoryDataCached_(project, forceRefresh, !!forceRefresh);
 }
 
-const INVENTORY_CACHE_MAX_AGE_MS_ = 6 * 60 * 1000;   // refreshed every 5 min by warmDashboardCache
+const INVENTORY_CACHE_MAX_AGE_MS_ = 20 * 60 * 1000;  // warm-up refreshes it once it is 9+ minutes old
 
 /* Inventory of one project. Kept compressed in the cache (any size), so
    unit lists and unit checks answer in about a second. */
