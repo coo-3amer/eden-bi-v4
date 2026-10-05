@@ -714,3 +714,20 @@ function saveDealToMainSheet_(user, payload, unit) {
   try { updateDealsGuard_(sheet, row); } catch (e) {}
   return { row: row, dealNum: dealNum, written: written, skipped: skipped };
 }
+
+/* Run from the Apps Script editor to test the unit check without the website.
+   Change the project / unit below, press Run, then open the Execution log. */
+function debugDealUnitCheck() {
+  const project = 'EDEN WALK', unitCode = 'EW-G-A4';
+  const t0 = Date.now();
+  const token = Utilities.getUuid();
+  CacheService.getScriptCache().put('LOGIN_' + token, JSON.stringify({ username: 'debug', name: 'Debug', role: 'Admin' }), 120);
+  try {
+    const res = checkDealUnitAvailability(token, project, unitCode);
+    Logger.log('Result after ' + (Date.now() - t0) + ' ms:\n' + JSON.stringify(res, null, 2));
+  } catch (err) {
+    Logger.log('ERROR after ' + (Date.now() - t0) + ' ms: ' + (err && err.stack || err));
+  } finally {
+    CacheService.getScriptCache().remove('LOGIN_' + token);
+  }
+}

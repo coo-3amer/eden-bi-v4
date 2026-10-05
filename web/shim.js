@@ -37,25 +37,31 @@
   }
 
   async function get(params) {
-    var url = new URL(API);
-    Object.keys(params).forEach(function (k) { url.searchParams.set(k, params[k]); });
-    url.searchParams.set('_', Date.now().toString(36) + Math.random().toString(36).slice(2, 6));
-    var res, lastErr;
+    var lastMsg = OFFLINE;
     for (var attempt = 0; attempt < 3; attempt++) {
+      var url = new URL(API);
+      Object.keys(params).forEach(function (k) { url.searchParams.set(k, params[k]); });
+      url.searchParams.set('_', Date.now().toString(36) + Math.random().toString(36).slice(2, 6));
+      var res = null;
       try {
         res = await fetch(url.toString(), { credentials: 'omit', cache: 'no-store', redirect: 'follow' });
-        if (res.status >= 500 && attempt < 2) { await sleep(700 * (attempt + 1)); continue; }
-        break;
       } catch (e) {
-        lastErr = e;
-        if (attempt < 2) await sleep(700 * (attempt + 1));
+        lastMsg = OFFLINE;
+        if (attempt < 2) { await sleep(700 * (attempt + 1)); continue; }
+        throw new Error(OFFLINE);
       }
+      var text = await res.text(), json = null;
+      try { json = JSON.parse(text); } catch (e) { json = null; }
+      if (!json) {
+        // Google sometimes answers once with an HTML error page; try again.
+        lastMsg = googleError(text, res.status);
+        if (attempt < 2) { await sleep(900 * (attempt + 1)); continue; }
+        throw new Error(lastMsg);
+      }
+      if (json.ok === false) throw new Error(json.error || 'Server error.');
+      return json;
     }
-    if (!res) throw new Error(OFFLINE);
-    var text = await res.text(), json;
-    try { json = JSON.parse(text); } catch (e) { throw new Error(googleError(text, res.status)); }
-    if (!json || json.ok === false) throw new Error((json && json.error) || 'Server error.');
-    return json;
+    throw new Error(lastMsg);
   }
 
   async function pool(items, size, fn) {
