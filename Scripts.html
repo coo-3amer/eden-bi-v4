@@ -6989,6 +6989,11 @@ function loadDealEntry(){
       dealSetOptions('dealStatus',o.statuses,'Select Status');
       dealSetOptions('dealBranch',o.branches,'Select Branch');
       dealSetOptions('dealSalesName',o.sales,'Select Sales');
+      dealSetOptions('dealSharedWith',o.sharedWith||o.sales,'Select Shared With');
+      dealSetOptions('dealResCurrency',o.resCurrencies,'Select Currency');
+      dealSetOptions('dealResPaymentMethod',o.resPaymentMethods,'Select Payment Method');
+      dealSetOptions('dealDPPaymentMethod',o.dpPaymentMethods,'Select Payment Method');
+      dealSetOptions('dealDPCurrency',o.dpCurrencies,'Select Currency');
       dealSetOptions('dealSalesManager',o.salesManagers,'Select Sales Manager');
       dealSetOptions('dealHeadOfSales',o.headOfSales,'Select Head Of Sales');
       dealSetOptions('dealCCO',o.cco,'Select CCO');
@@ -7033,6 +7038,7 @@ function loadDealUnits(){
 function selectDealUnit(){
   const code=dealValue('dealUnitCode');
   dealSelectedUnit=dealUnits.find(r=>String(r.unitCode)===code)||null;
+  if(dealSelectedUnit&&dealSelectedUnit.currency){['dealResCurrency','dealDPCurrency'].forEach(id=>{const el=dealEl(id);if(el&&!el.value&&[...el.options].some(o=>o.value===dealSelectedUnit.currency))el.value=dealSelectedUnit.currency;});}
   dealUnitValidated=false;
   if(!dealSelectedUnit){dealEl('dealUnitCard').classList.add('hidden');return}
   renderDealUnitCard(dealSelectedUnit,'Checking unit...','checking');
@@ -7102,7 +7108,7 @@ function calculateDealRemain(){
 function collectDealPayload(){
   return {
     project:dealValue('dealProject'),unitCode:dealValue('dealUnitCode'),status:dealValue('dealStatus'),
-    reservationAmount:dealValue('dealReservationAmount'),additionalStatus:dealValue('dealAdditionalStatus'),
+    reservationAmount:dealValue('dealReservationAmount'),resCurrency:dealValue('dealResCurrency'),resPaymentMethod:dealValue('dealResPaymentMethod'),dpPaymentMethod:dealValue('dealDPPaymentMethod'),dpCurrency:dealValue('dealDPCurrency'),additionalStatus:dealValue('dealAdditionalStatus'),
     transactionDate:dealValue('dealTransactionDate'),transactionType:'Installment',
     clientName:dealValue('dealClientName'),mobile:dealValue('dealMobile'),email:dealValue('dealEmail'),
     nationality:dealValue('dealNationality'),idType:dealValue('dealIdType'),idNumber:dealValue('dealIdNumber'),
@@ -7145,9 +7151,10 @@ function submitNewDeal(){
   dealEl('dealSaveBtn').disabled=true;
   google.script.run.withSuccessHandler(res=>{
     const miss=(res&&res.skipped&&res.skipped.length)?`\n\nThese fields have no column in the Deals sheet and were not saved: ${res.skipped.join(', ')}`:'';
+    const rej=(res&&res.rejected&&res.rejected.length)?`\n\nNot saved — please fix in the sheet:\n• ${res.rejected.join('\n• ')}`:'';
     showDealAlert(res.message,'success');
     dealEl('dealSaveBtn').disabled=false;
-    alert(res.message+miss);
+    alert(res.message+rej+miss);
     resetDealWizard();
     dealOptionsLoaded=false;
     loadDashboard();

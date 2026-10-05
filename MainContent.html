@@ -524,6 +524,8 @@
             <select id="dealStatus"><option value="">Select Status</option></select>
           </label>
           <label>Reservation Amount<input id="dealReservationAmount" type="number" min="0" step="0.01"></label>
+          <label>Reservation Currency<select id="dealResCurrency"><option value="">Select Currency</option></select></label>
+          <label>Reservation Payment Method<select id="dealResPaymentMethod"><option value="">Select Payment Method</option></select></label>
           <label>Additional Status<input id="dealAdditionalStatus" placeholder="Optional"></label>
           <label>Transaction Date *<input id="dealTransactionDate" type="date"></label>
         </div>
@@ -553,7 +555,7 @@
         <div class="dealFormGrid">
           <label>Branch *<select id="dealBranch"></select></label>
           <label>Sales Name *<select id="dealSalesName"></select></label>
-          <label>Shared With<input id="dealSharedWith"></label>
+          <label>Shared With<select id="dealSharedWith"><option value="">Select Shared With</option></select></label>
           <label>Sales Manager<select id="dealSalesManager"><option value="">Select Sales Manager</option></select></label>
           <label>Head Of Sales<select id="dealHeadOfSales"><option value="">Select Head Of Sales</option></select></label>
           <label>CCO<select id="dealCCO"><option value="">Select CCO</option></select></label>
@@ -575,7 +577,9 @@
           <label>DP Paid<input id="dealDPPaid" type="number" min="0" step="0.01" oninput="calculateDealRemain()"></label>
           <label>Actual Paid<input id="dealActualPaid" type="number" min="0" step="0.01" oninput="calculateDealRemain()"></label>
           <label>Remain<input id="dealRemain" type="number" min="0" step="0.01"></label>
-          <label>Payment Date<input id="dealPaymentDate" type="date"></label>
+          <label>DP Payment Method<select id="dealDPPaymentMethod"><option value="">Select Payment Method</option></select></label>
+          <label>DP Currency<select id="dealDPCurrency"><option value="">Select Currency</option></select></label>
+          <label>DP Payment Date<input id="dealPaymentDate" type="date"></label>
           <label>Type Of Payment Plan<select id="dealPaymentPlanType"><option value="">Select Payment Plan</option></select></label>
           <label>Installments Period<select id="dealInstallments"><option value="">Select Installments Period</option></select></label>
           <label>Period<select id="dealPeriod"><option value="">Select Period</option></select></label>

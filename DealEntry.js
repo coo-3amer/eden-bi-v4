@@ -59,7 +59,7 @@ function getDealEntryOptions(authToken) {
 
   const col = index => uniqueSortedDealValues_(values.map(r => r[index]));
 
-  return {
+  const base = {
     projects: col(0),              // A Projects
     branches: col(1),              // B Branches
     sales: col(2),                 // C Sales
@@ -84,6 +84,28 @@ function getDealEntryOptions(authToken) {
     dealStatuses: ['Solo', 'Share'],
     periodTypes: ['Month', 'Quarter', 'Semi Annual', 'Annual']
   };
+  // The Deals sheet's own dropdowns win, so every saved value matches the sheet.
+  try {
+    const L = mainDealsLists_();
+    const use = (key, field) => { if (L[field] && L[field].length) base[key] = L[field]; };
+    use('statuses', 'status'); use('branches', 'branch'); use('sales', 'salesName');
+    use('sharedWith', 'sharedWith'); use('salesManagers', 'salesManager'); use('headOfSales', 'headOfSales');
+    use('cco', 'cco'); use('dealStatuses', 'dealStatus'); use('mainSources', 'mainSource');
+    use('sourceTypes', 'sourceType'); use('campaigns', 'campaignName'); use('mediaBuyers', 'mediaBuyer');
+    use('brokerCompanies', 'brokerageCompany'); use('offers', 'discountOffer'); use('genders', 'gender');
+    use('idTypes', 'idType'); use('clientStatuses', 'clientStatue'); use('paymentPlanTypes', 'paymentPlanType');
+    use('installmentPeriods', 'installments'); use('currencies', 'currency');
+    use('resPaymentMethods', 'resPaymentMethod'); use('resCurrencies', 'resCurrency');
+    use('dpPaymentMethods', 'dpPaymentMethod'); use('dpCurrencies', 'dpCurrency');
+    if (L.nationality && L.nationality.length) base.nationalities = L.nationality;
+  } catch (err) { console.warn('Deals sheet lists: ' + err); }
+  const fallbackPay = ['Bank Transfer', 'Instant Transfer', 'Cheque', 'Cash'];
+  base.resPaymentMethods = base.resPaymentMethods || fallbackPay;
+  base.dpPaymentMethods = base.dpPaymentMethods || fallbackPay;
+  base.resCurrencies = base.resCurrencies || ['EGP', 'USD', 'SAR'];
+  base.dpCurrencies = base.dpCurrencies || ['EGP', 'USD', 'SAR'];
+  base.sharedWith = base.sharedWith || base.sales;
+  return base;
 }
 
 function getDealInventoryUnits(authToken, project) {
@@ -368,6 +390,7 @@ function saveNewDeal(authToken, payload) {
       code: String(saved.dealNum || ''),
       written: saved.written,
       skipped: saved.skipped,
+      rejected: saved.rejected,
       message: `${ref} was saved in the Deals sheet, row ${saved.row}.`,
       createdBy: user.name || user.username
     };
@@ -410,6 +433,16 @@ function mainDealsColumns_(sheet) {
     const k = normalizeHeader_(h);
     if (k && map[k] === undefined) map[k] = i + 1;
   });
+  // "group|header" for every column, e.g. "price details|currency".
+  if (HEADER_ROW > 1) {
+    const groups = sheet.getRange(HEADER_ROW - 1, 1, 1, lastCol).getDisplayValues()[0];
+    let cur = '';
+    headers.forEach((h, i) => {
+      if (String(groups[i] || '').trim()) cur = normalizeHeader_(groups[i]);
+      const k = normalizeHeader_(h);
+      if (cur && k && map[cur + '|' + k] === undefined) map[cur + '|' + k] = i + 1;
+    });
+  }
   const group = (name, subs) => {
     const g = groupedHeaderIndexes_(sheet, Math.max(1, HEADER_ROW - 1), HEADER_ROW, name, subs);
     Object.keys(g).forEach(s => { map[normalizeHeader_(name) + '|' + normalizeHeader_(s)] = g[s] + 1; });
@@ -427,8 +460,15 @@ function mainDealsCol_(cols, names) {
       if (c && c <= cols.lastCol) return c;
       continue;
     }
-    const c = cols.map[normalizeHeader_(n)];
+    const key = normalizeHeader_(n);
+    const c = cols.map[key];
     if (c) return c;
+    if (key.indexOf('|') > 0) {
+      const g = key.split('|')[0], h = key.split('|')[1];
+      const hit = Object.keys(cols.map).filter(k => { const p = k.split('|'); return p.length === 2 && p[1] === h && p[0].indexOf(g) === 0; })
+        .map(k => cols.map[k]).sort((a, b) => a - b)[0];
+      if (hit) return hit;
+    }
   }
   return 0;
 }
@@ -520,10 +560,58 @@ function checkDealsSheetMapping() {
   const head = sheet.getRange(HEADER_ROW, 1, 1, cols.lastCol).getDisplayValues()[0];
   const lines = MAIN_DEAL_FIELDS_.map(f => {
     const c = mainDealsCol_(cols, f.h);
-    const name = f.h.filter(x => x.indexOf('|') < 0 && x.charAt(0) !== '@')[0] || f.h[0];
+    const name = mainDealLabel_(f);
     return (c ? 'OK   ' + columnLetter_(c) + '  ' : 'MISS     ') + name + (c ? '   ← sheet header: "' + String(head[c - 1]).replace(/\s+/g, ' ').trim() + '"' : '');
   });
   Logger.log('Last deal row: ' + mainDealsLastRow_(sheet, cols) + '\n' + lines.join('\n'));
+}
+
+function mainDealLabel_(f) {
+  const plain = f.h.filter(x => x.indexOf('|') < 0 && x.charAt(0) !== '@')[0];
+  if (plain) return plain;
+  const g = f.h[0].split('|');
+  return g.length === 2 ? g[1].replace(/\b\w/g, m => m.toUpperCase()) + ' (' + g[0].replace(/\b\w/g, m => m.toUpperCase()) + ')' : f.h[0];
+}
+
+/* Items of a dropdown rule (list or range), or null. */
+function dealRuleList_(rule) {
+  if (!rule) return null;
+  try {
+    const t = rule.getCriteriaType(), a = rule.getCriteriaValues();
+    if (t === SpreadsheetApp.DataValidationCriteria.VALUE_IN_LIST) return (a[0] || []).map(String);
+    if (t === SpreadsheetApp.DataValidationCriteria.VALUE_IN_RANGE) {
+      return [].concat.apply([], a[0].getDisplayValues()).map(String).filter(x => x.trim());
+    }
+  } catch (e) {}
+  return null;
+}
+
+/* Matches a value to the cell's dropdown (same spelling as the sheet). */
+function dealFitList_(rule, value) {
+  const list = dealRuleList_(rule);
+  if (!list || value instanceof Date || typeof value === 'number') return { value: value };
+  const s = String(value).trim().toLowerCase();
+  const hit = list.filter(x => String(x).trim().toLowerCase() === s)[0];
+  if (hit !== undefined) return { value: hit };
+  let allowInvalid = true;
+  try { allowInvalid = rule.getAllowInvalid(); } catch (e) {}
+  return allowInvalid ? { value: value } : { value: value, blocked: true };
+}
+
+/* Dropdown lists of the Deals sheet (from the last deal row), by form field. */
+function mainDealsLists_() {
+  const sheet = getMainDealsSheet_();
+  const cols = mainDealsColumns_(sheet);
+  const last = mainDealsLastRow_(sheet, cols);
+  if (last < DATA_START_ROW) return {};
+  const rules = sheet.getRange(last, 1, 1, cols.lastCol).getDataValidations()[0];
+  const out = {};
+  MAIN_DEAL_FIELDS_.forEach(f => {
+    const c = mainDealsCol_(cols, f.h);
+    const list = c ? dealRuleList_(rules[c - 1]) : null;
+    if (list && list.length) out[f.k] = [...new Set(list.map(x => String(x).trim()).filter(Boolean))];
+  });
+  return out;
 }
 
 function columnLetter_(n) {
@@ -541,6 +629,8 @@ const MAIN_DEAL_FIELDS_ = [
   { k: 'status',           h: ['Status'] },
   { k: 'additionalStatus', h: ['Additional Status'] },
   { k: 'reservationAmount',h: ['Reservation Amount', 'Res Amount', '@J'] },
+  { k: 'resCurrency',      h: ['reservation|currency', '@K'] },
+  { k: 'resPaymentMethod', h: ['reservation|payment method', '@L'] },
   { k: 'date',             h: ['Date'] },
   { k: 'month',            h: ['Month'] },
   { k: 'year',             h: ['Year'] },
@@ -566,7 +656,7 @@ const MAIN_DEAL_FIELDS_ = [
   { k: 'primaryTotal',     h: ['Primary Total Price'] },
   { k: 'meterAfter',       h: ['Meter Price After Discount'] },
   { k: 'finalPrice',       h: ['Final Price'] },
-  { k: 'currency',         h: ['Currency'] },
+  { k: 'currency',         h: ['price details|currency', '@BI'] },
   { k: 'maintenancePercent', h: ['Maintenance %', 'Maintenance Percent'] },
   { k: 'maintenanceAmount',h: ['Maintenance Amount'] },
   { k: 'discountOffer',    h: ['Discount Offer', 'Offer'] },
@@ -588,7 +678,9 @@ const MAIN_DEAL_FIELDS_ = [
   { k: 'dpPaid',           h: ['DP Paid'] },
   { k: 'actualPaid',       h: ['Actual Paid', 'Acctual Paid'] },
   { k: 'remain',           h: ['Remain'] },
-  { k: 'paymentDate',      h: ['Payment Date', '@CK'] },
+  { k: 'dpPaymentMethod',  h: ['down payment|payment method', '@CG'] },
+  { k: 'dpCurrency',       h: ['down payment|currency', '@CH'] },
+  { k: 'paymentDate',      h: ['down payment|date', 'Payment Date', '@CK'] },
   { k: 'paymentPlanType',  h: ['Type Of Payment', 'Payment Plan', '@CN'] },
   { k: 'installments',     h: ['Installments Period', 'Installments'] },
   { k: 'installmentPlan',  h: ['Installment Plan'] },
@@ -663,6 +755,10 @@ function saveDealToMainSheet_(user, payload, unit) {
     meterAfter: meter || '',
     finalPrice: price || '',
     currency: dealText_(unit.currency || payload.currency),
+    resCurrency: dealText_(payload.resCurrency || (dealNumber_(payload.reservationAmount) ? (unit.currency || payload.currency) : '')),
+    resPaymentMethod: dealText_(payload.resPaymentMethod),
+    dpPaymentMethod: dealText_(payload.dpPaymentMethod),
+    dpCurrency: dealText_(payload.dpCurrency || (dealNumber_(payload.actualPaid || payload.dpPaid || payload.actualDP) ? (unit.currency || payload.currency) : '')),
     maintenancePercent: pct(payload.maintenancePercent),
     maintenanceAmount: dealNumber_(payload.maintenanceAmount) || '',
     discountOffer: dealText_(payload.discountOffer),
@@ -692,18 +788,26 @@ function saveDealToMainSheet_(user, payload, unit) {
     notes: dealText_(payload.notes)
   };
 
-  const formulas = sheet.getRange(row, 1, 1, cols.lastCol).getFormulas()[0];
-  const used = {}, written = [], skipped = [];
+  const rowRange = sheet.getRange(row, 1, 1, cols.lastCol);
+  const formulas = rowRange.getFormulas()[0];
+  const rules = rowRange.getDataValidations()[0];
+  const used = {}, written = [], skipped = [], rejected = [];
   MAIN_DEAL_FIELDS_.forEach(f => {
-    const value = v[f.k];
+    let value = v[f.k];
     if (value === '' || value == null) return;
+    const label = mainDealLabel_(f);
     const c = mainDealsCol_(cols, f.h);
-    const label = f.h.filter(x => x.indexOf('|') < 0 && x.charAt(0) !== '@')[0] || f.h[0];
     if (!c) { skipped.push(label); return; }
     if (used[c] || formulas[c - 1]) return;   // one value per column; formulas stay
     used[c] = true;
-    sheet.getRange(row, c).setValue(value);
-    written.push(label);
+    const fit = dealFitList_(rules[c - 1], value);
+    if (fit.blocked) { rejected.push(label + ': "' + value + '" is not in the sheet list'); return; }
+    try {
+      sheet.getRange(row, c).setValue(fit.value);
+      written.push(label);
+    } catch (err) {
+      rejected.push(label + ': ' + (err && err.message ? err.message : err));
+    }
   });
 
   const pc = mainDealsCol_(cols, ['Project']);
@@ -712,7 +816,7 @@ function saveDealToMainSheet_(user, payload, unit) {
 
   SpreadsheetApp.flush();
   try { updateDealsGuard_(sheet, row); } catch (e) {}
-  return { row: row, dealNum: dealNum, written: written, skipped: skipped };
+  return { row: row, dealNum: dealNum, written: written, skipped: skipped, rejected: rejected };
 }
 
 /* Run from the Apps Script editor to test the unit check without the website.
