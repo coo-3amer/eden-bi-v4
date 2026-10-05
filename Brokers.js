@@ -70,18 +70,15 @@ function getBrokerDashboardData_() {
     const thirdSales = getAny_(r, idx, fieldAliases.thirdSales);
     const lastSalesCol = getAny_(r, idx, fieldAliases.lastSales);
 
-    // Hand-over history in sheet order: First -> Second -> Thired Sales.
-    // The company's CURRENT salesperson is the latest one filled in, "Previous"
-    // the one before. Other columns named Eden Sales / Last Sales are NOT used:
-    // they are not kept up to date in the Brokers sheet.
+    // First Sales = the main salesperson, who brought the company in.
+    // Second / Thired Sales = salespeople the company is SHARED with.
+    // Columns named Eden Sales / Last Sales are not used (not kept up to date).
     const clean = v => { const t = String(v || '').trim(); return t && t !== 'Not Assigned' ? t : ''; };
-    const chain = [firstSales, secondSales, thirdSales].map(clean).filter(Boolean);
-    const current = chain[chain.length - 1] || '';
-    const previous = '';   // "Last Sales" is not used anywhere
-
-    const salesPeople = [...new Set([current].concat(chain).filter(Boolean))];
-    const primaryEdenSales = current || 'Not Assigned';
-    const lastSales = previous;
+    const mainSales = clean(firstSales);
+    const sharedList = [...new Set([secondSales, thirdSales].map(clean).filter(n => n && n !== mainSales))];
+    const salesPeople = [...new Set([mainSales].concat(sharedList).filter(Boolean))];
+    const primaryEdenSales = mainSales || sharedList[0] || 'Not Assigned';
+    const lastSales = '';
 
     const groupLink = getAny_(r, idx, fieldAliases.groupLink);
     const adminValue = getAny_(r, idx, fieldAliases.admin);
@@ -102,6 +99,8 @@ function getBrokerDashboardData_() {
       secondSales,
       lastSales,
       salesPeople,
+      sharedList,
+      sharedWith: sharedList.join(' & '),
       createdBy: getAny_(r, idx, fieldAliases.createdBy) || 'Not Assigned',
       edenSales: primaryEdenSales,
 
