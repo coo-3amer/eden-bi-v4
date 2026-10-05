@@ -50,8 +50,26 @@ function getDropDownSourceSheet_() {
   return sheet;
 }
 
+const DEAL_OPTIONS_MAX_AGE_MS_ = 60 * 60 * 1000;   // dropdowns rarely change; rebuilt hourly
+
 function getDealEntryOptions(authToken) {
   validateAuthToken_(authToken);
+  const cached = dashCacheRead_('DEALOPT', DEAL_OPTIONS_MAX_AGE_MS_);
+  if (cached) return cached;
+  const fresh = buildDealEntryOptions_();
+  dashCacheWrite_('DEALOPT', fresh);
+  return fresh;
+}
+
+/* Called by warmDashboardCache: rebuild the dropdowns when they are 50+ minutes old. */
+function warmDealEntryOptions_() {
+  const meta = CacheService.getScriptCache().get('DASH_V1_DEALOPT');
+  const at = meta ? (JSON.parse(meta).at || 0) : 0;
+  if (Date.now() - at < 50 * 60 * 1000) return;
+  dashCacheWrite_('DEALOPT', buildDealEntryOptions_());
+}
+
+function buildDealEntryOptions_() {
 
   const source = getDropDownSourceSheet_();
   const lastRow = Math.max(source.getLastRow(), 3);
@@ -87,6 +105,7 @@ function getDealEntryOptions(authToken) {
   // The Deals sheet's own dropdowns win, so every saved value matches the sheet.
   try {
     const L = mainDealsLists_();
+    base.sheetLists = L;
     const use = (key, field) => { if (L[field] && L[field].length) base[key] = L[field]; };
     use('statuses', 'status'); use('branches', 'branch'); use('sales', 'salesName');
     use('sharedWith', 'sharedWith'); use('salesManagers', 'salesManager'); use('headOfSales', 'headOfSales');
@@ -443,13 +462,6 @@ function mainDealsColumns_(sheet) {
       if (cur && k && map[cur + '|' + k] === undefined) map[cur + '|' + k] = i + 1;
     });
   }
-  const group = (name, subs) => {
-    const g = groupedHeaderIndexes_(sheet, Math.max(1, HEADER_ROW - 1), HEADER_ROW, name, subs);
-    Object.keys(g).forEach(s => { map[normalizeHeader_(name) + '|' + normalizeHeader_(s)] = g[s] + 1; });
-  };
-  try { group('Client Info', ['Contact']); } catch (e) {}
-  try { group('Unit Info', ['Unit Type']); } catch (e) {}
-  try { group('Source Details', ['Main Source', 'Source Type', 'Campaign Name', 'Media Buyer', 'Brokerage Company', 'BC Sales', 'BC Manger']); } catch (e) {}
   return { map: map, lastCol: lastCol };
 }
 
@@ -587,8 +599,9 @@ function dealRuleList_(rule) {
 }
 
 /* Matches a value to the cell's dropdown (same spelling as the sheet). */
-function dealFitList_(rule, value) {
-  const list = dealRuleList_(rule);
+function dealFitList_(rule, value, knownList) {
+  if (!rule) return { value: value };
+  const list = (knownList && knownList.length) ? knownList : dealRuleList_(rule);
   if (!list || value instanceof Date || typeof value === 'number') return { value: value };
   const s = String(value).trim().toLowerCase();
   const hit = list.filter(x => String(x).trim().toLowerCase() === s)[0];
@@ -792,6 +805,8 @@ function saveDealToMainSheet_(user, payload, unit) {
   const formulas = rowRange.getFormulas()[0];
   const rules = rowRange.getDataValidations()[0];
   const used = {}, written = [], skipped = [], rejected = [];
+  let lists = {};
+  try { const o = dashCacheRead_('DEALOPT', 24 * 60 * 60 * 1000); lists = (o && o.sheetLists) || {}; } catch (e) {}
   MAIN_DEAL_FIELDS_.forEach(f => {
     let value = v[f.k];
     if (value === '' || value == null) return;
@@ -800,7 +815,7 @@ function saveDealToMainSheet_(user, payload, unit) {
     if (!c) { skipped.push(label); return; }
     if (used[c] || formulas[c - 1]) return;   // one value per column; formulas stay
     used[c] = true;
-    const fit = dealFitList_(rules[c - 1], value);
+    const fit = dealFitList_(rules[c - 1], value, lists[f.k]);
     if (fit.blocked) { rejected.push(label + ': "' + value + '" is not in the sheet list'); return; }
     try {
       sheet.getRange(row, c).setValue(fit.value);

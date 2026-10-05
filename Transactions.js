@@ -147,6 +147,7 @@ function dashCacheWrite_(scope, data) {
 function warmDashboardCache() {
   // Inventories too, so Add New Deal / unit checks never wait for the sheets.
   try { Object.keys(INVENTORY_SOURCES).forEach(k => { try { inventoryDataCached_(k, true, false); } catch (e) { console.warn('Inventory warm ' + k + ': ' + e); } }); } catch (e) {}
+  try { warmDealEntryOptions_(); } catch (e) { console.warn('Deal options warm: ' + e); }
   dashCacheWrite_('ALL', buildDashboardData_({ role: 'Admin' }));
   try {
     dashCacheWrite_('EGV', buildDashboardData_({ role: 'Egypt Viewer' }));

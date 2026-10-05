@@ -6982,6 +6982,7 @@ function loadDealEntry(){
   renderDealStep();
   if(!dealOptionsLoaded){
     showDealAlert('Loading deal options...','info');
+    if(!dealUnits.length)loadDealUnits();   // units load at the same time as the dropdowns
     google.script.run.withSuccessHandler(o=>{
       dealOptionsLoaded=true;
       dealSetOptions('dealProject',o.projects,'Select Project');
