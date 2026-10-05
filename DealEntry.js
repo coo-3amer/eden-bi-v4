@@ -432,8 +432,19 @@ function saveNewDeal(authToken, payload) {
   const missing = required.filter(k => !dealText_(payload[k]));
   if (missing.length) throw new Error('Complete the required fields: ' + missing.join(', '));
 
+  // The same click can reach the server twice (slow network, retry): save it once.
+  const reqId = String(payload.requestId || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 40);
+  const reqKey = reqId ? 'DEALREQ_' + reqId : '';
+  const cache = CacheService.getScriptCache();
+  if (reqKey) {
+    const prev = cache.get(reqKey);
+    if (prev === 'RUNNING') throw new Error('This deal is still being saved. Wait a minute, then check the Deals sheet before trying again.');
+    if (prev) return JSON.parse(prev);
+    cache.put(reqKey, 'RUNNING', 600);
+  }
+
   const lock = LockService.getScriptLock();
-  lock.waitLock(30000);
+  try { lock.waitLock(30000); } catch (e) { if (reqKey) cache.remove(reqKey); throw new Error('Another deal is being saved right now. Try again in a moment.'); }
 
   try {
     const project = dealText_(payload.project).toUpperCase();
@@ -448,7 +459,7 @@ function saveNewDeal(authToken, payload) {
     const saved = saveDealToMainSheet_(user, Object.assign({}, payload, { project: project, unitCode: unitCode }), unit);
     clearDashboardCache_();
     const ref = saved.dealNum ? 'Deal #' + saved.dealNum : 'The deal';
-    return {
+    const result = {
       success: true,
       rowNumber: saved.row,
       code: String(saved.dealNum || ''),
@@ -458,6 +469,11 @@ function saveNewDeal(authToken, payload) {
       message: `${ref} was saved in the Deals sheet, row ${saved.row}.`,
       createdBy: user.name || user.username
     };
+    if (reqKey) cache.put(reqKey, JSON.stringify(result), 21600);
+    return result;
+  } catch (err) {
+    if (reqKey) cache.remove(reqKey);
+    throw err;
   } finally {
     lock.releaseLock();
   }
@@ -579,15 +595,15 @@ function prepareMainDealRow_(sheet, cols, row) {
   const hasValue = target.getDisplayValues()[0].some((v, i) => String(v).trim() && !tf[i]);
   if (hasValue) sheet.insertRowBefore(row);
   const src = sheet.getRange(row - 1, 1, 1, cols.lastCol);
+  const above = src.getDisplayValues()[0];
   if (row - 1 >= DATA_START_ROW) {
-    const dst = sheet.getRange(row, 1, 1, cols.lastCol);
-    src.copyTo(dst, SpreadsheetApp.CopyPasteType.PASTE_FORMAT, false);
-    src.copyTo(dst, SpreadsheetApp.CopyPasteType.PASTE_DATA_VALIDATION, false);
-    const f = src.getFormulasR1C1()[0];
-    f.forEach((formula, i) => { if (formula) sheet.getRange(row, i + 1).setFormulaR1C1(formula); });
+    // One copy brings formats, dropdowns and formulas (adjusted to the new row).
+    // The copied values are replaced in one write by saveDealToMainSheet_.
+    src.copyTo(sheet.getRange(row, 1, 1, cols.lastCol), SpreadsheetApp.CopyPasteType.PASTE_NORMAL, false);
+    try { sheet.getRange(row, 1, 1, cols.lastCol).clearNote(); } catch (e) {}
     try { sheet.setRowHeight(row, sheet.getRowHeight(row - 1)); } catch (e) {}
   }
-  return src.getDisplayValues()[0];
+  return above;
 }
 
 /* Moves the warning-only protection so it always covers the empty rows. */
@@ -852,6 +868,9 @@ function saveDealToMainSheet_(user, payload, unit) {
   const used = {}, written = [], skipped = [], rejected = [];
   let lists = {};
   try { const o = dashCacheRead_('DEALOPT', 24 * 60 * 60 * 1000); lists = (o && o.sheetLists) || {}; } catch (e) {}
+  // Build the whole row in memory, then write it once (one recalculation of the sheet).
+  const out = formulas.map(f => f || '');
+  const plan = [];
   MAIN_DEAL_FIELDS_.forEach(f => {
     let value = v[f.k];
     if (value === '' || value == null) return;
@@ -862,13 +881,22 @@ function saveDealToMainSheet_(user, payload, unit) {
     used[c] = true;
     const fit = dealFitList_(rules[c - 1], value, lists[f.k]);
     if (fit.blocked) { rejected.push(label + ': "' + value + '" is not in the sheet list'); return; }
-    try {
-      sheet.getRange(row, c).setValue(fit.value);
-      written.push(label);
-    } catch (err) {
-      rejected.push(label + ': ' + (err && err.message ? err.message : err));
-    }
+    let val = fit.value;
+    if (typeof val === 'string' && /^[=+]/.test(val)) val = "'" + val;   // never turn typed text into a formula
+    out[c - 1] = val;
+    plan.push({ c: c, val: val, label: label });
   });
+  try {
+    rowRange.setValues([out]);
+    plan.forEach(p => written.push(p.label));
+  } catch (err) {
+    // A cell refused its value: write cell by cell so the rest is still saved.
+    rowRange.setValues([formulas.map(f => f || '')]);
+    plan.forEach(p => {
+      try { sheet.getRange(row, p.c).setValue(p.val); written.push(p.label); }
+      catch (e) { rejected.push(p.label + ': ' + (e && e.message ? e.message : e)); }
+    });
+  }
 
   const pc = mainDealsCol_(cols, ['Project']);
   sheet.getRange(row, pc).setNote(DEALS_SYSTEM_NOTE_ + ' • added by ' + (user.name || user.username) + ' • ' +

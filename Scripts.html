@@ -7180,23 +7180,32 @@ function submitNewDeal(){
   if(!dealEl('dealConfirmCheck').checked){showDealAlert('Confirm that you reviewed the deal before saving.','warning');return}
   if(!dealUnitValidated){showDealAlert('Unit validation is no longer valid. Re-select the unit.','warning');return}
   const payload=collectDealPayload();
-  showDealAlert('Saving deal...','info');
+  // Same id for every retry of this deal, so it can never be saved twice.
+  DEAL_REQUEST_ID_=DEAL_REQUEST_ID_||(Date.now().toString(36)+Math.random().toString(36).slice(2,10));
+  payload.requestId=DEAL_REQUEST_ID_;
+  showDealAlert('Saving deal... this can take up to a minute.','info');
   dealEl('dealSaveBtn').disabled=true;
   google.script.run.withSuccessHandler(res=>{
     const miss=(res&&res.skipped&&res.skipped.length)?`\n\nThese fields have no column in the Deals sheet and were not saved: ${res.skipped.join(', ')}`:'';
     const rej=(res&&res.rejected&&res.rejected.length)?`\n\nNot saved — please fix in the sheet:\n• ${res.rejected.join('\n• ')}`:'';
     showDealAlert(res.message,'success');
     dealEl('dealSaveBtn').disabled=false;
+    DEAL_REQUEST_ID_='';
     alert(res.message+rej+miss);
     resetDealWizard();
     dealOptionsLoaded=false;
     loadDashboard();
   }).withFailureHandler(e=>{
     dealEl('dealSaveBtn').disabled=false;
-    showDealAlert(e.message||String(e),'error');
+    const m=e.message||String(e);
+    showDealAlert(/90 seconds|did not answer/i.test(m)
+      ?'The save is taking longer than usual and may still finish. Wait a minute, then press Save Deal again — it will not be added twice.'
+      :m,'error');
   }).saveNewDeal(AUTH_TOKEN,payload);
 }
+let DEAL_REQUEST_ID_='';
 function resetDealWizard(){
+  DEAL_REQUEST_ID_='';
   document.querySelectorAll('#dealEntryPanel input,#dealEntryPanel textarea').forEach(el=>{
     if(el.type==='checkbox')el.checked=false;else el.value='';
   });
