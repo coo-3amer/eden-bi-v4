@@ -1,0 +1,61 @@
+<script>
+/* =====================================================================
+   EDEN BI — Stay on the same page after a browser refresh.
+   The open page (and scroll position) is kept for this tab in
+   sessionStorage and reopened once the data has loaded.
+   ===================================================================== */
+const EDEN_VIEW_KEY_='EDEN_LAST_VIEW';
+let EDEN_VIEW_RESTORED_=false;
+
+function edenViewSave_(view,btn){
+  try{
+    const label=btn?String(btn.textContent||'').replace(/\s+/g,' ').replace(/\d+$/,'').trim():'';
+    const module=btn?.closest('.module')?.id||'';
+    sessionStorage.setItem(EDEN_VIEW_KEY_,JSON.stringify({view,label,module,y:0}));
+  }catch(e){}
+}
+function edenViewRead_(){try{return JSON.parse(sessionStorage.getItem(EDEN_VIEW_KEY_)||'null');}catch(e){return null;}}
+function edenViewButton_(s){
+  const btns=[...document.querySelectorAll('.moduleMenu button')];
+  return btns.find(b=>String(b.getAttribute('onclick')||'').includes("'"+s.view+"'"))
+    ||btns.find(b=>(!s.module||b.closest('.module')?.id===s.module)&&String(b.textContent||'').replace(/\s+/g,' ').replace(/\d+$/,'').trim()===s.label)
+    ||null;
+}
+function edenViewRestore_(){
+  if(EDEN_VIEW_RESTORED_)return;
+  EDEN_VIEW_RESTORED_=true;
+  const s=edenViewRead_();
+  if(!s||!s.view||s.view==='dashboard')return;
+  const btn=edenViewButton_(s);
+  if(!btn||btn.style.display==='none'||btn.closest('.module')?.style.display==='none')return; // page not allowed for this user
+  try{btn.click();}catch(e){try{setView(s.view,btn);}catch(_){}}
+  if(s.y>0)setTimeout(()=>window.scrollTo({top:s.y,behavior:'instant'}),450);
+}
+
+(function initEdenViewRestore_(){
+  if(typeof setView==='function'&&!setView.__vr){
+    const original=setView;
+    setView=function(v,btn){const r=original.apply(this,arguments);edenViewSave_(v,btn);return r;};
+    setView.__vr=true;
+  }
+  window.addEventListener('beforeunload',()=>{
+    try{const s=edenViewRead_();if(s){s.y=Math.round(window.scrollY||0);sessionStorage.setItem(EDEN_VIEW_KEY_,JSON.stringify(s));}}catch(e){}
+  });
+  // Reopen the page once the data is on screen.
+  if(typeof render==='function'&&!render.__vr){
+    const original=render;
+    render=function(){
+      const r=original.apply(this,arguments);
+      if(!EDEN_VIEW_RESTORED_&&typeof rawRows!=='undefined'&&rawRows&&rawRows.length)setTimeout(edenViewRestore_,0);
+      return r;
+    };
+    render.__vr=true;
+  }
+  // Logging out starts again from the overview.
+  if(typeof logout==='function'&&!logout.__vr){
+    const original=logout;
+    logout=function(){try{sessionStorage.removeItem(EDEN_VIEW_KEY_);}catch(e){}EDEN_VIEW_RESTORED_=false;return original.apply(this,arguments);};
+    logout.__vr=true;
+  }
+})();
+</script>
