@@ -75,12 +75,11 @@ function getBrokerDashboardData_() {
       lastSales
     ].map(v => String(v || '').trim()).filter(v => v && v !== 'Not Assigned'))];
 
-    const primaryEdenSales =
-      directEdenSales ||
-      lastSales ||
-      secondSales ||
-      firstSales ||
-      'Not Assigned';
+    // The company's CURRENT EDEN salesperson is the "Eden Sales" column only.
+    // First / Second / Last Sales are history and must not stand in for it.
+    const primaryEdenSales = availableFields.edenSales
+      ? (String(directEdenSales || '').trim() || 'Not Assigned')
+      : (lastSales || secondSales || firstSales || 'Not Assigned');
 
     const groupLink = getAny_(r, idx, fieldAliases.groupLink);
     const adminValue = getAny_(r, idx, fieldAliases.admin);
