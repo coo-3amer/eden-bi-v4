@@ -44,9 +44,14 @@
       url.searchParams.set('_', Date.now().toString(36) + Math.random().toString(36).slice(2, 6));
       var res = null;
       try {
-        res = await fetch(url.toString(), { credentials: 'omit', cache: 'no-store', redirect: 'follow' });
+        var ctrl = typeof AbortController === 'function' ? new AbortController() : null;
+        var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, 90000) : null;
+        try {
+          res = await fetch(url.toString(), { credentials: 'omit', cache: 'no-store', redirect: 'follow', signal: ctrl ? ctrl.signal : undefined });
+        } finally { if (timer) clearTimeout(timer); }
       } catch (e) {
-        lastMsg = OFFLINE;
+        lastMsg = (e && e.name === 'AbortError') ? 'The Google server did not answer within 90 seconds. Open Apps Script > Executions to see what is running.' : OFFLINE;
+        if (e && e.name === 'AbortError') throw new Error(lastMsg);
         if (attempt < 2) { await sleep(700 * (attempt + 1)); continue; }
         throw new Error(OFFLINE);
       }
