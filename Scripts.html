@@ -5220,9 +5220,9 @@ function renderBrokerCompanyDetails_(){
   const allDeals=brokerCompanyDealRows_(company);
   const source=brokerCompanySourceRow_(company) || (allDeals.length ? {
     company,
-    edenSales:brokerTopValue_(allDeals,'salesName'),
-    lastSales:brokerTopValue_(allDeals,'salesName'),
-    status:'Linked from Transactions',
+    edenSales:'Not in Brokers sheet',
+    lastSales:'Not in Brokers sheet',
+    status:'Not in Brokers sheet',
     brokerSales:allDeals.length
   } : null);
   const validDeals=allDeals.filter(r=>String(r.status||'').trim().toLowerCase()!=='cancel');
