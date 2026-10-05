@@ -210,6 +210,9 @@ function buildDashboardData_(authUser) {
   // CLIENT DOCUMENTS: the client name cells link to each client's papers.
   const clientDocLinks = clientDocumentLinks_(sheet, idx, displayRows.length);
 
+  // Rows added from the dashboard carry an "EDEN BI" note on the Project cell.
+  const systemAdded = dealsSystemNotes_(sheet, headers, displayRows.length);
+
   // STABILITY V1: resolve Internal comm subheaders inside their own group.
   const internalCommIdx = groupedHeaderIndexes_(
     sheet,
@@ -483,6 +486,7 @@ function buildDashboardData_(authUser) {
       clientName,
       clientKey: normalizeClientKey_(clientName),
       docsUrl: clientDocLinks[i] || '',
+      sysAdded: systemAdded[i] ? 1 : 0,
       mobile,
       nationality,
       clientType,
@@ -645,6 +649,18 @@ function buildDashboardData_(authUser) {
   };
 }
 
+
+/* true for each data row whose Project cell has the EDEN BI note. Never throws. */
+function dealsSystemNotes_(sheet, headers, rowCount) {
+  const out = new Array(rowCount).fill(false);
+  try {
+    const c = headers.map(h => normalizeHeader_(h)).indexOf('project');
+    if (c < 0 || !rowCount) return out;
+    sheet.getRange(DATA_START_ROW, c + 1, rowCount, 1).getNotes()
+      .forEach((n, i) => { out[i] = /^EDEN BI/.test(String(n[0] || '')); });
+  } catch (err) {}
+  return out;
+}
 
 /**
  * Links on the client name cells (the client's documents folder / file).

@@ -7144,9 +7144,10 @@ function submitNewDeal(){
   showDealAlert('Saving deal...','info');
   dealEl('dealSaveBtn').disabled=true;
   google.script.run.withSuccessHandler(res=>{
+    const miss=(res&&res.skipped&&res.skipped.length)?`\n\nThese fields have no column in the Deals sheet and were not saved: ${res.skipped.join(', ')}`:'';
     showDealAlert(res.message,'success');
     dealEl('dealSaveBtn').disabled=false;
-    alert(res.message);
+    alert(res.message+miss);
     resetDealWizard();
     dealOptionsLoaded=false;
     loadDashboard();

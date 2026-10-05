@@ -227,8 +227,8 @@ function checkDealUnitAvailability(authToken, project, unitCode) {
   if (!unitCode) return { allowed: false, message: 'Select a unit first.' };
 
   const inventoryCheck = validateInventoryUnitForDeal(authToken, project, unitCode);
-  const sheet = getDealSheet_();
-  const existing = findExistingActiveDeal_(sheet, project, unitCode);
+  const mainSheet = getMainDealsSheet_();
+  const existing = findExistingActiveMainDeal_(mainSheet, mainDealsColumns_(mainSheet), project, unitCode);
 
   if (existing) {
     return {
@@ -359,109 +359,353 @@ function saveNewDeal(authToken, payload) {
     }
 
     const unit = check.unit || {};
-    const sheet = getDealSheet_();
-
-    // Fail closed if the Transactions template has moved.
-    assertDealWriteLayout_(sheet);
-
-    const row = nextDealRow_(sheet);
-    const seq = nextDealSequence_(sheet);
-    const transactionDate = dealDate_(payload.transactionDate) || new Date();
-    const paymentDate = dealDate_(payload.paymentDate);
-    const birthDate = dealDate_(payload.birthDate);
-    const dp = dealNumber_(payload.actualDP);
-    const dpPaid = dealNumber_(payload.dpPaid);
-    const actualPaid = dealNumber_(payload.actualPaid || payload.dpPaid);
-    const remain = payload.remain === '' || payload.remain == null ? Math.max(0, dp - actualPaid) : dealNumber_(payload.remain);
-
-    prepareDealRow_(sheet, row);
-
-    // Keep the visual separator columns empty before writing any values.
-    clearDealSeparatorColumns_(sheet, row);
-
-    // Core identifiers and reservation details
-    setDealCell_(sheet, row, 'A', seq.serial);
-    setDealCell_(sheet, row, 'B', dealText_(payload.clientName));
-    setDealCell_(sheet, row, 'D', project);
-    setDealCell_(sheet, row, 'E', unitCode);
-    setDealCell_(sheet, row, 'G', dealText_(payload.status));
-    setDealCell_(sheet, row, 'H', dealText_(payload.additionalStatus));
-    setDealCell_(sheet, row, 'I', dealNumber_(payload.reservationAmount));
-    setDealCell_(sheet, row, 'J', seq.code);
-    setDealCell_(sheet, row, 'K', transactionDate);
-    setDealCell_(sheet, row, 'L', Utilities.formatDate(transactionDate, Session.getScriptTimeZone(), 'MMM'));
-    setDealCell_(sheet, row, 'R', dealText_(payload.transactionType || 'Installment'));
-
-    // Client information
-    setDealCell_(sheet, row, 'X', dealText_(payload.idType));
-    setDealCell_(sheet, row, 'Y', dealText_(payload.nationality));
-    setDealCell_(sheet, row, 'Z', dealText_(payload.idNumber));
-    setDealCell_(sheet, row, 'AA', dealText_(payload.idAddress));
-    setDealCell_(sheet, row, 'AB', dealText_(payload.residenceAddress));
-    setDealCell_(sheet, row, 'AC', dealText_(payload.mobile));
-    setDealCell_(sheet, row, 'AD', dealText_(payload.email));
-    setDealCell_(sheet, row, 'AE', dealText_(payload.jobTitle));
-    setDealCell_(sheet, row, 'AF', birthDate);
-    setDealCell_(sheet, row, 'AH', dealText_(payload.gender));
-    setDealCell_(sheet, row, 'AI', dealText_(payload.clientStatue));
-
-    // Unit / price information from inventory
-    setDealCell_(sheet, row, 'AK', dealText_(payload.block));
-    setDealCell_(sheet, row, 'AL', dealText_(unit.view));
-    setDealCell_(sheet, row, 'AM', dealText_(unit.floor));
-    setDealCell_(sheet, row, 'AN', dealText_(payload.finishingType || 'White Frame'));
-    setDealCell_(sheet, row, 'AO', dealText_(unit.type || unit.unitType));
-    setDealCell_(sheet, row, 'AQ', dealNumber_(unit.area));
-    setDealCell_(sheet, row, 'AT', dealNumber_(unit.meterPrice));
-    setDealCell_(sheet, row, 'AU', dealNumber_(unit.totalPrice));
-    setDealCell_(sheet, row, 'AW', dealNumber_(unit.meterPrice));
-    setDealCell_(sheet, row, 'AX', dealNumber_(unit.totalPrice));
-    setDealCell_(sheet, row, 'AY', dealText_(unit.currency || payload.currency || 'USD'));
-    setDealPercent_(sheet, row, 'AZ', payload.maintenancePercent);
-    setDealCell_(sheet, row, 'BA', dealNumber_(payload.maintenanceAmount));
-    setDealCell_(sheet, row, 'BB', dealText_(payload.discountOffer));
-
-    // Transaction and source
-    setDealCell_(sheet, row, 'BD', dealText_(payload.branch));
-    setDealCell_(sheet, row, 'BE', dealText_(payload.salesName));
-    setDealCell_(sheet, row, 'BF', dealText_(payload.sharedWith));
-    setDealCell_(sheet, row, 'BG', dealText_(payload.salesManager));
-    setDealCell_(sheet, row, 'BH', dealText_(payload.headOfSales));
-    setDealCell_(sheet, row, 'BI', dealText_(payload.cco));
-    setDealCell_(sheet, row, 'BJ', dealText_(payload.dealStatus || 'Solo'));
-    setDealCell_(sheet, row, 'BL', dealText_(payload.mainSource || 'Direct'));
-    setDealCell_(sheet, row, 'BM', dealText_(payload.sourceType));
-    setDealCell_(sheet, row, 'BN', dealText_(payload.campaignName));
-    setDealCell_(sheet, row, 'BO', dealText_(payload.mediaBuyer));
-    setDealCell_(sheet, row, 'BP', dealText_(payload.brokerageCompany));
-    setDealCell_(sheet, row, 'BQ', dealText_(payload.bcSales));
-
-    // DP and plan
-    setDealPercent_(sheet, row, 'BS', payload.dpPercent);
-    setDealCell_(sheet, row, 'BT', dp);
-    setDealCell_(sheet, row, 'BU', dpPaid);
-    setDealCell_(sheet, row, 'BV', actualPaid);
-    setDealCell_(sheet, row, 'BW', remain);
-    setDealCell_(sheet, row, 'BX', paymentDate);
-    setDealCell_(sheet, row, 'BZ', dealText_(payload.paymentPlanType));
-    setDealCell_(sheet, row, 'CA', dealText_(payload.installments));
-    setDealCell_(sheet, row, 'CC', dealText_(payload.installmentPlan));
-    setDealCell_(sheet, row, 'CD', dealText_(payload.periodType));
-
-    // Notes – final column in the approved A:DN range
-    setDealCell_(sheet, row, 'DN', dealText_(payload.notes));
-
-    SpreadsheetApp.flush();
+    const saved = saveDealToMainSheet_(user, Object.assign({}, payload, { project: project, unitCode: unitCode }), unit);
     clearDashboardCache_();
-
+    const ref = saved.dealNum ? 'Deal #' + saved.dealNum : 'The deal';
     return {
       success: true,
-      rowNumber: row,
-      code: seq.code,
-      message: `Deal ${seq.code} was saved successfully in row ${row}.`,
+      rowNumber: saved.row,
+      code: String(saved.dealNum || ''),
+      written: saved.written,
+      skipped: saved.skipped,
+      message: `${ref} was saved in the Deals sheet, row ${saved.row}.`,
       createdBy: user.name || user.username
     };
   } finally {
     lock.releaseLock();
   }
+}
+
+
+/* =====================================================================
+ * MAIN DEALS SHEET WRITER
+ * New deals from the system go to the main Deals sheet (the one the
+ * dashboard reads), in the same shape as the rows already there:
+ *  - the new row is placed right after the last deal,
+ *  - formats, dropdowns and formulas are copied from the row above,
+ *  - every value is written by its column header (never by letter),
+ *  - cells that hold a formula are left to calculate on their own,
+ *  - the Project cell gets a note "EDEN BI • …" so the dashboard knows
+ *    the row came from the system.
+ * The empty rows under the data carry a warning-only protection, so
+ * anyone typing a new deal straight into the sheet is told to use the
+ * system (run setupDealsSheetGuard once from the editor).
+ * ===================================================================== */
+const DEALS_GUARD_DESC_ = 'EDEN BI — add new deals from the dashboard (Add New Deal)';
+const DEALS_SYSTEM_NOTE_ = 'EDEN BI';
+
+function getMainDealsSheet_() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = getSheetByGid_(ss, DEALS_GID) || ss.getSheetByName('Deals');
+  if (!sheet) throw new Error('The Deals sheet was not found.');
+  return sheet;
+}
+
+/* header (normalized) -> column number; grouped sub-headers by "group|sub". */
+function mainDealsColumns_(sheet) {
+  const lastCol = sheet.getLastColumn();
+  const headers = sheet.getRange(HEADER_ROW, 1, 1, lastCol).getDisplayValues()[0];
+  const map = {};
+  headers.forEach((h, i) => {
+    const k = normalizeHeader_(h);
+    if (k && map[k] === undefined) map[k] = i + 1;
+  });
+  const group = (name, subs) => {
+    const g = groupedHeaderIndexes_(sheet, Math.max(1, HEADER_ROW - 1), HEADER_ROW, name, subs);
+    Object.keys(g).forEach(s => { map[normalizeHeader_(name) + '|' + normalizeHeader_(s)] = g[s] + 1; });
+  };
+  try { group('Client Info', ['Contact']); } catch (e) {}
+  try { group('Unit Info', ['Unit Type']); } catch (e) {}
+  try { group('Source Details', ['Main Source', 'Source Type', 'Campaign Name', 'Media Buyer', 'Brokerage Company', 'BC Sales', 'BC Manger']); } catch (e) {}
+  return { map: map, lastCol: lastCol };
+}
+
+function mainDealsCol_(cols, names) {
+  for (const n of names) {
+    const c = cols.map[normalizeHeader_(n)];
+    if (c) return c;
+  }
+  return 0;
+}
+
+/* Last row that holds a deal (Project, Client Name or Unit Code filled). */
+function mainDealsLastRow_(sheet, cols) {
+  const last = sheet.getLastRow();
+  if (last < DATA_START_ROW) return DATA_START_ROW - 1;
+  const keyCols = [
+    mainDealsCol_(cols, ['Project']),
+    mainDealsCol_(cols, ['Client Name', 'Final Client Name']),
+    mainDealsCol_(cols, ['Unit Code'])
+  ].filter(Boolean);
+  const n = last - DATA_START_ROW + 1;
+  let found = DATA_START_ROW - 1;
+  keyCols.forEach(c => {
+    const v = sheet.getRange(DATA_START_ROW, c, n, 1).getDisplayValues();
+    for (let i = v.length - 1; i >= 0; i--) {
+      if (String(v[i][0]).trim()) { found = Math.max(found, DATA_START_ROW + i); break; }
+    }
+  });
+  return found;
+}
+
+function findExistingActiveMainDeal_(sheet, cols, project, unitCode) {
+  const last = mainDealsLastRow_(sheet, cols);
+  if (last < DATA_START_ROW) return null;
+  const pc = mainDealsCol_(cols, ['Project']), uc = mainDealsCol_(cols, ['Unit Code']);
+  const sc = mainDealsCol_(cols, ['Status']), ac = mainDealsCol_(cols, ['Additional Status']);
+  const cc = mainDealsCol_(cols, ['Final Client Name', 'Client Name']);
+  if (!pc || !uc) return null;
+  const n = last - DATA_START_ROW + 1;
+  const read = c => c ? sheet.getRange(DATA_START_ROW, c, n, 1).getDisplayValues().map(r => r[0]) : new Array(n).fill('');
+  const P = read(pc), U = read(uc), S = read(sc), A = read(ac), C = read(cc);
+  const pk = dealText_(project).toLowerCase(), uk = dealText_(unitCode).toLowerCase();
+  for (let i = 0; i < n; i++) {
+    if (dealText_(P[i]).toLowerCase() !== pk || dealText_(U[i]).toLowerCase() !== uk) continue;
+    if (dealText_(A[i]).toLowerCase().includes('renovation')) continue;
+    if (dealCancelledStatus_(S[i])) continue;
+    return { rowNumber: DATA_START_ROW + i, clientName: dealText_(C[i]), project: pk, unitCode: uk, status: dealText_(S[i]), code: '' };
+  }
+  return null;
+}
+
+/* Copies format, dropdowns and formulas of the row above into the new row. */
+function prepareMainDealRow_(sheet, cols, row) {
+  if (row > sheet.getMaxRows()) sheet.insertRowsAfter(sheet.getMaxRows(), row - sheet.getMaxRows() + 50);
+  // Never overwrite something already typed in the target row (e.g. a totals row).
+  const target = sheet.getRange(row, 1, 1, cols.lastCol);
+  const tf = target.getFormulas()[0];
+  const hasValue = target.getDisplayValues()[0].some((v, i) => String(v).trim() && !tf[i]);
+  if (hasValue) sheet.insertRowBefore(row);
+  const src = sheet.getRange(row - 1, 1, 1, cols.lastCol);
+  if (row - 1 >= DATA_START_ROW) {
+    const dst = sheet.getRange(row, 1, 1, cols.lastCol);
+    src.copyTo(dst, SpreadsheetApp.CopyPasteType.PASTE_FORMAT, false);
+    src.copyTo(dst, SpreadsheetApp.CopyPasteType.PASTE_DATA_VALIDATION, false);
+    const f = src.getFormulasR1C1()[0];
+    f.forEach((formula, i) => { if (formula) sheet.getRange(row, i + 1).setFormulaR1C1(formula); });
+    try { sheet.setRowHeight(row, sheet.getRowHeight(row - 1)); } catch (e) {}
+  }
+  return src.getDisplayValues()[0];
+}
+
+/* Moves the warning-only protection so it always covers the empty rows. */
+function updateDealsGuard_(sheet, lastDealRow) {
+  const start = lastDealRow + 1;
+  if (start > sheet.getMaxRows()) sheet.insertRowsAfter(sheet.getMaxRows(), 100);
+  const range = sheet.getRange(start, 1, sheet.getMaxRows() - start + 1, sheet.getMaxColumns());
+  let p = sheet.getProtections(SpreadsheetApp.ProtectionType.RANGE).filter(x => x.getDescription() === DEALS_GUARD_DESC_)[0];
+  if (!p) p = range.protect().setDescription(DEALS_GUARD_DESC_);
+  else p.setRange(range);
+  p.setWarningOnly(true);
+  return start;
+}
+
+/* Run once from the Apps Script editor. */
+function setupDealsSheetGuard() {
+  const sheet = getMainDealsSheet_();
+  const cols = mainDealsColumns_(sheet);
+  const start = updateDealsGuard_(sheet, mainDealsLastRow_(sheet, cols));
+  Logger.log('Deals sheet: rows from ' + start + ' down now show a warning. New deals should be added from the dashboard.');
+}
+
+/* Run from the editor to see which form fields match which Deals columns. */
+function checkDealsSheetMapping() {
+  const sheet = getMainDealsSheet_();
+  const cols = mainDealsColumns_(sheet);
+  const lines = MAIN_DEAL_FIELDS_.map(f => {
+    const c = mainDealsCol_(cols, f.h);
+    return (c ? 'OK   ' + columnLetter_(c) + '  ' : 'MISS     ') + (f.h.filter(x => x.indexOf('|') < 0)[0] || f.h[0]);
+  });
+  Logger.log('Last deal row: ' + mainDealsLastRow_(sheet, cols) + '\n' + lines.join('\n'));
+}
+
+function columnLetter_(n) {
+  let s = '';
+  while (n > 0) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); }
+  return s;
+}
+
+/* form value -> Deals column header(s). First header found is used. */
+const MAIN_DEAL_FIELDS_ = [
+  { k: 'dealNum',          h: ['Deal Num', 'Deal Number', 'Deal No'] },
+  { k: 'clientName',       h: ['Client Name'] },
+  { k: 'finalClientName',  h: ['Final Client Name'] },
+  { k: 'project',          h: ['Project'] },
+  { k: 'unitCode',         h: ['Unit Code'] },
+  { k: 'status',           h: ['Status'] },
+  { k: 'additionalStatus', h: ['Additional Status'] },
+  { k: 'reservationAmount',h: ['Reservation Amount', 'Reservation', 'Res Amount'] },
+  { k: 'date',             h: ['Date'] },
+  { k: 'month',            h: ['Month'] },
+  { k: 'year',             h: ['Year'] },
+  { k: 'transactionType',  h: ['Unit Statue', 'Cash / Installment', 'Cash or Installment', 'Payment Type'] },
+  { k: 'mobile',           h: ['client info|contact', 'Contact', 'Mobile', 'Mobile Number', 'Phone'] },
+  { k: 'clientType',       h: ['Client Type'] },
+  { k: 'email',            h: ['Email', 'E-mail', 'Mail'] },
+  { k: 'nationality',      h: ['Nationality', 'Nationalty'] },
+  { k: 'idType',           h: ['ID Type', 'ID'] },
+  { k: 'idNumber',         h: ['ID Number', 'ID No', 'National ID', 'Passport Number'] },
+  { k: 'idAddress',        h: ['ID Address', 'Address'] },
+  { k: 'residenceAddress', h: ['Residence Address', 'Current Address'] },
+  { k: 'jobTitle',         h: ['Job Title', 'Job'] },
+  { k: 'birthDate',        h: ['Birth Date', 'Date Of Birth', 'DOB'] },
+  { k: 'gender',           h: ['Gender'] },
+  { k: 'clientStatue',     h: ['Client Statue', 'Client Status'] },
+  { k: 'block',            h: ['Block'] },
+  { k: 'view',             h: ['View'] },
+  { k: 'floor',            h: ['Floor'] },
+  { k: 'finishing',        h: ['Finishing Type', 'Finishing'] },
+  { k: 'unitType',         h: ['unit info|unit type', 'Unit Type'] },
+  { k: 'area',             h: ['Area'] },
+  { k: 'primaryMeter',     h: ['Primary Meter Price'] },
+  { k: 'primaryTotal',     h: ['Primary Total Price'] },
+  { k: 'meterAfter',       h: ['Meter Price After Discount'] },
+  { k: 'finalPrice',       h: ['Final Price'] },
+  { k: 'currency',         h: ['Currency'] },
+  { k: 'maintenancePercent', h: ['Maintenance %', 'Maintenance Percent'] },
+  { k: 'maintenanceAmount',h: ['Maintenance Amount'] },
+  { k: 'discountOffer',    h: ['Discount Offer', 'Offer'] },
+  { k: 'branch',           h: ['Branch'] },
+  { k: 'salesName',        h: ['Sales Name'] },
+  { k: 'sharedWith',       h: ['Shared With'] },
+  { k: 'salesManager',     h: ['Sales Manager'] },
+  { k: 'headOfSales',      h: ['Head Of Sales'] },
+  { k: 'cco',              h: ['CCO'] },
+  { k: 'dealStatus',       h: ['Deal Status'] },
+  { k: 'mainSource',       h: ['source details|main source', 'Main Source'] },
+  { k: 'sourceType',       h: ['source details|source type', 'Source Type'] },
+  { k: 'campaignName',     h: ['source details|campaign name', 'Campaign Name'] },
+  { k: 'mediaBuyer',       h: ['source details|media buyer', 'Media Buyer'] },
+  { k: 'brokerageCompany', h: ['source details|brokerage company', 'Brokerage Company'] },
+  { k: 'bcSales',          h: ['source details|bc sales', 'BC Sales'] },
+  { k: 'dpPercent',        h: ['DP %', 'DP%'] },
+  { k: 'actualDP',         h: ['Actual DP', 'Acctual DP'] },
+  { k: 'dpPaid',           h: ['DP Paid'] },
+  { k: 'actualPaid',       h: ['Actual Paid', 'Acctual Paid'] },
+  { k: 'remain',           h: ['Remain'] },
+  { k: 'paymentDate',      h: ['Payment Date'] },
+  { k: 'paymentPlanType',  h: ['Type Of Payment', 'Payment Plan'] },
+  { k: 'installments',     h: ['Installments Period', 'Installments'] },
+  { k: 'installmentPlan',  h: ['Installment Plan'] },
+  { k: 'periodType',       h: ['Period Type', 'Period'] },
+  { k: 'notes',            h: ['Notes', 'Note', 'Comments'] }
+];
+
+function saveDealToMainSheet_(user, payload, unit) {
+  const sheet = getMainDealsSheet_();
+  const cols = mainDealsColumns_(sheet);
+  const need = { 'Project': ['Project'], 'Unit Code': ['Unit Code'], 'Status': ['Status'], 'Client Name': ['Client Name', 'Final Client Name'], 'Date': ['Date'] };
+  const missing = Object.keys(need).filter(n => !mainDealsCol_(cols, need[n]));
+  if (missing.length) throw new Error('Deals sheet columns not found (' + missing.join(', ') + '). Nothing was saved.');
+
+  const last = mainDealsLastRow_(sheet, cols);
+  let row = last + 1;
+  const above = prepareMainDealRow_(sheet, cols, row);
+  // insertRowBefore may have pushed a typed row down; our row number stays the same.
+
+  const tz = Session.getScriptTimeZone();
+  const date = dealDate_(payload.transactionDate) || new Date();
+  const monthCol = mainDealsCol_(cols, ['Month']);
+  const monthAbove = monthCol ? String(above[monthCol - 1] || '').trim() : '';
+  const month = /^\d+$/.test(monthAbove) ? date.getMonth() + 1
+    : (monthAbove.length > 3 ? Utilities.formatDate(date, tz, 'MMMM') : Utilities.formatDate(date, tz, 'MMM'));
+
+  // Next deal number
+  let dealNum = '';
+  const numCol = mainDealsCol_(cols, ['Deal Num', 'Deal Number', 'Deal No']);
+  if (numCol && last >= DATA_START_ROW) {
+    const nums = sheet.getRange(DATA_START_ROW, numCol, last - DATA_START_ROW + 1, 1).getDisplayValues();
+    dealNum = nums.reduce((m, r) => Math.max(m, parseInt(String(r[0]).replace(/\D/g, ''), 10) || 0), 0) + 1;
+  }
+
+  const dp = dealNumber_(payload.actualDP);
+  const actualPaid = dealNumber_(payload.actualPaid || payload.dpPaid);
+  const pct = v => { if (v === '' || v == null) return ''; const n = dealNumber_(v); return Math.abs(n) > 1 ? n / 100 : n; };
+  const price = dealNumber_(unit.totalPrice), meter = dealNumber_(unit.meterPrice);
+  const v = {
+    dealNum: dealNum,
+    clientName: dealText_(payload.clientName),
+    finalClientName: dealText_(payload.clientName),
+    project: dealText_(payload.project).toUpperCase(),
+    unitCode: dealText_(payload.unitCode),
+    status: dealText_(payload.status),
+    additionalStatus: dealText_(payload.additionalStatus),
+    reservationAmount: dealNumber_(payload.reservationAmount) || '',
+    date: date,
+    month: month,
+    year: date.getFullYear(),
+    transactionType: dealText_(payload.transactionType),
+    mobile: dealText_(payload.mobile),
+    clientType: (typeof classifyClientTypeFromMobileHeader_ === 'function') ? classifyClientTypeFromMobileHeader_(payload.mobile) : '',
+    email: dealText_(payload.email),
+    nationality: dealText_(payload.nationality),
+    idType: dealText_(payload.idType),
+    idNumber: dealText_(payload.idNumber),
+    idAddress: dealText_(payload.idAddress),
+    residenceAddress: dealText_(payload.residenceAddress),
+    jobTitle: dealText_(payload.jobTitle),
+    birthDate: dealDate_(payload.birthDate),
+    gender: dealText_(payload.gender),
+    clientStatue: dealText_(payload.clientStatue),
+    block: dealText_(payload.block),
+    view: dealText_(unit.view),
+    floor: dealText_(unit.floor),
+    finishing: dealText_(payload.finishingType),
+    unitType: dealText_(unit.type || unit.unitType),
+    area: dealNumber_(unit.area) || '',
+    primaryMeter: meter || '',
+    primaryTotal: price || '',
+    meterAfter: meter || '',
+    finalPrice: price || '',
+    currency: dealText_(unit.currency || payload.currency),
+    maintenancePercent: pct(payload.maintenancePercent),
+    maintenanceAmount: dealNumber_(payload.maintenanceAmount) || '',
+    discountOffer: dealText_(payload.discountOffer),
+    branch: dealText_(payload.branch),
+    salesName: dealText_(payload.salesName),
+    sharedWith: dealText_(payload.sharedWith),
+    salesManager: dealText_(payload.salesManager),
+    headOfSales: dealText_(payload.headOfSales),
+    cco: dealText_(payload.cco),
+    dealStatus: dealText_(payload.dealStatus || 'Solo'),
+    mainSource: dealText_(payload.mainSource),
+    sourceType: dealText_(payload.sourceType),
+    campaignName: dealText_(payload.campaignName),
+    mediaBuyer: dealText_(payload.mediaBuyer),
+    brokerageCompany: dealText_(payload.brokerageCompany),
+    bcSales: dealText_(payload.bcSales),
+    dpPercent: pct(payload.dpPercent),
+    actualDP: dp || '',
+    dpPaid: dealNumber_(payload.dpPaid) || '',
+    actualPaid: actualPaid || '',
+    remain: payload.remain === '' || payload.remain == null ? (dp ? Math.max(0, dp - actualPaid) : '') : dealNumber_(payload.remain),
+    paymentDate: dealDate_(payload.paymentDate),
+    paymentPlanType: dealText_(payload.paymentPlanType),
+    installments: dealText_(payload.installments),
+    installmentPlan: dealText_(payload.installmentPlan),
+    periodType: dealText_(payload.periodType),
+    notes: dealText_(payload.notes)
+  };
+
+  const formulas = sheet.getRange(row, 1, 1, cols.lastCol).getFormulas()[0];
+  const used = {}, written = [], skipped = [];
+  MAIN_DEAL_FIELDS_.forEach(f => {
+    const value = v[f.k];
+    if (value === '' || value == null) return;
+    const c = mainDealsCol_(cols, f.h);
+    const label = f.h.filter(x => x.indexOf('|') < 0)[0] || f.h[0];
+    if (!c) { skipped.push(label); return; }
+    if (used[c] || formulas[c - 1]) return;   // one value per column; formulas stay
+    used[c] = true;
+    sheet.getRange(row, c).setValue(value);
+    written.push(label);
+  });
+
+  const pc = mainDealsCol_(cols, ['Project']);
+  sheet.getRange(row, pc).setNote(DEALS_SYSTEM_NOTE_ + ' • added by ' + (user.name || user.username) + ' • ' +
+    Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd HH:mm'));
+
+  SpreadsheetApp.flush();
+  try { updateDealsGuard_(sheet, row); } catch (e) {}
+  return { row: row, dealNum: dealNum, written: written, skipped: skipped };
 }
