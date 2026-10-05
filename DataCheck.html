@@ -143,6 +143,32 @@ function dcExtraIssues_(row,ref){
   return {critical,warning};
 }
 
+
+/* ---------- phone numbers ----------
+   A cell can hold more than one number (new line , ; / |). Each number is
+   checked alone, Arabic digits are read as normal digits.
+   Egypt mobile: 01X + 8 digits (11 digits), or with country code 20 / +20 / 0020.
+   Other countries: country code + number, 8 to 15 digits in total. */
+function dcPhoneList_(value){
+  const ar='٠١٢٣٤٥٦٧٨٩',fa='۰۱۲۳۴۵۶۷۸۹';
+  const txt=String(value??'').replace(/[٠-٩]/g,d=>ar.indexOf(d)).replace(/[۰-۹]/g,d=>fa.indexOf(d));
+  return txt.split(/[\n\r,;|\/]+|\s+-\s+|\s{2,}/).map(x=>x.trim()).filter(x=>/\d/.test(x));
+}
+function dcPhoneProblem_(raw){
+  let d=String(raw).replace(/\D/g,'');
+  if(d.startsWith('00'))d=d.slice(2);
+  if(/^1[0125]\d{8}$/.test(d))return 'missing the first 0 (should be 0'+d+')';
+  if(/^01/.test(d))return d.length===11?(/^01[0125]/.test(d)?'':'Egypt mobile must start with 010 / 011 / 012 / 015'):`Egypt mobile must be 11 digits (has ${d.length})`;
+  if(/^201/.test(d))return d.length===12?(/^201[0125]/.test(d)?'':'Egypt mobile must start with 010 / 011 / 012 / 015'):`Egypt number with 20 must be 12 digits (has ${d.length})`;
+  if(d.length<8)return `too short (${d.length} digits)`;
+  if(d.length>15)return `too long (${d.length} digits)`;
+  return '';
+}
+function dcPhoneIssues_(value){
+  return dcPhoneList_(value).map(n=>({n,why:dcPhoneProblem_(n)})).filter(x=>x.why);
+}
+dataHealthMobileValid_=function(value){return !dcPhoneIssues_(value).length;};
+
 /* ---------- hook into the existing Data Health page ---------- */
 (function initEdenDataCheck_(){
   if(typeof dataHealthEvaluate_==='function'&&!dataHealthEvaluate_.__dc){
@@ -153,7 +179,9 @@ function dcExtraIssues_(row,ref){
         const x=dcExtraIssues_(r,ref);
         const crit=r.criticalCount?r.issueList.slice(0,r.criticalCount):[];
         const warn=r.issueList.slice(r.criticalCount);
-        const c=[...new Set([...crit,...x.critical])],w=[...new Set([...warn,...x.warning])],all=[...c,...w];
+        const bad=warn.includes('Invalid Mobile')?dcPhoneIssues_(r.mobile):[];
+        const warn2=warn.flatMap(i=>i==='Invalid Mobile'?(bad.length?bad.map(b=>`Invalid Mobile: ${b.n} — ${b.why}`):[]):[i]);
+        const c=[...new Set([...crit,...x.critical])],w=[...new Set([...warn2,...x.warning])],all=[...c,...w];
         const sev=c.length?'Critical':(w.length?'Needs Review':'Healthy');
         return {...r,healthStatus:sev,severity:sev,issues:all.join(' | '),issueList:all,criticalCount:c.length,warningCount:w.length,isNew:!!seen&&Number(r.row)>seen};
       });
