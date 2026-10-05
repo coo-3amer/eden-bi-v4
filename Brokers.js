@@ -77,7 +77,7 @@ function getBrokerDashboardData_() {
     const clean = v => { const t = String(v || '').trim(); return t && t !== 'Not Assigned' ? t : ''; };
     const chain = [firstSales, secondSales, thirdSales].map(clean).filter(Boolean);
     const current = chain[chain.length - 1] || '';
-    const previous = [...chain].reverse().find(n => n !== current) || '';
+    const previous = '';   // "Last Sales" is not used anywhere
 
     const salesPeople = [...new Set([current].concat(chain).filter(Boolean))];
     const primaryEdenSales = current || 'Not Assigned';
