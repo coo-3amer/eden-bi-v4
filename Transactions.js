@@ -103,13 +103,13 @@ function getDashboardData(authToken, opts) {
   return data;
 }
 
-function dashCacheRead_(scope) {
+function dashCacheRead_(scope, maxAgeMs) {
   try {
     const cache = CacheService.getScriptCache();
     const meta = cache.get('DASH_V1_' + scope);
     if (!meta) return null;
     const m = JSON.parse(meta);
-    if (!m.at || Date.now() - m.at > DASH_CACHE_MAX_AGE_MS_) return null;
+    if (!m.at || Date.now() - m.at > (maxAgeMs || DASH_CACHE_MAX_AGE_MS_)) return null;
     const keys = [];
     for (let i = 0; i < m.parts; i++) keys.push('DASH_V1_' + scope + '_' + m.id + '_' + i);
     const got = cache.getAll(keys);
@@ -145,6 +145,8 @@ function dashCacheWrite_(scope, data) {
  * ready when someone opens the dashboard: nobody waits for the sheets.
  */
 function warmDashboardCache() {
+  // Inventories too, so Add New Deal / unit checks never wait for the sheets.
+  try { Object.keys(INVENTORY_SOURCES).forEach(k => { try { inventoryDataCached_(k, true, false); } catch (e) { console.warn('Inventory warm ' + k + ': ' + e); } }); } catch (e) {}
   dashCacheWrite_('ALL', buildDashboardData_({ role: 'Admin' }));
   try {
     dashCacheWrite_('EGV', buildDashboardData_({ role: 'Egypt Viewer' }));

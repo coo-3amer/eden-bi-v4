@@ -256,16 +256,22 @@ function inventoryCompany_(cfg, row, status) {
 
 function getInventoryData(authToken, project, forceRefresh) {
   validateAuthToken_(authToken);
+  return inventoryDataCached_(project, forceRefresh, !!forceRefresh);
+}
 
+const INVENTORY_CACHE_MAX_AGE_MS_ = 6 * 60 * 1000;   // refreshed every 5 min by warmDashboardCache
+
+/* Inventory of one project. Kept compressed in the cache (any size), so
+   unit lists and unit checks answer in about a second. */
+function inventoryDataCached_(project, forceRefresh, trackMovements) {
   const key = inventoryKey_(project);
   const cfg = INVENTORY_SOURCES[key];
   if (!cfg) throw new Error('Inventory source is not configured for this project.');
 
-  const cacheKey = 'INV_V4_MULTI_TABS_' + key;
-  const cache = CacheService.getScriptCache();
+  const scope = 'INV_' + key;
   if (!forceRefresh) {
-    const cached = cache.get(cacheKey);
-    if (cached) return JSON.parse(cached);
+    const cached = dashCacheRead_(scope, INVENTORY_CACHE_MAX_AGE_MS_);
+    if (cached) return cached;
   }
 
   const ss = SpreadsheetApp.openById(cfg.spreadsheetId);
@@ -275,7 +281,7 @@ function getInventoryData(authToken, project, forceRefresh) {
   }, []);
 
   // On an explicit refresh, compare against the persistent snapshot and log status changes.
-  if (forceRefresh && key === 'EDEN_WALK') inventoryTrackMovements_(cfg, key, rows, ss);
+  if (trackMovements && key === 'EDEN_WALK') inventoryTrackMovements_(cfg, key, rows, ss);
 
   const unique = field => [...new Set(rows.map(r => inventoryClean_(r[field])).filter(Boolean))]
     .sort((a, b) => String(a).localeCompare(String(b), undefined, { numeric: true }));
@@ -312,8 +318,7 @@ function getInventoryData(authToken, project, forceRefresh) {
     }
   };
 
-  const serialized = JSON.stringify(result);
-  if (serialized.length < 95000) cache.put(cacheKey, serialized, 300);
+  dashCacheWrite_(scope, result);
   return result;
 }
 
@@ -672,7 +677,7 @@ function inventoryMovementHourlyJob_() {
   const sheets = inventorySheets_(ss, cfg);
   const rows = sheets.reduce((a,s)=>a.concat(inventoryReadSheetRows_(s,cfg,'EDEN_WALK')),[]);
   inventoryTrackMovements_(cfg,'EDEN_WALK',rows,ss);
-  CacheService.getScriptCache().remove('INV_V4_MULTI_TABS_EDEN_WALK');
+  CacheService.getScriptCache().remove('DASH_V1_INV_EDEN_WALK');
 }
 
 function ensureInventoryMovementTrigger_(authToken) {
