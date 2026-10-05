@@ -7030,7 +7030,8 @@ function loadDealUnits(){
   dealEl('dealUnitCode').innerHTML='<option value="">Loading units...</option>';
   google.script.run.withSuccessHandler(rows=>{
     // Only units that are Available in the Inventory sheet can get a new deal.
-    dealUnits=(rows||[]).filter(r=>String(r.status||'').trim().toLowerCase()==='available');
+    // ...and that have no active deal in the Deals sheet yet (sold but not updated in the inventory).
+    dealUnits=(rows||[]).filter(r=>String(r.status||'').trim().toLowerCase()==='available'&&!r.dealStatus);
     const key=r=>`${r.unitCode}||${r.inventoryCategory||''}`;
     const label=r=>[r.unitCode,r.type||r.unitType,r.floor,r.area?`${r.area} m²`:''].filter(Boolean).map(escapeHtml).join(' — ');
     const groups={};dealUnits.forEach(r=>{(groups[r.inventoryCategory||'Units']=groups[r.inventoryCategory||'Units']||[]).push(r);});

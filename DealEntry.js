@@ -127,10 +127,40 @@ function buildDealEntryOptions_() {
   return base;
 }
 
+/* project|unit keys that already have an active (not cancelled) deal in the Deals sheet. */
+function activeDealUnitKeys_(project) {
+  const pk = dealText_(project).toLowerCase();
+  const keys = {};
+  let rows = null;
+  try { const d = dashCacheRead_('ALL', 30 * 60 * 1000); rows = d && d.rows; } catch (e) {}
+  if (rows) {
+    rows.forEach(r => {
+      if (dealText_(r.project).toLowerCase() !== pk) return;
+      if (dealCancelledStatus_(r.status) || String(r.additionalStatus || '').toLowerCase().includes('renovation')) return;
+      keys[dealText_(r.unitCode).toLowerCase()] = dealText_(r.status) || 'Active';
+    });
+    return keys;
+  }
+  const sheet = getMainDealsSheet_(), cols = mainDealsColumns_(sheet);
+  const last = mainDealsLastRow_(sheet, cols);
+  const pc = mainDealsCol_(cols, ['Project']), uc = mainDealsCol_(cols, ['Unit Code']), sc = mainDealsCol_(cols, ['Status']);
+  if (last < DATA_START_ROW || !pc || !uc) return keys;
+  const n = last - DATA_START_ROW + 1, read = c => sheet.getRange(DATA_START_ROW, c, n, 1).getDisplayValues();
+  const P = read(pc), U = read(uc), S = sc ? read(sc) : P.map(() => ['']);
+  for (let i = 0; i < n; i++) {
+    if (dealText_(P[i][0]).toLowerCase() !== pk || dealCancelledStatus_(S[i][0])) continue;
+    keys[dealText_(U[i][0]).toLowerCase()] = dealText_(S[i][0]) || 'Active';
+  }
+  return keys;
+}
+
 function getDealInventoryUnits(authToken, project) {
   validateAuthToken_(authToken);
   const data = getInventoryData(authToken, project || 'KOBULETI');
+  let taken = {};
+  try { taken = activeDealUnitKeys_(data.project || project); } catch (e) {}
   return (data.rows || []).map(r => ({
+    dealStatus: taken[dealText_(r.unitCode).toLowerCase()] || '',
     project: r.project,
     unitCode: r.unitCode,
     status: r.status,
