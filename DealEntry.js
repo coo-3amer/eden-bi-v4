@@ -55,7 +55,7 @@ const DEAL_OPTIONS_MAX_AGE_MS_ = 60 * 60 * 1000;   // dropdowns rarely change; r
 function getDealEntryOptions(authToken) {
   validateAuthToken_(authToken);
   const cached = dashCacheRead_('DEALOPT', DEAL_OPTIONS_MAX_AGE_MS_);
-  if (cached) return cached;
+  if (cached) { cached.projects = ['EDEN WALK', 'CCG']; return cached; }
   const fresh = buildDealEntryOptions_();
   dashCacheWrite_('DEALOPT', fresh);
   return fresh;
@@ -124,18 +124,22 @@ function buildDealEntryOptions_() {
   base.resCurrencies = base.resCurrencies || ['EGP', 'USD', 'SAR'];
   base.dpCurrencies = base.dpCurrencies || ['EGP', 'USD', 'SAR'];
   base.sharedWith = base.sharedWith || base.sales;
+  // Deals can be added for these projects only (they have a live inventory).
+  base.projects = ['EDEN WALK', 'CCG'];
   return base;
 }
 
 /* project|unit keys that already have an active (not cancelled) deal in the Deals sheet. */
+function dealProjectKey_(p) { return inventoryKey_(dealText_(p)); }
+
 function activeDealUnitKeys_(project) {
-  const pk = dealText_(project).toLowerCase();
+  const pk = dealProjectKey_(project);
   const keys = {};
   let rows = null;
   try { const d = dashCacheRead_('ALL', 30 * 60 * 1000); rows = d && d.rows; } catch (e) {}
   if (rows) {
     rows.forEach(r => {
-      if (dealText_(r.project).toLowerCase() !== pk) return;
+      if (dealProjectKey_(r.project) !== pk) return;
       if (dealCancelledStatus_(r.status) || String(r.additionalStatus || '').toLowerCase().includes('renovation')) return;
       keys[dealText_(r.unitCode).toLowerCase()] = dealText_(r.status) || 'Active';
     });
@@ -148,7 +152,7 @@ function activeDealUnitKeys_(project) {
   const n = last - DATA_START_ROW + 1, read = c => sheet.getRange(DATA_START_ROW, c, n, 1).getDisplayValues();
   const P = read(pc), U = read(uc), S = sc ? read(sc) : P.map(() => ['']);
   for (let i = 0; i < n; i++) {
-    if (dealText_(P[i][0]).toLowerCase() !== pk || dealCancelledStatus_(S[i][0])) continue;
+    if (dealProjectKey_(P[i][0]) !== pk || dealCancelledStatus_(S[i][0])) continue;
     keys[dealText_(U[i][0]).toLowerCase()] = dealText_(S[i][0]) || 'Active';
   }
   return keys;
@@ -158,7 +162,7 @@ function getDealInventoryUnits(authToken, project) {
   validateAuthToken_(authToken);
   const data = getInventoryData(authToken, project || 'KOBULETI');
   let taken = {};
-  try { taken = activeDealUnitKeys_(data.project || project); } catch (e) {}
+  try { taken = activeDealUnitKeys_(project || data.project); } catch (e) {}
   return (data.rows || []).map(r => ({
     dealStatus: taken[dealText_(r.unitCode).toLowerCase()] || '',
     project: r.project,
@@ -293,15 +297,24 @@ function findExistingActiveDeal_(sheet, project, unitCode) {
   return null;
 }
 
-function checkDealUnitAvailability(authToken, project, unitCode, inventoryCategory) {
+function checkDealUnitAvailability(authToken, project, unitCode, inventoryCategory, quick) {
   validateAuthToken_(authToken);
   project = dealText_(project || 'KOBULETI');
   unitCode = dealText_(unitCode);
   if (!unitCode) return { allowed: false, message: 'Select a unit first.' };
 
   const inventoryCheck = validateInventoryUnitForDeal(authToken, project, unitCode, inventoryCategory);
-  const mainSheet = getMainDealsSheet_();
-  const existing = findExistingActiveMainDeal_(mainSheet, mainDealsColumns_(mainSheet), project, unitCode);
+  let existing = null;
+  if (quick) {
+    // Fast check while filling the form (dashboard copy, max 30 min old).
+    // Saving always re-checks against the Deals sheet itself.
+    const taken = activeDealUnitKeys_(project);
+    const st = taken[dealText_(unitCode).toLowerCase()];
+    if (st) existing = { rowNumber: '', clientName: '', project: project, unitCode: unitCode, status: st, code: '' };
+  } else {
+    const mainSheet = getMainDealsSheet_();
+    existing = findExistingActiveMainDeal_(mainSheet, mainDealsColumns_(mainSheet), project, unitCode);
+  }
 
   if (existing) {
     return {
@@ -547,9 +560,9 @@ function findExistingActiveMainDeal_(sheet, cols, project, unitCode) {
   const n = last - DATA_START_ROW + 1;
   const read = c => c ? sheet.getRange(DATA_START_ROW, c, n, 1).getDisplayValues().map(r => r[0]) : new Array(n).fill('');
   const P = read(pc), U = read(uc), S = read(sc), A = read(ac), C = read(cc);
-  const pk = dealText_(project).toLowerCase(), uk = dealText_(unitCode).toLowerCase();
+  const pk = dealProjectKey_(project), uk = dealText_(unitCode).toLowerCase();
   for (let i = 0; i < n; i++) {
-    if (dealText_(P[i]).toLowerCase() !== pk || dealText_(U[i]).toLowerCase() !== uk) continue;
+    if (dealText_(U[i]).toLowerCase() !== uk || dealProjectKey_(P[i]) !== pk) continue;
     if (dealText_(A[i]).toLowerCase().includes('renovation')) continue;
     if (dealCancelledStatus_(S[i])) continue;
     return { rowNumber: DATA_START_ROW + i, clientName: dealText_(C[i]), project: pk, unitCode: uk, status: dealText_(S[i]), code: '' };

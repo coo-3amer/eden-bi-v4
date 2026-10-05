@@ -3094,7 +3094,7 @@ function render(){
 function updateTitle(){
   if(isDealEntryView()){
     pageTitle.innerText='Add New Deal';
-    pageDesc.innerText='Validated entry to Transactions → 2026 starting from row 34';
+    pageDesc.innerText='New deals are checked against the inventory and saved straight to the Deals sheet';
     return;
   }
   if(isInventoryView()){
@@ -6985,8 +6985,9 @@ function loadDealEntry(){
     if(!dealUnits.length)loadDealUnits();   // units load at the same time as the dropdowns
     google.script.run.withSuccessHandler(o=>{
       dealOptionsLoaded=true;
-      dealSetOptions('dealProject',o.projects,'Select Project');
-      if((o.projects||[]).includes('KOBULETI')) dealEl('dealProject').value='KOBULETI';
+      const prevProject=dealValue('dealProject');
+      dealSetOptions('dealProject',DEAL_PROJECTS_,'Select Project');
+      dealEl('dealProject').value=DEAL_PROJECTS_.includes(prevProject)?prevProject:'EDEN WALK';
       dealSetOptions('dealStatus',o.statuses,'Select Status');
       dealSetOptions('dealBranch',o.branches,'Select Branch');
       dealSetOptions('dealSalesName',o.sales,'Select Sales');
@@ -7017,18 +7018,24 @@ function loadDealEntry(){
       if((o.statuses||[]).includes('Reservation')) dealEl('dealStatus').value='Reservation';
       if((o.dealStatuses||[]).includes('Solo')) dealEl('dealDealStatus').value='Solo';
       hideDealAlert();
-      loadDealUnits();
+      if(dealValue('dealProject')!==prevProject||(!dealUnits.length&&!/Loading/.test(dealEl('dealUnitCode').textContent||'')))loadDealUnits();
     }).withFailureHandler(e=>showDealAlert(e.message||String(e),'error')).getDealEntryOptions(AUTH_TOKEN);
   } else {
     loadDealUnits();
   }
 }
+const DEAL_PROJECTS_=['EDEN WALK','CCG'];
+let DEAL_UNITS_REQ_=0, DEAL_CHECK_REQ_=0;
 function loadDealUnits(){
-  const project=dealValue('dealProject')||'KOBULETI';
-  dealUnits=[];dealSelectedUnit=null;dealUnitValidated=false;
+  const project=dealValue('dealProject')||'EDEN WALK';
+  const req=++DEAL_UNITS_REQ_;
+  dealUnits=[];dealSelectedUnit=null;dealUnitValidated=false;DEAL_CHECK_REQ_++;
   dealEl('dealUnitCard').classList.add('hidden');
+  ['dealResCurrency','dealDPCurrency'].forEach(id=>{const el=dealEl(id);if(el)el.value='';});
+  hideDealAlert();
   dealEl('dealUnitCode').innerHTML='<option value="">Loading units...</option>';
   google.script.run.withSuccessHandler(rows=>{
+    if(req!==DEAL_UNITS_REQ_||dealValue('dealProject')!==project)return;   // answer for an older choice
     // Only units that are Available in the Inventory sheet can get a new deal.
     // ...and that have no active deal in the Deals sheet yet (sold but not updated in the inventory).
     dealUnits=(rows||[]).filter(r=>String(r.status||'').trim().toLowerCase()==='available'&&!r.dealStatus);
@@ -7044,6 +7051,7 @@ function loadDealUnits(){
       ?`<option value="">Select Unit — ${dealUnits.length} available</option>`+opts
       :'<option value="">No available units in the inventory</option>';
   }).withFailureHandler(e=>{
+    if(req!==DEAL_UNITS_REQ_)return;
     dealEl('dealUnitCode').innerHTML='<option value="">Unable to load units</option>';
     showDealAlert(e.message||String(e),'error');
   }).getDealInventoryUnits(AUTH_TOKEN,project);
@@ -7051,19 +7059,24 @@ function loadDealUnits(){
 function selectDealUnit(){
   const code=dealValue('dealUnitCode');
   dealSelectedUnit=dealUnits.find(r=>`${r.unitCode}||${r.inventoryCategory||''}`===code)||dealUnits.find(r=>String(r.unitCode)===code)||null;
-  if(dealSelectedUnit&&dealSelectedUnit.currency){['dealResCurrency','dealDPCurrency'].forEach(id=>{const el=dealEl(id);if(el&&!el.value&&[...el.options].some(o=>o.value===dealSelectedUnit.currency))el.value=dealSelectedUnit.currency;});}
-  dealUnitValidated=false;
-  if(!dealSelectedUnit){dealEl('dealUnitCard').classList.add('hidden');return}
-  renderDealUnitCard(dealSelectedUnit,'Checking unit...','checking');
+  if(dealSelectedUnit&&dealSelectedUnit.currency){['dealResCurrency','dealDPCurrency'].forEach(id=>{const el=dealEl(id);if(el&&[...el.options].some(o=>o.value===dealSelectedUnit.currency))el.value=dealSelectedUnit.currency;});}
+  const req=++DEAL_CHECK_REQ_;
+  if(!dealSelectedUnit){dealUnitValidated=false;dealEl('dealUnitCard').classList.add('hidden');return}
+  // The list only holds units that are Available in the inventory and have no active deal,
+  // so the user can continue right away. The server double-checks now and again on save.
+  dealUnitValidated=true;
+  hideDealAlert();
+  renderDealUnitCard(dealSelectedUnit,'Available in the inventory • double-checking…','allowed');
+  const u=dealSelectedUnit;
   google.script.run.withSuccessHandler(res=>{
+    if(req!==DEAL_CHECK_REQ_)return;
     dealUnitValidated=!!res.allowed;
-    renderDealUnitCard(res.unit||dealSelectedUnit,res.message,res.allowed?'allowed':'blocked',res.existing);
-    showDealAlert(res.message,res.allowed?'success':'warning');
+    renderDealUnitCard(res.unit||u,res.allowed?'Available — no active deal on this unit.':res.message,res.allowed?'allowed':'blocked',res.existing&&res.existing.clientName?res.existing:null);
+    if(!res.allowed)showDealAlert(res.message+(res.existing&&res.existing.status?` (${res.existing.status})`:''),'warning');
   }).withFailureHandler(e=>{
-    dealUnitValidated=false;
-    renderDealUnitCard(dealSelectedUnit,e.message||String(e),'blocked');
-    showDealAlert(e.message||String(e),'error');
-  }).checkDealUnitAvailability(AUTH_TOKEN,dealValue('dealProject'),dealSelectedUnit.unitCode,dealSelectedUnit.inventoryCategory||'');
+    if(req!==DEAL_CHECK_REQ_)return;
+    renderDealUnitCard(u,'Could not double-check right now — it will be checked again when you save.','allowed');
+  }).checkDealUnitAvailability(AUTH_TOKEN,dealValue('dealProject'),u.unitCode,u.inventoryCategory||'',true);
 }
 function renderDealUnitCard(u,message,state,existing){
   const el=dealEl('dealUnitCard');if(!el)return;
@@ -7181,7 +7194,7 @@ function resetDealWizard(){
     if(el.type==='checkbox')el.checked=false;else el.value='';
   });
   document.querySelectorAll('#dealEntryPanel select').forEach(el=>el.selectedIndex=0);
-  dealEl('dealProject').value='KOBULETI';
+  dealEl('dealProject').value='EDEN WALK';
   dealEl('dealStatus').value='Reservation';
   dealEl('dealDealStatus').value='Solo';
   dealEl('dealTransactionDate').value=new Date().toISOString().slice(0,10);
