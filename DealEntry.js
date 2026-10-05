@@ -422,6 +422,11 @@ function mainDealsColumns_(sheet) {
 
 function mainDealsCol_(cols, names) {
   for (const n of names) {
+    if (String(n).charAt(0) === '@') {           // fixed column confirmed by the sheet owner
+      const c = dealColumn_(String(n).slice(1));
+      if (c && c <= cols.lastCol) return c;
+      continue;
+    }
     const c = cols.map[normalizeHeader_(n)];
     if (c) return c;
   }
@@ -512,9 +517,11 @@ function setupDealsSheetGuard() {
 function checkDealsSheetMapping() {
   const sheet = getMainDealsSheet_();
   const cols = mainDealsColumns_(sheet);
+  const head = sheet.getRange(HEADER_ROW, 1, 1, cols.lastCol).getDisplayValues()[0];
   const lines = MAIN_DEAL_FIELDS_.map(f => {
     const c = mainDealsCol_(cols, f.h);
-    return (c ? 'OK   ' + columnLetter_(c) + '  ' : 'MISS     ') + (f.h.filter(x => x.indexOf('|') < 0)[0] || f.h[0]);
+    const name = f.h.filter(x => x.indexOf('|') < 0 && x.charAt(0) !== '@')[0] || f.h[0];
+    return (c ? 'OK   ' + columnLetter_(c) + '  ' : 'MISS     ') + name + (c ? '   ← sheet header: "' + String(head[c - 1]).replace(/\s+/g, ' ').trim() + '"' : '');
   });
   Logger.log('Last deal row: ' + mainDealsLastRow_(sheet, cols) + '\n' + lines.join('\n'));
 }
@@ -529,16 +536,14 @@ function columnLetter_(n) {
 const MAIN_DEAL_FIELDS_ = [
   { k: 'dealNum',          h: ['Deal Num', 'Deal Number', 'Deal No'] },
   { k: 'clientName',       h: ['Client Name'] },
-  { k: 'finalClientName',  h: ['Final Client Name'] },
   { k: 'project',          h: ['Project'] },
   { k: 'unitCode',         h: ['Unit Code'] },
   { k: 'status',           h: ['Status'] },
   { k: 'additionalStatus', h: ['Additional Status'] },
-  { k: 'reservationAmount',h: ['Reservation Amount', 'Reservation', 'Res Amount'] },
+  { k: 'reservationAmount',h: ['Reservation Amount', 'Res Amount', '@J'] },
   { k: 'date',             h: ['Date'] },
   { k: 'month',            h: ['Month'] },
   { k: 'year',             h: ['Year'] },
-  { k: 'transactionType',  h: ['Unit Statue', 'Cash / Installment', 'Cash or Installment', 'Payment Type'] },
   { k: 'mobile',           h: ['client info|contact', 'Contact', 'Mobile', 'Mobile Number', 'Phone'] },
   { k: 'clientType',       h: ['Client Type'] },
   { k: 'email',            h: ['Email', 'E-mail', 'Mail'] },
@@ -583,12 +588,12 @@ const MAIN_DEAL_FIELDS_ = [
   { k: 'dpPaid',           h: ['DP Paid'] },
   { k: 'actualPaid',       h: ['Actual Paid', 'Acctual Paid'] },
   { k: 'remain',           h: ['Remain'] },
-  { k: 'paymentDate',      h: ['Payment Date'] },
-  { k: 'paymentPlanType',  h: ['Type Of Payment', 'Payment Plan'] },
+  { k: 'paymentDate',      h: ['Payment Date', '@CK'] },
+  { k: 'paymentPlanType',  h: ['Type Of Payment', 'Payment Plan', '@CN'] },
   { k: 'installments',     h: ['Installments Period', 'Installments'] },
   { k: 'installmentPlan',  h: ['Installment Plan'] },
   { k: 'periodType',       h: ['Period Type', 'Period'] },
-  { k: 'notes',            h: ['Notes', 'Note', 'Comments'] }
+  { k: 'notes',            h: ['Notes', 'Note', 'Comments', '@EE'] }
 ];
 
 function saveDealToMainSheet_(user, payload, unit) {
@@ -693,7 +698,7 @@ function saveDealToMainSheet_(user, payload, unit) {
     const value = v[f.k];
     if (value === '' || value == null) return;
     const c = mainDealsCol_(cols, f.h);
-    const label = f.h.filter(x => x.indexOf('|') < 0)[0] || f.h[0];
+    const label = f.h.filter(x => x.indexOf('|') < 0 && x.charAt(0) !== '@')[0] || f.h[0];
     if (!c) { skipped.push(label); return; }
     if (used[c] || formulas[c - 1]) return;   // one value per column; formulas stay
     used[c] = true;
