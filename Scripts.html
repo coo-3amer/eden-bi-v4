@@ -198,7 +198,7 @@ function enhanceDashboardFilterLayout_(){
     yearMulti:'Year',
     brokerEdenMulti:'Sales',
     brokerCreatedByMulti:'Created By',
-    brokerLastSalesMulti:'Last Sales',
+    brokerLastSalesMulti:'Previous Sales',
     brokerLinkMulti:'Link Status',
     brokerStatusMulti:'Broker Status',
     brokerDayMulti:'Creation Day',
@@ -565,7 +565,7 @@ function brokerExportDataset_(){
       rows,
       headers:[
         'Company','Creation Date','Status','Link Status','Eden Sales',
-        'Last Sales','Created By','Mobile','Broker Sales','Group Link'
+        'Previous Sales','Created By','Mobile','Broker Sales','Group Link'
       ],
       keys:[
         'company','creationDate','status','linkStatusLabel','edenSales',
@@ -606,7 +606,7 @@ function brokerExportDataset_(){
       rows,
       headers:[
         'Company','Orientation','Orientation Date','Sales Who Made Orientation',
-        'Eden Sales','Last Sales','Created By','Creation Date','Mobile','Group Link'
+        'Eden Sales','Previous Sales','Created By','Creation Date','Mobile','Group Link'
       ],
       keys:[
         'company','orientationNo','orientationDate','sales',
@@ -651,7 +651,7 @@ function brokerExportDataset_(){
     title:'EDEN BI — Brokers Export',
     filename:'EDEN_Brokers',
     rows,
-    headers:['Company','Creation Date','Status','Link Status','Eden Sales','Last Sales','Created By','Mobile','Broker Sales','Group Link'],
+    headers:['Company','Creation Date','Status','Link Status','Eden Sales','Previous Sales','Created By','Mobile','Broker Sales','Group Link'],
     keys:['company','creationDate','status','linkStatusLabel','edenSales','lastSales','createdBy','mobile','brokerSales','groupLink'],
     kpis:[['Total Companies',rows.length.toLocaleString('en-US')]]
   };
@@ -1565,7 +1565,7 @@ function refreshSalesFilterByManager_(){
 function getMulti(name){return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(x=>String(x.value))}
 function updateMultiLabels(){
   setMultiLabel('project','projectLabel','All Projects');setMultiLabel('unitCategory','unitCategoryLabel','All Unit Types');setMultiLabel('sales','salesLabel','All Sales');setMultiLabel('salesManager','salesManagerLabel','All Sales Managers');setMultiLabel('dealType','dealTypeLabel','All Deal Types');setMultiLabel('sharedWith','sharedWithLabel','All Shared Sales');setMultiLabel('nationality','nationalityLabel','All Nationalities');setMultiLabel('clientType','clientTypeLabel','All Client Types');setMultiLabel('branch','branchLabel','All Branches');setMultiLabel('status','statusLabel','All Status');setMultiLabel('renovation','renovationLabel','All Renovation');setMultiLabel('mainSource','mainSourceLabel','All Main Sources');setMultiLabel('sourceType','sourceTypeLabel','All Source Types');setMultiLabel('campaignName','campaignNameLabel','All Campaigns');setMultiLabel('mediaBuyer','mediaBuyerLabel','All Media Buyers');setMultiLabel('day','dayLabel','All Days');setMultiLabel('month','monthLabel','All Months');setMultiLabel('year','yearLabel','All Years');
-  setMultiLabel('brokerEden','brokerEdenLabel','All Eden Sales');setMultiLabel('brokerCreatedBy','brokerCreatedByLabel','All Created By');setMultiLabel('brokerLastSales','brokerLastSalesLabel','All Last Sales');setMultiLabel('brokerLink','brokerLinkLabel','All Link Status');setMultiLabel('brokerStatus','brokerStatusLabel','All Broker Status');setMultiLabel('brokerDay','brokerDayLabel','All Creation Days');setMultiLabel('brokerMonth','brokerMonthLabel','All Creation Months');setMultiLabel('brokerYear','brokerYearLabel','All Creation Years');
+  setMultiLabel('brokerEden','brokerEdenLabel','All Eden Sales');setMultiLabel('brokerCreatedBy','brokerCreatedByLabel','All Created By');setMultiLabel('brokerLastSales','brokerLastSalesLabel','All Previous Sales');setMultiLabel('brokerLink','brokerLinkLabel','All Link Status');setMultiLabel('brokerStatus','brokerStatusLabel','All Broker Status');setMultiLabel('brokerDay','brokerDayLabel','All Creation Days');setMultiLabel('brokerMonth','brokerMonthLabel','All Creation Months');setMultiLabel('brokerYear','brokerYearLabel','All Creation Years');
 }
 function setMultiLabel(name,labelId,emptyText){const selected=Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(x=>x.dataset.label||x.value);document.getElementById(labelId).innerText=selected.length?selected.join(' • '):emptyText}
 function bindMultiControls(){
@@ -5107,7 +5107,7 @@ function cell(c,v){
   if(c==='status')return `<td><span class="chip status-${String(v).split(' ')[0]}">${v||''}</span></td>`;
   return `<td>${v??''}</td>`;
 }
-function label(c){return {name:'Name',deals:'Deals',valueEGP:'Total Value EGP',valueUSD:'Total Value USD',meters:'Sold Meters',units:'Sold Units',uniqueClients:'Unique Clients',salesCount:'Sales Count',projectsCount:'Projects Count',branchesCount:'Branches Count',reservationDays:'Reservation Days',docsUrl:'Documents',clientName:'Client Name',project:'Project',clientType:'Client Type',nationality:'Nationality',unitCode:'Unit Code',status:'Status',renovationStatus:'Renovation',amount:'Final Price',currency:'Currency',area:'Area',salesName:'Sales Name',dealStatus:'Deal Type',sharedWith:'Shared With',branch:'Branch',date:'Date',monthName:'Month',year:'Year',unitCategory:'Unit Type Category',unitType:'Unit Type',mainSource:'Main Source',sourceType:'Source Type',campaignName:'Campaign Name',mediaBuyer:'Media Buyer',brokerageCompany:'Brokerage Company',bcSales:'BC Sales',bcManager:'BC Manager',dpPercent:'DP %',actualDP:'Actual DP',dpPaid:'DP Paid',actualPaid:'Actual Paid',remain:'Remain',analysisType:'Analysis Type',projects:'Projects',customerValue:'Customer Value',customerJourney:'Customer Journey',sales:'Sales',branches:'Branches',statuses:'Statuses',unitCodes:'Unit Codes',company:'Company',creationDate:'Creation Date',lastSales:'Last Sales',createdBy:'Created By',edenSales:'Eden Sales',admin:'Admin',mobile:'Mobile',brokerSales:'Broker Sales',groupLink:'Group Link',companies:'Companies',withGroups:'WhatsApp Groups',withoutGroups:'Without Link',admins:'Admins',edenSalesCount:'Eden Sales Count',linkStatusLabel:'Link Status',healthStatus:'Health Status',severity:'Severity',issues:'Issues',row:'Sheet Row',orientationNo:'Orientation',orientationDate:'Orientation Date',sales:'Sales Who Made Orientation',orientations:'Orientations',firstOrientation:'First Orientation',lastOrientation:'Last Orientation'}[c]||c}
+function label(c){return {name:'Name',deals:'Deals',valueEGP:'Total Value EGP',valueUSD:'Total Value USD',meters:'Sold Meters',units:'Sold Units',uniqueClients:'Unique Clients',salesCount:'Sales Count',projectsCount:'Projects Count',branchesCount:'Branches Count',reservationDays:'Reservation Days',docsUrl:'Documents',clientName:'Client Name',project:'Project',clientType:'Client Type',nationality:'Nationality',unitCode:'Unit Code',status:'Status',renovationStatus:'Renovation',amount:'Final Price',currency:'Currency',area:'Area',salesName:'Sales Name',dealStatus:'Deal Type',sharedWith:'Shared With',branch:'Branch',date:'Date',monthName:'Month',year:'Year',unitCategory:'Unit Type Category',unitType:'Unit Type',mainSource:'Main Source',sourceType:'Source Type',campaignName:'Campaign Name',mediaBuyer:'Media Buyer',brokerageCompany:'Brokerage Company',bcSales:'BC Sales',bcManager:'BC Manager',dpPercent:'DP %',actualDP:'Actual DP',dpPaid:'DP Paid',actualPaid:'Actual Paid',remain:'Remain',analysisType:'Analysis Type',projects:'Projects',customerValue:'Customer Value',customerJourney:'Customer Journey',sales:'Sales',branches:'Branches',statuses:'Statuses',unitCodes:'Unit Codes',company:'Company',creationDate:'Creation Date',lastSales:'Previous Sales',createdBy:'Created By',edenSales:'Eden Sales',admin:'Admin',mobile:'Mobile',brokerSales:'Broker Sales',groupLink:'Group Link',companies:'Companies',withGroups:'WhatsApp Groups',withoutGroups:'Without Link',admins:'Admins',edenSalesCount:'Eden Sales Count',linkStatusLabel:'Link Status',healthStatus:'Health Status',severity:'Severity',issues:'Issues',row:'Sheet Row',orientationNo:'Orientation',orientationDate:'Orientation Date',sales:'Sales Who Made Orientation',orientations:'Orientations',firstOrientation:'First Orientation',lastOrientation:'Last Orientation'}[c]||c}
 
 
 // ===== TRANSACTIONS DATA HEALTH =====
@@ -5221,7 +5221,7 @@ function renderBrokerCompanyDetails_(){
   const source=brokerCompanySourceRow_(company) || (allDeals.length ? {
     company,
     edenSales:'Not in Brokers sheet',
-    lastSales:'Not in Brokers sheet',
+    lastSales:'—',
     status:'Not in Brokers sheet',
     brokerSales:allDeals.length
   } : null);
@@ -5262,7 +5262,7 @@ function renderBrokerCompanyDetails_(){
     profile.innerHTML=[
       brokerCompanyProfileItem_('Company',company),
       brokerCompanyProfileItem_('Eden Sales',source?.edenSales||'Not Assigned'),
-      brokerCompanyProfileItem_('Last Sales',source?.lastSales||'Not Assigned'),
+      brokerCompanyProfileItem_('Previous Sales',source?.lastSales||'—'),
       brokerCompanyProfileItem_('Created By',source?.createdBy||'Not Assigned'),
       brokerCompanyProfileItem_('Creation Date',source?.creationDate||'—'),
       brokerCompanyProfileItem_('Company Mobile',source?.mobile||'—'),
@@ -5884,7 +5884,7 @@ function renderBrokerCompaniesView_(){
     {label:'Company',render:r=>brokerUtilityCompanyButton_(r.company)},
     {label:'Status',key:'status'},
     {label:'Eden Sales',key:'edenSales'},
-    {label:'Last Sales',key:'lastSales'},
+    {label:'Previous Sales',key:'lastSales'},
     {label:'Created By',key:'createdBy'},
     {label:'Mobile',key:'mobile'},
     {label:'Broker Sales',render:r=>`<td>${money(r.brokerSales||0)}</td>`},
@@ -5971,7 +5971,7 @@ function renderBrokerOrientationsView_(){
     {label:'Date',key:'orientationDate'},
     {label:'Sales',key:'sales'},
     {label:'Eden Sales',key:'edenSales'},
-    {label:'Last Sales',key:'lastSales'},
+    {label:'Previous Sales',key:'lastSales'},
     {label:'Created By',key:'createdBy'},
     {label:'Company Mobile',key:'mobile'},
     {label:'Group',render:r=>`<td>${r.groupLink?`<a class="brokerDirectoryLink" href="${escapeAttr(r.groupLink)}" target="_blank" rel="noopener">Open ↗</a>`:'—'}</td>`}

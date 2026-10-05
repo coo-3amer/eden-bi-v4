@@ -34,6 +34,7 @@ function getBrokerDashboardData_() {
     edenSales: ['Eden Sales', 'EDEN Sales'],
     firstSales: ['First Sales', '1st Sales'],
     secondSales: ['Second Sales', '2nd Sales'],
+    thirdSales: ['Thired Sales', 'Third Sales', '3rd Sales'],
     lastSales: ['Last Sales', 'Latest Sales'],
     createdBy: ['Created By', 'Creator', 'Added By'],
     admin: ['Admin', 'Admin Name', 'Company Admin'],
@@ -66,20 +67,20 @@ function getBrokerDashboardData_() {
     const directEdenSales = getAny_(r, idx, fieldAliases.edenSales);
     const firstSales = getAny_(r, idx, fieldAliases.firstSales);
     const secondSales = getAny_(r, idx, fieldAliases.secondSales);
-    const lastSales = getAny_(r, idx, fieldAliases.lastSales);
+    const thirdSales = getAny_(r, idx, fieldAliases.thirdSales);
+    const lastSalesCol = getAny_(r, idx, fieldAliases.lastSales);
 
-    const salesPeople = [...new Set([
-      directEdenSales,
-      firstSales,
-      secondSales,
-      lastSales
-    ].map(v => String(v || '').trim()).filter(v => v && v !== 'Not Assigned'))];
+    // Hand-over history in sheet order: First -> Second -> Thired (-> Last).
+    // The company's CURRENT salesperson is the latest one filled in;
+    // "Previous" is the one before. An "Eden Sales" column, if present, wins.
+    const clean = v => { const t = String(v || '').trim(); return t && t !== 'Not Assigned' ? t : ''; };
+    const chain = [firstSales, secondSales, thirdSales, lastSalesCol].map(clean).filter(Boolean);
+    const current = clean(directEdenSales) || chain[chain.length - 1] || '';
+    const previous = [...chain].reverse().find(n => n !== current) || '';
 
-    // The company's CURRENT EDEN salesperson is the "Eden Sales" column only.
-    // First / Second / Last Sales are history and must not stand in for it.
-    const primaryEdenSales = availableFields.edenSales
-      ? (String(directEdenSales || '').trim() || 'Not Assigned')
-      : (lastSales || secondSales || firstSales || 'Not Assigned');
+    const salesPeople = [...new Set([current].concat(chain).filter(Boolean))];
+    const primaryEdenSales = current || 'Not Assigned';
+    const lastSales = previous;
 
     const groupLink = getAny_(r, idx, fieldAliases.groupLink);
     const adminValue = getAny_(r, idx, fieldAliases.admin);
