@@ -7029,8 +7029,19 @@ function loadDealUnits(){
   dealEl('dealUnitCard').classList.add('hidden');
   dealEl('dealUnitCode').innerHTML='<option value="">Loading units...</option>';
   google.script.run.withSuccessHandler(rows=>{
-    dealUnits=rows||[];
-    dealEl('dealUnitCode').innerHTML='<option value="">Select Unit</option>'+dealUnits.map(r=>`<option value="${escapeAttr(r.unitCode)}">${escapeHtml(r.unitCode)} — ${escapeHtml(r.status)} — ${escapeHtml(r.company||'')}</option>`).join('');
+    // Only units that are Available in the Inventory sheet can get a new deal.
+    dealUnits=(rows||[]).filter(r=>String(r.status||'').trim().toLowerCase()==='available');
+    const key=r=>`${r.unitCode}||${r.inventoryCategory||''}`;
+    const label=r=>[r.unitCode,r.type||r.unitType,r.floor,r.area?`${r.area} m²`:''].filter(Boolean).map(escapeHtml).join(' — ');
+    const groups={};dealUnits.forEach(r=>{(groups[r.inventoryCategory||'Units']=groups[r.inventoryCategory||'Units']||[]).push(r);});
+    const names=Object.keys(groups);
+    const opts=names.map(g=>{
+      const items=groups[g].sort((a,b)=>String(a.unitCode).localeCompare(String(b.unitCode),undefined,{numeric:true})).map(r=>`<option value="${escapeAttr(key(r))}">${label(r)}</option>`).join('');
+      return names.length>1?`<optgroup label="${escapeAttr(g)} (${groups[g].length})">${items}</optgroup>`:items;
+    }).join('');
+    dealEl('dealUnitCode').innerHTML=dealUnits.length
+      ?`<option value="">Select Unit — ${dealUnits.length} available</option>`+opts
+      :'<option value="">No available units in the inventory</option>';
   }).withFailureHandler(e=>{
     dealEl('dealUnitCode').innerHTML='<option value="">Unable to load units</option>';
     showDealAlert(e.message||String(e),'error');
@@ -7038,7 +7049,7 @@ function loadDealUnits(){
 }
 function selectDealUnit(){
   const code=dealValue('dealUnitCode');
-  dealSelectedUnit=dealUnits.find(r=>String(r.unitCode)===code)||null;
+  dealSelectedUnit=dealUnits.find(r=>`${r.unitCode}||${r.inventoryCategory||''}`===code)||dealUnits.find(r=>String(r.unitCode)===code)||null;
   if(dealSelectedUnit&&dealSelectedUnit.currency){['dealResCurrency','dealDPCurrency'].forEach(id=>{const el=dealEl(id);if(el&&!el.value&&[...el.options].some(o=>o.value===dealSelectedUnit.currency))el.value=dealSelectedUnit.currency;});}
   dealUnitValidated=false;
   if(!dealSelectedUnit){dealEl('dealUnitCard').classList.add('hidden');return}
@@ -7051,7 +7062,7 @@ function selectDealUnit(){
     dealUnitValidated=false;
     renderDealUnitCard(dealSelectedUnit,e.message||String(e),'blocked');
     showDealAlert(e.message||String(e),'error');
-  }).checkDealUnitAvailability(AUTH_TOKEN,dealValue('dealProject'),code);
+  }).checkDealUnitAvailability(AUTH_TOKEN,dealValue('dealProject'),dealSelectedUnit.unitCode,dealSelectedUnit.inventoryCategory||'');
 }
 function renderDealUnitCard(u,message,state,existing){
   const el=dealEl('dealUnitCard');if(!el)return;
@@ -7064,7 +7075,7 @@ function renderDealUnitCard(u,message,state,existing){
       <span><small>Type</small><b>${escapeHtml(u.type||u.unitType||'')}</b></span>
       <span><small>Area</small><b>${escapeHtml(u.totalGross||u.area||'')}</b></span>
       <span><small>View</small><b>${escapeHtml(u.view||'')}</b></span>
-      <span><small>Price</small><b>${u.totalPrice?'$ '+money(u.totalPrice):''}</b></span>
+      <span><small>Price</small><b>${u.totalPrice?money(u.totalPrice)+' '+escapeHtml(u.currency||''):''}</b></span>
     </div>
     <div class="dealUnitMessage">${escapeHtml(message||'')}${existing?`<br>Existing client: <b>${escapeHtml(existing.clientName)}</b> • ${escapeHtml(existing.status)} • Row ${escapeHtml(existing.rowNumber)}`:''}</div>`;
   el.classList.remove('hidden');
@@ -7108,7 +7119,7 @@ function calculateDealRemain(){
 }
 function collectDealPayload(){
   return {
-    project:dealValue('dealProject'),unitCode:dealValue('dealUnitCode'),status:dealValue('dealStatus'),
+    project:dealValue('dealProject'),unitCode:(dealSelectedUnit&&dealSelectedUnit.unitCode)||dealValue('dealUnitCode'),inventoryCategory:(dealSelectedUnit&&dealSelectedUnit.inventoryCategory)||'',status:dealValue('dealStatus'),
     reservationAmount:dealValue('dealReservationAmount'),resCurrency:dealValue('dealResCurrency'),resPaymentMethod:dealValue('dealResPaymentMethod'),dpPaymentMethod:dealValue('dealDPPaymentMethod'),dpCurrency:dealValue('dealDPCurrency'),additionalStatus:dealValue('dealAdditionalStatus'),
     transactionDate:dealValue('dealTransactionDate'),transactionType:'Installment',
     clientName:dealValue('dealClientName'),mobile:dealValue('dealMobile'),email:dealValue('dealEmail'),
@@ -7133,7 +7144,7 @@ function renderDealReview(){
   const rows=[
     ['Client',p.clientName],['Mobile',p.mobile],['Project',p.project],['Unit',p.unitCode],
     ['Inventory Status',u.status],['Company',u.company],['Unit Type',u.type||u.unitType],
-    ['Area',u.totalGross||u.area],['Price',u.totalPrice?'$ '+money(u.totalPrice):''],
+    ['Area',u.totalGross||u.area],['Price',u.totalPrice?money(u.totalPrice)+' '+(u.currency||''):''],
     ['Transaction Status',p.status],['Branch',p.branch],['Sales',p.salesName],
     ['Source',[p.mainSource,p.sourceType,p.campaignName].filter(Boolean).join(' / ')],
     ['Actual DP',p.actualDP],['Paid',p.actualPaid||p.dpPaid],['Remain',p.remain]

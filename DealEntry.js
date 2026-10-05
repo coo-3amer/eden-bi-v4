@@ -143,7 +143,9 @@ function getDealInventoryUnits(authToken, project) {
     view: r.view || '',
     meterPrice: r.meterPrice || 0,
     totalPrice: r.totalPrice || 0,
-    currency: r.currency || 'USD'
+    currency: r.currency || 'USD',
+    inventoryCategory: r.inventoryCategory || '',
+    sheet: r.sourceSheetName || ''
   }));
 }
 
@@ -261,13 +263,13 @@ function findExistingActiveDeal_(sheet, project, unitCode) {
   return null;
 }
 
-function checkDealUnitAvailability(authToken, project, unitCode) {
+function checkDealUnitAvailability(authToken, project, unitCode, inventoryCategory) {
   validateAuthToken_(authToken);
   project = dealText_(project || 'KOBULETI');
   unitCode = dealText_(unitCode);
   if (!unitCode) return { allowed: false, message: 'Select a unit first.' };
 
-  const inventoryCheck = validateInventoryUnitForDeal(authToken, project, unitCode);
+  const inventoryCheck = validateInventoryUnitForDeal(authToken, project, unitCode, inventoryCategory);
   const mainSheet = getMainDealsSheet_();
   const existing = findExistingActiveMainDeal_(mainSheet, mainDealsColumns_(mainSheet), project, unitCode);
 
@@ -393,7 +395,7 @@ function saveNewDeal(authToken, payload) {
   try {
     const project = dealText_(payload.project).toUpperCase();
     const unitCode = dealText_(payload.unitCode);
-    const check = checkDealUnitAvailability(authToken, project, unitCode);
+    const check = checkDealUnitAvailability(authToken, project, unitCode, dealText_(payload.inventoryCategory));
     if (!check.allowed) {
       const details = check.existing ? ` Existing client: ${check.existing.clientName}. Status: ${check.existing.status}.` : '';
       throw new Error(check.message + details);
