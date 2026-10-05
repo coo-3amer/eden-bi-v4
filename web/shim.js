@@ -8,6 +8,19 @@
   var NOT_UPDATED = 'The server has not been updated yet. In Apps Script: Deploy > Manage deployments > Edit > New version > Deploy.';
   var OFFLINE = 'Connection problem. Check your internet connection and try again.';
 
+  /* Google sometimes answers with an HTML page instead of JSON (error,
+     permission request, quota…). Show what it says instead of guessing. */
+  function googleError(html, status) {
+    var t = String(html || '');
+    if (/Script function not found|doGet/i.test(t) && !/Exception/i.test(t)) return NOT_UPDATED;
+    var title = (t.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1] || '';
+    var body = t.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/\s+/g, ' ').trim();
+    var msg = (body || title).slice(0, 220);
+    if (/authoriz|permission|sign in/i.test(msg)) msg += ' — open Apps Script, run any function once and press Allow.';
+    return 'Google server message (' + status + '): ' + (msg || 'empty response') + '';
+  }
+
   function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
 
   function b64url(str) {
@@ -40,7 +53,7 @@
     }
     if (!res) throw new Error(OFFLINE);
     var text = await res.text(), json;
-    try { json = JSON.parse(text); } catch (e) { throw new Error(NOT_UPDATED); }
+    try { json = JSON.parse(text); } catch (e) { throw new Error(googleError(text, res.status)); }
     if (!json || json.ok === false) throw new Error((json && json.error) || 'Server error.');
     return json;
   }
