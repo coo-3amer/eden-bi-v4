@@ -7046,6 +7046,32 @@ function loadDealEntry(){
 }
 const DEAL_PROJECTS_=['EDEN WALK','CCG'];
 let DEAL_UNITS_REQ_=0, DEAL_CHECK_REQ_=0;
+/* Units per project are kept in the page, prefetched in the background, and
+   shown at once; a fresh list replaces them quietly when it arrives. */
+const DEAL_UNITS_CACHE_={};
+function dealFetchUnits_(project,cb,fail){
+  google.script.run.withSuccessHandler(rows=>{DEAL_UNITS_CACHE_[project]={rows:rows||[],at:Date.now()};cb&&cb(rows||[]);})
+    .withFailureHandler(e=>fail&&fail(e)).getDealInventoryUnits(AUTH_TOKEN,project);
+}
+function dealRenderUnits_(rows){
+  // Only units that are Available in the Inventory sheet can get a new deal,
+  // and only if they have no active deal in the Deals sheet yet.
+  const keep=dealSelectedUnit?`${dealSelectedUnit.unitCode}||${dealSelectedUnit.inventoryCategory||''}`:'';
+  dealUnits=(rows||[]).filter(r=>String(r.status||'').trim().toLowerCase()==='available'&&!r.dealStatus);
+  const key=r=>`${r.unitCode}||${r.inventoryCategory||''}`;
+  const label=r=>[r.unitCode,r.type||r.unitType,r.floor,r.area?`${r.area} m²`:''].filter(Boolean).map(escapeHtml).join(' — ');
+  const groups={};dealUnits.forEach(r=>{(groups[r.inventoryCategory||'Units']=groups[r.inventoryCategory||'Units']||[]).push(r);});
+  const names=Object.keys(groups);
+  const opts=names.map(g=>{
+    const items=groups[g].sort((a,b)=>String(a.unitCode).localeCompare(String(b.unitCode),undefined,{numeric:true})).map(r=>`<option value="${escapeAttr(key(r))}">${label(r)}</option>`).join('');
+    return names.length>1?`<optgroup label="${escapeAttr(g)} (${groups[g].length})">${items}</optgroup>`:items;
+  }).join('');
+  const sel=dealEl('dealUnitCode');
+  sel.innerHTML=dealUnits.length
+    ?`<option value="">Select Unit — ${dealUnits.length} available</option>`+opts
+    :'<option value="">No available units in the inventory</option>';
+  if(keep&&dealUnits.some(r=>key(r)===keep))sel.value=keep;
+}
 function loadDealUnits(){
   const project=dealValue('dealProject')||'EDEN WALK';
   const req=++DEAL_UNITS_REQ_;
@@ -7053,29 +7079,27 @@ function loadDealUnits(){
   dealEl('dealUnitCard').classList.add('hidden');
   ['dealResCurrency','dealDPCurrency'].forEach(id=>{const el=dealEl(id);if(el)el.value='';});
   hideDealAlert();
-  dealEl('dealUnitCode').innerHTML='<option value="">Loading units...</option>';
-  google.script.run.withSuccessHandler(rows=>{
+  const cached=DEAL_UNITS_CACHE_[project];
+  if(cached)dealRenderUnits_(cached.rows);
+  else dealEl('dealUnitCode').innerHTML='<option value="">Loading units...</option>';
+  if(cached&&Date.now()-cached.at<60000)return;   // fresh enough
+  dealFetchUnits_(project,rows=>{
     if(req!==DEAL_UNITS_REQ_||dealValue('dealProject')!==project)return;   // answer for an older choice
-    // Only units that are Available in the Inventory sheet can get a new deal.
-    // ...and that have no active deal in the Deals sheet yet (sold but not updated in the inventory).
-    dealUnits=(rows||[]).filter(r=>String(r.status||'').trim().toLowerCase()==='available'&&!r.dealStatus);
-    const key=r=>`${r.unitCode}||${r.inventoryCategory||''}`;
-    const label=r=>[r.unitCode,r.type||r.unitType,r.floor,r.area?`${r.area} m²`:''].filter(Boolean).map(escapeHtml).join(' — ');
-    const groups={};dealUnits.forEach(r=>{(groups[r.inventoryCategory||'Units']=groups[r.inventoryCategory||'Units']||[]).push(r);});
-    const names=Object.keys(groups);
-    const opts=names.map(g=>{
-      const items=groups[g].sort((a,b)=>String(a.unitCode).localeCompare(String(b.unitCode),undefined,{numeric:true})).map(r=>`<option value="${escapeAttr(key(r))}">${label(r)}</option>`).join('');
-      return names.length>1?`<optgroup label="${escapeAttr(g)} (${groups[g].length})">${items}</optgroup>`:items;
-    }).join('');
-    dealEl('dealUnitCode').innerHTML=dealUnits.length
-      ?`<option value="">Select Unit — ${dealUnits.length} available</option>`+opts
-      :'<option value="">No available units in the inventory</option>';
-  }).withFailureHandler(e=>{
-    if(req!==DEAL_UNITS_REQ_)return;
+    dealRenderUnits_(rows);
+  },e=>{
+    if(req!==DEAL_UNITS_REQ_||cached)return;
     dealEl('dealUnitCode').innerHTML='<option value="">Unable to load units</option>';
     showDealAlert(e.message||String(e),'error');
-  }).getDealInventoryUnits(AUTH_TOKEN,project);
+  });
 }
+/* Warm the unit lists a few seconds after the dashboard opens (admins / data entry). */
+setTimeout(function dealPrefetch_(){
+  try{
+    if(!AUTH_TOKEN||!EDEN_BOOT_COMPLETE){setTimeout(dealPrefetch_,5000);return;}
+    if(typeof isEgyptViewer_==='function'&&isEgyptViewer_())return;
+    DEAL_PROJECTS_.forEach((p,i)=>setTimeout(()=>{if(!DEAL_UNITS_CACHE_[p])dealFetchUnits_(p);},i*1500));
+  }catch(e){}
+},6000);
 function selectDealUnit(){
   const code=dealValue('dealUnitCode');
   dealSelectedUnit=dealUnits.find(r=>`${r.unitCode}||${r.inventoryCategory||''}`===code)||dealUnits.find(r=>String(r.unitCode)===code)||null;
@@ -7238,6 +7262,7 @@ function submitNewDeal(){
     showDealAlert(res.message,'success');
     dealEl('dealSaveBtn').disabled=false;
     DEAL_REQUEST_ID_='';
+    Object.keys(DEAL_UNITS_CACHE_).forEach(k=>delete DEAL_UNITS_CACHE_[k]);   // the sold unit must disappear
     alert(res.message+rej+miss);
     resetDealWizard();
     dealOptionsLoaded=false;
