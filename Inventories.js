@@ -259,7 +259,7 @@ function getInventoryData(authToken, project, forceRefresh) {
   return inventoryDataCached_(project, forceRefresh, !!forceRefresh);
 }
 
-const INVENTORY_CACHE_MAX_AGE_MS_ = 20 * 60 * 1000;  // warm-up refreshes it once it is 9+ minutes old
+const INVENTORY_CACHE_MAX_AGE_MS_ = 6 * 60 * 60 * 1000;  // LiveSync rebuilds it on every inventory edit, so any cached copy is current
 
 /* Inventory of one project. Kept compressed in the cache (any size), so
    unit lists and unit checks answer in about a second. */

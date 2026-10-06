@@ -85,7 +85,7 @@ function cancelledStatus_(value) {
  * The cache is cleared when a deal is saved from the dashboard.
  */
 const DASH_CACHE_SECONDS_ = 21600;      // kept up to 6 h (CacheService maximum)…
-const DASH_CACHE_MAX_AGE_MS_ = 15 * 60 * 1000; // …but rebuilt on a visit if older than 15 min
+const DASH_CACHE_MAX_AGE_MS_ = 60 * 60 * 1000; // …rebuilt on a visit only if older than 1 h (LiveSync + warm-up keep it fresh)
 const DASH_CACHE_SLICE_ = 90000;
 
 function getDashboardData(authToken, opts) {
@@ -165,7 +165,7 @@ function warmDashboardCache() {
   // A cache flag, not a script lock, so saving a deal never waits for the warm-up.
   const cache = CacheService.getScriptCache();
   if (cache.get('WARM_RUNNING')) return;
-  cache.put('WARM_RUNNING', '1', 240);
+  cache.put('WARM_RUNNING', '1', 330);
   const t0 = Date.now(), elapsed = () => Date.now() - t0;
   try {
     // 1) What every visitor needs first.
@@ -176,7 +176,7 @@ function warmDashboardCache() {
     // 2) Inventories (Add New Deal + Inventory pages), only when getting old, while time allows.
     const order = ['EDEN_WALK', 'CITY_CENTER_GLDANI'].concat(Object.keys(INVENTORY_SOURCES).filter(k => k !== 'EDEN_WALK' && k !== 'CITY_CENTER_GLDANI'));
     order.forEach(k => {
-      if (elapsed() > 150000 || dashCacheAge_('INV_' + k) < 9 * 60 * 1000) return;
+      if (elapsed() > 240000 || dashCacheAge_('INV_' + k) < 30 * 60 * 1000) return;
       try { inventoryDataCached_(k, true, false); } catch (e) { console.warn('Inventory warm ' + k + ': ' + e); }
     });
     // 3) Add New Deal dropdowns (hourly).

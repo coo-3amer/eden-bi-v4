@@ -136,7 +136,7 @@ function activeDealUnitKeys_(project) {
   const pk = dealProjectKey_(project);
   const keys = {};
   let rows = null;
-  try { const d = dashCacheRead_('ALL', 30 * 60 * 1000); rows = d && d.rows; } catch (e) {}
+  try { const d = dashCacheRead_('ALL', 6 * 60 * 60 * 1000); rows = d && d.rows; } catch (e) {}
   if (rows) {
     rows.forEach(r => {
       if (dealProjectKey_(r.project) !== pk) return;
