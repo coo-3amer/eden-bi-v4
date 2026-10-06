@@ -728,6 +728,7 @@ const MAIN_DEAL_FIELDS_ = [
   { k: 'area',             h: ['Area'] },
   { k: 'primaryMeter',     h: ['Primary Meter Price'] },
   { k: 'primaryTotal',     h: ['Primary Total Price'] },
+  { k: 'discount',         h: ['price details|discount', 'Discount'] },
   { k: 'meterAfter',       h: ['Meter Price After Discount'] },
   { k: 'finalPrice',       h: ['Final Price'] },
   { k: 'currency',         h: ['price details|currency', '@BI'] },
@@ -793,6 +794,14 @@ function saveDealToMainSheet_(user, payload, unit) {
   const actualPaid = dealNumber_(payload.actualPaid || payload.dpPaid);
   const pct = v => { if (v === '' || v == null) return ''; const n = dealNumber_(v); return Math.abs(n) > 1 ? n / 100 : n; };
   const price = dealNumber_(unit.totalPrice), meter = dealNumber_(unit.meterPrice);
+  // Discount: given as %, or worked out from the price after discount.
+  let disc = payload.discountPercent === '' || payload.discountPercent == null ? NaN : dealNumber_(payload.discountPercent) / 100;
+  const typedFinal = dealNumber_(payload.finalPrice);
+  if (!Number.isFinite(disc) && typedFinal && price) disc = 1 - typedFinal / price;
+  if (!Number.isFinite(disc) || disc < 0 || disc >= 1) disc = 0;
+  const finalPrice = typedFinal || (price ? Math.round(price * (1 - disc)) : 0);
+  const meterAfter = meter ? Math.round(meter * (1 - disc)) : 0;
+  const sharedName = dealText_(payload.sharedWith);
   const v = {
     dealNum: dealNum,
     clientName: dealText_(payload.clientName),
@@ -826,8 +835,9 @@ function saveDealToMainSheet_(user, payload, unit) {
     area: dealNumber_(unit.area) || '',
     primaryMeter: meter || '',
     primaryTotal: price || '',
-    meterAfter: meter || '',
-    finalPrice: price || '',
+    meterAfter: meterAfter || meter || '',
+    finalPrice: finalPrice || '',
+    discount: disc || '',
     currency: dealText_(unit.currency || payload.currency),
     resCurrency: dealText_(payload.resCurrency || (dealNumber_(payload.reservationAmount) ? (unit.currency || payload.currency) : '')),
     resPaymentMethod: dealText_(payload.resPaymentMethod),
@@ -842,7 +852,7 @@ function saveDealToMainSheet_(user, payload, unit) {
     salesManager: dealText_(payload.salesManager),
     headOfSales: dealText_(payload.headOfSales),
     cco: dealText_(payload.cco),
-    dealStatus: dealText_(payload.dealStatus || 'Solo'),
+    dealStatus: sharedName ? 'Share' : 'Solo',   // Shared With decides, always
     mainSource: dealText_(payload.mainSource),
     sourceType: dealText_(payload.sourceType),
     campaignName: dealText_(payload.campaignName),
@@ -851,7 +861,7 @@ function saveDealToMainSheet_(user, payload, unit) {
     bcSales: dealText_(payload.bcSales),
     dpPercent: pct(payload.dpPercent),
     actualDP: dp || '',
-    dpPaid: dealNumber_(payload.dpPaid) || '',
+    dpPaid: pct(payload.dpPaid),
     actualPaid: actualPaid || '',
     remain: payload.remain === '' || payload.remain == null ? (dp ? Math.max(0, dp - actualPaid) : '') : dealNumber_(payload.remain),
     paymentDate: dealDate_(payload.paymentDate),
@@ -859,7 +869,7 @@ function saveDealToMainSheet_(user, payload, unit) {
     installments: dealText_(payload.installments),
     installmentPlan: dealText_(payload.installmentPlan),
     periodType: dealText_(payload.periodType),
-    notes: dealText_(payload.notes)
+    notes: [payload.maintenanceBase === 'before' && dealNumber_(payload.maintenancePercent) ? 'Maintenance on price before discount.' : '', dealText_(payload.notes)].filter(Boolean).join(' ')
   };
 
   const rowRange = sheet.getRange(row, 1, 1, cols.lastCol);

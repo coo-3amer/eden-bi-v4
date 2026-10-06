@@ -555,11 +555,11 @@
         <div class="dealFormGrid">
           <label>Branch *<select id="dealBranch"></select></label>
           <label>Sales Name *<select id="dealSalesName"></select></label>
-          <label>Shared With<select id="dealSharedWith"><option value="">Select Shared With</option></select></label>
+          <label>Shared With<select id="dealSharedWith" onchange="dealSyncDealStatus_()"><option value="">Select Shared With</option></select></label>
           <label>Sales Manager<select id="dealSalesManager"><option value="">Select Sales Manager</option></select></label>
           <label>Head Of Sales<select id="dealHeadOfSales"><option value="">Select Head Of Sales</option></select></label>
           <label>CCO<select id="dealCCO"><option value="">Select CCO</option></select></label>
-          <label>Deal Status<select id="dealDealStatus"><option value="">Select Deal Status</option></select></label>
+          <label>Deal Status <small style="font-weight:600;color:var(--ds-muted)">(set by Shared With)</small><select id="dealDealStatus" disabled><option value="">Select Deal Status</option></select></label>
           <label>Main Source<select id="dealMainSource"></select></label>
           <label>Source Type<select id="dealSourceType"></select></label>
           <label>Campaign Name<select id="dealCampaignName"></select></label>
@@ -572,11 +572,14 @@
       <div class="dealStep" data-deal-step="4">
         <h3>4. Down Payment & Payment Plan</h3>
         <div class="dealFormGrid">
-          <label>DP %<input id="dealDPPercent" type="number" min="0" step="0.01"></label>
-          <label>Actual DP<input id="dealActualDP" type="number" min="0" step="0.01" oninput="calculateDealRemain()"></label>
-          <label>DP Paid<input id="dealDPPaid" type="number" min="0" step="0.01" oninput="calculateDealRemain()"></label>
-          <label>Actual Paid<input id="dealActualPaid" type="number" min="0" step="0.01" oninput="calculateDealRemain()"></label>
-          <label>Remain<input id="dealRemain" type="number" min="0" step="0.01"></label>
+          <label>Unit Price<input id="dealUnitPrice" type="text" readonly placeholder="Select a unit first"></label>
+          <label>Discount %<input id="dealDiscountPercent" type="number" min="0" max="100" step="0.01" placeholder="0" oninput="dealCalc_('discount')"></label>
+          <label>Price After Discount<input id="dealFinalPrice" type="number" min="0" step="1" oninput="dealCalc_('final')"></label>
+          <label>DP %<input id="dealDPPercent" type="number" min="0" max="100" step="0.01" oninput="dealCalc_('dpPct')"></label>
+          <label>Actual DP (amount)<input id="dealActualDP" type="number" min="0" step="1" oninput="dealCalc_('dpAmt')"></label>
+          <label>DP Paid %<input id="dealDPPaid" type="number" min="0" max="100" step="0.01" oninput="dealCalc_('paidPct')"></label>
+          <label>Actual Paid (amount)<input id="dealActualPaid" type="number" min="0" step="1" oninput="dealCalc_('paidAmt')"></label>
+          <label>Remain<input id="dealRemain" type="number" step="1" readonly></label>
           <label>DP Payment Method<select id="dealDPPaymentMethod"><option value="">Select Payment Method</option></select></label>
           <label>DP Currency<select id="dealDPCurrency"><option value="">Select Currency</option></select></label>
           <label>DP Payment Date<input id="dealPaymentDate" type="date"></label>
@@ -586,8 +589,9 @@
           <label>Installment Plan<input id="dealInstallmentPlan" placeholder="Example: M36 / Q12"></label>
           <label>Period Type<select id="dealPeriodType"><option value="">Select Period Type</option></select></label>
           <label>Discount Offer<select id="dealDiscountOffer"><option value="">Select Offer</option></select></label>
-          <label>Maintenance %<input id="dealMaintenancePercent" type="number" min="0" step="0.01"></label>
-          <label>Maintenance Amount<input id="dealMaintenanceAmount" type="number" min="0" step="0.01"></label>
+          <label>Maintenance based on<select id="dealMaintenanceBase" onchange="dealCalc_('maintPct')"><option value="after">Price after discount</option><option value="before">Price before discount</option></select></label>
+          <label>Maintenance %<input id="dealMaintenancePercent" type="number" min="0" max="100" step="0.01" oninput="dealCalc_('maintPct')"></label>
+          <label>Maintenance Amount<input id="dealMaintenanceAmount" type="number" min="0" step="1" oninput="dealCalc_('maintAmt')"></label>
         </div>
       </div>
 

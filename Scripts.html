@@ -7036,7 +7036,7 @@ function loadDealEntry(){
       dealSetOptions('dealPeriodType',o.periodTypes,'Select Period Type');
       dealSetOptions('dealDiscountOffer',o.offers,'Select Offer');
       if((o.statuses||[]).includes('Reservation')) dealEl('dealStatus').value='Reservation';
-      if((o.dealStatuses||[]).includes('Solo')) dealEl('dealDealStatus').value='Solo';
+      dealSyncDealStatus_();
       hideDealAlert();
       if(dealValue('dealProject')!==prevProject||(!dealUnits.length&&!/Loading/.test(dealEl('dealUnitCode').textContent||'')))loadDealUnits();
     }).withFailureHandler(e=>showDealAlert(e.message||String(e),'error')).getDealEntryOptions(AUTH_TOKEN);
@@ -7080,6 +7080,10 @@ function selectDealUnit(){
   const code=dealValue('dealUnitCode');
   dealSelectedUnit=dealUnits.find(r=>`${r.unitCode}||${r.inventoryCategory||''}`===code)||dealUnits.find(r=>String(r.unitCode)===code)||null;
   if(dealSelectedUnit&&dealSelectedUnit.currency){['dealResCurrency','dealDPCurrency'].forEach(id=>{const el=dealEl(id);if(el&&[...el.options].some(o=>o.value===dealSelectedUnit.currency))el.value=dealSelectedUnit.currency;});}
+  // Unit price from the inventory; price after discount follows the discount %.
+  {const up=dealEl('dealUnitPrice'),p=Number(dealSelectedUnit&&dealSelectedUnit.totalPrice)||0;
+   if(up)up.value=p?`${money(p)} ${dealSelectedUnit.currency||''}`:'';
+   if(dealEl('dealFinalPrice'))dealEl('dealFinalPrice').value='';dealCalc_('discount');}
   const req=++DEAL_CHECK_REQ_;
   if(!dealSelectedUnit){dealUnitValidated=false;dealEl('dealUnitCard').classList.add('hidden');return}
   // The list only holds units that are Available in the inventory and have no active deal,
@@ -7146,10 +7150,38 @@ function renderDealStep(){
   dealEl('dealNextBtn').classList.toggle('hidden',dealCurrentStep===5);
   dealEl('dealSaveBtn').classList.toggle('hidden',dealCurrentStep!==5);
 }
-function calculateDealRemain(){
-  const actualDP=dealNum('dealActualDP');
-  const paid=dealNum('dealActualPaid')||dealNum('dealDPPaid');
-  dealEl('dealRemain').value=Math.max(0,actualDP-paid);
+/* Price, discount and down payment: type either the % or the amount,
+   the other one is filled in. Percentages are of the price after discount. */
+function dealCalc_(changed){
+  const num=id=>{const v=dealEl(id)?.value;return v===''||v==null?NaN:Number(v);};
+  const set=(id,v,dec)=>{const el=dealEl(id);if(!el)return;el.value=Number.isFinite(v)?String(Math.round(v*Math.pow(10,dec))/Math.pow(10,dec)):'';};
+  const base=Number(dealSelectedUnit&&dealSelectedUnit.totalPrice)||0;
+  if(changed==='discount'&&base){const d=num('dealDiscountPercent');set('dealFinalPrice',base*(1-(Number.isFinite(d)?d:0)/100),0);}
+  if(changed==='final'&&base){const f=num('dealFinalPrice');set('dealDiscountPercent',Number.isFinite(f)?(1-f/base)*100:NaN,2);}
+  const price=Number.isFinite(num('dealFinalPrice'))?num('dealFinalPrice'):base;
+  if(price){
+    const priceMoved=changed==='discount'||changed==='final';
+    if(changed==='dpAmt'){set('dealDPPercent',num('dealActualDP')/price*100,2);}
+    else if((changed==='dpPct'||priceMoved)&&Number.isFinite(num('dealDPPercent'))){set('dealActualDP',price*num('dealDPPercent')/100,0);}
+    if(changed==='paidAmt'){set('dealDPPaid',num('dealActualPaid')/price*100,2);}
+    else if((changed==='paidPct'||priceMoved)&&Number.isFinite(num('dealDPPaid'))){set('dealActualPaid',price*num('dealDPPaid')/100,0);}
+  }
+  // Maintenance: % of the price before or after discount (chosen in the form).
+  const mBase=dealValue('dealMaintenanceBase')==='before'?base:price;
+  if(mBase){
+    if(changed==='maintAmt')set('dealMaintenancePercent',num('dealMaintenanceAmount')/mBase*100,2);
+    else if((changed==='maintPct'||changed==='discount'||changed==='final')&&Number.isFinite(num('dealMaintenancePercent')))set('dealMaintenanceAmount',mBase*num('dealMaintenancePercent')/100,0);
+  }
+  const dp=num('dealActualDP'),paid=num('dealActualPaid');
+  set('dealRemain',Number.isFinite(dp)?dp-(Number.isFinite(paid)?paid:0):NaN,0);
+}
+function calculateDealRemain(){dealCalc_('');}
+/* Shared With picked -> Share, empty -> Solo (not editable by hand). */
+function dealSyncDealStatus_(){
+  const el=dealEl('dealDealStatus');if(!el)return;
+  const v=dealValue('dealSharedWith')?'Share':'Solo';
+  if(![...el.options].some(o=>o.value===v))el.insertAdjacentHTML('beforeend',`<option value="${v}">${v}</option>`);
+  el.value=v;
 }
 function collectDealPayload(){
   return {
@@ -7162,7 +7194,7 @@ function collectDealPayload(){
     birthDate:dealValue('dealBirthDate'),gender:dealValue('dealGender'),clientStatue:dealValue('dealClientStatue'),
     branch:dealValue('dealBranch'),salesName:dealValue('dealSalesName'),sharedWith:dealValue('dealSharedWith'),
     salesManager:dealValue('dealSalesManager'),headOfSales:dealValue('dealHeadOfSales'),cco:dealValue('dealCCO'),
-    dealStatus:dealValue('dealDealStatus'),mainSource:dealValue('dealMainSource'),sourceType:dealValue('dealSourceType'),
+    dealStatus:dealValue('dealSharedWith')?'Share':'Solo',discountPercent:dealValue('dealDiscountPercent'),maintenanceBase:dealValue('dealMaintenanceBase'),finalPrice:dealValue('dealFinalPrice'),mainSource:dealValue('dealMainSource'),sourceType:dealValue('dealSourceType'),
     campaignName:dealValue('dealCampaignName'),mediaBuyer:dealValue('dealMediaBuyer'),
     brokerageCompany:dealValue('dealBrokerageCompany'),bcSales:dealValue('dealBCSales'),
     dpPercent:dealValue('dealDPPercent'),actualDP:dealValue('dealActualDP'),dpPaid:dealValue('dealDPPaid'),
@@ -7178,10 +7210,12 @@ function renderDealReview(){
   const rows=[
     ['Client',p.clientName],['Mobile',p.mobile],['Project',p.project],['Unit',p.unitCode],
     ['Inventory Status',u.status],['Company',u.company],['Unit Type',u.type||u.unitType],
-    ['Area',u.totalGross||u.area],['Price',u.totalPrice?money(u.totalPrice)+' '+(u.currency||''):''],
+    ['Area',u.totalGross||u.area],['Unit Price',u.totalPrice?money(u.totalPrice)+' '+(u.currency||''):''],
+    ['Discount',p.discountPercent?p.discountPercent+'%':'—'],['Price After Discount',p.finalPrice?money(p.finalPrice)+' '+(u.currency||''):''],
+    ['Deal Status',p.dealStatus+(p.sharedWith?' with '+p.sharedWith:'')],['DP %',p.dpPercent?p.dpPercent+'%':''],
     ['Transaction Status',p.status],['Branch',p.branch],['Sales',p.salesName],
     ['Source',[p.mainSource,p.sourceType,p.campaignName].filter(Boolean).join(' / ')],
-    ['Actual DP',p.actualDP],['Paid',p.actualPaid||p.dpPaid],['Remain',p.remain]
+    ['Maintenance',p.maintenanceAmount?`${money(p.maintenanceAmount)} (${p.maintenancePercent||''}% of price ${dealValue('dealMaintenanceBase')==='before'?'before':'after'} discount)`:'—'],['Actual DP',p.actualDP?money(p.actualDP):''],['Paid',p.actualPaid?money(p.actualPaid)+(p.dpPaid?` (${p.dpPaid}%)`:''):''],['Remain',p.remain!==''?money(p.remain):'']
   ];
   dealEl('dealReview').innerHTML=rows.map(([k,v])=>`<div><span>${escapeHtml(k)}</span><b>${escapeHtml(v||'—')}</b></div>`).join('');
 }
@@ -7225,7 +7259,7 @@ function resetDealWizard(){
   document.querySelectorAll('#dealEntryPanel select').forEach(el=>el.selectedIndex=0);
   dealEl('dealProject').value='EDEN WALK';
   dealEl('dealStatus').value='Reservation';
-  dealEl('dealDealStatus').value='Solo';
+  dealSyncDealStatus_();
   dealEl('dealTransactionDate').value=new Date().toISOString().slice(0,10);
   dealCurrentStep=1;dealSelectedUnit=null;dealUnitValidated=false;
   dealEl('dealUnitCard').classList.add('hidden');
