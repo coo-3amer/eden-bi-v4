@@ -494,6 +494,10 @@ function buildDashboardData_(authUser) {
     const unitType = normalizeUnitType_(rawUnitType);
     const unitCategory = classifyUnitType_(unitType);
 
+    // E-ONE: only Commercial / Admin / Medical units count as deals
+    // (parking and anything else sold there is not a deal).
+    if (isEOneProject_(project) && E_ONE_DEAL_UNIT_TYPES_.indexOf(unitType) < 0) return;
+
     rows.push({
       row: DATA_START_ROW + i,
       deal: getAny_(r, idx, ['Deal Num', 'Deal\nNum']) || i + 1,
@@ -675,6 +679,11 @@ function buildDashboardData_(authUser) {
   };
 }
 
+
+const E_ONE_DEAL_UNIT_TYPES_ = ['Commercial', 'Admin', 'Medical'];
+function isEOneProject_(project) {
+  return String(project || '').toUpperCase().replace(/[^A-Z]/g, '') === 'EONE';
+}
 
 /* true for each data row whose Project cell has the EDEN BI note. Never throws. */
 function dealsSystemNotes_(sheet, headers, rowCount) {
