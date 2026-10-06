@@ -327,6 +327,21 @@ function checkDealUnitAvailability(authToken, project, unitCode, inventoryCatego
     };
   }
 
+  // A new deal may be added on any unit except Closed / Done (sold) ones.
+  const invStatus = dealText_(inventoryCheck.status || (inventoryCheck.unit && inventoryCheck.unit.status)).toLowerCase();
+  if (!inventoryCheck.allowed && inventoryCheck.unit && !dealUnitClosedStatus_(invStatus) &&
+      ['RESERVED', 'NOT_AVAILABLE', 'STATUS_REVIEW'].indexOf(inventoryCheck.reason) > -1) {
+    return {
+      allowed: true,
+      message: 'Unit can be added (inventory status: ' + (inventoryCheck.status || inventoryCheck.unit.status || '—') + ').',
+      unit: inventoryCheck.unit,
+      inventoryStatus: inventoryCheck.status
+    };
+  }
+  if (inventoryCheck.allowed && dealUnitClosedStatus_(invStatus)) {
+    return { allowed: false, reason: 'SOLD', message: 'This unit is Closed / Done in the inventory.', unit: inventoryCheck.unit, inventoryStatus: inventoryCheck.status };
+  }
+
   if (!inventoryCheck.allowed) {
     return {
       allowed: false,
@@ -343,6 +358,12 @@ function checkDealUnitAvailability(authToken, project, unitCode, inventoryCatego
     unit: inventoryCheck.unit,
     inventoryStatus: inventoryCheck.status
   };
+}
+
+/* Inventory statuses that mean the unit is already sold. */
+function dealUnitClosedStatus_(status) {
+  const s = String(status || '').trim().toLowerCase();
+  return s === 'closed' || s === 'done' || s === 'sold' || s === 'delivered';
 }
 
 function nextDealRow_(sheet) {

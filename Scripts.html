@@ -7053,24 +7053,40 @@ function dealFetchUnits_(project,cb,fail){
   google.script.run.withSuccessHandler(rows=>{DEAL_UNITS_CACHE_[project]={rows:rows||[],at:Date.now()};cb&&cb(rows||[]);})
     .withFailureHandler(e=>fail&&fail(e)).getDealInventoryUnits(AUTH_TOKEN,project);
 }
+let DEAL_UNITS_ALL_=[];
 function dealRenderUnits_(rows){
-  // Only units that are Available in the Inventory sheet can get a new deal,
-  // and only if they have no active deal in the Deals sheet yet.
-  const keep=dealSelectedUnit?`${dealSelectedUnit.unitCode}||${dealSelectedUnit.inventoryCategory||''}`:'';
-  dealUnits=(rows||[]).filter(r=>String(r.status||'').trim().toLowerCase()==='available'&&!r.dealStatus);
+  // Every unit except the sold ones (Closed / Done). Units that already have an
+  // active deal in the Deals sheet are listed but cannot be picked.
+  const closed=s=>['closed','done','sold','delivered'].includes(String(s||'').trim().toLowerCase());
+  DEAL_UNITS_ALL_=(rows||[]).filter(r=>!closed(r.status));
+  dealUnits=DEAL_UNITS_ALL_.filter(r=>!r.dealStatus);
+  const floors=[...new Set(DEAL_UNITS_ALL_.map(r=>String(r.floor||'').trim()).filter(Boolean))]
+    .sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+  const fl=dealEl('dealUnitFloor');
+  if(fl){const cur=fl.value;fl.innerHTML='<option value="">All floors</option>'+floors.map(f=>`<option value="${escapeAttr(f)}">${escapeHtml(f)}</option>`).join('');if(floors.includes(cur))fl.value=cur;}
+  dealFilterUnits_();
+}
+function dealFilterUnits_(){
+  const sel=dealEl('dealUnitCode');if(!sel)return;
+  const q=String(dealEl('dealUnitSearch')?.value||'').trim().toLowerCase();
+  const floor=dealValue('dealUnitFloor');
   const key=r=>`${r.unitCode}||${r.inventoryCategory||''}`;
-  const label=r=>[r.unitCode,r.type||r.unitType,r.floor,r.area?`${r.area} m²`:''].filter(Boolean).map(escapeHtml).join(' — ');
-  const groups={};dealUnits.forEach(r=>{(groups[r.inventoryCategory||'Units']=groups[r.inventoryCategory||'Units']||[]).push(r);});
+  const keep=dealSelectedUnit?key(dealSelectedUnit):sel.value;
+  const label=r=>[r.unitCode,r.type||r.unitType,r.floor,r.area?`${r.area} m²`:'',r.status&&String(r.status).toLowerCase()!=='available'?`[${r.status}]`:'',r.dealStatus?`has a deal (${r.dealStatus})`:''].filter(Boolean).map(escapeHtml).join(' — ');
+  const list=DEAL_UNITS_ALL_.filter(r=>(!floor||String(r.floor||'').trim()===floor)&&
+    (!q||[r.unitCode,r.type,r.unitType,r.floor,r.area,r.status,r.view,r.inventoryCategory].join(' ').toLowerCase().includes(q)));
+  const groups={};list.forEach(r=>{(groups[r.inventoryCategory||'Units']=groups[r.inventoryCategory||'Units']||[]).push(r);});
   const names=Object.keys(groups);
   const opts=names.map(g=>{
-    const items=groups[g].sort((a,b)=>String(a.unitCode).localeCompare(String(b.unitCode),undefined,{numeric:true})).map(r=>`<option value="${escapeAttr(key(r))}">${label(r)}</option>`).join('');
+    const items=groups[g].sort((a,b)=>String(a.unitCode).localeCompare(String(b.unitCode),undefined,{numeric:true}))
+      .map(r=>`<option value="${escapeAttr(key(r))}"${r.dealStatus?' disabled':''}>${label(r)}</option>`).join('');
     return names.length>1?`<optgroup label="${escapeAttr(g)} (${groups[g].length})">${items}</optgroup>`:items;
   }).join('');
-  const sel=dealEl('dealUnitCode');
-  sel.innerHTML=dealUnits.length
-    ?`<option value="">Select Unit — ${dealUnits.length} available</option>`+opts
-    :'<option value="">No available units in the inventory</option>';
-  if(keep&&dealUnits.some(r=>key(r)===keep))sel.value=keep;
+  const free=list.filter(r=>!r.dealStatus).length;
+  sel.innerHTML=list.length
+    ?`<option value="">Select Unit — ${free} of ${list.length} shown${q||floor?' (filtered)':''}</option>`+opts
+    :`<option value="">${DEAL_UNITS_ALL_.length?'No unit matches the search':'No units in the inventory'}</option>`;
+  if(keep&&list.some(r=>key(r)===keep&&!r.dealStatus))sel.value=keep;
 }
 function loadDealUnits(){
   const project=dealValue('dealProject')||'EDEN WALK';
@@ -7079,6 +7095,8 @@ function loadDealUnits(){
   dealEl('dealUnitCard').classList.add('hidden');
   ['dealResCurrency','dealDPCurrency'].forEach(id=>{const el=dealEl(id);if(el)el.value='';});
   hideDealAlert();
+  if(dealEl('dealUnitSearch'))dealEl('dealUnitSearch').value='';
+  if(dealEl('dealUnitFloor'))dealEl('dealUnitFloor').value='';
   const cached=DEAL_UNITS_CACHE_[project];
   if(cached)dealRenderUnits_(cached.rows);
   else dealEl('dealUnitCode').innerHTML='<option value="">Loading units...</option>';
@@ -7115,7 +7133,7 @@ function selectDealUnit(){
   // so the user can continue right away. The server double-checks now and again on save.
   dealUnitValidated=true;
   hideDealAlert();
-  renderDealUnitCard(dealSelectedUnit,'Available in the inventory • double-checking…','allowed');
+  renderDealUnitCard(dealSelectedUnit,`${dealSelectedUnit.status||'Unit'} in the inventory • double-checking…`,'allowed');
   const u=dealSelectedUnit;
   google.script.run.withSuccessHandler(res=>{
     if(req!==DEAL_CHECK_REQ_)return;

@@ -515,11 +515,14 @@
 
       <div class="dealAlert hidden" id="dealAlert"></div>
 
+      <style>.dealUnitFind{display:flex;gap:6px;margin:4px 0 6px}.dealUnitFind input{flex:1 1 auto;min-width:0}.dealUnitFind select{flex:0 0 42%}</style>
       <div class="dealStep active" data-deal-step="1">
         <h3>1. Project & Unit</h3>
         <div class="dealFormGrid">
           <label>Project *<select id="dealProject" onchange="loadDealUnits()"><option value="EDEN WALK">EDEN WALK</option><option value="CCG">CCG</option></select></label>
-          <label>Unit Code *<select id="dealUnitCode" onchange="selectDealUnit()"><option value="">Select Unit</option></select></label>
+          <label>Unit Code *
+            <span class="dealUnitFind"><input id="dealUnitSearch" type="search" placeholder="Search unit, type, area…" oninput="dealFilterUnits_()" autocomplete="off"><select id="dealUnitFloor" onchange="dealFilterUnits_()"><option value="">All floors</option></select></span>
+            <select id="dealUnitCode" onchange="selectDealUnit()"><option value="">Select Unit</option></select></label>
           <label>Transaction Status *
             <select id="dealStatus"><option value="">Select Status</option></select>
           </label>
