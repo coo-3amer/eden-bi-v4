@@ -20,13 +20,24 @@ function setupLiveSync() {
     .filter(t => t.getHandlerFunction() === 'onDataSheetEdit')
     .forEach(t => ScriptApp.deleteTrigger(t));
   const ids = liveSourceIds_();
+  const done = [], failed = [];
   Object.keys(ids).forEach(id => {
-    try {
-      ScriptApp.newTrigger('onDataSheetEdit').forSpreadsheet(id).onEdit().create();
-      ScriptApp.newTrigger('onDataSheetEdit').forSpreadsheet(id).onChange().create();
-    } catch (err) { console.warn('LiveSync trigger for ' + ids[id] + ': ' + err); }
+    ['onEdit', 'onChange'].forEach(kind => {
+      for (let attempt = 1; attempt <= 4; attempt++) {
+        try {
+          const b = ScriptApp.newTrigger('onDataSheetEdit').forSpreadsheet(id);
+          (kind === 'onEdit' ? b.onEdit() : b.onChange()).create();
+          done.push(ids[id] + ' ' + kind);
+          return;
+        } catch (err) {
+          if (attempt === 4) failed.push(ids[id] + ' ' + kind + ' (' + err + ')');
+          else Utilities.sleep(2000 * attempt);   // Google sometimes refuses once; try again
+        }
+      }
+    });
   });
-  Logger.log('LiveSync is on for: ' + Object.keys(ids).map(id => ids[id]).join(', '));
+  Logger.log('LiveSync ON: ' + done.join(', '));
+  if (failed.length) Logger.log('NOT set (run setupLiveSync again in a minute): ' + failed.join(' | '));
 }
 
 /* spreadsheet id -> what it feeds ('DASH' or 'INV:<key>'). */
