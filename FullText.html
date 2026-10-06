@@ -1,0 +1,57 @@
+<style id="eden-full-text">
+/* Client names get a little more room before they are cut. */
+html[data-theme] #appRoot #mainTable td[data-col="clientName"]{max-width:300px}
+#dsFullTip{position:fixed;z-index:400;max-width:min(420px,calc(100vw - 24px));padding:8px 12px;border-radius:10px;background:#1c1917;color:#fff;font:600 12.5px/1.45 Inter,system-ui,sans-serif;box-shadow:0 10px 28px rgba(0,0,0,.28);pointer-events:none;opacity:0;transform:translateY(4px);transition:opacity .12s,transform .12s;white-space:normal;word-break:break-word}
+#dsFullTip.show{opacity:1;transform:none}
+</style>
+<script>
+/* =====================================================================
+   EDEN BI — Full text for anything that is cut with "…"
+   Hover (or tap on a phone) any cell, label or card value whose text
+   doesn't fit, and the whole text is shown in a small bubble.
+   Works everywhere on the page, including tables drawn later.
+   ===================================================================== */
+(function initEdenFullText_(){
+  let tip=null,current=null;
+  const cut=el=>{
+    if(!el||el.nodeType!==1)return false;
+    if(el.scrollWidth>el.clientWidth+1)return true;
+    // multi-line clamps
+    return el.scrollHeight>el.clientHeight+2&&getComputedStyle(el).overflow==='hidden'&&el.clientHeight>0;
+  };
+  const findCut=t=>{
+    for(let el=t,i=0;el&&i<5&&el!==document.body;el=el.parentElement,i++){
+      if(el.matches&&el.matches('input,select,textarea,canvas,svg'))return null;
+      if(cut(el)&&String(el.innerText||'').trim())return el;
+    }
+    return null;
+  };
+  const show=(el,x,y)=>{
+    const text=String(el.innerText||el.textContent||'').replace(/\s+/g,' ').trim();
+    if(!text)return;
+    if(!tip){tip=document.createElement('div');tip.id='dsFullTip';document.body.appendChild(tip);}
+    tip.textContent=text;
+    const r=el.getBoundingClientRect();
+    tip.classList.add('show');
+    const w=tip.offsetWidth,h=tip.offsetHeight;
+    let left=Math.min(Math.max(8,(x??r.left)),window.innerWidth-w-8);
+    let top=r.bottom+6; if(top+h>window.innerHeight-8)top=r.top-h-6;
+    tip.style.left=left+'px';tip.style.top=Math.max(8,top)+'px';
+    current=el;
+  };
+  const hide=()=>{if(tip)tip.classList.remove('show');current=null;};
+  document.addEventListener('mouseover',e=>{
+    const el=findCut(e.target);
+    if(!el){if(current&&!current.contains(e.target))hide();return;}
+    if(el!==current)show(el,e.clientX-10);
+  },{passive:true});
+  document.addEventListener('mouseout',e=>{if(!e.relatedTarget)hide();});
+  window.addEventListener('scroll',hide,{passive:true,capture:true});
+  // Phones: a tap on cut text shows it (the tap still does what it normally does).
+  document.addEventListener('touchstart',e=>{
+    const el=findCut(e.target);
+    if(el){show(el,e.touches[0].clientX-10);clearTimeout(show.__t);show.__t=setTimeout(hide,3500);}
+    else hide();
+  },{passive:true});
+})();
+</script>
