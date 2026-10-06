@@ -7107,6 +7107,7 @@ function selectDealUnit(){
   // Unit price from the inventory; price after discount follows the discount %.
   {const up=dealEl('dealUnitPrice'),p=Number(dealSelectedUnit&&dealSelectedUnit.totalPrice)||0;
    if(up)up.value=p?`${money(p)} ${dealSelectedUnit.currency||''}`:'';
+   const mp=dealEl('dealMeterPrice');if(mp)mp.value=dealSelectedUnit&&dealSelectedUnit.meterPrice?money(dealSelectedUnit.meterPrice):'';
    if(dealEl('dealFinalPrice'))dealEl('dealFinalPrice').value='';dealCalc_('discount');}
   const req=++DEAL_CHECK_REQ_;
   if(!dealSelectedUnit){dealUnitValidated=false;dealEl('dealUnitCard').classList.add('hidden');return}
@@ -7181,7 +7182,15 @@ function dealCalc_(changed){
   const set=(id,v,dec)=>{const el=dealEl(id);if(!el)return;el.value=Number.isFinite(v)?String(Math.round(v*Math.pow(10,dec))/Math.pow(10,dec)):'';};
   const base=Number(dealSelectedUnit&&dealSelectedUnit.totalPrice)||0;
   if(changed==='discount'&&base){const d=num('dealDiscountPercent');set('dealFinalPrice',base*(1-(Number.isFinite(d)?d:0)/100),0);}
+  if(changed==='discountAmt'&&base){const a=num('dealDiscountAmount');set('dealFinalPrice',base-(Number.isFinite(a)?a:0),0);set('dealDiscountPercent',Number.isFinite(a)?a/base*100:NaN,2);}
   if(changed==='final'&&base){const f=num('dealFinalPrice');set('dealDiscountPercent',Number.isFinite(f)?(1-f/base)*100:NaN,2);}
+  if(changed==='discountAmt')changed='final';
+  if(base){
+    const f=num('dealFinalPrice'),fin=Number.isFinite(f)?f:base;
+    if(changed!=='discountAmt')set('dealDiscountAmount',base-fin,0);
+    const area=Number(dealSelectedUnit&&dealSelectedUnit.area)||0,meter=Number(dealSelectedUnit&&dealSelectedUnit.meterPrice)||0;
+    const mEl=dealEl('dealMeterAfter');if(mEl)mEl.value=area?money(Math.round(fin/area)):(meter?money(Math.round(meter*fin/base)):'');
+  }
   const price=Number.isFinite(num('dealFinalPrice'))?num('dealFinalPrice'):base;
   if(price){
     const priceMoved=changed==='discount'||changed==='final';
@@ -7218,7 +7227,7 @@ function collectDealPayload(){
     birthDate:dealValue('dealBirthDate'),gender:dealValue('dealGender'),clientStatue:dealValue('dealClientStatue'),
     branch:dealValue('dealBranch'),salesName:dealValue('dealSalesName'),sharedWith:dealValue('dealSharedWith'),
     salesManager:dealValue('dealSalesManager'),headOfSales:dealValue('dealHeadOfSales'),cco:dealValue('dealCCO'),
-    dealStatus:dealValue('dealSharedWith')?'Share':'Solo',discountPercent:dealValue('dealDiscountPercent'),maintenanceBase:dealValue('dealMaintenanceBase'),finalPrice:dealValue('dealFinalPrice'),mainSource:dealValue('dealMainSource'),sourceType:dealValue('dealSourceType'),
+    dealStatus:dealValue('dealSharedWith')?'Share':'Solo',discountPercent:dealValue('dealDiscountPercent'),discountAmount:dealValue('dealDiscountAmount'),maintenanceBase:dealValue('dealMaintenanceBase'),finalPrice:dealValue('dealFinalPrice'),mainSource:dealValue('dealMainSource'),sourceType:dealValue('dealSourceType'),
     campaignName:dealValue('dealCampaignName'),mediaBuyer:dealValue('dealMediaBuyer'),
     brokerageCompany:dealValue('dealBrokerageCompany'),bcSales:dealValue('dealBCSales'),
     dpPercent:dealValue('dealDPPercent'),actualDP:dealValue('dealActualDP'),dpPaid:dealValue('dealDPPaid'),
@@ -7235,7 +7244,7 @@ function renderDealReview(){
     ['Client',p.clientName],['Mobile',p.mobile],['Project',p.project],['Unit',p.unitCode],
     ['Inventory Status',u.status],['Company',u.company],['Unit Type',u.type||u.unitType],
     ['Area',u.totalGross||u.area],['Unit Price',u.totalPrice?money(u.totalPrice)+' '+(u.currency||''):''],
-    ['Discount',p.discountPercent?p.discountPercent+'%':'—'],['Price After Discount',p.finalPrice?money(p.finalPrice)+' '+(u.currency||''):''],
+    ['Discount',p.discountAmount&&Number(p.discountAmount)?`${money(p.discountAmount)} (${p.discountPercent||0}%)`:'—'],['Price After Discount',p.finalPrice?money(p.finalPrice)+' '+(u.currency||''):''],
     ['Deal Status',p.dealStatus+(p.sharedWith?' with '+p.sharedWith:'')],['DP %',p.dpPercent?p.dpPercent+'%':''],
     ['Transaction Status',p.status],['Branch',p.branch],['Sales',p.salesName],
     ['Source',[p.mainSource,p.sourceType,p.campaignName].filter(Boolean).join(' / ')],

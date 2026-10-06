@@ -572,9 +572,12 @@
       <div class="dealStep" data-deal-step="4">
         <h3>4. Down Payment & Payment Plan</h3>
         <div class="dealFormGrid">
-          <label>Unit Price<input id="dealUnitPrice" type="text" readonly placeholder="Select a unit first"></label>
+          <label>Primary Meter Price<input id="dealMeterPrice" type="text" readonly placeholder="From the inventory"></label>
+          <label>Primary Total Price (before discount)<input id="dealUnitPrice" type="text" readonly placeholder="Select a unit first"></label>
           <label>Discount %<input id="dealDiscountPercent" type="number" min="0" max="100" step="0.01" placeholder="0" oninput="dealCalc_('discount')"></label>
-          <label>Price After Discount<input id="dealFinalPrice" type="number" min="0" step="1" oninput="dealCalc_('final')"></label>
+          <label>Discount Amount<input id="dealDiscountAmount" type="number" min="0" step="1" placeholder="0" oninput="dealCalc_('discountAmt')"></label>
+          <label>Meter Price After Discount<input id="dealMeterAfter" type="text" readonly></label>
+          <label>Final Price (after discount)<input id="dealFinalPrice" type="number" min="0" step="1" oninput="dealCalc_('final')"></label>
           <label>DP %<input id="dealDPPercent" type="number" min="0" max="100" step="0.01" oninput="dealCalc_('dpPct')"></label>
           <label>Actual DP (amount)<input id="dealActualDP" type="number" min="0" step="1" oninput="dealCalc_('dpAmt')"></label>
           <label>DP Paid %<input id="dealDPPaid" type="number" min="0" max="100" step="0.01" oninput="dealCalc_('paidPct')"></label>

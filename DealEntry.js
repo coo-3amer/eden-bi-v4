@@ -800,7 +800,9 @@ function saveDealToMainSheet_(user, payload, unit) {
   if (!Number.isFinite(disc) && typedFinal && price) disc = 1 - typedFinal / price;
   if (!Number.isFinite(disc) || disc < 0 || disc >= 1) disc = 0;
   const finalPrice = typedFinal || (price ? Math.round(price * (1 - disc)) : 0);
-  const meterAfter = meter ? Math.round(meter * (1 - disc)) : 0;
+  const discountAmount = price && finalPrice ? Math.max(0, Math.round(price - finalPrice)) : 0;
+  const areaNum = dealNumber_(unit.area);
+  const meterAfter = areaNum && finalPrice ? Math.round(finalPrice / areaNum) : (meter ? Math.round(meter * (1 - disc)) : 0);
   const sharedName = dealText_(payload.sharedWith);
   const v = {
     dealNum: dealNum,
@@ -837,7 +839,7 @@ function saveDealToMainSheet_(user, payload, unit) {
     primaryTotal: price || '',
     meterAfter: meterAfter || meter || '',
     finalPrice: finalPrice || '',
-    discount: disc || '',
+    discount: discountAmount || '',   // the sheet keeps the discount as an amount (e.g. 118,000)
     currency: dealText_(unit.currency || payload.currency),
     resCurrency: dealText_(payload.resCurrency || (dealNumber_(payload.reservationAmount) ? (unit.currency || payload.currency) : '')),
     resPaymentMethod: dealText_(payload.resPaymentMethod),
