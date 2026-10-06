@@ -956,3 +956,90 @@ function debugDealUnitCheck() {
     CacheService.getScriptCache().remove('LOGIN_' + token);
   }
 }
+
+
+/* =====================================================================
+ * UPDATE AN EXISTING DEAL (e.g. Reservation -> Part of DP, a DP payment)
+ * Writes only the fields that changed, by column header, on the row the
+ * user opened. The row must still hold the same project + unit (and client)
+ * or nothing is written. Every status change is noted on the Status cell.
+ * ===================================================================== */
+const DEAL_UPDATE_FIELDS_ = ['status', 'additionalStatus', 'dpPercent', 'actualDP', 'dpPaid', 'actualPaid',
+  'remain', 'dpPaymentMethod', 'dpCurrency', 'paymentDate', 'notes'];
+
+function updateDealRecord(authToken, req) {
+  const user = validateAuthToken_(authToken);
+  if (typeof isEgyptViewerUser_ === 'function' && isEgyptViewerUser_(user)) throw new Error('This account is read only.');
+  req = req || {};
+  const row = Number(req.row);
+  const changes = req.changes || {};
+  const sheet = getMainDealsSheet_();
+  const cols = mainDealsColumns_(sheet);
+  if (!row || row < DATA_START_ROW || row > sheet.getLastRow()) throw new Error('Deal row not found. Refresh and try again.');
+
+  const lock = LockService.getScriptLock();
+  try { lock.waitLock(30000); } catch (e) { throw new Error('Another deal is being saved right now. Try again in a moment.'); }
+  try {
+    const rng = sheet.getRange(row, 1, 1, cols.lastCol);
+    const disp = rng.getDisplayValues()[0], formulas = rng.getFormulas()[0], rules = rng.getDataValidations()[0];
+    const at = names => { const c = mainDealsCol_(cols, names); return c ? String(disp[c - 1] || '').trim() : ''; };
+
+    // Safety: the row must still be the same deal.
+    const exp = req.expect || {};
+    const same = (a, b) => dealText_(a).toLowerCase() === dealText_(b).toLowerCase();
+    if (!same(at(['Unit Code']), exp.unitCode) || dealProjectKey_(at(['Project'])) !== dealProjectKey_(exp.project)) {
+      throw new Error('This row in the Deals sheet changed (rows were added or moved). Refresh the dashboard and open the deal again.');
+    }
+    // Sales roles may only update their own / their team's deals.
+    if (typeof isSalesScopedUser_ === 'function' && isSalesScopedUser_(user)) {
+      const r = { salesName: at(['Sales Name']), sharedWith: at(['Shared With']), dealStatus: at(['Deal Status']), salesManager: at(['Sales Manager']) };
+      if (!salesRowInScope_(r, user, {})) throw new Error('You can only update your own deals.');
+    }
+
+    let lists = {};
+    try { const o = dashCacheRead_('DEALOPT', 24 * 60 * 60 * 1000); lists = (o && o.sheetLists) || {}; } catch (e) {}
+    const pct = v => { if (v === '' || v == null) return ''; const n = dealNumber_(v); return Math.abs(n) > 1 ? n / 100 : n; };
+    const tz = Session.getScriptTimeZone();
+    const written = [], rejected = [];
+    const oldStatus = at(['Status']);
+
+    DEAL_UPDATE_FIELDS_.forEach(k => {
+      if (!(k in changes)) return;
+      const f = MAIN_DEAL_FIELDS_.filter(x => x.k === k)[0];
+      if (!f) return;
+      const c = mainDealsCol_(cols, f.h);
+      const label = mainDealLabel_(f);
+      if (!c) { rejected.push(label + ': no column in the Deals sheet'); return; }
+      if (formulas[c - 1]) return;                       // calculated by the sheet
+      let v = changes[k];
+      if (k === 'dpPercent' || k === 'dpPaid') v = pct(v);
+      else if (k === 'actualDP' || k === 'actualPaid' || k === 'remain') v = v === '' ? '' : dealNumber_(v);
+      else if (k === 'paymentDate') v = dealDate_(v) || '';
+      else if (k === 'notes') {
+        const add = dealText_(v); if (!add) return;
+        const prev = String(disp[c - 1] || '').trim();
+        v = (prev ? prev + ' | ' : '') + Utilities.formatDate(new Date(), tz, 'dd-MMM') + ': ' + add;
+      } else v = dealText_(v);
+      const fit = dealFitList_(rules[c - 1], v, lists[k]);
+      if (fit.blocked) { rejected.push(label + ': "' + v + '" is not in the sheet list'); return; }
+      try { sheet.getRange(row, c).setValue(fit.value); written.push(label); }
+      catch (err) { rejected.push(label + ': ' + (err && err.message ? err.message : err)); }
+    });
+
+    const newStatus = dealText_(changes.status);
+    if (newStatus && !same(newStatus, oldStatus)) {
+      const sc = mainDealsCol_(cols, ['Status']);
+      try {
+        const cell = sheet.getRange(row, sc), prev = cell.getNote();
+        cell.setNote((prev ? prev + '\n' : '') + Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd HH:mm') + ' • ' +
+          (user.name || user.username) + ': ' + (oldStatus || '—') + ' → ' + newStatus);
+      } catch (e) {}
+    }
+    SpreadsheetApp.flush();
+    clearDashboardCache_();
+    return { success: true, row: row, written: written, rejected: rejected,
+      message: written.length ? 'Deal updated (' + written.join(', ') + ').' : 'Nothing was changed.' };
+  } finally {
+    lock.releaseLock();
+  }
+}

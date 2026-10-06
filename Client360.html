@@ -109,7 +109,7 @@ function c360Open_(key){
       </div>
       ${dp?`<div class="c360Pay"><div class="c360PayTrack"><i style="width:${pct}%"></i></div><div class="c360PayTxt"><span>Paid ${c360Num_(paid)} of ${c360Num_(dp)} DP</span><span>${pct.toFixed(0)}%</span></div></div>`:''}
       <div class="c360Foot"><span>Sales: <b>${c360Esc_(r.salesName||'—')}</b>${shared?` + ${c360Esc_(r.sharedWith)} <em>(50/50)</em>`:''}${r.branch?' · '+c360Esc_(r.branch):''}</span>
-        <span style="display:inline-flex;gap:8px;align-items:center">${resDays!=null?`<span class="c360Hold${resDays>limit?' over':''}">Reserved ${resDays} days</span>`:''}${/^https?:\/\//i.test(url)?`<a class="c360Files" href="${c360Esc_(url)}" target="_blank" rel="noopener">${folder}Files</a>`:''}</span></div>
+        <span style="display:inline-flex;gap:8px;align-items:center">${resDays!=null?`<span class="c360Hold${resDays>limit?' over':''}">Reserved ${resDays} days</span>`:''}${/^https?:\/\//i.test(url)?`<a class="c360Files" href="${c360Esc_(url)}" target="_blank" rel="noopener">${folder}Files</a>`:''}${typeof dsOpenDealUpdate_==='function'&&dsuCanEdit_()&&!cancelled(r)?`<button type="button" class="c360Files" onclick="dsOpenDealUpdate_(${Number(r.row)})">✎ Update</button>`:''}</span></div>
     </article>`;
   }).join('');
 

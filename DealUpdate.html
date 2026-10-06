@@ -1,0 +1,175 @@
+<style id="eden-deal-update">
+#dsuBack{position:fixed;inset:0;z-index:420;background:rgba(15,12,8,.45);backdrop-filter:blur(2px)}
+#dsu{position:fixed;z-index:421;top:50%;left:50%;transform:translate(-50%,-50%);width:min(760px,calc(100vw - 24px));max-height:calc(100vh - 32px);overflow:auto;background:var(--ds-surface,#fff);color:var(--ds-text,#2b241a);border-radius:20px;box-shadow:0 30px 80px rgba(0,0,0,.35);padding:22px 22px 18px}
+#dsu h3{margin:0 0 4px;font-family:var(--ds-serif,Georgia,serif);font-size:22px;font-weight:600;color:var(--ds-heading,#1c1917)}
+#dsu .dsuSub{font-size:12.5px;color:var(--ds-muted,#7a746b);margin-bottom:14px}
+#dsu .dsuX{position:absolute;top:14px;right:16px;border:0;background:transparent;font-size:22px;cursor:pointer;color:var(--ds-muted,#7a746b)}
+#dsu .dsuGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 12px}
+#dsu label{display:flex;flex-direction:column;gap:4px;font-size:11.5px;font-weight:700;color:var(--ds-muted,#7a746b)}
+#dsu input,#dsu select,#dsu textarea{font:inherit;font-size:13.5px;font-weight:500;color:var(--ds-text,#2b241a);background:var(--ds-surface-2,#faf8f4);border:1px solid var(--ds-line,#e7e1d6);border-radius:10px;padding:9px 10px;min-width:0}
+#dsu input[readonly]{opacity:.75}
+#dsu .wide{grid-column:1/-1}
+#dsu .dsuHead{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:14px}
+#dsu .dsuHead div{background:var(--ds-surface-2,#faf8f4);border:1px solid var(--ds-line,#e7e1d6);border-radius:12px;padding:8px 10px}
+#dsu .dsuHead span{display:block;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ds-muted,#7a746b)}
+#dsu .dsuHead b{display:block;margin-top:3px;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#dsu .dsuBtns{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+#dsu .dsuBtns button{border:1px solid var(--ds-line,#e7e1d6);background:transparent;border-radius:999px;padding:9px 18px;font-weight:700;cursor:pointer;color:var(--ds-text,#2b241a)}
+#dsu .dsuBtns .go{background:var(--ds-gold-strong,#9a7b2f);border-color:var(--ds-gold-strong,#9a7b2f);color:#fff}
+#dsu .dsuMsg{margin-top:10px;font-size:12.5px;font-weight:600}
+#dsu .dsuMsg.err{color:#b91c1c}#dsu .dsuMsg.ok{color:#15803d}
+#dsu .dsuList{display:flex;flex-direction:column;gap:6px;margin-top:10px;max-height:52vh;overflow:auto}
+#dsu .dsuItem{display:flex;justify-content:space-between;gap:10px;align-items:center;text-align:left;border:1px solid var(--ds-line,#e7e1d6);background:var(--ds-surface-2,#faf8f4);border-radius:12px;padding:10px 12px;cursor:pointer;font:inherit;color:inherit}
+#dsu .dsuItem:hover{border-color:var(--ds-gold-strong,#9a7b2f)}
+#dsu .dsuItem b{font-size:13.5px}#dsu .dsuItem small{color:var(--ds-muted,#7a746b);font-size:12px}
+@media (max-width:640px){#dsu .dsuGrid{grid-template-columns:1fr 1fr}#dsu .dsuHead{grid-template-columns:1fr 1fr}}
+</style>
+<script>
+/* =====================================================================
+   EDEN BI — Update a deal (Reservation -> Part of DP, a DP payment, …)
+   Open from: Transactions > Update Deal (search), or the "Update" button
+   on a unit in the client panel. Only changed fields are sent; the server
+   checks the row is still the same deal before writing.
+   ===================================================================== */
+let DSU_OPTS_=null,DSU_ROW_=null,DSU_INIT_={};
+
+function dsuCanEdit_(){
+  if(typeof isEgyptViewer_==='function'&&isEgyptViewer_())return false;
+  return !!(typeof AUTH_USER!=='undefined'&&AUTH_USER);
+}
+function dsuEsc_(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function dsuClose_(){document.getElementById('dsu')?.remove();document.getElementById('dsuBack')?.remove();}
+function dsuShell_(html){
+  dsuClose_();
+  const back=document.createElement('div');back.id='dsuBack';back.onclick=dsuClose_;
+  const box=document.createElement('div');box.id='dsu';box.setAttribute('role','dialog');box.innerHTML=`<button class="dsuX" onclick="dsuClose_()" aria-label="Close">×</button>`+html;
+  document.body.appendChild(back);document.body.appendChild(box);
+  return box;
+}
+function dsuOptions_(cb){
+  if(DSU_OPTS_)return cb(DSU_OPTS_);
+  google.script.run.withSuccessHandler(o=>{DSU_OPTS_=o||{};cb(DSU_OPTS_);}).withFailureHandler(()=>{DSU_OPTS_={};cb(DSU_OPTS_);}).getDealEntryOptions(AUTH_TOKEN);
+}
+
+/* Step 1: find the deal */
+function dsOpenDealFinder_(){
+  if(!dsuCanEdit_())return;
+  const box=dsuShell_(`<h3>Update a deal</h3><div class="dsuSub">Search by client name, unit code or mobile.</div>
+    <input id="dsuFind" type="search" placeholder="Client, unit or mobile…" style="width:100%;box-sizing:border-box" autocomplete="off">
+    <div class="dsuList" id="dsuList"></div>`);
+  const input=box.querySelector('#dsuFind');
+  const run=()=>{
+    const q=input.value.trim().toLowerCase();
+    const rows=(typeof rawRows!=='undefined'?rawRows:[]).filter(r=>!q||[r.clientName,r.unitCode,r.mobile,r.project].join(' ').toLowerCase().includes(q))
+      .sort((a,b)=>Number(b.row)-Number(a.row)).slice(0,30);
+    box.querySelector('#dsuList').innerHTML=rows.map(r=>`<button type="button" class="dsuItem" onclick="dsOpenDealUpdate_(${Number(r.row)})">
+      <span><b>${dsuEsc_(r.clientName||'—')}</b><br><small>${dsuEsc_(r.project||'')} · ${dsuEsc_(r.unitCode||'')} · Row ${Number(r.row)}</small></span>
+      <small>${dsuEsc_(r.status||'')}</small></button>`).join('')||'<div class="dsuSub">No deal matches.</div>';
+  };
+  input.oninput=run;run();input.focus();
+}
+
+/* Step 2: edit */
+function dsOpenDealUpdate_(row){
+  if(!dsuCanEdit_())return;
+  const r=(typeof rawRows!=='undefined'?rawRows:[]).find(x=>Number(x.row)===Number(row));
+  if(!r){alert('Deal not found. Refresh and try again.');return;}
+  DSU_ROW_=r;
+  const cur=typeof projectCurrency_==='function'?projectCurrency_(r):(r.currency||'');
+  const box=dsuShell_(`<h3>Update deal</h3><div class="dsuSub">${dsuEsc_(r.project)} · ${dsuEsc_(r.unitCode)} · Deals sheet row ${Number(r.row)}</div>
+    <div class="dsuHead">
+      <div><span>Client</span><b title="${dsuEsc_(r.clientName)}">${dsuEsc_(r.clientName||'—')}</b></div>
+      <div><span>Final price</span><b>${Number(r.amount||0).toLocaleString('en-US')} ${dsuEsc_(cur)}</b></div>
+      <div><span>Sales</span><b>${dsuEsc_(r.salesName||'—')}</b></div>
+      <div><span>Now</span><b>${dsuEsc_(r.status||'—')}</b></div>
+    </div>
+    <div class="dsuGrid">
+      <label>Status<select id="dsuStatus"><option>${dsuEsc_(r.status||'')}</option></select></label>
+      <label>Additional Status<input id="dsuAdd" value="${dsuEsc_(r.additionalStatus||'')}"></label>
+      <label>DP Payment Date<input id="dsuDate" type="date"></label>
+      <label>DP %<input id="dsuDpPct" type="number" min="0" max="100" step="0.01"></label>
+      <label>Actual DP (amount)<input id="dsuDpAmt" type="number" min="0" step="1"></label>
+      <label>Remain<input id="dsuRemain" type="number" readonly></label>
+      <label>DP Paid %<input id="dsuPaidPct" type="number" min="0" max="100" step="0.01"></label>
+      <label>Actual Paid (amount)<input id="dsuPaidAmt" type="number" min="0" step="1"></label>
+      <label>DP Payment Method<select id="dsuMethod"><option value="">—</option></select></label>
+      <label>DP Currency<select id="dsuCur"><option value="${dsuEsc_(cur)}">${dsuEsc_(cur)}</option></select></label>
+      <label class="wide">Add a note<input id="dsuNote" placeholder="e.g. Paid 2nd part of DP by transfer"></label>
+    </div>
+    <div class="dsuMsg" id="dsuMsg"></div>
+    <div class="dsuBtns"><button type="button" onclick="dsuClose_()">Cancel</button><button type="button" class="go" id="dsuSave" onclick="dsuSave_()">Save changes</button></div>`);
+  const pct=v=>{const n=Number(v);return Number.isFinite(n)&&n?(Math.abs(n)<=1?n*100:n):'';};
+  const set=(id,v)=>{const el=box.querySelector('#'+id);if(el)el.value=v===''||v==null?'':v;};
+  set('dsuDpPct',pct(r.dpPercent));set('dsuDpAmt',Number(r.actualDP)||'');
+  set('dsuPaidAmt',Number(r.actualPaid)||'');set('dsuPaidPct',pct(r.dpPaid));
+  dsuCalc_('');
+  ['dsuDpPct','dsuDpAmt','dsuPaidPct','dsuPaidAmt'].forEach(id=>box.querySelector('#'+id).addEventListener('input',()=>dsuCalc_(id)));
+  DSU_INIT_=dsuValues_();
+  dsuOptions_(o=>{
+    const fill=(id,list,keep)=>{const el=document.getElementById(id);if(!el||!list||!list.length)return;const v=keep??el.value;
+      el.innerHTML=(id==='dsuMethod'?'<option value="">—</option>':'')+list.map(x=>`<option value="${dsuEsc_(x)}">${dsuEsc_(x)}</option>`).join('');
+      if(v&&![...el.options].some(op=>op.value===v))el.insertAdjacentHTML('afterbegin',`<option value="${dsuEsc_(v)}">${dsuEsc_(v)}</option>`);
+      el.value=v||'';};
+    fill('dsuStatus',o.statuses,r.status||'');
+    fill('dsuMethod',o.dpPaymentMethods,'');
+    fill('dsuCur',o.dpCurrencies,cur);
+    DSU_INIT_=dsuValues_();
+  });
+}
+function dsuCalc_(changed){
+  const g=id=>{const v=document.getElementById(id)?.value;return v===''||v==null?NaN:Number(v);};
+  const s=(id,v,d)=>{const el=document.getElementById(id);if(el)el.value=Number.isFinite(v)?String(Math.round(v*Math.pow(10,d))/Math.pow(10,d)):'';};
+  const price=Number(DSU_ROW_&&DSU_ROW_.amount)||0;
+  if(price){
+    if(changed==='dsuDpPct')s('dsuDpAmt',price*g('dsuDpPct')/100,0);
+    if(changed==='dsuDpAmt')s('dsuDpPct',g('dsuDpAmt')/price*100,2);
+    if(changed==='dsuPaidPct')s('dsuPaidAmt',price*g('dsuPaidPct')/100,0);
+    if(changed==='dsuPaidAmt')s('dsuPaidPct',g('dsuPaidAmt')/price*100,2);
+  }
+  const dp=g('dsuDpAmt'),paid=g('dsuPaidAmt');
+  s('dsuRemain',Number.isFinite(dp)?dp-(Number.isFinite(paid)?paid:0):NaN,0);
+}
+function dsuValues_(){
+  const v=id=>String(document.getElementById(id)?.value??'').trim();
+  return {status:v('dsuStatus'),additionalStatus:v('dsuAdd'),paymentDate:v('dsuDate'),dpPercent:v('dsuDpPct'),actualDP:v('dsuDpAmt'),
+    remain:v('dsuRemain'),dpPaid:v('dsuPaidPct'),actualPaid:v('dsuPaidAmt'),dpPaymentMethod:v('dsuMethod'),dpCurrency:v('dsuCur'),notes:v('dsuNote')};
+}
+function dsuSave_(){
+  const now=dsuValues_(),changes={};
+  Object.keys(now).forEach(k=>{if(now[k]!==DSU_INIT_[k])changes[k]=now[k];});
+  const msg=document.getElementById('dsuMsg');
+  if(!Object.keys(changes).length){msg.className='dsuMsg err';msg.textContent='Nothing changed.';return;}
+  // Paid without a payment date / method is allowed, but the status change is the usual reason.
+  const btn=document.getElementById('dsuSave');btn.disabled=true;msg.className='dsuMsg';msg.textContent='Saving…';
+  const r=DSU_ROW_;
+  google.script.run.withSuccessHandler(res=>{
+    btn.disabled=false;
+    // Show it at once on the dashboard; LiveSync / refresh brings the sheet's own numbers.
+    const map={status:'status',additionalStatus:'additionalStatus',actualDP:'actualDP',actualPaid:'actualPaid',remain:'remain',dpPercent:'dpPercent',dpPaid:'dpPaid'};
+    Object.keys(changes).forEach(k=>{if(map[k]&&r)r[map[k]]=/^(actualDP|actualPaid|remain|dpPercent|dpPaid)$/.test(k)?Number(changes[k])||0:changes[k];});
+    try{if(typeof render==='function')render();}catch(e){}
+    const extra=(res.rejected&&res.rejected.length)?'\n\nNot saved: '+res.rejected.join(' • '):'';
+    msg.className='dsuMsg ok';msg.textContent=(res.message||'Saved.')+extra;
+    setTimeout(()=>{dsuClose_();try{if(typeof loadDashboard==='function')loadDashboard(false,{});}catch(e){}},1400);
+  }).withFailureHandler(e=>{btn.disabled=false;msg.className='dsuMsg err';msg.textContent=e.message||String(e);})
+    .updateDealRecord(AUTH_TOKEN,{row:Number(r.row),expect:{project:r.project,unitCode:r.unitCode,clientName:r.clientName},changes});
+}
+
+/* Menu item under Transactions, right after Add New Deal. */
+(function initEdenDealUpdate_(){
+  const addBtn=()=>{
+    if(document.getElementById('dsuMenuBtn')||!dsuCanEdit_())return;
+    const menu=document.querySelector('#transactionsModule .moduleMenu');if(!menu)return;
+    const b=document.createElement('button');b.id='dsuMenuBtn';b.type='button';b.textContent='Update Deal';
+    b.onclick=dsOpenDealFinder_;
+    const after=[...menu.querySelectorAll('button')].find(x=>/'dealEntry'/.test(x.getAttribute('onclick')||''));
+    if(after)after.insertAdjacentElement('afterend',b);else menu.appendChild(b);
+  };
+  if(typeof render==='function'&&!render.__dsu){
+    const original=render;
+    render=function(){const r=original.apply(this,arguments);try{addBtn();}catch(e){}return r;};
+    render.__dsu=true;
+  }
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')dsuClose_();});
+})();
+</script>
