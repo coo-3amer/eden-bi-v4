@@ -18,7 +18,7 @@ const API_SLICE_CHARS_ = 90000;       // under the 100 KB CacheService value lim
 const API_DIRECT_CHARS_ = 450000;     // larger results are sent in slices
 const API_GZIP_FROM_CHARS_ = 20000;   // results above this are gzip-compressed
 const API_CACHE_SECONDS_ = 600;
-const API_BLOCKED_ = { doGet: true, doPost: true, include: true, warmDashboardCache: true, setupDashboardWarmup: true, setupUsersSheet: true, setupDealsSheetGuard: true, checkDealsSheetMapping: true, debugDealUnitCheck: true };
+const API_BLOCKED_ = { doGet: true, doPost: true, include: true, warmDashboardCache: true, setupDashboardWarmup: true, setupUsersSheet: true, setupDealsSheetGuard: true, checkDealsSheetMapping: true, debugDealUnitCheck: true, setupLiveSync: true, onDataSheetEdit: true };
 
 function apiJson_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);

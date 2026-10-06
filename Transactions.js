@@ -98,9 +98,22 @@ function getDashboardData(authToken, opts) {
     data = buildDashboardData_(authUser);
     dashCacheWrite_(scope, data);
   }
+  data.dataVersion = dashCacheVersion_(scope);   // lets the page notice newer data (LiveSync)
   if (isSalesScopedUser_(authUser)) return scopeDashboardForSales_(data, authUser);
   data.access = egyptViewerAccessProfile_(authUser);
   return data;
+}
+
+/* Fingerprint of a cached block's content ('' if missing). */
+function dashCacheVersion_(scope) {
+  try { const m = CacheService.getScriptCache().get('DASH_V1_' + scope); return m ? String(JSON.parse(m).h || JSON.parse(m).at || '') : ''; }
+  catch (e) { return ''; }
+}
+
+/* When a cached block was built (ms), 0 if missing. */
+function dashCacheAt_(scope) {
+  try { const m = CacheService.getScriptCache().get('DASH_V1_' + scope); return m ? (JSON.parse(m).at || 0) : 0; }
+  catch (e) { return 0; }
 }
 
 function dashCacheRead_(scope, maxAgeMs) {
@@ -134,7 +147,10 @@ function dashCacheWrite_(scope, data) {
     for (let i = 0; i < b64.length; i += DASH_CACHE_SLICE_) batch['DASH_V1_' + scope + '_' + id + '_' + (parts++)] = b64.slice(i, i + DASH_CACHE_SLICE_);
     const cache = CacheService.getScriptCache();
     cache.putAll(batch, DASH_CACHE_SECONDS_ + 60);
-    cache.put('DASH_V1_' + scope, JSON.stringify({ id: id, parts: parts, at: Date.now() }), DASH_CACHE_SECONDS_);
+    // h = fingerprint of the content: unchanged data keeps the same h, so open
+    // dashboards only refresh when something really changed.
+    const h = Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, JSON.stringify([copy.rows, copy.brokers, copy.options]))).slice(0, 16);
+    cache.put('DASH_V1_' + scope, JSON.stringify({ id: id, parts: parts, at: Date.now(), h: h }), DASH_CACHE_SECONDS_);
   } catch (err) {
     console.warn('Dashboard cache write: ' + err);
   }

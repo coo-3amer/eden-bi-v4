@@ -32,6 +32,18 @@ let LOGIN_PENDING_USER=null;
 
 let EDEN_BOOT_COMPLETE=false;
 let EDEN_DATA_RETRY_=0;
+let EDEN_DATA_AT_='';
+/* LiveSync: every 30 s ask the server if the sheets produced newer data
+   (a tiny call). If yes, swap it in quietly — filters and page stay. */
+setInterval(()=>{
+  try{
+    if(document.hidden||!AUTH_TOKEN||!EDEN_BOOT_COMPLETE||EDEN_LOADING)return;
+    google.script.run.withSuccessHandler(v=>{
+      const ver=String((v&&v.v)||'');
+      if(ver&&EDEN_DATA_AT_&&ver!==EDEN_DATA_AT_&&!EDEN_LOADING){EDEN_DATA_AT_=ver;loadDashboard(false,{});}
+    }).withFailureHandler(()=>{}).getDataVersion(AUTH_TOKEN);
+  }catch(e){}
+},30000);
 // Fast start (see loadDashboard). Declared here: login runs before the rest of this file.
 const EDEN_DATA_DB='eden-bi',EDEN_DATA_STORE='dashboard';
 let EDEN_LAST_OPTIONS=null;
@@ -1122,7 +1134,7 @@ function loadDashboard(isSessionRestore=false,opts={}){
           showAppAfterLogin(LOGIN_PENDING_USER||AUTH_USER);
         }
         LOGIN_PENDING_USER=null;
-        edenSetDataState_('live');EDEN_DATA_RETRY_=0;
+        edenSetDataState_('live');EDEN_DATA_RETRY_=0;EDEN_DATA_AT_=String((data&&data.dataVersion)||EDEN_DATA_AT_||'');
         edenDataPut_(key,data);
       }catch(error){
         console.error('Dashboard initialization failed:',error);
