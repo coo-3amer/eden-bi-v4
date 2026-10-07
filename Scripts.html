@@ -200,6 +200,7 @@ function enhanceDashboardFilterLayout_(){
     bcManagerMulti:'BC Manager',
     nationalityMulti:'Nationality',
     clientTypeMulti:'Client Type',
+    commissionMulti:'Commission',
     branchMulti:'Branch',
     statusMulti:'Status',
     renovationMulti:'Renovation',
@@ -1347,6 +1348,10 @@ function fillFilters(o){
     {value:'Internal',label:'Internal'},
     {value:'Overseas',label:'Overseas'}
   ],'clientType');
+  setChecks('commissionChecks',[
+    {value:'paid',label:'Commission Paid'},
+    {value:'notPaid',label:'Commission Not Paid'}
+  ],'commission');
   // Egypt Viewer gets ALL branch names from backend filter metadata,
   // while its actual Transactions rows remain restricted to EDEN WALK + Egyptian clients.
   // Normal/Admin users keep branch options derived from their loaded full dataset.
@@ -1578,7 +1583,7 @@ function refreshSalesFilterByManager_(){
 }
 function getMulti(name){return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(x=>String(x.value))}
 function updateMultiLabels(){
-  setMultiLabel('project','projectLabel','All Projects');setMultiLabel('unitCategory','unitCategoryLabel','All Unit Types');setMultiLabel('sales','salesLabel','All Sales');setMultiLabel('salesManager','salesManagerLabel','All Sales Managers');setMultiLabel('dealType','dealTypeLabel','All Deal Types');setMultiLabel('sharedWith','sharedWithLabel','All Shared Sales');setMultiLabel('nationality','nationalityLabel','All Nationalities');setMultiLabel('clientType','clientTypeLabel','All Client Types');setMultiLabel('branch','branchLabel','All Branches');setMultiLabel('status','statusLabel','All Status');setMultiLabel('renovation','renovationLabel','All Renovation');setMultiLabel('mainSource','mainSourceLabel','All Main Sources');setMultiLabel('sourceType','sourceTypeLabel','All Source Types');setMultiLabel('campaignName','campaignNameLabel','All Campaigns');setMultiLabel('mediaBuyer','mediaBuyerLabel','All Media Buyers');setMultiLabel('day','dayLabel','All Days');setMultiLabel('month','monthLabel','All Months');setMultiLabel('year','yearLabel','All Years');
+  setMultiLabel('project','projectLabel','All Projects');setMultiLabel('unitCategory','unitCategoryLabel','All Unit Types');setMultiLabel('sales','salesLabel','All Sales');setMultiLabel('salesManager','salesManagerLabel','All Sales Managers');setMultiLabel('dealType','dealTypeLabel','All Deal Types');setMultiLabel('sharedWith','sharedWithLabel','All Shared Sales');setMultiLabel('nationality','nationalityLabel','All Nationalities');setMultiLabel('clientType','clientTypeLabel','All Client Types');setMultiLabel('commission','commissionLabel','All Commission');setMultiLabel('branch','branchLabel','All Branches');setMultiLabel('status','statusLabel','All Status');setMultiLabel('renovation','renovationLabel','All Renovation');setMultiLabel('mainSource','mainSourceLabel','All Main Sources');setMultiLabel('sourceType','sourceTypeLabel','All Source Types');setMultiLabel('campaignName','campaignNameLabel','All Campaigns');setMultiLabel('mediaBuyer','mediaBuyerLabel','All Media Buyers');setMultiLabel('day','dayLabel','All Days');setMultiLabel('month','monthLabel','All Months');setMultiLabel('year','yearLabel','All Years');
   setMultiLabel('brokerEden','brokerEdenLabel','All Eden Sales');setMultiLabel('brokerCreatedBy','brokerCreatedByLabel','All Created By');setMultiLabel('brokerLastSales','brokerLastSalesLabel','All Previous Sales');setMultiLabel('brokerLink','brokerLinkLabel','All Link Status');setMultiLabel('brokerStatus','brokerStatusLabel','All Broker Status');setMultiLabel('brokerDay','brokerDayLabel','All Creation Days');setMultiLabel('brokerMonth','brokerMonthLabel','All Creation Months');setMultiLabel('brokerYear','brokerYearLabel','All Creation Years');
 }
 function setMultiLabel(name,labelId,emptyText){const selected=Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(x=>x.dataset.label||x.value);document.getElementById(labelId).innerText=selected.length?selected.join(' • '):emptyText}
@@ -1687,7 +1692,7 @@ function setView(v,btn){
 function resetFilters(){
   document.getElementById('search').value='';
   document.getElementById('brokerSearch').value='';
-  document.querySelectorAll('input[name="project"],input[name="unitCategory"],input[name="sales"],input[name="salesManager"],input[name="dealType"],input[name="sharedWith"],input[name="nationality"],input[name="clientType"],input[name="branch"],input[name="status"],input[name="renovation"],input[name="mainSource"],input[name="sourceType"],input[name="campaignName"],input[name="mediaBuyer"],input[name="day"],input[name="month"],input[name="year"],input[name="brokerEden"],input[name="brokerCreatedBy"],input[name="brokerLastSales"],input[name="brokerLink"],input[name="brokerStatus"],input[name="brokerDay"],input[name="brokerMonth"],input[name="brokerYear"]').forEach(cb=>cb.checked=false);
+  document.querySelectorAll('input[name="project"],input[name="unitCategory"],input[name="sales"],input[name="salesManager"],input[name="dealType"],input[name="sharedWith"],input[name="nationality"],input[name="clientType"],input[name="commission"],input[name="branch"],input[name="status"],input[name="renovation"],input[name="mainSource"],input[name="sourceType"],input[name="campaignName"],input[name="mediaBuyer"],input[name="day"],input[name="month"],input[name="year"],input[name="brokerEden"],input[name="brokerCreatedBy"],input[name="brokerLastSales"],input[name="brokerLink"],input[name="brokerStatus"],input[name="brokerDay"],input[name="brokerMonth"],input[name="brokerYear"]').forEach(cb=>cb.checked=false);
   refreshSalesFilterByManager_();updateMultiLabels();applyFilters();
 }
 function applyFilters(){
@@ -1723,6 +1728,7 @@ function applyFilters(){
     (!sharedWithSales.length||sharedWithSales.includes(String(r.sharedWith||''))) &&
     (!nationalities.length||nationalities.includes(String(r.nationality))) &&
     (!clientTypes.length||clientTypes.some(v=>String(v).trim().toLowerCase()===String(r.clientType||'').trim().toLowerCase())) &&
+    commissionFilterMatch_(r) &&
     (!branches.length||branches.includes(String(r.branch))) &&
     (!renovations.length||renovations.includes(String(r.renovationStatus))) &&
     (!mainSources.length||mainSources.includes(String(r.mainSource))) &&
@@ -1962,6 +1968,7 @@ function teamComparisonBaseRows_(){
     (!unitCategories.length||unitCategories.includes(String(r.unitType))) &&
     (!nationalities.length||nationalities.includes(String(r.nationality))) &&
     (!clientTypes.length||clientTypes.some(v=>String(v).trim().toLowerCase()===String(r.clientType||'').trim().toLowerCase())) &&
+    commissionFilterMatch_(r) &&
     (!branches.length||branches.includes(String(r.branch))) &&
     (!statuses.length||statuses.includes(String(r.status))) &&
     (!renovations.length||renovations.includes(String(r.renovationStatus))) &&
@@ -3624,6 +3631,7 @@ function edenNonDateScopeRows_(){
     (!salesManagers.length||salesManagers.includes(String(r.salesManager))) &&
     (!nationalities.length||nationalities.includes(String(r.nationality))) &&
     (!clientTypes.length||clientTypes.some(v=>String(v).trim().toLowerCase()===String(r.clientType||'').trim().toLowerCase())) &&
+    commissionFilterMatch_(r) &&
     (!branches.length||branches.includes(String(r.branch))) &&
     (!statuses.length||statuses.includes(String(r.status))) &&
     (!renovations.length||renovations.includes(String(r.renovationStatus))) &&
@@ -7816,6 +7824,20 @@ function saveGeneralSettings(){
 
 
 
+
+// ================= COMMISSION FILTER =================
+// Paid = any Internal comm checkbox (Sales / Managers / Staff) is ticked in the Deals sheet.
+function commissionPaid_(r){
+  return commissionTrue_(r?.internalCommSales)||commissionTrue_(r?.internalCommManagers)||commissionTrue_(r?.internalCommStaff);
+}
+let COMMISSION_SEL_={at:0,v:[]};
+function commissionFilterMatch_(r){
+  const now=Date.now();
+  if(now-COMMISSION_SEL_.at>50)COMMISSION_SEL_={at:now,v:getMulti('commission')};
+  const sel=COMMISSION_SEL_.v;
+  if(!sel.length||sel.length>=2)return true;
+  return sel[0]==='paid'?commissionPaid_(r):!commissionPaid_(r);
+}
 
 // ================= INTERNAL COMMISSIONS 2026+ =================
 function commissionTrue_(value){
