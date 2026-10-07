@@ -7031,7 +7031,7 @@ function loadDealEntry(){
       dealSetOptions('dealIdType',o.idTypes,'Select ID Type');
       dealSetOptions('dealNationality',o.nationalities,'Select Nationality');
       dealSetOptions('dealGender',o.genders,'Select Gender');
-      dealSetOptions('dealClientStatue',o.clientStatuses,'Select Client Statue');
+      dealSetOptions('dealClientStatue',(o.clientStatuses&&o.clientStatuses.length)?o.clientStatuses:['Internal','Overseas'],'Auto (from mobile)');
       dealSetOptions('dealPaymentPlanType',o.paymentPlanTypes,'Select Payment Plan');
       dealSetOptions('dealInstallments',o.installmentPeriods,'Select Installments Period');
       dealSetOptions('dealPeriod',o.periodTypes,'Select Period');
@@ -7244,7 +7244,7 @@ function collectDealPayload(){
     clientName:dealValue('dealClientName'),mobile:dealValue('dealMobile'),email:dealValue('dealEmail'),
     nationality:dealValue('dealNationality'),idType:dealValue('dealIdType'),idNumber:dealValue('dealIdNumber'),
     idAddress:dealValue('dealIdAddress'),residenceAddress:dealValue('dealResidenceAddress'),jobTitle:dealValue('dealJobTitle'),
-    birthDate:dealValue('dealBirthDate'),gender:dealValue('dealGender'),clientStatue:dealValue('dealClientStatue'),
+    birthDate:dealValue('dealBirthDate'),gender:dealValue('dealGender'),clientType:dealValue('dealClientStatue'),
     branch:dealValue('dealBranch'),salesName:dealValue('dealSalesName'),sharedWith:dealValue('dealSharedWith'),
     salesManager:dealValue('dealSalesManager'),headOfSales:dealValue('dealHeadOfSales'),cco:dealValue('dealCCO'),
     dealStatus:dealValue('dealSharedWith')?'Share':'Solo',discountPercent:dealValue('dealDiscountPercent'),discountAmount:dealValue('dealDiscountAmount'),maintenanceBase:dealValue('dealMaintenanceBase'),finalPrice:dealValue('dealFinalPrice'),mainSource:dealValue('dealMainSource'),sourceType:dealValue('dealSourceType'),

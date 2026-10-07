@@ -112,7 +112,7 @@ function buildDealEntryOptions_() {
     use('cco', 'cco'); use('dealStatuses', 'dealStatus'); use('mainSources', 'mainSource');
     use('sourceTypes', 'sourceType'); use('campaigns', 'campaignName'); use('mediaBuyers', 'mediaBuyer');
     use('brokerCompanies', 'brokerageCompany'); use('offers', 'discountOffer'); use('genders', 'gender');
-    use('idTypes', 'idType'); use('clientStatuses', 'clientStatue'); use('paymentPlanTypes', 'paymentPlanType');
+    use('idTypes', 'idType'); use('clientStatuses', 'clientType'); use('paymentPlanTypes', 'paymentPlanType');
     use('installmentPeriods', 'installments'); use('currencies', 'currency');
     use('resPaymentMethods', 'resPaymentMethod'); use('resCurrencies', 'resCurrency');
     use('dpPaymentMethods', 'dpPaymentMethod'); use('dpCurrencies', 'dpCurrency');
@@ -738,7 +738,6 @@ const MAIN_DEAL_FIELDS_ = [
   { k: 'jobTitle',         h: ['Job Title', 'Job'] },
   { k: 'birthDate',        h: ['Birth Date', 'Date Of Birth', 'DOB'] },
   { k: 'gender',           h: ['Gender'] },
-  { k: 'clientStatue',     h: ['Client Statue', 'Client Status'] },
   { k: 'block',            h: ['Block'] },
   { k: 'view',             h: ['View'] },
   { k: 'floor',            h: ['Floor'] },
@@ -837,7 +836,7 @@ function saveDealToMainSheet_(user, payload, unit) {
     year: date.getFullYear(),
     transactionType: dealText_(payload.transactionType),
     mobile: dealText_(payload.mobile),
-    clientType: (typeof classifyClientTypeFromMobileHeader_ === 'function') ? classifyClientTypeFromMobileHeader_(payload.mobile) : '',
+    clientType: dealText_(payload.clientType || payload.clientStatue) || ((typeof classifyClientTypeFromMobileHeader_ === 'function') ? classifyClientTypeFromMobileHeader_(payload.mobile) : ''),
     email: dealText_(payload.email),
     nationality: dealText_(payload.nationality),
     idType: dealText_(payload.idType),
@@ -847,7 +846,6 @@ function saveDealToMainSheet_(user, payload, unit) {
     jobTitle: dealText_(payload.jobTitle),
     birthDate: dealDate_(payload.birthDate),
     gender: dealText_(payload.gender),
-    clientStatue: dealText_(payload.clientStatue),
     block: dealText_(payload.block),
     view: dealText_(unit.view),
     floor: dealText_(unit.floor),
