@@ -542,6 +542,8 @@ function mainDealsColumns_(sheet) {
       if (String(groups[i] || '').trim()) cur = normalizeHeader_(groups[i]);
       const k = normalizeHeader_(h);
       if (cur && k && map[cur + '|' + k] === undefined) map[cur + '|' + k] = i + 1;
+      // A column with a group title but no header of its own (e.g. NOTES) is found by the group title.
+      if (!k && String(groups[i] || '').trim() && map[cur] === undefined) map[cur] = i + 1;
     });
   }
   return { map: map, lastCol: lastCol };
@@ -549,11 +551,7 @@ function mainDealsColumns_(sheet) {
 
 function mainDealsCol_(cols, names) {
   for (const n of names) {
-    if (String(n).charAt(0) === '@') {           // fixed column confirmed by the sheet owner
-      const c = dealColumn_(String(n).slice(1));
-      if (c && c <= cols.lastCol) return c;
-      continue;
-    }
+    if (String(n).charAt(0) === '@') continue;   // column letters are never used — headers only
     const key = normalizeHeader_(n);
     const c = cols.map[key];
     if (c) return c;
@@ -721,13 +719,13 @@ const MAIN_DEAL_FIELDS_ = [
   { k: 'clientName',       h: ['Client Name'] },
   { k: 'project',          h: ['Project'] },
   { k: 'unitCode',         h: ['Unit Code'] },
-  { k: 'status',           h: ['Status'] },
-  { k: 'additionalStatus', h: ['Additional Status'] },
-  { k: 'reservationAmount',h: ['Reservation Amount', 'Res Amount', '@J'] },
-  { k: 'resCurrency',      h: ['reservation|currency', '@K'] },
-  { k: 'resPaymentMethod', h: ['reservation|payment method', '@L'] },
-  { k: 'date',             h: ['Date'] },
-  { k: 'month',            h: ['Month'] },
+  { k: 'status',           h: ['deal status|status', 'Status'] },
+  { k: 'additionalStatus', h: ['deal status|additional status', 'Additional Status'] },
+  { k: 'reservationAmount',h: ['reservation|amount', 'Reservation Amount', 'Res Amount'] },
+  { k: 'resCurrency',      h: ['reservation|currency'] },
+  { k: 'resPaymentMethod', h: ['reservation|payment method'] },
+  { k: 'date',             h: ['reservation|date', 'Date'] },
+  { k: 'month',            h: ['reservation|month', 'Month'] },
   { k: 'year',             h: ['Year'] },
   { k: 'mobile',           h: ['client info|contact', 'Contact', 'Mobile', 'Mobile Number', 'Phone'] },
   { k: 'clientType',       h: ['Client Type'] },
@@ -752,7 +750,7 @@ const MAIN_DEAL_FIELDS_ = [
   { k: 'discount',         h: ['price details|discount', 'Discount'] },
   { k: 'meterAfter',       h: ['Meter Price After Discount'] },
   { k: 'finalPrice',       h: ['Final Price'] },
-  { k: 'currency',         h: ['price details|currency', '@BI'] },
+  { k: 'currency',         h: ['price details|currency'] },
   { k: 'maintenancePercent', h: ['Maintenance %', 'Maintenance Percent'] },
   { k: 'maintenanceAmount',h: ['Maintenance Amount'] },
   { k: 'discountOffer',    h: ['Discount Offer', 'Offer'] },
@@ -774,14 +772,14 @@ const MAIN_DEAL_FIELDS_ = [
   { k: 'dpPaid',           h: ['DP Paid'] },
   { k: 'actualPaid',       h: ['Actual Paid', 'Acctual Paid'] },
   { k: 'remain',           h: ['Remain'] },
-  { k: 'dpPaymentMethod',  h: ['down payment|payment method', '@CG'] },
-  { k: 'dpCurrency',       h: ['down payment|currency', '@CH'] },
-  { k: 'paymentDate',      h: ['down payment|date', 'Payment Date', '@CK'] },
-  { k: 'paymentPlanType',  h: ['Type Of Payment', 'Payment Plan', '@CN'] },
+  { k: 'dpPaymentMethod',  h: ['down payment|payment method'] },
+  { k: 'dpCurrency',       h: ['down payment|currency'] },
+  { k: 'paymentDate',      h: ['down payment|date', 'Payment Date'] },
+  { k: 'paymentPlanType',  h: ['payment plan|type of payment plan', 'Type Of Payment Plan', 'Type Of Payment', 'Payment Plan'] },
   { k: 'installments',     h: ['Installments Period', 'Installments'] },
   { k: 'installmentPlan',  h: ['Installment Plan'] },
   { k: 'periodType',       h: ['Period Type', 'Period'] },
-  { k: 'notes',            h: ['Notes', 'Note', 'Comments', '@EE'] }
+  { k: 'notes',            h: ['Notes', 'Note', 'Comments'] }
 ];
 
 function saveDealToMainSheet_(user, payload, unit) {
