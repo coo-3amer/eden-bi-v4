@@ -478,6 +478,8 @@ function saveNewDeal(authToken, payload) {
 
     const unit = check.unit || {};
     const saved = saveDealToMainSheet_(user, Object.assign({}, payload, { project: project, unitCode: unitCode }), unit);
+    const inv = syncInventoryForDeal_(project, unitCode, payload.status,
+      { inventoryCategory: dealText_(payload.inventoryCategory) || unit.inventoryCategory, by: user.name || user.username });
     clearDashboardCache_();
     const ref = saved.dealNum ? 'Deal #' + saved.dealNum : 'The deal';
     const result = {
@@ -487,7 +489,8 @@ function saveNewDeal(authToken, payload) {
       written: saved.written,
       skipped: saved.skipped,
       rejected: saved.rejected,
-      message: `${ref} was saved in the Deals sheet, row ${saved.row}.`,
+      message: `${ref} was saved in the Deals sheet, row ${saved.row}.` + (inv.message ? ' ' + inv.message : ''),
+      inventory: inv,
       createdBy: user.name || user.username
     };
     if (reqKey) cache.put(reqKey, JSON.stringify(result), 21600);
@@ -1032,9 +1035,13 @@ function updateDealRecord(authToken, req) {
       } catch (e) {}
     }
     SpreadsheetApp.flush();
+    let inv = { changed: false, message: '' };
+    if (newStatus && !same(newStatus, oldStatus) && written.indexOf(mainDealLabel_(MAIN_DEAL_FIELDS_.filter(x => x.k === 'status')[0])) >= 0) {
+      inv = syncInventoryForDeal_(at(['Project']), at(['Unit Code']), newStatus, { by: user.name || user.username });
+    }
     clearDashboardCache_();
-    return { success: true, row: row, written: written, rejected: rejected,
-      message: written.length ? 'Deal updated (' + written.join(', ') + ').' : 'Nothing was changed.' };
+    return { success: true, row: row, written: written, rejected: rejected, inventory: inv,
+      message: (written.length ? 'Deal updated (' + written.join(', ') + ').' : 'Nothing was changed.') + (inv.message ? ' ' + inv.message : '') };
   } finally {
     lock.releaseLock();
   }

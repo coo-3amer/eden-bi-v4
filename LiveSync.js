@@ -61,6 +61,8 @@ function onDataSheetEdit(e) {
   // In the main file only the Deals tab feeds the dashboard (skip Users, Targets…).
   if (target === 'DASH' && id === SPREADSHEET_ID && e && e.range) {
     try { if (e.range.getSheet().getSheetId() !== DEALS_GID) return; } catch (err) {}
+    // A Status typed by hand in Deals also moves the unit in the Inventory.
+    if (typeof syncInventoryFromDealsEdit_ === 'function') syncInventoryFromDealsEdit_(e);
   }
   const cache = CacheService.getScriptCache();
   const dirtyKey = 'LIVE_DIRTY_' + target;
