@@ -15,9 +15,17 @@ html[data-theme] #appRoot #mainTable td[data-col="clientName"]{max-width:300px}
   let tip=null,current=null;
   const cut=el=>{
     if(!el||el.nodeType!==1)return false;
+    // Only small text holders — never whole tables, cards or scrolling areas.
+    if(el.matches('table,thead,tbody,tr,section,main,form,ul,ol,[role="dialog"]'))return false;
+    if(el.querySelector('table,canvas,svg,input,select,textarea,button'))return false;
+    if(el.children.length>3)return false;
+    const cs=getComputedStyle(el);
+    if(/auto|scroll/.test(cs.overflowX+cs.overflowY))return false;
+    const len=String(el.innerText||'').trim().length;
+    if(!len||len>400)return false;
     if(el.scrollWidth>el.clientWidth+1)return true;
     // multi-line clamps
-    return el.scrollHeight>el.clientHeight+2&&getComputedStyle(el).overflow==='hidden'&&el.clientHeight>0;
+    return el.scrollHeight>el.clientHeight+2&&cs.overflow==='hidden'&&el.clientHeight>0;
   };
   const findCut=t=>{
     for(let el=t,i=0;el&&i<5&&el!==document.body;el=el.parentElement,i++){
