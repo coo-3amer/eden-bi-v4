@@ -87,7 +87,8 @@ function isEgyptViewer_(){
   return role==='egypt viewer'||role==='egypt transactions viewer';
 }
 function egyptViewerAllowedView_(view){
-  return ['dashboard','projects','sales','branches','clients','deals'].includes(String(view||''));
+  const v=String(view||'');
+  return ['dashboard','projects','sales','branches','clients','deals'].includes(v)||v.startsWith('broker');
 }
 function ensureEgyptViewerRoleOption_(){
   const select=document.getElementById('userRole');
@@ -103,8 +104,9 @@ function applyEgyptViewerUi_(){
   document.body.classList.toggle('egypt-viewer-readonly', isEgyptViewer_());
   if(!isEgyptViewer_())return;
 
-  ['brokersModule','inventoriesModule','aiModule','settingsModule','systemModule']
+  ['inventoriesModule','aiModule','settingsModule','systemModule']
     .forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+  const bm=document.getElementById('brokersModule');if(bm)bm.style.display='';
 
   document.querySelectorAll('button,a').forEach(el=>{
     const t=String(el.textContent||'').trim().toLowerCase();
@@ -1654,7 +1656,7 @@ function renderProjectButtons(projects){/* Projects list removed from sidebar. U
 function selectProject(p){document.querySelectorAll('input[name="project"]').forEach(cb=>cb.checked=String(cb.value)===String(p));updateMultiLabels();setView('projects');applyFilters()}
 function setView(v,btn){
   if(isEgyptViewer_() && !egyptViewerAllowedView_(v)){
-    alert('Read-only Egypt Viewer can access Transactions / EDEN WALK only.');
+    alert('Read-only Egypt Viewer can access Transactions / EDEN WALK and Brokers only.');
     v='dashboard';
     btn=null;
   }

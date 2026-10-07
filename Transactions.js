@@ -231,9 +231,7 @@ function buildDashboardData_(authUser) {
       sheetName: sheet.getName(),
       rows: [],
       options: {},
-      brokers: egyptViewer
-        ? { sheetName: '', rows: [], options: {}, availableFields: {} }
-        : getBrokerDashboardData_(),
+      brokers: getBrokerDashboardData_(),
       access: egyptViewerAccessProfile_(authUser)
     };
   }
@@ -688,9 +686,7 @@ function buildDashboardData_(authUser) {
     generatedAt: new Date().toISOString(),
     rows,
     options,
-    brokers: egyptViewer
-      ? { sheetName: '', rows: [], options: {}, availableFields: {} }
-      : getBrokerDashboardData_(),
+    brokers: getBrokerDashboardData_(),   // broker companies are visible to Egypt Viewer too
     access: egyptViewerAccessProfile_(authUser)
   };
 }

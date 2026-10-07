@@ -42,7 +42,7 @@ function assertEgyptViewerReadOnly_(user, actionName) {
 function assertEgyptViewerModuleBlocked_(user, moduleName) {
   if (isEgyptViewerUser_(user)) {
     throw new Error(
-      'Access denied. Egypt Viewer can access Transactions / EDEN WALK only. ' +
+      'Access denied. Egypt Viewer can access Transactions / EDEN WALK and Brokers only. ' +
       String(moduleName || '') + ' is not available for this account.'
     );
   }
@@ -57,7 +57,7 @@ function egyptViewerAccessProfile_(user) {
     canExport: true,
     exportFormats: ['CSV', 'Excel', 'PDF'],
     canWrite: false,
-    allowedModules: ['transactions'],
+    allowedModules: ['transactions', 'brokers'],
     allowedProject: 'EDEN WALK',
     allowedNationality: 'Egyptian',
     allowedBranches: ['EGY - Al-Rehab', 'KSA - Jeddah', 'KSA - Riyadh']
