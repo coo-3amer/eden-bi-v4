@@ -17,6 +17,7 @@ html[data-theme] #appRoot #mainTable td[data-col="clientName"]{max-width:300px}
     if(!el||el.nodeType!==1)return false;
     // Only small text holders — never whole tables, cards or scrolling areas.
     if(el.matches('table,thead,tbody,tr,section,main,form,ul,ol,[role="dialog"]'))return false;
+    if(el.closest('#edenMagicTransition,.loginScreen,#loginScreen'))return false;
     if(el.querySelector('table,canvas,svg,input,select,textarea,button'))return false;
     if(el.children.length>3)return false;
     const cs=getComputedStyle(el);
