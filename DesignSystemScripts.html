@@ -159,7 +159,7 @@ function edenStatusChipsRender_(){
     list.map(s=>{
       const on=s.k==='cancel'?cancelOn:selStage.has(s.k);
       return `<button type="button" class="dsStatusChip tone-${edenStageTone_(s.k)}${on?' on':''}" data-stage="${esc(s.k)}" aria-pressed="${on}">
-        <i></i><span>${esc(s.label)}</span><b>${fmt(counts[s.k]||0)}</b>
+        <i></i><span>${esc(s.label).replace(/\s*\(([^)]*)\)\s*$/,' <small>($1)</small>')}</span><b>${fmt(counts[s.k]||0)}</b>
       </button>`;
     }).join('');
 }

@@ -496,3 +496,31 @@ html[data-theme] #appRoot #mainTable td.mobileCell{max-width:none!important}
 html[data-theme] #appRoot #mainTable td.mobileCell .mobileNum{display:inline!important;color:var(--ds-text)}
 html[data-theme] #appRoot #mainTable td.mobileCell .mobileMore{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;font-size:10.5px;font-weight:700;background:var(--ds-surface-3);color:var(--ds-muted);cursor:help}
 </style>
+
+<style id="eden-stage-chips">
+/* Deal Stage bar: aligned tiles, tone accent, sub-label in brackets */
+html[data-theme] #appRoot .dsStatusBar{align-items:flex-start;padding:16px 18px}
+html[data-theme] #appRoot .dsStatusHead{padding-top:10px}
+html[data-theme] #appRoot .dsStatusChips{display:grid;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:8px}
+html[data-theme] #appRoot .dsStatusChip{height:44px;border-radius:12px;padding:0 8px 0 12px;justify-content:space-between;background:var(--ds-surface);
+  border:1px solid var(--ds-line);box-shadow:0 1px 2px rgba(0,0,0,.03);position:relative;overflow:hidden}
+html[data-theme] #appRoot .dsStatusChip::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:var(--tone,var(--ds-subtle))}
+html[data-theme] #appRoot .dsStatusChip i{display:none}
+html[data-theme] #appRoot .dsStatusChip span{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.15;font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html[data-theme] #appRoot .dsStatusChip span small{font-size:11px;font-weight:600;color:var(--ds-muted);margin-top:2px}
+html[data-theme] #appRoot .dsStatusChip.tone-green{--tone:var(--ds-green)}
+html[data-theme] #appRoot .dsStatusChip.tone-gold{--tone:var(--ds-gold)}
+html[data-theme] #appRoot .dsStatusChip.tone-red{--tone:var(--ds-red)}
+html[data-theme] #appRoot .dsStatusChip.tone-blue{--tone:var(--ds-blue)}
+html[data-theme] #appRoot .dsStatusChip.tone-violet{--tone:var(--ds-violet)}
+html[data-theme] #appRoot .dsStatusChip:hover{border-color:var(--tone,var(--ds-gold-line));background:var(--ds-hover)}
+html[data-theme] #appRoot .dsStatusChip b{min-width:34px;height:26px;border-radius:8px;font-variant-numeric:tabular-nums;background:var(--ds-surface-2)}
+html[data-theme] #appRoot .dsStatusChip.all{padding-left:14px}
+html[data-theme] #appRoot .dsStatusChip.on span small{color:rgba(255,255,255,.85)}
+html[data-theme] #appRoot .dsStatusChip.on::before{background:rgba(255,255,255,.7)}
+/* Filters not used any more (Deal Stage chips replace Status / Deal Stage dropdowns) */
+html[data-theme] #appRoot #statusMulti,html[data-theme] #appRoot #contractMulti,
+html[data-theme] #appRoot #bcSalesMulti,html[data-theme] #appRoot #bcManagerMulti{display:none!important}
+@media(max-width:760px){html[data-theme] #appRoot .dsStatusBar{flex-direction:column;align-items:stretch;gap:10px}html[data-theme] #appRoot .dsStatusHead{padding-top:0}html[data-theme] #appRoot .dsStatusChips{width:100%;flex:none}}
+@media(max-width:560px){html[data-theme] #appRoot .dsStatusChips{grid-template-columns:repeat(2,minmax(0,1fr))}html[data-theme] #appRoot .dsStatusChip span{font-size:12px;white-space:normal}html[data-theme] #appRoot .dsStatusChip{height:auto;min-height:44px;padding-top:6px;padding-bottom:6px}}
+</style>
