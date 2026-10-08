@@ -108,7 +108,7 @@ function c360Open_(key){
     const shared=typeof isShareDeal_==='function'&&isShareDeal_(r);
     const resDays=typeof reservationDays_==='function'?reservationDays_(r):null;
     const url=String(r.docsUrl||'');
-    return `<article class="c360Deal${cancelled(r)?' cancel':''}">
+    return `<article class="c360Deal${cancelled(r)?' cancel':''}" data-row="${Number(r.row)||''}">
       <div class="c360DealTop"><div><b>${c360Esc_(r.project||'')}</b><small>${c360Esc_(r.unitCode||'')}${r.unitType?' · '+c360Esc_(r.unitType):''}${Number(r.area)?' · '+c360Num_(r.area)+' m²':''}</small></div>
         <span class="c360Status chip status-${c360Esc_(String(r.status||'').split(' ')[0])}">${c360Esc_(r.status||'—')}</span></div>
       <div class="c360Grid">

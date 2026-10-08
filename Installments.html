@@ -37,6 +37,12 @@
 .ipActions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 0}
 .ipEmpty{padding:26px;text-align:center;color:var(--ds-muted);font-size:13.5px;line-height:1.6}
 @media(max-width:720px){.ipKpis{grid-template-columns:repeat(2,minmax(0,1fr))}.ipForm,.ipPay .ipForm{grid-template-columns:repeat(2,minmax(0,1fr))}.ip{top:0;left:0;transform:none;width:100vw;max-height:100vh;height:100vh;border-radius:0}.ipTable .hideS{display:none}}
+/* Client 360 unit card */
+.ipC360{margin:10px 0 8px;padding:10px 12px;border-radius:10px;background:var(--ds-surface-2,#f9f5ee);border:1px solid var(--ds-line);font-size:12px}
+.ipC360Top{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.ipC360Top>b{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ds-gold-strong)}
+.ipC360Row{display:flex;gap:14px;flex-wrap:wrap;color:var(--ds-muted)}
+.ipC360 b{color:var(--ds-heading)}
 /* Collections page block */
 .ipColl{background:var(--ds-surface);border:1px solid var(--ds-line);border-radius:var(--ds-r,16px);padding:16px}
 .ipColl h3{margin:0 0 10px;font-size:15px;color:var(--ds-heading)}
@@ -105,6 +111,8 @@ function ipLoad_(){
     .withFailureHandler(err=>ipBody_(`<div class="ipEmpty">Could not load the schedule.<br>${ipEsc_(err&&err.message||err)}</div>`))
     .getInstallmentSchedule(AUTH_TOKEN,r.project,r.unitCode,r.row);
 }
+/* After any change: forget the cached overview and refresh the client card. */
+function ipChanged_(){IP_OVERVIEW_=null;IP_OVERVIEW_AT_=0;try{ipC360Fill_();}catch(e){}}
 function ipBody_(html){const b=document.querySelector('#ip .ipBody');if(b)b.innerHTML=html;return b;}
 
 /* ---------- Schedule view ---------- */
@@ -160,16 +168,17 @@ function ipRender_(){
   const want=(()=>{const g=ipGenDefaults_(r,d);return g.n;})();
   const have=d.schedule.filter(x=>!/^(down payment|maintenance)$/i.test(x.name)).length;
   if(want&&have!==want)html=`<div class="ipMsg err" style="font-weight:700;margin:0 0 12px">This schedule has ${have} installments, but the deal says ${want} (${ipEsc_((d.plan&&d.plan.planCode)||r.planCode||'')}).${d.canEdit?' Press “Rebuild schedule” below to fix it.':''}</div>`+html;
-  if(d.canEdit)html+=`<div class="ipActions"><button type="button" class="ipBtn" data-a="gen">Rebuild schedule</button><span class="ipMsg">Rebuilding keeps every payment already recorded.</span></div>`;
+  html+=`<div class="ipActions"><button type="button" class="ipBtn main" data-a="stmt">🧾 Statement of account</button>${d.canEdit?'<button type="button" class="ipBtn" data-a="gen">Rebuild schedule</button><span class="ipMsg">Rebuilding keeps every payment already recorded.</span>':''}</div>`;
   const b=ipBody_(html);
   b.querySelectorAll('[data-pay]').forEach(x=>x.addEventListener('click',()=>{IP_.payFor=x.dataset.pay;ipRender_();b.querySelector('.ipPay input')?.focus();}));
   b.querySelector('[data-a="cancelPay"]')?.addEventListener('click',()=>{IP_.payFor=null;ipRender_();});
   b.querySelector('[data-a="savePay"]')?.addEventListener('click',ipSavePay_);
   b.querySelector('[data-a="gen"]')?.addEventListener('click',()=>{IP_.gen=ipGenDefaults_(r,d);ipRender_();});
+  b.querySelector('[data-a="stmt"]')?.addEventListener('click',()=>ipStatement_());
   b.querySelectorAll('[data-del]').forEach(x=>x.addEventListener('click',()=>{
     if(!confirm('Delete this payment?'))return;
     x.disabled=true;
-    google.script.run.withSuccessHandler(dd=>{IP_.data=dd;ipRender_();}).withFailureHandler(err=>{x.disabled=false;alert(err&&err.message||err);})
+    google.script.run.withSuccessHandler(dd=>{IP_.data=dd;ipRender_();ipChanged_();}).withFailureHandler(err=>{x.disabled=false;alert(err&&err.message||err);})
       .deleteInstallmentPayment(AUTH_TOKEN,{id:x.dataset.del,project:r.project,unitCode:r.unitCode});
   }));
 }
@@ -181,7 +190,7 @@ function ipSavePay_(e){
   if(!(amount>0)){msg.className='ipMsg err';msg.textContent='Enter the amount paid.';return;}
   if(!v('date')){msg.className='ipMsg err';msg.textContent='Enter the payment date.';return;}
   btn.disabled=true;msg.className='ipMsg';msg.textContent='Saving…';
-  google.script.run.withSuccessHandler(d=>{IP_.data=d;IP_.payFor=null;ipRender_();})
+  google.script.run.withSuccessHandler(d=>{IP_.data=d;IP_.payFor=null;ipRender_();ipChanged_();})
     .withFailureHandler(err=>{btn.disabled=false;msg.className='ipMsg err';msg.textContent=err&&err.message||String(err);})
     .recordInstallmentPayment(AUTH_TOKEN,{project:r.project,unitCode:r.unitCode,no:IP_.payFor,amount,date:v('date'),method:v('method'),receipt:v('receipt'),notes:v('notes')});
 }
@@ -267,7 +276,7 @@ function ipRenderGen_(){
     if(g.rows.some(x=>!x.due)){m.className='ipMsg err';m.textContent='Every installment needs a date.';return;}
     btn.disabled=true;m.className='ipMsg';m.textContent='Saving…';
     const useCarry=b.querySelector('[data-g="useCarry"]')?.checked;
-    google.script.run.withSuccessHandler(dd=>{IP_.data=dd;IP_.gen=null;ipRender_();})
+    google.script.run.withSuccessHandler(dd=>{IP_.data=dd;IP_.gen=null;ipRender_();ipChanged_();})
       .withFailureHandler(err=>{btn.disabled=false;m.className='ipMsg err';m.textContent=err&&err.message||String(err);})
       .saveInstallmentSchedule(AUTH_TOKEN,{project:r.project,unitCode:r.unitCode,client:r.clientName,dealRow:r.row,currency:g.currency,
         rows:g.rows.map(x=>({no:x.no,name:x.name,due:x.due,amount:x.amount})),
@@ -319,6 +328,104 @@ function ipCollectionsBlock_(){
     if(d)ipOpen_(d.row);
   }));
 }
+/* ---------- Statement of account (print / Save as PDF) ---------- */
+function ipStatement_(){
+  const d=IP_.data,r=ipDeal_(IP_.row);if(!d||!r||!d.schedule.length)return;
+  const cur=d.schedule[0].currency||ipCur_(r),paid=ipPaidMap_(d);
+  const main=d.schedule.filter(x=>!/maint/i.test(x.name));
+  const sum=(a,f)=>a.reduce((t,x)=>t+f(x),0);
+  const tot=sum(main,x=>x.amount),pd=sum(main,x=>Math.min(x.amount,paid[x.no]||0));
+  const maint=d.schedule.filter(x=>/maint/i.test(x.name)),mTot=sum(maint,x=>x.amount),mPaid=sum(maint,x=>Math.min(x.amount,paid[x.no]||0));
+  const late=d.schedule.map(x=>({x,p:paid[x.no]||0,s:ipState_(x,paid[x.no]||0)})).filter(z=>z.s.k==='late');
+  const lateAmt=sum(late,z=>z.x.amount-z.p),allPaid=sum(d.payments||[],p=>p.amount);
+  const nameOf=no=>(d.schedule.find(x=>x.no===no)||{}).name||no;
+  const today=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  const rows=d.schedule.map(x=>{const p=paid[x.no]||0,s=ipState_(x,p);return `<tr><td>${ipEsc_(x.name)}</td><td>${ipFmt_(x.due)}</td><td class="n">${ipNum_(x.amount)}</td><td class="n">${p?ipNum_(p):'—'}</td><td class="n">${ipNum_(Math.max(0,x.amount-p))}</td><td><span class="st" style="color:${s.c}">${s.label}</span></td></tr>`;}).join('');
+  const pays=(d.payments||[]).slice().sort((a,b)=>(ipParse_(a.date)||0)-(ipParse_(b.date)||0)).map(p=>`<tr><td>${ipFmt_(p.date)}</td><td>${ipEsc_(nameOf(p.no))}</td><td>${ipEsc_(p.method)}</td><td>${ipEsc_(p.receipt||'—')}</td><td class="n">${ipNum_(p.amount)}</td></tr>`).join('');
+  const html=`<!doctype html><html><head><meta charset="utf-8"><title>Statement - ${ipEsc_(r.clientName)} - ${ipEsc_(r.unitCode)}</title>
+<style>
+*{box-sizing:border-box}body{font:12px/1.45 Inter,Segoe UI,Arial,sans-serif;color:#1f1b16;margin:28px}
+.top{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #b08a42;padding-bottom:12px;margin-bottom:16px}
+.brand{font:700 26px/1 Georgia,serif;letter-spacing:.18em}.brand small{display:block;font:600 9px/1.6 Arial;letter-spacing:.42em;color:#8f6d2c}
+h1{margin:0;font:600 20px Georgia,serif;text-align:right}h1 small{display:block;font:12px Arial;color:#83796b}
+.info{display:grid;grid-template-columns:repeat(4,1fr);gap:8px 16px;margin-bottom:14px}.info div span{display:block;font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#83796b}.info b{font-size:12.5px}
+.k{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:6px 0 16px}.k div{border:1px solid #e8e0d1;border-radius:8px;padding:8px 10px;background:#faf6ef}.k span{display:block;font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#83796b}.k b{font-size:14px}.k .red b{color:#c0392b}
+h2{font-size:13px;margin:16px 0 6px}table{width:100%;border-collapse:collapse}th{background:#f3ece0;text-align:left;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;padding:6px 8px}td{padding:5px 8px;border-bottom:1px solid #eee3d2}.n{text-align:right;font-variant-numeric:tabular-nums}
+tfoot td{font-weight:700;border-top:2px solid #b08a42}.st{font-weight:700}.foot{margin-top:22px;font-size:10.5px;color:#83796b;display:flex;justify-content:space-between}
+@media print{body{margin:12mm}.noprint{display:none}tr{page-break-inside:avoid}}
+.noprint{position:fixed;bottom:16px;right:16px}.noprint button{font:600 13px Arial;padding:8px 14px;border-radius:8px;border:0;background:#b08a42;color:#fff;cursor:pointer}
+</style></head><body>
+<div class="noprint"><button onclick="window.print()">Print / Save as PDF</button></div>
+<div class="top"><div class="brand">EDEN<small>DEVELOPMENT</small></div><h1>Statement of Account<small>كشف حساب · ${today}</small></h1></div>
+<div class="info">
+<div><span>Client</span><b>${ipEsc_(r.clientName)}</b></div><div><span>Project</span><b>${ipEsc_(r.project)}</b></div>
+<div><span>Unit</span><b>${ipEsc_(r.unitCode)}${r.unitType?' · '+ipEsc_(r.unitType):''}</b></div><div><span>Area</span><b>${Number(r.area)?ipNum_(r.area)+' m²':'—'}</b></div>
+<div><span>Final price</span><b>${ipNum_(tot)} ${ipEsc_(cur)}</b></div><div><span>Mobile</span><b>${ipEsc_(String(r.mobile||'').split(/[-,/]/)[0]||'—')}</b></div>
+<div><span>Sales</span><b>${ipEsc_(r.salesName||'—')}</b></div><div><span>Installments</span><b>${main.length-1} after the down payment</b></div>
+</div>
+<div class="k">
+<div><span>Unit price</span><b>${ipNum_(tot)}</b></div><div><span>Paid</span><b>${ipNum_(pd)}</b></div><div><span>Remaining</span><b>${ipNum_(Math.max(0,tot-pd))}</b></div>
+<div class="${lateAmt?'red':''}"><span>Overdue</span><b>${ipNum_(lateAmt)}</b></div><div><span>Maintenance</span><b>${ipNum_(mPaid)} / ${ipNum_(mTot)}</b></div>
+</div>
+<h2>Payment schedule (${ipEsc_(cur)})</h2>
+<table><thead><tr><th>Installment</th><th>Due date</th><th class="n">Amount</th><th class="n">Paid</th><th class="n">Remaining</th><th>Status</th></tr></thead><tbody>${rows}</tbody>
+<tfoot><tr><td colspan="2">Total</td><td class="n">${ipNum_(tot+mTot)}</td><td class="n">${ipNum_(pd+mPaid)}</td><td class="n">${ipNum_(Math.max(0,tot+mTot-pd-mPaid))}</td><td></td></tr></tfoot></table>
+${pays?`<h2>Payments received</h2><table><thead><tr><th>Date</th><th>For</th><th>Method</th><th>Receipt</th><th class="n">Amount</th></tr></thead><tbody>${pays}</tbody><tfoot><tr><td colspan="4">Total received</td><td class="n">${ipNum_(allPaid)}</td></tr></tfoot></table>`:''}
+<div class="foot"><span>EDEN Development · ${ipEsc_(r.project)}</span><span>Printed ${today}</span></div>
+</body></html>`;
+  const w=window.open('','_blank');
+  if(!w){alert('Allow pop-ups for this site to open the statement.');return;}
+  w.document.open();w.document.write(html);w.document.close();
+  setTimeout(()=>{try{w.focus();w.print();}catch(e){}},400);
+}
+
+/* ---------- Client 360: installments line on each unit ---------- */
+function ipNormProj_(s){const t=String(s||'').trim().toUpperCase();return t==='CCG'?'CITY CENTER GLDANI':t;}
+function ipNormUnit_(s){return String(s||'').trim().replace(/\.+$/,'').toUpperCase();}
+function ipC360Fill_(){
+  const panel=document.getElementById('c360');if(!panel)return;
+  const cards=[...panel.querySelectorAll('.c360Deal[data-row]')].filter(a=>a.dataset.row);
+  if(!cards.length)return;
+  if(!IP_OVERVIEW_||Date.now()-IP_OVERVIEW_AT_>60000){
+    if(!IP_OVERVIEW_BUSY_){
+      IP_OVERVIEW_BUSY_=true;
+      google.script.run.withSuccessHandler(d=>{IP_OVERVIEW_BUSY_=false;IP_OVERVIEW_=d;IP_OVERVIEW_AT_=Date.now();ipC360Fill_();})
+        .withFailureHandler(()=>{IP_OVERVIEW_BUSY_=false;}).getInstallmentsOverview(AUTH_TOKEN);
+    }
+    if(!IP_OVERVIEW_)return;
+  }
+  const today=ipToday_();
+  cards.forEach(card=>{
+    const r=ipDeal_(card.dataset.row);if(!r)return;
+    const its=(IP_OVERVIEW_.rows||[]).filter(x=>ipNormUnit_(x.unitCode)===ipNormUnit_(r.unitCode)&&ipNormProj_(x.project)===ipNormProj_(r.project));
+    card.querySelector('.ipC360')?.remove();
+    if(!its.length)return;
+    const main=its.filter(x=>!/maint/i.test(x.name));
+    const sum=(a,f)=>a.reduce((t,x)=>t+f(x),0);
+    const tot=sum(main,x=>x.amount),pd=sum(main,x=>Math.min(x.amount,x.paid)),rest=Math.max(0,tot-pd);
+    const open=its.map(x=>({...x,d:ipParse_(x.due),left:Math.max(0,x.amount-x.paid)})).filter(x=>x.left>1&&x.d).sort((a,b)=>a.d-b.d);
+    const late=open.filter(x=>x.d<today),next=open.find(x=>x.d>=today);
+    const cur=its[0].currency||ipCur_(r);
+    const div=document.createElement('div');div.className='ipC360';
+    div.innerHTML=`<div class="ipC360Top"><b>Installments</b><span>Paid <b>${ipNum_(pd)}</b> of ${ipNum_(tot)} ${ipEsc_(cur)} · ${tot?Math.round(pd/tot*100):0}%</span></div>
+      <div class="ipBar" style="margin:6px 0"><i style="width:${tot?Math.min(100,pd/tot*100):0}%"></i></div>
+      <div class="ipC360Row"><span>Remaining <b>${ipNum_(rest)}</b></span>
+        ${late.length?`<span style="color:var(--ds-red)">Overdue <b>${ipNum_(sum(late,x=>x.left))}</b> (${late.length})</span>`:''}
+        ${next?`<span>Next <b>${ipEsc_(next.name)}</b> · ${ipFmt_(next.due)} · ${ipNum_(next.left)}</span>`:(rest<=1?'<span style="color:var(--ds-green)">Fully paid ✓</span>':'')}</div>`;
+    const foot=card.querySelector('.c360Foot');
+    if(foot)foot.insertAdjacentElement('beforebegin',div);else card.appendChild(div);
+  });
+}
+(function(){
+  const hook=()=>{
+    if(typeof c360Open_!=='function'||c360Open_.__ip)return false;
+    const orig=c360Open_;
+    c360Open_=function(){const out=orig.apply(this,arguments);try{ipC360Fill_();}catch(e){console.warn(e);}return out;};
+    c360Open_.__ip=true;return true;
+  };
+  if(!hook())document.addEventListener('DOMContentLoaded',hook);
+})();
+
 (function(){
   // Re-draw the block whenever the Collections page is drawn.
   const hook=()=>{
