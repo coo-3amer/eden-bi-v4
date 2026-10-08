@@ -1,6 +1,6 @@
 <style id="eden-global-search">
 html[data-theme] #appRoot .dsAppBar{position:sticky}
-#dsGsPanel{position:absolute;z-index:60;top:calc(100% - 6px);left:0;width:min(560px,calc(100vw - 24px));max-height:min(70vh,560px);overflow:auto;
+#dsGsPanel{position:fixed;z-index:400;top:0;left:0;width:min(560px,calc(100vw - 24px));max-height:min(70vh,560px);overflow:auto;
   background:var(--ds-surface);border:1px solid var(--ds-line);border-radius:14px;box-shadow:0 18px 42px rgba(0,0,0,.18);padding:6px;display:none}
 #dsGsPanel.show{display:block}
 #dsGsPanel .gsGroup{padding:8px 10px 4px;font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--ds-muted);display:flex;justify-content:space-between}
@@ -20,18 +20,20 @@ html[data-theme] #appRoot .dsAppBar{position:sticky}
 <script>
 /* =====================================================================
    EDEN BI — Global search
-   Typing in the top search box shows the matches right under it:
+   Typing in the top search box (or the Search box in the filters)
+   shows the matches right under it:
    clients, unit codes and brokerage companies. Pick one to open it
    (Client 360 / company profile) — no scrolling to the table.
    "Show in table" still filters the Deals table like before.
    ===================================================================== */
 (function initEdenGlobalSearch_(){
-  const input=document.getElementById('dsGlobalSearch');
-  const bar=input&&input.closest('.dsAppBar');
-  if(!input||!bar)return;
+  // The top bar search and the Search box in the filters panel.
+  const inputs=['dsGlobalSearch','search'].map(id=>document.getElementById(id)).filter(Boolean);
+  if(!inputs.length)return;
+  let input=inputs[0];
   const panel=document.createElement('div');
   panel.id='dsGsPanel';panel.setAttribute('role','listbox');
-  bar.appendChild(panel);
+  document.body.appendChild(panel);
   let items=[],active=-1,timer=null;
 
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -110,14 +112,19 @@ html[data-theme] #appRoot .dsAppBar{position:sticky}
     }
     html+='<div class="gsHint">↑ ↓ to move • Enter to open • Esc to close</div>';
     panel.innerHTML=html;
-    // Line the panel up with the search box.
-    const sb=input.closest('.dsSearch')||input;
-    panel.style.left=sb.offsetLeft+'px';
-    panel.style.top=(sb.offsetTop+sb.offsetHeight+6)+'px';
-    panel.style.width=Math.max(sb.offsetWidth,Math.min(560,window.innerWidth-24))+'px';
-    if(sb.offsetLeft+panel.offsetWidth>window.innerWidth-12)panel.style.left=Math.max(12-bar.getBoundingClientRect().left,0)+'px';
     panel.classList.add('show');
+    place();
     active=-1;
+  }
+  // Line the panel up under the box being typed in (opens upwards if there is no room below).
+  function place(){
+    if(!panel.classList.contains('show'))return;
+    const sb=(input.closest('.dsSearch,.filterGroup')||input).getBoundingClientRect();
+    const w=Math.min(Math.max(sb.width,Math.min(560,window.innerWidth-24)),window.innerWidth-24);
+    const left=Math.max(12,Math.min(sb.left,window.innerWidth-w-12));
+    panel.style.width=w+'px';panel.style.left=left+'px';
+    const h=panel.offsetHeight,below=window.innerHeight-sb.bottom-12;
+    panel.style.top=(h>below&&sb.top>below?Math.max(8,sb.top-h-6):sb.bottom+6)+'px';
   }
   function hide(){panel.classList.remove('show');active=-1;}
   function pick(i){const go=items[i];if(!go)return;hide();input.blur();go();}
@@ -136,26 +143,30 @@ html[data-theme] #appRoot .dsAppBar{position:sticky}
   }
   function showInTable(q){
     const s=document.getElementById('search');
-    if(s){s.value=q;}
+    if(s&&s.value!==q){s.value=q;}
     if(typeof applyFilters==='function')applyFilters();
     const t=document.getElementById('mainTable');
     const box=t&&(t.closest('.tableCard,.card,section')||t);
     if(box)box.scrollIntoView({behavior:'smooth',block:'start'});
   }
 
-  input.addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(render,120);});
-  input.addEventListener('focus',()=>{if(input.value.trim().length>=2)render();});
-  input.addEventListener('keydown',e=>{
+  inputs.forEach(el=>{
+  el.addEventListener('input',()=>{input=el;clearTimeout(timer);timer=setTimeout(render,120);});
+  el.addEventListener('focus',()=>{input=el;if(el.value.trim().length>=2)render();});
+  el.addEventListener('keydown',e=>{
+    input=el;
     if(!panel.classList.contains('show'))return;
     if(e.key==='ArrowDown'){e.preventDefault();move(1);}
     else if(e.key==='ArrowUp'){e.preventDefault();move(-1);}
     else if(e.key==='Enter'){e.preventDefault();pick(active>=0?Number(panel.querySelectorAll('.gsItem')[active].dataset.i):0);}
     else if(e.key==='Escape'){hide();}
   });
-  input.addEventListener('search',()=>{if(!input.value){hide();const s=document.getElementById('search');if(s&&s.value){s.value='';if(typeof applyFilters==='function')applyFilters();}}});
+  el.addEventListener('search',()=>{if(!el.value){hide();const s=document.getElementById('search');if(s&&s.value){s.value='';if(typeof applyFilters==='function')applyFilters();}}});
+  });
   panel.addEventListener('mousedown',e=>e.preventDefault());   // keep focus while clicking
   panel.addEventListener('click',e=>{const b=e.target.closest('.gsItem');if(b)pick(Number(b.dataset.i));});
-  document.addEventListener('mousedown',e=>{if(!panel.contains(e.target)&&e.target!==input)hide();});
+  document.addEventListener('mousedown',e=>{if(!panel.contains(e.target)&&!inputs.includes(e.target))hide();});
   window.addEventListener('resize',hide);
+  window.addEventListener('scroll',e=>{if(!panel.contains(e.target))place();},{passive:true,capture:true});
 })();
 </script>
