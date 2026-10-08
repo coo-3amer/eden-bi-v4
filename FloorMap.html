@@ -46,6 +46,19 @@
 .fmItem em{margin-left:auto;font-style:normal;font-size:11px;color:var(--ds-muted)}
 .fmItem em.ok{color:var(--ds-green,#2f9e62)}
 .fmMsg{font-size:12px;margin-top:8px;color:var(--ds-muted)}
+.fmFind label{display:block;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ds-muted);margin:10px 0 4px}
+.fmFind input{width:100%;box-sizing:border-box;height:34px;border:1px solid var(--ds-line);border-radius:9px;padding:0 10px;background:var(--ds-surface);color:var(--ds-text);font-size:13px}
+.fmFind .fmRow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fmFind .fmRes{margin-top:10px;font-size:12.5px;color:var(--ds-muted)}
+.fmFind .fmRes b{color:var(--ds-heading)}
+.fmSum{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.fmSum div{background:var(--ds-surface-2);border-radius:10px;padding:8px 10px}
+.fmSum span{display:block;font-size:10px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--ds-muted)}
+.fmSum b{font-size:15px;color:var(--ds-heading)}
+.fmBar{height:8px;border-radius:99px;background:var(--ds-surface-3,#f1ebe0);overflow:hidden;margin-top:8px;display:flex}
+.fmBar i{display:block;height:100%;background:var(--c)}
+.fm.client .fmLegend .fmChip:not([data-k="available"]){display:none}
+.fmItem small{color:var(--ds-muted);font-size:11px}
 .fmLoading{position:absolute;inset:0;display:grid;place-items:center;color:#eee;font-size:14px;line-height:1.4}
 @media(max-width:820px){.fm{inset:0;border-radius:0}.fmBody{flex-direction:column}.fmSide{width:auto;flex:0 0 auto;max-height:42vh;border-left:0;border-top:1px solid var(--ds-line)}.fmTools input{width:120px}}
 </style>
@@ -56,7 +69,7 @@
    coloured by its live Inventory status. Click a unit for its details
    and client. Admins place the pins once (Edit pins).
    ===================================================================== */
-const FM_={data:null,sel:null,editing:false,placing:null,hidden:new Set(),q:'',labels:false};
+const FM_={data:null,sel:null,editing:false,placing:null,hidden:new Set(),q:'',labels:false,client:false,budget:0,aMin:0,aMax:0};
 const FM_STATUS_=[
   {k:'available',label:'Available',c:'#2f9e62',test:s=>s==='available'},
   {k:'reservation',label:'Reservation',c:'#e0a526',test:s=>s.includes('reserv')},
@@ -68,6 +81,16 @@ function fmEsc_(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':
 function fmNum_(n){return Number(n||0).toLocaleString('en-US',{maximumFractionDigits:2});}
 function fmKey_(c){return String(c||'').trim().replace(/\.+$/,'').toUpperCase();}
 function fmStatus_(s){const t=String(s||'').trim().toLowerCase();return FM_STATUS_.find(x=>x.test(t));}
+function fmShort_(n){n=Number(n)||0;return n>=1e6?(n/1e6).toFixed(n>=1e7?1:2).replace(/\.?0+$/,'')+'M':n>=1e3?Math.round(n/1e3)+'K':String(Math.round(n));}
+function fmFilterOn_(){return !!(FM_.budget||FM_.aMin||FM_.aMax);}
+function fmMatch_(u){
+  if(fmStatus_(u.status).k!=='available')return false;
+  if(FM_.budget&&!(Number(u.totalPrice)>0&&Number(u.totalPrice)<=FM_.budget))return false;
+  if(FM_.aMin&&Number(u.area)<FM_.aMin)return false;
+  if(FM_.aMax&&Number(u.area)>FM_.aMax)return false;
+  return true;
+}
+function fmNumIn_(v){return Number(String(v||'').replace(/[^\d.]/g,''))||0;}
 function fmDeal_(code){
   const k=fmKey_(code),rows=(typeof rawRows!=='undefined'&&rawRows)||[];
   const cancelled=s=>typeof isCancelledStatus_==='function'?isCancelledStatus_(s):/^cancel/i.test(String(s||''));
@@ -88,14 +111,21 @@ function fmOpen_(mapKey){
   const el=document.createElement('section');el.className='fm';el.id='fm';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');
   el.innerHTML=`<div class="fmHead"><div><small>Floor Map</small><h2>Loading…</h2></div>
       <div class="fmLegend"></div>
-      <div class="fmTools"><input type="search" placeholder="Find unit…" aria-label="Find unit"><button type="button" class="fmBtn" data-a="labels">Codes</button><button type="button" class="fmClose" aria-label="Close">×</button></div></div>
+      <div class="fmTools"><input type="search" placeholder="Find unit…" aria-label="Find unit"><button type="button" class="fmBtn" data-a="labels">Codes</button><button type="button" class="fmBtn" data-a="client" title="Hide internal details to show a client">Client view</button><button type="button" class="fmClose" aria-label="Close">×</button></div></div>
     <div class="fmBody"><div class="fmStage"><div class="fmCanvas"><div class="fmLoading">Loading floor map…</div></div></div><aside class="fmSide"></aside></div>`;
   document.body.append(back,el);
   el.querySelector('.fmClose').addEventListener('click',fmClose_);
   el.querySelector('.fmTools input').addEventListener('input',e=>{FM_.q=e.target.value.trim().toUpperCase();fmDraw_();});
   el.querySelector('[data-a="labels"]').addEventListener('click',e=>{FM_.labels=!FM_.labels;e.currentTarget.classList.toggle('on',FM_.labels);fmDraw_();});
+  el.querySelector('[data-a="client"]').addEventListener('click',e=>{
+    FM_.client=!FM_.client;e.currentTarget.classList.toggle('on',FM_.client);el.classList.toggle('client',FM_.client);
+    if(FM_.client&&FM_.editing)el.querySelector('[data-a="edit"]')?.click();
+    el.querySelector('[data-a="edit"]')?.toggleAttribute('hidden',FM_.client);
+    if(FM_.client&&FM_.sel){const u=FM_.data&&FM_.data.units.find(x=>x.code===FM_.sel);if(u&&fmStatus_(u.status).k!=='available')FM_.sel=null;}
+    fmSide_();fmDraw_();
+  });
   document.addEventListener('keydown',fmKey2_);
-  FM_.sel=null;FM_.placing=null;FM_.editing=false;
+  FM_.sel=null;FM_.placing=null;FM_.editing=false;FM_.client=false;FM_.budget=FM_.aMin=FM_.aMax=0;
   google.script.run.withSuccessHandler(d=>{FM_.data=d;fmBuild_();}).withFailureHandler(err=>{
     const c=el.querySelector('.fmCanvas');if(c)c.innerHTML=`<div class="fmLoading">Could not load the floor map.<br>${fmEsc_(err&&err.message||err)}</div>`;
   }).getFloorMap(AUTH_TOKEN,mapKey);
@@ -137,12 +167,15 @@ function fmDraw_(){
   const d=FM_.data;
   box.innerHTML=d.units.filter(u=>d.pins[u.code]).map(u=>{
     const p=d.pins[u.code],s=fmStatus_(u.status);
-    const dim=FM_.hidden.has(s.k)||(FM_.q&&!fmKey_(u.code).includes(FM_.q));
-    const hit=FM_.q&&fmKey_(u.code).includes(FM_.q);
+    const fit=fmFilterOn_()&&fmMatch_(u);
+    const dim=FM_.hidden.has(s.k)||(FM_.q&&!fmKey_(u.code).includes(FM_.q))||(fmFilterOn_()&&!fit)||(FM_.client&&s.k!=='available');
+    const hit=(FM_.q&&fmKey_(u.code).includes(FM_.q))||fit;
     return `<span class="fmPin${FM_.sel===u.code?' sel':''}${dim?' dim':''}${hit?' hit':''}" data-code="${fmEsc_(u.code)}" style="left:${p.x*100}%;top:${p.y*100}%;--c:${s.c}"><b>${fmEsc_(fmKey_(u.code).replace(/^EW-G-/,''))}</b></span>`;
   }).join('');
   box.querySelectorAll('.fmPin').forEach(pin=>{
-    pin.addEventListener('click',e=>{e.stopPropagation();if(FM_.placing)return;FM_.sel=pin.dataset.code;fmSide_();fmDraw_();});
+    pin.addEventListener('click',e=>{e.stopPropagation();if(FM_.placing)return;
+      if(FM_.client){const u=FM_.data.units.find(x=>x.code===pin.dataset.code);if(u&&fmStatus_(u.status).k!=='available')return;}
+      FM_.sel=pin.dataset.code;fmSide_();fmDraw_();});
     if(FM_.editing)fmDraggable_(pin);
   });
 }
@@ -193,9 +226,9 @@ function fmSide_(){
         <div><span>Meter price</span><b>${u.meterPrice?fmNum_(u.meterPrice)+' '+cur:'—'}</b></div>
         <div><span>Total price</span><b>${u.totalPrice?fmNum_(u.totalPrice)+' '+cur:'—'}</b></div>
         <div><span>Finishing</span><b>${fmEsc_(u.finishing||'—')}</b></div>
-        <div><span>Tab</span><b>${fmEsc_(u.category||'—')}</b></div>
+        ${FM_.client?'':`<div><span>Tab</span><b>${fmEsc_(u.category||'—')}</b></div>`}
       </div>
-      ${deal?`<div class="fmKv" style="grid-template-columns:1fr"><div><span>Client</span><b>${fmEsc_(deal.clientName||'')}</b> <small style="color:var(--ds-muted)">· ${fmEsc_(deal.status||'')} · ${fmEsc_(deal.salesName||'')}</small></div></div>
+      ${deal&&!FM_.client?`<div class="fmKv" style="grid-template-columns:1fr"><div><span>Client</span><b>${fmEsc_(deal.clientName||'')}</b> <small style="color:var(--ds-muted)">· ${fmEsc_(deal.status||'')} · ${fmEsc_(deal.salesName||'')}</small></div></div>
         ${typeof c360Open_==='function'?`<button type="button" class="fmBtn" style="margin-top:10px" onclick="fmClose_();c360Open_('${fmEsc_(typeof clientKeyOf==='function'?clientKeyOf(deal):deal.clientName).replace(/'/g,"\\'")}')">Open client</button>`:''}`:''}
       ${FM_.editing?`<div style="display:flex;gap:8px;margin-top:12px"><button type="button" class="fmBtn" data-a="move">Place again</button><button type="button" class="fmBtn" data-a="remove">Remove pin</button></div>`:''}
     </div>`;
@@ -209,15 +242,69 @@ function fmSide_(){
       ${FM_.placing?`<div class="fmHint" style="color:var(--ds-gold-strong);font-weight:700;margin-top:6px">Click on the map to place ${fmEsc_(fmKey_(FM_.placing))} (Esc to cancel)</div>`:''}
       <div class="fmMsg"></div>
       <div class="fmList">${list.map(x=>`<button type="button" class="fmItem${FM_.placing===x.code?' sel':''}" data-code="${fmEsc_(x.code)}" style="--c:${fmStatus_(x.status).c}"><i></i>${fmEsc_(fmKey_(x.code))}<em class="${d.pins[x.code]?'ok':''}">${d.pins[x.code]?'placed ✓':'not placed'}</em></button>`).join('')}</div></div>`;
-  } else if(!u){
-    const placed=d.units.filter(x=>d.pins[x.code]).length;
-    html+=`<div class="fmCard"><b>${fmEsc_(d.map.title)}</b><div class="fmHint" style="margin-top:6px">${d.units.length} units on this floor${placed<d.units.length?` · ${placed} placed on the map`:''}.<br>Click a unit on the map to see its details and client. Use the colours above to show or hide a status.</div>
-      ${placed===0&&d.canEdit?`<div class="fmHint" style="margin-top:8px;color:var(--ds-gold-strong);font-weight:700">No units are placed yet — press “Edit pins” to place them.</div>`:''}</div>`;
+  } else {
+    // Find units for a client: budget + area -> matching available units light up.
+    html+=`<div class="fmCard fmFind"><b>Find units for a client</b><div class="fmHint">Matching available units light up on the map.</div>
+      <label for="fmBudget">Budget up to (${fmEsc_(cur)})</label><input id="fmBudget" inputmode="numeric" placeholder="e.g. 8,000,000" value="${FM_.budget?fmNum_(FM_.budget):''}">
+      <label>Area (m²)</label><div class="fmRow"><input id="fmAMin" inputmode="numeric" placeholder="From" value="${FM_.aMin||''}"><input id="fmAMax" inputmode="numeric" placeholder="To" value="${FM_.aMax||''}"></div>
+      <div class="fmRes"></div></div>`;
+    if(!FM_.client)html+=`<div class="fmCard fmSumCard"></div>`;
   }
   side.innerHTML=html;
-  side.querySelectorAll('.fmItem').forEach(b=>b.addEventListener('click',()=>{FM_.placing=b.dataset.code;FM_.sel=b.dataset.code;fmSide_();fmDraw_();}));
+  const f=side.querySelector('.fmFind');
+  if(f){
+    const upd=()=>{FM_.budget=fmNumIn_(f.querySelector('#fmBudget').value);FM_.aMin=fmNumIn_(f.querySelector('#fmAMin').value);FM_.aMax=fmNumIn_(f.querySelector('#fmAMax').value);fmResults_();fmDraw_();};
+    f.querySelectorAll('input').forEach(i=>i.addEventListener('input',upd));
+    f.querySelector('#fmBudget').addEventListener('blur',e=>{if(FM_.budget)e.target.value=fmNum_(FM_.budget);});
+    fmResults_();
+  }
+  fmSummary_();
+  side.querySelectorAll('.fmItem[data-code]').forEach(b=>b.addEventListener('click',()=>{FM_.placing=b.dataset.code;FM_.sel=b.dataset.code;fmSide_();fmDraw_();}));
   side.querySelector('[data-a="move"]')?.addEventListener('click',()=>{FM_.placing=FM_.sel;fmSide_();fmDraw_();});
   side.querySelector('[data-a="remove"]')?.addEventListener('click',()=>{const c=FM_.sel;delete FM_.data.pins[c];fmSave_(c,null);fmSide_();fmDraw_();});
+}
+
+function fmResults_(){
+  const box=document.querySelector('#fm .fmFind .fmRes');if(!box||!FM_.data)return;
+  const d=FM_.data,cur=d.map.currency;
+  if(!fmFilterOn_()){box.innerHTML='';return;}
+  const list=d.units.filter(fmMatch_).sort((a,b)=>(a.totalPrice||0)-(b.totalPrice||0));
+  const unplaced=list.filter(u=>!d.pins[u.code]).length;
+  box.innerHTML=list.length?`<b>${list.length}</b> available unit${list.length>1?'s':''} match${unplaced?` <small>(${unplaced} not on the map yet)</small>`:''}
+    <div class="fmList">${list.slice(0,30).map(u=>`<button type="button" class="fmItem" data-pick="${fmEsc_(u.code)}" style="--c:${fmStatus_(u.status).c}"><i></i>${fmEsc_(fmKey_(u.code))} <small>${fmNum_(u.area)} m²</small><em>${fmShort_(u.totalPrice)} ${fmEsc_(cur)}</em></button>`).join('')}</div>`
+    :'No available unit matches. Try a higher budget or a wider area.';
+  box.querySelectorAll('[data-pick]').forEach(b=>b.addEventListener('click',()=>{
+    FM_.sel=b.dataset.pick;fmDraw_();
+    const pin=document.querySelector(`#fm .fmPin[data-code="${CSS.escape(FM_.sel)}"]`);
+    if(pin)pin.scrollIntoView({behavior:'smooth',block:'center',inline:'center'});
+    fmSide_();
+  }));
+}
+
+/* Floor summary (internal view only). */
+function fmSummary_(){
+  const box=document.querySelector('#fm .fmSumCard');if(!box||!FM_.data)return;
+  const d=FM_.data,cur=d.map.currency,U=d.units;
+  const by=k=>U.filter(u=>fmStatus_(u.status).k===k);
+  const av=by('available'),rs=by('reservation'),cl=by('closed'),dv=by('divided'),na=by('na');
+  const sellable=av.length+rs.length+cl.length;
+  const soldPct=sellable?Math.round(cl.length/sellable*100):0;
+  const sum=(a,k)=>a.reduce((t,u)=>t+(Number(u[k])||0),0);
+  const avM=av.filter(u=>u.meterPrice>0);
+  const avgMeter=avM.length?sum(avM,'meterPrice')/avM.length:0;
+  const placed=U.filter(u=>d.pins[u.code]).length;
+  const seg=(a,c)=>sellable?`<i style="width:${a.length/sellable*100}%;--c:${c}"></i>`:'';
+  box.innerHTML=`<b>Floor summary</b>
+    <div class="fmBar">${seg(cl,'#d64545')}${seg(rs,'#e0a526')}${seg(av,'#2f9e62')}</div>
+    <div class="fmHint" style="margin-top:4px">${soldPct}% sold · ${rs.length} reserved · ${av.length} available (of ${sellable} for sale)</div>
+    <div class="fmSum">
+      <div><span>Available value</span><b>${fmShort_(sum(av,'totalPrice'))} ${fmEsc_(cur)}</b></div>
+      <div><span>Avg meter (available)</span><b>${fmShort_(avgMeter)} ${fmEsc_(cur)}</b></div>
+      <div><span>Available area</span><b>${fmNum_(Math.round(sum(av,'area')))} m²</b></div>
+      <div><span>Reserved value</span><b>${fmShort_(sum(rs,'totalPrice'))} ${fmEsc_(cur)}</b></div>
+    </div>
+    <div class="fmHint" style="margin-top:8px">${U.length} units on this floor${dv.length?` · ${dv.length} divided/shared`:''}${na.length?` · ${na.length} not available`:''}${placed<U.length?` · ${placed} placed on the map`:''}.</div>
+    ${placed===0&&d.canEdit?`<div class="fmHint" style="margin-top:8px;color:var(--ds-gold-strong);font-weight:700">No units are placed yet — press “Edit pins” to place them.</div>`:''}`;
 }
 
 (function(){
