@@ -271,6 +271,11 @@ function buildDashboardData_(authUser) {
     ['Date', 'Client Sign Date', 'Company Sign Date']
   );
 
+  // DOWN PAYMENT / PAYMENT PLAN: used to prefill a unit's payment schedule.
+  const dpDetailsIdx = groupedHeaderIndexes_(sheet, Math.max(1, HEADER_ROW - 1), HEADER_ROW, 'Down Payment Details', ['Date']);
+  const planIdx = groupedHeaderIndexes_(sheet, Math.max(1, HEADER_ROW - 1), HEADER_ROW, 'Payment Plan Details',
+    ['Type Of Payment Plan', 'Installments Period', 'Installment Plan', 'Period Type']);
+
   // UNIT INFO: resolve the Unit Type subheader inside its merged group.
   // Confirmed sheet structure: Unit Info -> Unit Type (AY).
   const unitInfoIdx = groupedHeaderIndexes_(
@@ -596,6 +601,12 @@ function buildDashboardData_(authUser) {
       ),
 
       discountOffer: getAny_(r, idx, ['Discount Offer']),
+      maintenancePercent: getAny_(r, idx, ['Maintenance %']),
+      dpDate: dpDetailsIdx['Date'] !== undefined ? String(r[dpDetailsIdx['Date']] || '').trim() : '',
+      planType: planIdx['Type Of Payment Plan'] !== undefined ? String(r[planIdx['Type Of Payment Plan']] || '').trim() : '',
+      planPeriod: planIdx['Installments Period'] !== undefined ? String(r[planIdx['Installments Period']] || '').trim() : '',
+      planCode: planIdx['Installment Plan'] !== undefined ? String(r[planIdx['Installment Plan']] || '').trim() : '',
+      planEvery: planIdx['Period Type'] !== undefined ? String(r[planIdx['Period Type']] || '').trim() : '',
 
       // Final branch mapping with aliases.
       branch:

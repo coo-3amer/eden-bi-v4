@@ -1,0 +1,321 @@
+<style id="eden-installments">
+.ipBack{position:fixed;inset:0;z-index:440;background:rgba(10,8,6,.5);backdrop-filter:blur(2px)}
+.ip{position:fixed;z-index:441;top:50%;left:50%;transform:translate(-50%,-50%);width:min(980px,calc(100vw - 24px));max-height:calc(100vh - 24px);display:flex;flex-direction:column;background:var(--ds-surface,#fffdf9);color:var(--ds-text,#2a2621);border-radius:18px;box-shadow:0 30px 80px rgba(0,0,0,.35);overflow:hidden}
+.ipHead{display:flex;align-items:flex-start;gap:12px;padding:16px 20px;border-bottom:1px solid var(--ds-line,#e8e0d1)}
+.ipHead small{display:block;font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ds-gold,#b08a42)}
+.ipHead h2{margin:2px 0 0;font:600 22px/1.2 'Cormorant Garamond',Georgia,serif;color:var(--ds-heading,#16130f)}
+.ipHead p{margin:3px 0 0;font-size:12.5px;color:var(--ds-muted,#83796b)}
+.ipX{margin-left:auto;width:34px;height:34px;border-radius:10px;border:1px solid var(--ds-line);background:var(--ds-surface);font-size:20px;cursor:pointer;color:var(--ds-muted)}
+.ipBody{overflow:auto;padding:16px 20px 20px}
+.ipKpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.ipKpi{background:var(--ds-surface-2,#f9f5ee);border:1px solid var(--ds-line);border-radius:12px;padding:10px 12px}
+.ipKpi span{display:block;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ds-muted)}
+.ipKpi b{font-size:16px;color:var(--ds-heading);font-variant-numeric:tabular-nums}
+.ipKpi.red b{color:var(--ds-red,#d64545)}
+.ipKpi small{display:block;font-size:11px;color:var(--ds-muted);margin-top:2px}
+.ipBar{height:8px;border-radius:99px;background:var(--ds-surface-3,#f1ebe0);overflow:hidden;margin:-4px 0 14px}
+.ipBar i{display:block;height:100%;background:linear-gradient(90deg,#3aa76d,#59c08a)}
+.ipTable{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+.ipTable th{position:sticky;top:-16px;background:var(--ds-surface);text-align:left;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ds-muted);padding:8px;border-bottom:1px solid var(--ds-line)}
+.ipTable td{padding:7px 8px;border-bottom:1px solid var(--ds-line)}
+.ipTable .num{text-align:right}
+.ipTable tr.paid td{color:var(--ds-muted)}
+.ipTable input,.ipForm input,.ipForm select{height:32px;border:1px solid var(--ds-line);border-radius:8px;padding:0 8px;background:var(--ds-surface);color:var(--ds-text);font:inherit;font-size:12.5px;box-sizing:border-box;width:100%}
+.ipSt{display:inline-block;font-size:11px;font-weight:800;padding:2px 9px;border-radius:999px;background:color-mix(in srgb,var(--c) 15%,transparent);color:var(--c);white-space:nowrap}
+.ipBtn{height:32px;padding:0 12px;border-radius:9px;border:1px solid var(--ds-gold-line,rgba(176,138,66,.32));background:var(--ds-gold-soft,rgba(176,138,66,.12));color:var(--ds-gold-strong,#8f6d2c);font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap}
+.ipBtn.main{background:var(--ds-gold,#b08a42);color:#fff;border-color:transparent}
+.ipBtn.ghost{background:none}
+.ipBtn:disabled{opacity:.5;cursor:default}
+.ipForm{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px 12px;margin-bottom:12px}
+.ipForm label{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ds-muted);display:flex;flex-direction:column;gap:4px}
+.ipPay td{background:var(--ds-gold-soft)}
+.ipPay .ipForm{grid-template-columns:repeat(5,minmax(0,1fr)) auto;margin:4px 0;align-items:end}
+.ipMsg{font-size:12.5px;margin:8px 0;color:var(--ds-muted)}
+.ipMsg.err{color:var(--ds-red,#d64545)}
+.ipMsg.ok{color:var(--ds-green,#2f9e62)}
+.ipSec{margin:18px 0 8px;font-size:14px;font-weight:800;color:var(--ds-heading)}
+.ipActions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 0}
+.ipEmpty{padding:26px;text-align:center;color:var(--ds-muted);font-size:13.5px;line-height:1.6}
+@media(max-width:720px){.ipKpis{grid-template-columns:repeat(2,minmax(0,1fr))}.ipForm,.ipPay .ipForm{grid-template-columns:repeat(2,minmax(0,1fr))}.ip{top:0;left:0;transform:none;width:100vw;max-height:100vh;height:100vh;border-radius:0}.ipTable .hideS{display:none}}
+/* Collections page block */
+.ipColl{background:var(--ds-surface);border:1px solid var(--ds-line);border-radius:var(--ds-r,16px);padding:16px}
+.ipColl h3{margin:0 0 10px;font-size:15px;color:var(--ds-heading)}
+.ipColl .ipTable{font-size:12.5px}
+.ipColl tr[data-u]{cursor:pointer}
+.ipColl tr[data-u]:hover td{background:var(--ds-gold-soft)}
+</style>
+<script>
+/* =====================================================================
+   EDEN BI — Payment schedules (installments) and client payments
+   Client 360 → "Payments" on a unit: the unit's schedule (Down Payment,
+   Q1…Qn, Maintenance), what was paid on each one, and what is late.
+   Admins build the schedule (same maths as the Payment Plan sheet) and
+   record each payment. Collections page lists overdue / upcoming ones.
+   ===================================================================== */
+const IP_={row:null,data:null,payFor:null,gen:null};
+const IP_METHODS_=['Cash','Bank Transfer','Instant Transfer','Cheque','Card','Other'];
+function ipEsc_(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function ipNum_(n){return Number(n||0).toLocaleString('en-US',{maximumFractionDigits:0});}
+function ipIn_(v){return Number(String(v??'').replace(/[^\d.\-]/g,''))||0;}
+function ipIso_(d){if(!d||isNaN(d))return '';const p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;}
+function ipParse_(v){
+  const t=String(v||'').trim();if(!t)return null;let m;
+  if((m=t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/)))return new Date(+m[1],+m[2]-1,+m[3]);
+  const M={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,sept:8,oct:9,nov:10,dec:11};
+  if((m=t.match(/^(\d{1,2})[-\/ ]([A-Za-z]{3,4})[A-Za-z]*[-\/ ](\d{4})$/))&&M[m[2].toLowerCase()]!=null)return new Date(+m[3],M[m[2].toLowerCase()],+m[1]);
+  if((m=t.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/)))return new Date(+m[3],+m[2]-1,+m[1]);
+  const d=new Date(t);return isNaN(d)?null:d;
+}
+function ipFmt_(v){const d=ipParse_(v);return d?d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'—';}
+function ipAddMonths_(d,n){const x=new Date(d.getFullYear(),d.getMonth()+n,1);x.setDate(Math.min(d.getDate(),new Date(x.getFullYear(),x.getMonth()+1,0).getDate()));return x;}
+function ipToday_(){const t=new Date();return new Date(t.getFullYear(),t.getMonth(),t.getDate());}
+function ipDeal_(row){return ((typeof rawRows!=='undefined'&&rawRows)||[]).find(r=>Number(r.row)===Number(row))||null;}
+function ipCur_(r){return typeof projectCurrency_==='function'?projectCurrency_(r):(r.currency||'EGP');}
+
+/* Status of one installment. */
+function ipState_(it,paid){
+  const due=ipParse_(it.due),today=ipToday_(),rest=Math.max(0,(it.amount||0)-paid);
+  if(it.amount>0&&rest<=1)return {k:'paid',label:'Paid',c:'#2f9e62'};
+  if(due&&due<today)return {k:'late',label:paid>0?'Late · part paid':'Overdue',c:'#d64545',days:Math.round((today-due)/864e5)};
+  if(paid>0)return {k:'part',label:'Part paid',c:'#e0a526'};
+  if(due&&(due-today)/864e5<=30)return {k:'soon',label:'Due soon',c:'#b08a42'};
+  return {k:'up',label:'Upcoming',c:'#8a8a8a'};
+}
+
+/* ---------- Open ---------- */
+function ipOpen_(row){
+  const r=ipDeal_(row);if(!r)return;
+  IP_.row=row;IP_.data=null;IP_.payFor=null;IP_.gen=null;
+  ipClose_();
+  const back=document.createElement('div');back.className='ipBack';back.id='ipBack';back.addEventListener('click',ipClose_);
+  const el=document.createElement('section');el.className='ip';el.id='ip';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');
+  el.innerHTML=`<div class="ipHead"><div><small>Payment schedule</small><h2>${ipEsc_(r.clientName||'')}</h2>
+    <p>${ipEsc_(r.project||'')} · ${ipEsc_(r.unitCode||'')}${r.unitType?' · '+ipEsc_(r.unitType):''} · Final price ${ipNum_(r.amount)} ${ipEsc_(ipCur_(r))}</p></div>
+    <button type="button" class="ipX" aria-label="Close">×</button></div><div class="ipBody"><div class="ipEmpty">Loading…</div></div>`;
+  document.body.append(back,el);
+  el.querySelector('.ipX').addEventListener('click',ipClose_);
+  document.addEventListener('keydown',ipKey_);
+  ipLoad_();
+}
+function ipClose_(){document.getElementById('ip')?.remove();document.getElementById('ipBack')?.remove();document.removeEventListener('keydown',ipKey_);}
+function ipKey_(e){if(e.key==='Escape')ipClose_();}
+function ipLoad_(){
+  const r=ipDeal_(IP_.row);
+  google.script.run.withSuccessHandler(d=>{IP_.data=d;ipRender_();})
+    .withFailureHandler(err=>ipBody_(`<div class="ipEmpty">Could not load the schedule.<br>${ipEsc_(err&&err.message||err)}</div>`))
+    .getInstallmentSchedule(AUTH_TOKEN,r.project,r.unitCode);
+}
+function ipBody_(html){const b=document.querySelector('#ip .ipBody');if(b)b.innerHTML=html;return b;}
+
+/* ---------- Schedule view ---------- */
+function ipPaidMap_(d){const m={};(d.payments||[]).forEach(p=>m[p.no]=(m[p.no]||0)+p.amount);return m;}
+function ipRender_(){
+  const d=IP_.data,r=ipDeal_(IP_.row);if(!d||!r)return;
+  if(IP_.gen){ipRenderGen_();return;}
+  if(!d.schedule.length){
+    ipBody_(`<div class="ipEmpty">No payment schedule for this unit yet.${d.canEdit?'<br><br><button type="button" class="ipBtn main" data-a="gen">Create schedule</button>':'<br>An admin can create it.'}</div>`)
+      ?.querySelector('[data-a="gen"]')?.addEventListener('click',()=>{IP_.gen=ipGenDefaults_(r);ipRender_();});
+    return;
+  }
+  const cur=d.schedule[0].currency||ipCur_(r),paid=ipPaidMap_(d);
+  const main=d.schedule.filter(x=>!/maint/i.test(x.name)),all=d.schedule;
+  const sum=(a,f)=>a.reduce((t,x)=>t+f(x),0);
+  const totMain=sum(main,x=>x.amount),paidMain=sum(main,x=>Math.min(x.amount,paid[x.no]||0));
+  const states=all.map(x=>({x,p:paid[x.no]||0,s:ipState_(x,paid[x.no]||0)}));
+  const late=states.filter(z=>z.s.k==='late'),lateAmt=sum(late,z=>z.x.amount-z.p);
+  const next=states.filter(z=>z.s.k!=='paid'&&z.s.k!=='late').sort((a,b)=>ipParse_(a.x.due)-ipParse_(b.x.due))[0];
+  const totalPaid=sum(d.payments||[],p=>p.amount);
+  let html=`<div class="ipKpis">
+    <div class="ipKpi"><span>Unit price</span><b>${ipNum_(totMain)}</b><small>${ipEsc_(cur)}</small></div>
+    <div class="ipKpi"><span>Paid</span><b>${ipNum_(totalPaid)}</b><small>${totMain?Math.round(paidMain/totMain*100):0}% of the price</small></div>
+    <div class="ipKpi"><span>Remaining</span><b>${ipNum_(Math.max(0,totMain-paidMain))}</b><small>excl. maintenance</small></div>
+    <div class="ipKpi${late.length?' red':''}"><span>Overdue</span><b>${ipNum_(lateAmt)}</b><small>${late.length} installment${late.length===1?'':'s'}</small></div>
+    <div class="ipKpi"><span>Next due</span><b>${next?ipNum_(next.x.amount-next.p):'—'}</b><small>${next?ipEsc_(next.x.name)+' · '+ipFmt_(next.x.due):'Nothing left'}</small></div>
+  </div><div class="ipBar"><i style="width:${totMain?Math.min(100,paidMain/totMain*100):0}%"></i></div>
+  <div style="overflow:auto"><table class="ipTable"><thead><tr><th>Installment</th><th>Due date</th><th class="num">Amount</th><th class="num">Paid</th><th class="num hideS">Remaining</th><th>Status</th>${d.canEdit?'<th></th>':''}</tr></thead><tbody>`;
+  states.forEach(({x,p,s})=>{
+    html+=`<tr class="${s.k==='paid'?'paid':''}"><td><b>${ipEsc_(x.name)}</b></td><td>${ipFmt_(x.due)}</td><td class="num">${ipNum_(x.amount)}</td><td class="num">${p?ipNum_(p):'—'}</td><td class="num hideS">${ipNum_(Math.max(0,x.amount-p))}</td>
+      <td><span class="ipSt" style="--c:${s.c}">${s.label}${s.days?` · ${s.days}d`:''}</span></td>${d.canEdit?`<td>${s.k!=='paid'?`<button type="button" class="ipBtn" data-pay="${ipEsc_(x.no)}">Record payment</button>`:''}</td>`:''}</tr>`;
+    if(IP_.payFor===x.no){
+      html+=`<tr class="ipPay"><td colspan="${d.canEdit?7:6}"><div class="ipForm">
+        <label>Amount<input data-f="amount" inputmode="decimal" value="${ipNum_(Math.max(0,x.amount-p))}"></label>
+        <label>Paid on<input data-f="date" type="date" value="${ipIso_(ipToday_())}"></label>
+        <label>Method<select data-f="method">${IP_METHODS_.map(m=>`<option>${m}</option>`).join('')}</select></label>
+        <label>Receipt no.<input data-f="receipt"></label>
+        <label>Notes<input data-f="notes"></label>
+        <div style="display:flex;gap:6px"><button type="button" class="ipBtn main" data-a="savePay">Save</button><button type="button" class="ipBtn ghost" data-a="cancelPay">Cancel</button></div>
+      </div><div class="ipMsg"></div></td></tr>`;
+    }
+  });
+  html+=`</tbody></table></div>`;
+  if((d.payments||[]).length){
+    html+=`<div class="ipSec">Payments received (${d.payments.length})</div><div style="overflow:auto"><table class="ipTable"><thead><tr><th>Date</th><th>For</th><th class="num">Amount</th><th>Method</th><th class="hideS">Receipt</th><th class="hideS">Notes</th><th class="hideS">By</th>${d.canEdit?'<th></th>':''}</tr></thead><tbody>`;
+    const nameOf=no=>(d.schedule.find(x=>x.no===no)||{}).name||no;
+    d.payments.slice().sort((a,b)=>(ipParse_(b.date)||0)-(ipParse_(a.date)||0)).forEach(p=>{
+      html+=`<tr><td>${ipFmt_(p.date)}</td><td>${ipEsc_(nameOf(p.no))}</td><td class="num">${ipNum_(p.amount)}</td><td>${ipEsc_(p.method)}</td><td class="hideS">${ipEsc_(p.receipt)}</td><td class="hideS">${ipEsc_(p.notes)}</td><td class="hideS">${ipEsc_(p.by)}</td>${d.canEdit?`<td><button type="button" class="ipBtn ghost" data-del="${ipEsc_(p.id)}" title="Delete this payment">✕</button></td>`:''}</tr>`;
+    });
+    html+=`</tbody></table></div>`;
+  }
+  if(d.canEdit)html+=`<div class="ipActions"><button type="button" class="ipBtn" data-a="gen">Rebuild schedule</button><span class="ipMsg">Rebuilding keeps every payment already recorded.</span></div>`;
+  const b=ipBody_(html);
+  b.querySelectorAll('[data-pay]').forEach(x=>x.addEventListener('click',()=>{IP_.payFor=x.dataset.pay;ipRender_();b.querySelector('.ipPay input')?.focus();}));
+  b.querySelector('[data-a="cancelPay"]')?.addEventListener('click',()=>{IP_.payFor=null;ipRender_();});
+  b.querySelector('[data-a="savePay"]')?.addEventListener('click',ipSavePay_);
+  b.querySelector('[data-a="gen"]')?.addEventListener('click',()=>{IP_.gen=ipGenDefaults_(r,d);ipRender_();});
+  b.querySelectorAll('[data-del]').forEach(x=>x.addEventListener('click',()=>{
+    if(!confirm('Delete this payment?'))return;
+    x.disabled=true;
+    google.script.run.withSuccessHandler(dd=>{IP_.data=dd;ipRender_();}).withFailureHandler(err=>{x.disabled=false;alert(err&&err.message||err);})
+      .deleteInstallmentPayment(AUTH_TOKEN,{id:x.dataset.del,project:r.project,unitCode:r.unitCode});
+  }));
+}
+function ipSavePay_(e){
+  const r=ipDeal_(IP_.row),box=document.querySelector('#ip .ipPay');if(!box)return;
+  const v=k=>box.querySelector(`[data-f="${k}"]`).value;
+  const msg=box.querySelector('.ipMsg'),btn=e.currentTarget;
+  const amount=ipIn_(v('amount'));
+  if(!(amount>0)){msg.className='ipMsg err';msg.textContent='Enter the amount paid.';return;}
+  if(!v('date')){msg.className='ipMsg err';msg.textContent='Enter the payment date.';return;}
+  btn.disabled=true;msg.className='ipMsg';msg.textContent='Saving…';
+  google.script.run.withSuccessHandler(d=>{IP_.data=d;IP_.payFor=null;ipRender_();})
+    .withFailureHandler(err=>{btn.disabled=false;msg.className='ipMsg err';msg.textContent=err&&err.message||String(err);})
+    .recordInstallmentPayment(AUTH_TOKEN,{project:r.project,unitCode:r.unitCode,no:IP_.payFor,amount,date:v('date'),method:v('method'),receipt:v('receipt'),notes:v('notes')});
+}
+
+/* ---------- Build a schedule (same maths as the Payment Plan sheet) ---------- */
+function ipGenDefaults_(r,d){
+  const pct=v=>{const n=ipIn_(v);return n>0&&n<=1?n*100:n;};
+  const code=String(r.planCode||'').toUpperCase(),every0=String(r.planEvery||'').toLowerCase();
+  let every=/month/.test(every0)&&!/quart/.test(every0)?1:/semi|half|6/.test(every0)?6:/year|annual/.test(every0)?12:3;
+  const lm=code.match(/^\s*([MQSHY])\s*(\d+)/);
+  if(lm)every={M:1,Q:3,S:6,H:6,Y:12}[lm[1]]||every;
+  let n=lm?+lm[2]:0;
+  if(!n){const pm=String(r.planPeriod||'').match(/(\d+)/);if(pm)n=Math.max(1,Math.round(+pm[1]/every));}
+  if(!n)n=12;
+  const price=Number(r.amount)||0;
+  const dpPct=pct(r.dpPercent)||(price&&Number(r.actualDP)?Number(r.actualDP)/price*100:20);
+  const dpDate=ipParse_(r.dpDate)||ipParse_(r.contractDate)||(typeof c360Date_==='function'?c360Date_(r):null)||ipToday_();
+  let mPct=pct(r.maintenancePercent);
+  if(!mPct&&price&&Number(r.maintenanceAmount))mPct=Number(r.maintenanceAmount)/price*100;
+  return {price,dpPct:Math.round(dpPct*100)/100,dpDate:ipIso_(dpDate),n,every,first:ipIso_(ipAddMonths_(dpDate,every)),
+    mPct:Math.round((mPct||0)*100)/100,mDate:ipIso_(ipAddMonths_(dpDate,36)),currency:(d&&d.schedule[0]&&d.schedule[0].currency)||ipCur_(r),
+    carry:Number(r.actualPaid)||0,rows:null};
+}
+function ipGenRows_(g){
+  const rows=[],dp=Math.round(g.price*g.dpPct/100),loan=g.price-dp;
+  rows.push({no:'0',name:'Down Payment',due:g.dpDate,amount:dp});
+  const L=({1:'M',3:'Q',6:'S',12:'Y'})[g.every]||'P';
+  const each=g.n>0?Math.round(loan/g.n/5)*5:0;let used=0;
+  const first=ipParse_(g.first)||ipToday_();
+  for(let i=1;i<=g.n;i++){
+    const amt=i<g.n?each:Math.round((loan-used)*100)/100;used+=i<g.n?each:0;
+    rows.push({no:String(i),name:L+' '+i,due:ipIso_(ipAddMonths_(first,(i-1)*g.every)),amount:amt});
+  }
+  if(g.mPct>0)rows.push({no:'M',name:'Maintenance',due:g.mDate,amount:Math.round(g.price*g.mPct/100)});
+  return rows;
+}
+function ipRenderGen_(){
+  const g=IP_.gen,d=IP_.data,r=ipDeal_(IP_.row);
+  if(!g.rows)g.rows=ipGenRows_(g);
+  const main=g.rows.filter(x=>x.name!=='Maintenance'),tot=main.reduce((t,x)=>t+(Number(x.amount)||0),0);
+  const diff=Math.round((tot-g.price)*100)/100;
+  const already=d.payments&&d.payments.length;
+  let html=`<div class="ipForm">
+    <label>Final price (${ipEsc_(g.currency)})<input data-g="price" inputmode="decimal" value="${ipNum_(g.price)}"></label>
+    <label>Down payment %<input data-g="dpPct" inputmode="decimal" value="${g.dpPct}"></label>
+    <label>Down payment date<input data-g="dpDate" type="date" value="${g.dpDate}"></label>
+    <label>Installments<input data-g="n" inputmode="numeric" value="${g.n}"></label>
+    <label>Every<select data-g="every">${[[1,'Month'],[3,'3 months (Quarter)'],[6,'6 months'],[12,'Year']].map(([v,t])=>`<option value="${v}"${g.every===v?' selected':''}>${t}</option>`).join('')}</select></label>
+    <label>First installment<input data-g="first" type="date" value="${g.first}"></label>
+    <label>Maintenance %<input data-g="mPct" inputmode="decimal" value="${g.mPct||''}"></label>
+    <label>Maintenance date<input data-g="mDate" type="date" value="${g.mDate}"></label>
+  </div>
+  <div class="ipMsg">Change any value above and the schedule is recalculated. You can also edit a date or amount in the table.</div>
+  <div style="overflow:auto"><table class="ipTable"><thead><tr><th>Installment</th><th>Due date</th><th class="num">Amount</th></tr></thead><tbody>
+  ${g.rows.map((x,i)=>`<tr><td><b>${ipEsc_(x.name)}</b></td><td><input type="date" data-r="${i}" data-k="due" value="${ipEsc_(x.due)}"></td><td class="num"><input data-r="${i}" data-k="amount" inputmode="decimal" style="text-align:right" value="${ipNum_(x.amount)}"></td></tr>`).join('')}
+  </tbody></table></div>
+  <div class="ipMsg ${Math.abs(diff)>1?'err':'ok'}">Down payment + installments = ${ipNum_(tot)} ${ipEsc_(g.currency)}${Math.abs(diff)>1?` — ${diff>0?'more':'less'} than the price by ${ipNum_(Math.abs(diff))}`:' ✓ matches the price'}</div>
+  ${!already&&g.carry>0?`<label style="display:flex;gap:8px;align-items:center;font-size:12.5px;margin:8px 0"><input type="checkbox" data-g="useCarry" checked style="width:auto;height:auto"> Record ${ipNum_(g.carry)} already paid (from the Deals sheet) on the down payment</label>`:''}
+  <div class="ipActions"><button type="button" class="ipBtn main" data-a="saveGen">Save schedule</button><button type="button" class="ipBtn ghost" data-a="cancelGen">Cancel</button><span class="ipMsg" data-k="genMsg"></span></div>`;
+  const b=ipBody_(html);
+  b.querySelectorAll('[data-g]').forEach(inp=>inp.addEventListener('change',()=>{
+    const k=inp.dataset.g;if(k==='useCarry')return;
+    const val=inp.value;
+    if(k==='price')g.price=ipIn_(val);else if(k==='dpPct')g.dpPct=ipIn_(val);else if(k==='n')g.n=Math.max(0,Math.min(240,Math.round(ipIn_(val))));
+    else if(k==='every')g.every=+val;else if(k==='mPct')g.mPct=ipIn_(val);else g[k]=val;
+    if(k==='dpDate'){const dd=ipParse_(val);if(dd){g.first=ipIso_(ipAddMonths_(dd,g.every));g.mDate=ipIso_(ipAddMonths_(dd,36));}}
+    if(k==='every'){const dd=ipParse_(g.dpDate);if(dd)g.first=ipIso_(ipAddMonths_(dd,g.every));}
+    g.rows=null;ipRenderGen_();
+  }));
+  b.querySelectorAll('[data-r]').forEach(inp=>inp.addEventListener('change',()=>{
+    const x=g.rows[+inp.dataset.r];if(inp.dataset.k==='amount')x.amount=ipIn_(inp.value);else x.due=inp.value;ipRenderGen_();
+  }));
+  b.querySelector('[data-a="cancelGen"]').addEventListener('click',()=>{IP_.gen=null;ipRender_();});
+  b.querySelector('[data-a="saveGen"]').addEventListener('click',e=>{
+    const btn=e.currentTarget,m=b.querySelector('[data-k="genMsg"]');
+    if(g.rows.some(x=>!x.due)){m.className='ipMsg err';m.textContent='Every installment needs a date.';return;}
+    btn.disabled=true;m.className='ipMsg';m.textContent='Saving…';
+    const useCarry=b.querySelector('[data-g="useCarry"]')?.checked;
+    google.script.run.withSuccessHandler(dd=>{IP_.data=dd;IP_.gen=null;ipRender_();})
+      .withFailureHandler(err=>{btn.disabled=false;m.className='ipMsg err';m.textContent=err&&err.message||String(err);})
+      .saveInstallmentSchedule(AUTH_TOKEN,{project:r.project,unitCode:r.unitCode,client:r.clientName,dealRow:r.row,currency:g.currency,
+        rows:g.rows.map(x=>({no:x.no,name:x.name,due:x.due,amount:x.amount})),
+        carryPaid:useCarry?Math.min(g.carry,g.rows[0].amount||g.carry):0,carryNo:'0',carryDate:g.dpDate});
+  });
+}
+
+/* ---------- Collections page: overdue + next 30 days ---------- */
+let IP_OVERVIEW_=null,IP_OVERVIEW_AT_=0,IP_OVERVIEW_BUSY_=false;
+function ipCollectionsBlock_(){
+  const host=document.getElementById('dsCollections');if(!host||host.classList.contains('hidden'))return;
+  let el=document.getElementById('ipColl');
+  if(!el){el=document.createElement('div');el.id='ipColl';el.className='ipColl';host.appendChild(el);}
+  if(!IP_OVERVIEW_||Date.now()-IP_OVERVIEW_AT_>120000){
+    if(!IP_OVERVIEW_)el.innerHTML='<h3>Installments</h3><div class="ipMsg">Loading…</div>';
+    if(!IP_OVERVIEW_BUSY_){
+      IP_OVERVIEW_BUSY_=true;
+      google.script.run.withSuccessHandler(d=>{IP_OVERVIEW_BUSY_=false;IP_OVERVIEW_=d;IP_OVERVIEW_AT_=Date.now();ipCollectionsBlock_();})
+        .withFailureHandler(()=>{IP_OVERVIEW_BUSY_=false;el.innerHTML='<h3>Installments</h3><div class="ipMsg err">Could not load installments.</div>';})
+        .getInstallmentsOverview(AUTH_TOKEN);
+    }
+    if(!IP_OVERVIEW_)return;
+  }
+  const today=ipToday_(),soon=new Date(today.getTime()+30*864e5);
+  const rows=(IP_OVERVIEW_.rows||[]).map(x=>({...x,d:ipParse_(x.due),rest:Math.max(0,x.amount-x.paid)})).filter(x=>x.rest>1&&x.d);
+  const late=rows.filter(x=>x.d<today).sort((a,b)=>a.d-b.d),next=rows.filter(x=>x.d>=today&&x.d<=soon).sort((a,b)=>a.d-b.d);
+  const tot=(a,c)=>a.filter(x=>(x.currency||'EGP')===c).reduce((t,x)=>t+x.rest,0);
+  const list=(a,isLate)=>a.length?`<div style="overflow:auto;max-height:340px"><table class="ipTable"><thead><tr><th>Client</th><th>Unit</th><th>Installment</th><th>Due</th><th class="num">Remaining</th>${isLate?'<th class="num">Days late</th>':''}</tr></thead><tbody>
+    ${a.slice(0,200).map(x=>`<tr data-u="${ipEsc_(x.project+'|'+x.unitCode)}"><td>${ipEsc_(x.client)}</td><td>${ipEsc_(x.unitCode)}</td><td>${ipEsc_(x.name)}</td><td>${ipFmt_(x.due)}</td><td class="num">${ipNum_(x.rest)} ${ipEsc_(x.currency)}</td>${isLate?`<td class="num" style="color:var(--ds-red)">${Math.round((today-x.d)/864e5)}</td>`:''}</tr>`).join('')}
+    </tbody></table></div>`:`<div class="ipMsg">${isLate?'No overdue installments.':'Nothing due in the next 30 days.'}</div>`;
+  const units=new Set((IP_OVERVIEW_.rows||[]).map(x=>x.key)).size;
+  el.innerHTML=`<h3>Installments <small style="font-weight:600;color:var(--ds-muted)">· ${units} unit${units===1?'':'s'} with a schedule</small></h3>
+    <div class="ipKpis" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+      <div class="ipKpi red"><span>Overdue EGP</span><b>${ipNum_(tot(late,'EGP'))}</b><small>${late.filter(x=>(x.currency||'EGP')==='EGP').length} installments</small></div>
+      <div class="ipKpi red"><span>Overdue USD</span><b>${ipNum_(tot(late,'USD'))}</b><small>${late.filter(x=>x.currency==='USD').length} installments</small></div>
+      <div class="ipKpi"><span>Due next 30 days EGP</span><b>${ipNum_(tot(next,'EGP'))}</b><small>${next.filter(x=>(x.currency||'EGP')==='EGP').length} installments</small></div>
+      <div class="ipKpi"><span>Due next 30 days USD</span><b>${ipNum_(tot(next,'USD'))}</b><small>${next.filter(x=>x.currency==='USD').length} installments</small></div>
+    </div>
+    <div class="ipSec" style="margin-top:6px">Overdue</div>${list(late,true)}
+    <div class="ipSec">Due in the next 30 days</div>${list(next,false)}
+    ${units?'':'<div class="ipMsg">Open a client → Payments on a unit to create its schedule.</div>'}`;
+  el.querySelectorAll('tr[data-u]').forEach(tr=>tr.addEventListener('click',()=>{
+    const [p,u]=tr.dataset.u.split('|');
+    const key=s=>String(s||'').trim().replace(/\.+$/,'').toUpperCase();
+    const proj=s=>String(s||'').toUpperCase().replace(/^CCG$/,'CITY CENTER GLDANI');
+    const cancelled=s=>typeof isCancelledStatus_==='function'?isCancelledStatus_(s):/^cancel/i.test(String(s||''));
+    const d=((typeof rawRows!=='undefined'&&rawRows)||[]).find(r=>key(r.unitCode)===key(u)&&proj(r.project)===proj(p)&&!cancelled(r.status))
+      ||((typeof rawRows!=='undefined'&&rawRows)||[]).find(r=>key(r.unitCode)===key(u));
+    if(d)ipOpen_(d.row);
+  }));
+}
+(function(){
+  // Re-draw the block whenever the Collections page is drawn.
+  const hook=()=>{
+    if(typeof dsCollectionsRender_!=='function'||dsCollectionsRender_.__ip)return false;
+    const orig=dsCollectionsRender_;
+    dsCollectionsRender_=function(){const out=orig.apply(this,arguments);try{ipCollectionsBlock_();}catch(e){console.warn(e);}return out;};
+    dsCollectionsRender_.__ip=true;return true;
+  };
+  if(!hook())document.addEventListener('DOMContentLoaded',hook);
+})();
+</script>
