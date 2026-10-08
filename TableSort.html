@@ -1,0 +1,173 @@
+<style id="eden-table-sort">
+th.tsSortable{cursor:pointer;user-select:none;white-space:nowrap}
+th.tsSortable:hover{color:var(--ds-gold-strong,#8f6d2c)!important}
+th.tsSortable::after{content:"↕";display:inline-block;margin-left:6px;font-size:.85em;opacity:.28;transition:opacity .15s}
+th.tsSortable:hover::after{opacity:.6}
+th.tsSortable.tsAsc::after{content:"▲";opacity:.95;color:var(--ds-gold,#b08a42);font-size:.7em}
+th.tsSortable.tsDesc::after{content:"▼";opacity:.95;color:var(--ds-gold,#b08a42);font-size:.7em}
+</style>
+<script>
+/* =====================================================================
+   EDEN BI — Sort any table by clicking its column header
+   1st click: A→Z / smallest first · 2nd: Z→A / largest first · 3rd: back to normal.
+   - Main Deals table: sorts the full data (not only the rows on screen),
+     and the exports follow the same order.
+   - Every other table in the system: sorts its rows on screen, and keeps
+     the order when the table is redrawn.
+   ===================================================================== */
+const TS_MONTHS_={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,sept:8,oct:9,nov:10,dec:11};
+function tsValue_(v){
+  if(v===null||v===undefined)return {t:2,v:''};
+  if(typeof v==='number')return isFinite(v)?{t:0,v}:{t:2,v:''};
+  const s=String(v).replace(/\s+/g,' ').trim();
+  if(!s||s==='—'||s==='-')return {t:2,v:''};
+  let m;
+  // Dates: 2026-08-13 · 13 Aug 2026 · 13-Aug-2026 · 13/08/2026
+  if((m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/)))return {t:0,v:new Date(+m[1],+m[2]-1,+m[3]).getTime()};
+  if((m=s.match(/^(\d{1,2})[ \-\/]([A-Za-z]{3,4})[A-Za-z]*[ \-\/,]+(\d{4})/))&&TS_MONTHS_[m[2].toLowerCase()]!=null)return {t:0,v:new Date(+m[3],TS_MONTHS_[m[2].toLowerCase()],+m[1]).getTime()};
+  if((m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)))return {t:0,v:new Date(+m[3],+m[2]-1,+m[1]).getTime()};
+  // Numbers: 1,234,567 EGP · 20% · 1.2M · 450K · -3,000 · 12d
+  if((m=s.match(/^([+\-−]?)[^\d\-+−]{0,4}([\d,]*\.?\d+)\s*([KkMmBb])?(?![\d\/])/))&&!/^[A-Za-z]{2,}/.test(s)){
+    let n=parseFloat(m[2].replace(/,/g,''));if(isNaN(n))return {t:1,v:s.toLowerCase()};
+    const mul={k:1e3,m:1e6,b:1e9}[String(m[3]||'').toLowerCase()]||1;
+    n*=mul;if(m[1]==='-'||m[1]==='−')n=-n;
+    // Text that only starts with a number (e.g. unit codes like 12A-B) sorts as text.
+    if(/^[\d,.]+[A-Za-z]{1,}\d/.test(s))return {t:1,v:s.toLowerCase()};
+    return {t:0,v:n};
+  }
+  return {t:1,v:s.toLowerCase()};
+}
+function tsCompare_(a,b){
+  const A=tsValue_(a),B=tsValue_(b);
+  if(A.t===2||B.t===2)return (A.t===2)-(B.t===2);          // blanks always last
+  if(A.t===0&&B.t===0)return A.v-B.v;
+  if(A.t!==B.t)return A.t-B.t;                              // numbers before text
+  return String(A.v).localeCompare(String(B.v),undefined,{numeric:true,sensitivity:'base'});
+}
+
+/* ---------- Main Deals table: sort the data itself ---------- */
+let MAIN_SORT_={view:'',col:'',dir:0};
+function tsRowValue_(r,c){
+  if(c==='date'||c==='monthName'){const y=Number(r.year)||0,m=Number(r.month)||0,d=Number(r.day)||0;return y?y*10000+m*100+d:(r[c]||'');}
+  return r[c];
+}
+(function(){
+  const hook=()=>{
+    if(typeof tableDataset_!=='function'||tableDataset_.__ts)return false;
+    const orig=tableDataset_;
+    tableDataset_=function(){
+      const out=orig.apply(this,arguments);
+      const view=typeof currentView!=='undefined'?currentView:'';
+      if(MAIN_SORT_.dir&&MAIN_SORT_.view===view&&out&&Array.isArray(out.rows)&&out.cols.includes(MAIN_SORT_.col)){
+        const c=MAIN_SORT_.col,dir=MAIN_SORT_.dir;
+        out.rows=out.rows.map((r,i)=>({r,i})).sort((x,y)=>{
+          const vx=tsRowValue_(x.r,c),vy=tsRowValue_(y.r,c);
+          const bx=tsValue_(vx).t===2,by=tsValue_(vy).t===2;
+          if(bx||by)return (bx-by)||(x.i-y.i);
+          return (tsCompare_(vx,vy)*dir)||(x.i-y.i);
+        }).map(x=>x.r);
+      }
+      return out;
+    };
+    tableDataset_.__ts=true;
+    if(typeof renderTable==='function'&&!renderTable.__ts){
+      const rt=renderTable;
+      renderTable=function(){const o=rt.apply(this,arguments);try{tsMarkMain_();}catch(e){}return o;};
+      renderTable.__ts=true;
+    }
+    return true;
+  };
+  if(!hook())document.addEventListener('DOMContentLoaded',hook);
+})();
+function tsMarkMain_(){
+  const t=document.getElementById('mainTable');if(!t)return;
+  const view=typeof currentView!=='undefined'?currentView:'';
+  t.querySelectorAll('thead th').forEach(th=>{
+    th.classList.add('tsSortable');th.classList.remove('tsAsc','tsDesc');
+    if(MAIN_SORT_.dir&&MAIN_SORT_.view===view&&th.dataset.col===MAIN_SORT_.col)th.classList.add(MAIN_SORT_.dir>0?'tsAsc':'tsDesc');
+  });
+}
+
+/* ---------- Every other table: sort the rows on screen ---------- */
+const TS_STATE_=new Map();     // table key -> {label, idx, dir}
+let TS_BUSY_=false,TS_MO_=null;
+function tsKey_(table){
+  if(table.id)return '#'+table.id;
+  const host=table.closest('[id]');
+  const all=host?[...host.querySelectorAll('table')]:[table];
+  return (host?'#'+host.id:'doc')+':'+all.indexOf(table);
+}
+function tsSkip_(table){
+  if(!table||table.closest('.noSort,[data-nosort]'))return true;
+  if(table.id==='mainTable'&&table.querySelector('thead th[data-col]'))return true;   // sorted on the data (above)
+  if(table.querySelector('thead [data-sort]'))return true;           // has its own sorting
+  return false;
+}
+function tsHeaderRow_(table){return table.tHead&&table.tHead.rows.length?table.tHead.rows[table.tHead.rows.length-1]:null;}
+function tsLabel_(th){return String(th.textContent||'').replace(/[↕▲▼]/g,'').trim().toLowerCase();}
+function tsSortTable_(table,idx,dir){
+  const body=table.tBodies[0];if(!body)return;
+  const rows=[...body.rows];
+  if(rows.length<2||rows.some(r=>r.querySelector('td[colspan]')))return;
+  if(!body.__tsOrig||body.__tsOrigLen!==rows.length||!rows.every(r=>body.__tsOrig.includes(r))){body.__tsOrig=rows.slice();body.__tsOrigLen=rows.length;}
+  const sorted=dir?rows.map((r,i)=>({r,i,v:(r.cells[idx]?.dataset.sort??r.cells[idx]?.textContent??'')})).sort((a,b)=>{
+    const ba=tsValue_(a.v).t===2,bb=tsValue_(b.v).t===2;
+    if(ba||bb)return (ba-bb)||(a.i-b.i);
+    return (tsCompare_(a.v,b.v)*dir)||(a.i-b.i);
+  }).map(x=>x.r):body.__tsOrig.filter(r=>r.parentNode===body);
+  if(sorted.every((r,i)=>r===rows[i]))return;                     // already in this order
+  TS_BUSY_=true;
+  const frag=document.createDocumentFragment();sorted.forEach(r=>frag.appendChild(r));body.appendChild(frag);
+  if(TS_MO_)TS_MO_.takeRecords();                                   // ignore our own moves
+  TS_BUSY_=false;
+}
+function tsMark_(table){
+  const hr=tsHeaderRow_(table);if(!hr)return;
+  const st=TS_STATE_.get(tsKey_(table));
+  [...hr.cells].forEach((th,i)=>{
+    th.classList.add('tsSortable');th.classList.remove('tsAsc','tsDesc');
+    if(st&&st.dir&&i===st.idx)th.classList.add(st.dir>0?'tsAsc':'tsDesc');
+  });
+}
+function tsPrepare_(root){
+  (root.querySelectorAll?root:document).querySelectorAll('table').forEach(table=>{
+    if(tsSkip_(table)||!tsHeaderRow_(table))return;
+    const st=TS_STATE_.get(tsKey_(table));
+    if(st&&st.dir){
+      // Same column (by its title) after a redraw → sort again.
+      const hr=tsHeaderRow_(table),i=[...hr.cells].findIndex(th=>tsLabel_(th)===st.label);
+      if(i>=0){st.idx=i;tsSortTable_(table,i,st.dir);}
+    }
+    tsMark_(table);
+  });
+}
+document.addEventListener('click',e=>{
+  const th=e.target.closest('thead th');if(!th||e.target.closest('button,a,input,select,label'))return;
+  const table=th.closest('table');if(!table)return;
+  if(table.id==='mainTable'&&th.dataset.col){
+    const view=typeof currentView!=='undefined'?currentView:'';
+    const same=MAIN_SORT_.view===view&&MAIN_SORT_.col===th.dataset.col;
+    const dir=!same?1:(MAIN_SORT_.dir===1?-1:MAIN_SORT_.dir===-1?0:1);
+    MAIN_SORT_={view,col:th.dataset.col,dir};
+    if(typeof renderTable==='function')renderTable();
+    return;
+  }
+  if(tsSkip_(table))return;
+  const hr=tsHeaderRow_(table);if(!hr||th.parentElement!==hr)return;
+  const idx=[...hr.cells].indexOf(th),key=tsKey_(table),cur=TS_STATE_.get(key);
+  const dir=!cur||cur.idx!==idx?1:(cur.dir===1?-1:cur.dir===-1?0:1);
+  TS_STATE_.set(key,{label:tsLabel_(th),idx,dir});
+  tsSortTable_(table,idx,dir);tsMark_(table);
+});
+(function(){
+  let pending=false;
+  const run=()=>{pending=false;try{tsPrepare_(document);}catch(e){console.warn(e);}};
+  const mo=TS_MO_=new MutationObserver(muts=>{
+    if(TS_BUSY_||pending)return;
+    if(!muts.some(m=>[...m.addedNodes].some(n=>n.nodeType===1&&(n.tagName==='TABLE'||n.tagName==='TR'||n.tagName==='TBODY'||n.querySelector?.('table')))))return;
+    pending=true;requestAnimationFrame(run);
+  });
+  const start=()=>{mo.observe(document.body,{childList:true,subtree:true});run();};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
+})();
+</script>
