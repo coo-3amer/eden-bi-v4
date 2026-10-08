@@ -103,7 +103,7 @@ function ipLoad_(){
   const r=ipDeal_(IP_.row);
   google.script.run.withSuccessHandler(d=>{IP_.data=d;ipRender_();})
     .withFailureHandler(err=>ipBody_(`<div class="ipEmpty">Could not load the schedule.<br>${ipEsc_(err&&err.message||err)}</div>`))
-    .getInstallmentSchedule(AUTH_TOKEN,r.project,r.unitCode);
+    .getInstallmentSchedule(AUTH_TOKEN,r.project,r.unitCode,r.row);
 }
 function ipBody_(html){const b=document.querySelector('#ip .ipBody');if(b)b.innerHTML=html;return b;}
 
@@ -114,7 +114,7 @@ function ipRender_(){
   if(IP_.gen){ipRenderGen_();return;}
   if(!d.schedule.length){
     ipBody_(`<div class="ipEmpty">No payment schedule for this unit yet.${d.canEdit?'<br><br><button type="button" class="ipBtn main" data-a="gen">Create schedule</button>':'<br>An admin can create it.'}</div>`)
-      ?.querySelector('[data-a="gen"]')?.addEventListener('click',()=>{IP_.gen=ipGenDefaults_(r);ipRender_();});
+      ?.querySelector('[data-a="gen"]')?.addEventListener('click',()=>{IP_.gen=ipGenDefaults_(r,d);ipRender_();});
     return;
   }
   const cur=d.schedule[0].currency||ipCur_(r),paid=ipPaidMap_(d);
@@ -183,7 +183,12 @@ function ipSavePay_(e){
 }
 
 /* ---------- Build a schedule (same maths as the Payment Plan sheet) ---------- */
-function ipGenDefaults_(r,d){
+function ipGenDefaults_(r0,d){
+  const pl=(d&&d.plan)||{};
+  // Live values from the deal's row win over the (possibly older) dashboard copy.
+  const r={...r0};['dpPercent','dpDate','contractDate','maintenancePercent','planType','planPeriod','planCode','planEvery'].forEach(k=>{if(String(pl[k]||'').trim())r[k]=pl[k];});
+  if(ipIn_(pl.finalPrice))r.amount=ipIn_(pl.finalPrice);
+  if(ipIn_(pl.maintenanceAmount))r.maintenanceAmount=ipIn_(pl.maintenanceAmount);
   const pct=v=>{const n=ipIn_(v);return n>0&&n<=1?n*100:n;};
   const code=String(r.planCode||'').toUpperCase(),every0=String(r.planEvery||'').toLowerCase();
   let every=/month/.test(every0)&&!/quart/.test(every0)?1:/semi|half|6/.test(every0)?6:/year|annual/.test(every0)?12:3;
@@ -191,7 +196,7 @@ function ipGenDefaults_(r,d){
   if(lm)every={M:1,Q:3,S:6,H:6,Y:12}[lm[1]]||every;
   let n=lm?+lm[2]:0;
   if(!n){const pm=String(r.planPeriod||'').match(/(\d+)/);if(pm)n=Math.max(1,Math.round(+pm[1]/every));}
-  if(!n)n=12;
+  // No plan written on the deal: leave the count empty for the admin to fill in.
   const price=Number(r.amount)||0;
   const dpPct=pct(r.dpPercent)||(price&&Number(r.actualDP)?Number(r.actualDP)/price*100:20);
   const dpDate=ipParse_(r.dpDate)||ipParse_(r.contractDate)||(typeof c360Date_==='function'?c360Date_(r):null)||ipToday_();
@@ -224,12 +229,13 @@ function ipRenderGen_(){
     <label>Final price (${ipEsc_(g.currency)})<input data-g="price" inputmode="decimal" value="${ipNum_(g.price)}"></label>
     <label>Down payment %<input data-g="dpPct" inputmode="decimal" value="${g.dpPct}"></label>
     <label>Down payment date<input data-g="dpDate" type="date" value="${g.dpDate}"></label>
-    <label>Installments<input data-g="n" inputmode="numeric" value="${g.n}"></label>
+    <label>Installments<input data-g="n" inputmode="numeric" placeholder="e.g. 36" value="${g.n||''}"></label>
     <label>Every<select data-g="every">${[[1,'Month'],[3,'3 months (Quarter)'],[6,'6 months'],[12,'Year']].map(([v,t])=>`<option value="${v}"${g.every===v?' selected':''}>${t}</option>`).join('')}</select></label>
     <label>First installment<input data-g="first" type="date" value="${g.first}"></label>
     <label>Maintenance %<input data-g="mPct" inputmode="decimal" value="${g.mPct||''}"></label>
     <label>Maintenance date<input data-g="mDate" type="date" value="${g.mDate}"></label>
   </div>
+  ${g.n?'':'<div class="ipMsg err">The number of installments is not written on this deal — type it above.</div>'}
   <div class="ipMsg">Change any value above and the schedule is recalculated. You can also edit a date or amount in the table.</div>
   <div style="overflow:auto"><table class="ipTable"><thead><tr><th>Installment</th><th>Due date</th><th class="num">Amount</th></tr></thead><tbody>
   ${g.rows.map((x,i)=>`<tr><td><b>${ipEsc_(x.name)}</b></td><td><input type="date" data-r="${i}" data-k="due" value="${ipEsc_(x.due)}"></td><td class="num"><input data-r="${i}" data-k="amount" inputmode="decimal" style="text-align:right" value="${ipNum_(x.amount)}"></td></tr>`).join('')}
@@ -253,6 +259,7 @@ function ipRenderGen_(){
   b.querySelector('[data-a="cancelGen"]').addEventListener('click',()=>{IP_.gen=null;ipRender_();});
   b.querySelector('[data-a="saveGen"]').addEventListener('click',e=>{
     const btn=e.currentTarget,m=b.querySelector('[data-k="genMsg"]');
+    if(!g.n){m.className='ipMsg err';m.textContent='Type the number of installments first.';return;}
     if(g.rows.some(x=>!x.due)){m.className='ipMsg err';m.textContent='Every installment needs a date.';return;}
     btn.disabled=true;m.className='ipMsg';m.textContent='Saving…';
     const useCarry=b.querySelector('[data-g="useCarry"]')?.checked;

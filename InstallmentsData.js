@@ -51,7 +51,7 @@ function instRows_(sh) {
 }
 
 /* Schedule + payments of one unit. */
-function getInstallmentSchedule(authToken, project, unitCode) {
+function getInstallmentSchedule(authToken, project, unitCode, dealRow) {
   const user = validateAuthToken_(authToken);
   const key = instKey_(project, unitCode);
   const sched = instRows_(instSheet_(INST_SHEET_, INST_HEAD_, false))
@@ -60,7 +60,33 @@ function getInstallmentSchedule(authToken, project, unitCode) {
   const pays = instRows_(instSheet_(INST_PAY_SHEET_, INST_PAY_HEAD_, false))
     .filter(r => String(r[1]) === key)
     .map(r => ({ id: String(r[0]), no: String(r[4]), amount: Number(r[5]) || 0, date: instDateOut_(r[6]), method: String(r[7] || ''), receipt: String(r[8] || ''), notes: String(r[9] || ''), by: String(r[10] || ''), at: instDateOut_(r[11]) }));
-  return { key: key, schedule: sched, payments: pays, canEdit: instIsAdmin_(user) };
+  return { key: key, schedule: sched, payments: pays, canEdit: instIsAdmin_(user), plan: instDealPlan_(dealRow, unitCode) };
+}
+
+/* The payment plan as written in the deal's row of the Deals sheet (read live, not from cache). */
+function instDealPlan_(dealRow, unitCode) {
+  const row = Number(dealRow);
+  if (!row || row < DATA_START_ROW) return null;
+  try {
+    const sheet = getMainDealsSheet_();
+    if (row > sheet.getLastRow()) return null;
+    const cols = mainDealsColumns_(sheet);
+    const vals = sheet.getRange(row, 1, 1, cols.lastCol).getDisplayValues()[0];
+    const at = names => { const c = mainDealsCol_(cols, names); return c ? String(vals[c - 1] || '').trim() : ''; };
+    if (unitCode && at(['Unit Code']).toUpperCase().replace(/\.+$/, '') !== String(unitCode).trim().toUpperCase().replace(/\.+$/, '')) return null;
+    return {
+      finalPrice: at(['Final Price']),
+      dpPercent: at(['DP %', 'DP%']),
+      dpDate: at(['down payment|date']),
+      contractDate: at(['contract details|date']),
+      maintenancePercent: at(['Maintenance %']),
+      maintenanceAmount: at(['Maintenance Amount']),
+      planType: at(['payment plan|type of payment plan', 'Type Of Payment Plan']),
+      planPeriod: at(['payment plan|installments period', 'Installments Period']),
+      planCode: at(['payment plan|installment plan', 'Installment Plan']),
+      planEvery: at(['payment plan|period type', 'Period Type'])
+    };
+  } catch (e) { return null; }
 }
 
 /* Admin: create or replace the schedule of a unit (payments are kept). */
