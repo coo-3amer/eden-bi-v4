@@ -262,6 +262,15 @@ function buildDashboardData_(authUser) {
     ['Sales', 'Managers', 'Staff', 'Statue']
   );
 
+  // CONTRACT DETAILS: the contract Date sits under its own group (not the reservation Date).
+  const contractDetailsIdx = groupedHeaderIndexes_(
+    sheet,
+    Math.max(1, HEADER_ROW - 1),
+    HEADER_ROW,
+    'Contract Details',
+    ['Date', 'Client Sign Date', 'Company Sign Date']
+  );
+
   // UNIT INFO: resolve the Unit Type subheader inside its merged group.
   // Confirmed sheet structure: Unit Info -> Unit Type (AY).
   const unitInfoIdx = groupedHeaderIndexes_(
@@ -543,6 +552,7 @@ function buildDashboardData_(authUser) {
       date: dealDate,
 
       clientSignDate: getAny_(r, idx, ['Client Sign Date']),
+      contractDate: contractDetailsIdx['Date'] !== undefined ? String(r[contractDetailsIdx['Date']] || '').trim() : '',
       companySignDate: getAny_(r, idx, ['Company Sign Date']),
       delivered: getAny_(r, idx, ['Delivered']),
       daysToClose: parseNumber_(
