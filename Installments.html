@@ -156,6 +156,10 @@ function ipRender_(){
     });
     html+=`</tbody></table></div>`;
   }
+  // Warn when the saved schedule does not match the plan written on the deal.
+  const want=(()=>{const g=ipGenDefaults_(r,d);return g.n;})();
+  const have=d.schedule.filter(x=>!/^(down payment|maintenance)$/i.test(x.name)).length;
+  if(want&&have!==want)html=`<div class="ipMsg err" style="font-weight:700;margin:0 0 12px">This schedule has ${have} installments, but the deal says ${want} (${ipEsc_((d.plan&&d.plan.planCode)||r.planCode||'')}).${d.canEdit?' Press “Rebuild schedule” below to fix it.':''}</div>`+html;
   if(d.canEdit)html+=`<div class="ipActions"><button type="button" class="ipBtn" data-a="gen">Rebuild schedule</button><span class="ipMsg">Rebuilding keeps every payment already recorded.</span></div>`;
   const b=ipBody_(html);
   b.querySelectorAll('[data-pay]').forEach(x=>x.addEventListener('click',()=>{IP_.payFor=x.dataset.pay;ipRender_();b.querySelector('.ipPay input')?.focus();}));
