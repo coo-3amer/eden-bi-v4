@@ -52,13 +52,8 @@ function initEdenDesignSystem_(){
   // App bar search mirrors the Transactions search box.
   const g=document.getElementById('dsGlobalSearch');
   const s=document.getElementById('search');
-  if(g&&s){
-    g.addEventListener('input',()=>{
-      s.value=g.value;
-      if(typeof applyFilters==='function')applyFilters();
-    });
-    s.addEventListener('input',()=>{if(g.value!==s.value)g.value=s.value;});
-  }
+  // Typing there now opens the quick-results panel (GlobalSearch.html);
+  // the Deals table keeps its own search box.
   document.addEventListener('keydown',e=>{
     if((e.ctrlKey||e.metaKey)&&String(e.key).toLowerCase()==='k'){
       e.preventDefault();
