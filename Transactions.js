@@ -276,6 +276,10 @@ function buildDashboardData_(authUser) {
   const planIdx = groupedHeaderIndexes_(sheet, Math.max(1, HEADER_ROW - 1), HEADER_ROW, 'Payment Plan Details',
     ['Type Of Payment Plan', 'Installments Period', 'Installment Plan', 'Period Type']);
 
+  // DEAL CONFIRMATION: contract-stage checkboxes (client already signed).
+  const confIdx = groupedHeaderIndexes_(sheet, Math.max(1, HEADER_ROW - 1), HEADER_ROW, 'Deal Confirmation',
+    ['Part of DP', 'Total DP', 'Client Sigend']);
+
   // UNIT INFO: resolve the Unit Type subheader inside its merged group.
   // Confirmed sheet structure: Unit Info -> Unit Type (AY).
   const unitInfoIdx = groupedHeaderIndexes_(
@@ -602,6 +606,9 @@ function buildDashboardData_(authUser) {
 
       discountOffer: getAny_(r, idx, ['Discount Offer']),
       maintenancePercent: getAny_(r, idx, ['Maintenance %']),
+      confPartDP: confIdx['Part of DP'] !== undefined ? r[confIdx['Part of DP']] : '',
+      confTotalDP: confIdx['Total DP'] !== undefined ? r[confIdx['Total DP']] : '',
+      confClientSigned: confIdx['Client Sigend'] !== undefined ? r[confIdx['Client Sigend']] : '',
       dpDate: dpDetailsIdx['Date'] !== undefined ? String(r[dpDetailsIdx['Date']] || '').trim() : '',
       planType: planIdx['Type Of Payment Plan'] !== undefined ? String(r[planIdx['Type Of Payment Plan']] || '').trim() : '',
       planPeriod: planIdx['Installments Period'] !== undefined ? String(r[planIdx['Installments Period']] || '').trim() : '',
