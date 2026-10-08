@@ -201,7 +201,7 @@ function enhanceDashboardFilterLayout_(){
     nationalityMulti:'Nationality',
     clientTypeMulti:'Client Type',
     commissionMulti:'Commission',
-    contractMulti:'Contract',
+    contractMulti:'Deal Stage',
     branchMulti:'Branch',
     statusMulti:'Status',
     renovationMulti:'Renovation',
@@ -1353,13 +1353,7 @@ function fillFilters(o){
     {value:'paid',label:'Commission Paid'},
     {value:'notPaid',label:'Commission Not Paid'}
   ],'commission');
-  setChecks('contractChecks',[
-    {value:'signed',label:'Contract signed (any)'},
-    {value:'part',label:'— Part of DP'},
-    {value:'total',label:'— Total DP'},
-    {value:'client',label:'— Client Sigend'},
-    {value:'notSigned',label:'Not signed yet'}
-  ],'contract');
+  setChecks('contractChecks',DEAL_STAGES_.map(s=>({value:s.k,label:s.label})),'contract');
   // Egypt Viewer gets ALL branch names from backend filter metadata,
   // while its actual Transactions rows remain restricted to EDEN WALK + Egyptian clients.
   // Normal/Admin users keep branch options derived from their loaded full dataset.
@@ -1591,7 +1585,7 @@ function refreshSalesFilterByManager_(){
 }
 function getMulti(name){return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(x=>String(x.value))}
 function updateMultiLabels(){
-  setMultiLabel('project','projectLabel','All Projects');setMultiLabel('unitCategory','unitCategoryLabel','All Unit Types');setMultiLabel('sales','salesLabel','All Sales');setMultiLabel('salesManager','salesManagerLabel','All Sales Managers');setMultiLabel('dealType','dealTypeLabel','All Deal Types');setMultiLabel('sharedWith','sharedWithLabel','All Shared Sales');setMultiLabel('nationality','nationalityLabel','All Nationalities');setMultiLabel('clientType','clientTypeLabel','All Client Types');setMultiLabel('commission','commissionLabel','All Commission');setMultiLabel('contract','contractLabel','All Contracts');setMultiLabel('branch','branchLabel','All Branches');setMultiLabel('status','statusLabel','All Status');setMultiLabel('renovation','renovationLabel','All Renovation');setMultiLabel('mainSource','mainSourceLabel','All Main Sources');setMultiLabel('sourceType','sourceTypeLabel','All Source Types');setMultiLabel('campaignName','campaignNameLabel','All Campaigns');setMultiLabel('mediaBuyer','mediaBuyerLabel','All Media Buyers');setMultiLabel('day','dayLabel','All Days');setMultiLabel('month','monthLabel','All Months');setMultiLabel('year','yearLabel','All Years');
+  setMultiLabel('project','projectLabel','All Projects');setMultiLabel('unitCategory','unitCategoryLabel','All Unit Types');setMultiLabel('sales','salesLabel','All Sales');setMultiLabel('salesManager','salesManagerLabel','All Sales Managers');setMultiLabel('dealType','dealTypeLabel','All Deal Types');setMultiLabel('sharedWith','sharedWithLabel','All Shared Sales');setMultiLabel('nationality','nationalityLabel','All Nationalities');setMultiLabel('clientType','clientTypeLabel','All Client Types');setMultiLabel('commission','commissionLabel','All Commission');setMultiLabel('contract','contractLabel','All Deal Stages');setMultiLabel('branch','branchLabel','All Branches');setMultiLabel('status','statusLabel','All Status');setMultiLabel('renovation','renovationLabel','All Renovation');setMultiLabel('mainSource','mainSourceLabel','All Main Sources');setMultiLabel('sourceType','sourceTypeLabel','All Source Types');setMultiLabel('campaignName','campaignNameLabel','All Campaigns');setMultiLabel('mediaBuyer','mediaBuyerLabel','All Media Buyers');setMultiLabel('day','dayLabel','All Days');setMultiLabel('month','monthLabel','All Months');setMultiLabel('year','yearLabel','All Years');
   setMultiLabel('brokerEden','brokerEdenLabel','All Eden Sales');setMultiLabel('brokerCreatedBy','brokerCreatedByLabel','All Created By');setMultiLabel('brokerLastSales','brokerLastSalesLabel','All Previous Sales');setMultiLabel('brokerLink','brokerLinkLabel','All Link Status');setMultiLabel('brokerStatus','brokerStatusLabel','All Broker Status');setMultiLabel('brokerDay','brokerDayLabel','All Creation Days');setMultiLabel('brokerMonth','brokerMonthLabel','All Creation Months');setMultiLabel('brokerYear','brokerYearLabel','All Creation Years');
 }
 function setMultiLabel(name,labelId,emptyText){const selected=Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(x=>x.dataset.label||x.value);document.getElementById(labelId).innerText=selected.length?selected.join(' • '):emptyText}
@@ -7836,21 +7830,39 @@ function saveGeneralSettings(){
 
 
 
-// ================= CONTRACT FILTER =================
-// From the Deal Confirmation checkboxes: Part of DP / Total DP / Client Sigend
-// ticked = the client has a signed contract. Several choices = any of them.
-let CONTRACT_SEL_={at:0,v:[]};
-function contractFlags_(r){
-  const p=commissionTrue_(r?.confPartDP),t=commissionTrue_(r?.confTotalDP),c=commissionTrue_(r?.confClientSigned);
-  return {part:p,total:t,client:c,signed:p||t||c};
+// ================= DEAL STAGE FILTER =================
+// One stage per deal, from Status + the Deal Confirmation checkboxes
+// (Part of DP, Total DP, Client Sigend, Company Signed, Delivery Signed, Delivered).
+const DEAL_STAGES_=[
+  {k:'csPart',label:'Client signed + Part of DP'},
+  {k:'csTotal',label:'Client signed + Total DP'},
+  {k:'coPart',label:'Company Signed + Part of DP'},
+  {k:'coTotal',label:'Company Signed + Total DP'},
+  {k:'closed',label:'Closed'},
+  {k:'delivered',label:'Delivered'},
+  {k:'part',label:'Part of DP (not signed)'},
+  {k:'total',label:'Total DP (not signed)'},
+  {k:'reservation',label:'Reservation'},
+  {k:'review',label:'Needs review (ticks don’t match)'}
+];
+function dealStage_(r){
+  const T=v=>commissionTrue_(v),st=String(r?.status||'').trim().toLowerCase();
+  const P=T(r?.confPartDP),TD=T(r?.confTotalDP),CS=T(r?.confClientSigned),CO=T(r?.confCompanySigned),DS=T(r?.confDeliverySigned),DL=T(r?.confDelivered);
+  if(st==='closed')return 'closed';
+  if(DL)return DS?'delivered':'review';            // Delivered needs Delivery Signed ticked
+  if(CO){if(TD)return 'coTotal';if(P)return 'coPart';return 'review';}
+  if(CS){if(TD)return 'csTotal';if(P)return 'csPart';return 'review';}
+  if(TD)return 'total';
+  if(P)return 'part';
+  return 'reservation';
 }
+let CONTRACT_SEL_={at:0,v:[]};
 function contractFilterMatch_(r){
   const now=Date.now();
   if(now-CONTRACT_SEL_.at>50)CONTRACT_SEL_={at:now,v:getMulti('contract')};
   const sel=CONTRACT_SEL_.v;
   if(!sel.length)return true;
-  const f=contractFlags_(r);
-  return sel.some(k=>k==='notSigned'?!f.signed:!!f[k]);
+  return sel.includes(dealStage_(r));
 }
 
 // ================= COMMISSION FILTER =================
