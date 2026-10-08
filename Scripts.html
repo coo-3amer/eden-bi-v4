@@ -7,6 +7,7 @@ console.info('EDEN BI: OLD V50 DESIGN + SHARE');
 const EDEN_REBUILD_KPI_CHARTS = false;
 
 let STATUS_BASE_ROWS=[];
+let STAGE_BASE_ROWS=[];
 let PROJECT_BASE_ROWS=[];
 let rawRows=[], filtered=[], brokerRows=[], brokerFiltered=[], currentView='dashboard', charts=[];
 let SALES_CURVE_CHART=null;
@@ -1731,7 +1732,6 @@ function applyFilters(){
     (!nationalities.length||nationalities.includes(String(r.nationality))) &&
     (!clientTypes.length||clientTypes.some(v=>String(v).trim().toLowerCase()===String(r.clientType||'').trim().toLowerCase())) &&
     commissionFilterMatch_(r) &&
-    contractFilterMatch_(r) &&
     (!branches.length||branches.includes(String(r.branch))) &&
     (!renovations.length||renovations.includes(String(r.renovationStatus))) &&
     (!mainSources.length||mainSources.includes(String(r.mainSource))) &&
@@ -1747,7 +1747,10 @@ function applyFilters(){
     (!q||Object.values(r).join(' ').toLowerCase().includes(q));
   const projectMatch=r=>!projects.length||projects.includes(String(r.project));
   const statusMatch=r=>!statuses.length||statuses.includes(String(r.status));
-  const rest=rawRows.filter(restMatch);
+  const rest0=rawRows.filter(restMatch);
+  // Rows matching every filter except Deal Stage and Status (Deal Stage chip counts).
+  STAGE_BASE_ROWS=rest0.filter(projectMatch);
+  const rest=rest0.filter(contractFilterMatch_);
   // Rows matching every filter except Project (Project button counts).
   PROJECT_BASE_ROWS=rest.filter(statusMatch);
   // Rows matching every filter except Status (Sales Status chip counts).
@@ -7847,6 +7850,7 @@ const DEAL_STAGES_=[
 ];
 function dealStage_(r){
   const T=v=>commissionTrue_(v),st=String(r?.status||'').trim().toLowerCase();
+  if(st==='cancel'||st==='cancelled'||st==='canceled')return 'cancel';
   const P=T(r?.confPartDP),TD=T(r?.confTotalDP),CS=T(r?.confClientSigned),CO=T(r?.confCompanySigned),DS=T(r?.confDeliverySigned),DL=T(r?.confDelivered);
   if(st==='closed')return 'closed';
   if(DL)return DS?'delivered':'review';            // Delivered needs Delivery Signed ticked

@@ -91,6 +91,9 @@ function edenStatusTone_(v){
   if(s.includes('renov')||s.includes('progress')||s.includes('dp'))return 'blue';
   return 'grey';
 }
+function edenStageTone_(k){
+  return {reservation:'gold',part:'blue',total:'blue',csPart:'violet',csTotal:'violet',coPart:'green',coTotal:'green',closed:'green',delivered:'green',review:'grey',cancel:'red'}[k]||'grey';
+}
 function edenStatusChipsMount_(){
   if(document.getElementById('dsStatusBar'))return;
   const filters=document.querySelector('#appRoot section.filters');
@@ -98,10 +101,10 @@ function edenStatusChipsMount_(){
   const bar=document.createElement('section');
   bar.id='dsStatusBar';
   bar.className='dsStatusBar';
-  bar.setAttribute('aria-label','Sales status');
+  bar.setAttribute('aria-label','Deal stage');
   bar.innerHTML=`
     <div class="dsStatusHead">
-      <span class="dsStatusTitle">Sales Status</span>
+      <span class="dsStatusTitle">Deal Stage</span>
       <span class="dsStatusHint">Select one or more</span>
     </div>
     <div class="dsStatusChips" id="dsStatusChips" role="group"></div>`;
@@ -109,12 +112,20 @@ function edenStatusChipsMount_(){
   bar.addEventListener('click',e=>{
     const chip=e.target.closest('.dsStatusChip');
     if(!chip)return;
-    const value=chip.dataset.status;
-    const boxes=[...document.querySelectorAll('input[name="status"]')];
+    const value=chip.dataset.stage;
+    const stageBoxes=[...document.querySelectorAll('input[name="contract"]')];
+    const statusBoxes=[...document.querySelectorAll('input[name="status"]')];
+    const cancelBox=statusBoxes.find(b=>/^cancel/i.test(String(b.value)));
     if(value==='__all__'){
-      boxes.forEach(b=>b.checked=false);
+      stageBoxes.forEach(b=>b.checked=false);statusBoxes.forEach(b=>b.checked=false);
+    }else if(value==='cancel'){
+      // Cancelled deals are hidden by default: show them through the Status filter (on its own).
+      const on=!!(cancelBox&&cancelBox.checked);
+      stageBoxes.forEach(b=>b.checked=false);statusBoxes.forEach(b=>b.checked=false);
+      if(cancelBox)cancelBox.checked=!on;
     }else{
-      const box=boxes.find(b=>String(b.value)===value);
+      if(cancelBox)cancelBox.checked=false;
+      const box=stageBoxes.find(b=>String(b.value)===value);
       if(box)box.checked=!box.checked;
     }
     if(typeof updateMultiLabels==='function')updateMultiLabels();
@@ -129,33 +140,26 @@ function edenStatusChipsRender_(){
   const visible=!!filters&&!filters.classList.contains('hidden')&&getComputedStyle(filters).display!=='none';
   bar.classList.toggle('hidden',!visible);
   if(!visible)return;
-
-  const boxes=[...document.querySelectorAll('input[name="status"]')];
-  const base=(typeof STATUS_BASE_ROWS!=='undefined'&&STATUS_BASE_ROWS.length)?STATUS_BASE_ROWS:[];
+  const stages=(typeof DEAL_STAGES_!=='undefined'?DEAL_STAGES_:[]);
+  const base=(typeof STAGE_BASE_ROWS!=='undefined')?STAGE_BASE_ROWS:[];
   const counts={};
-  base.forEach(r=>{const k=String(r.status||'');counts[k]=(counts[k]||0)+1;});
-  const rank=v=>{
-    const s=String(v).trim().toLowerCase();
-    if(edenStatusTone_(v)==='red')return 999;
-    const i=EDEN_STATUS_ORDER.indexOf(s);
-    return i<0?100:i;
-  };
-  const values=boxes.map(b=>String(b.value)).filter(Boolean)
-    .sort((a,b)=>rank(a)-rank(b)||(counts[b]||0)-(counts[a]||0)||a.localeCompare(b));
-  const selected=new Set(boxes.filter(b=>b.checked).map(b=>String(b.value)));
+  base.forEach(r=>{const k=typeof dealStage_==='function'?dealStage_(r):'';counts[k]=(counts[k]||0)+1;});
+  counts.cancel=base.filter(r=>edenStatusTone_(r.status)==='red').length;
+  const selStage=new Set([...document.querySelectorAll('input[name="contract"]:checked')].map(b=>String(b.value)));
+  const cancelOn=[...document.querySelectorAll('input[name="status"]:checked')].some(b=>/^cancel/i.test(String(b.value)));
+  const anySel=selStage.size||[...document.querySelectorAll('input[name="status"]:checked')].length;
   const activeCount=base.filter(r=>edenStatusTone_(r.status)!=='red').length;
   const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const fmt=n=>Number(n||0).toLocaleString('en-US');
-
+  const list=stages.filter(s=>s.k!=='review'||counts.review||selStage.has('review')).concat([{k:'cancel',label:'Cancel'}]);
   wrap.innerHTML=
-    `<button type="button" class="dsStatusChip all${selected.size?'':' on'}" data-status="__all__" aria-pressed="${!selected.size}" title="All statuses except Cancel (default)">
+    `<button type="button" class="dsStatusChip all${anySel?'':' on'}" data-stage="__all__" aria-pressed="${!anySel}" title="All deals except Cancel (default)">
        <span>All active</span><b>${fmt(activeCount)}</b>
      </button>`+
-    values.map(v=>{
-      const on=selected.has(v);
-      const label=boxes.find(b=>String(b.value)===v)?.dataset.label||v;
-      return `<button type="button" class="dsStatusChip tone-${edenStatusTone_(v)}${on?' on':''}" data-status="${esc(v)}" aria-pressed="${on}">
-        <i></i><span>${esc(label)}</span><b>${fmt(counts[v]||0)}</b>
+    list.map(s=>{
+      const on=s.k==='cancel'?cancelOn:selStage.has(s.k);
+      return `<button type="button" class="dsStatusChip tone-${edenStageTone_(s.k)}${on?' on':''}" data-stage="${esc(s.k)}" aria-pressed="${on}">
+        <i></i><span>${esc(s.label)}</span><b>${fmt(counts[s.k]||0)}</b>
       </button>`;
     }).join('');
 }
