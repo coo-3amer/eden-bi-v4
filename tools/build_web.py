@@ -43,6 +43,12 @@ def main():
     (OUT / '.nojekyll').write_text('', encoding='utf-8')
     for name in ('favicon.png', 'favicon-32.png', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'manifest.webmanifest'):
         (OUT / name).write_bytes((ROOT / 'web' / name).read_bytes())
+    maps = ROOT / 'web' / 'maps'   # floor plan images for the Floor Map page
+    if maps.is_dir():
+        (OUT / 'maps').mkdir(exist_ok=True)
+        for f in maps.iterdir():
+            if f.is_file():
+                (OUT / 'maps' / f.name).write_bytes(f.read_bytes())
     cname = ROOT / 'web' / 'CNAME'
     if cname.exists():  # custom domain for GitHub Pages
         (OUT / 'CNAME').write_text(cname.read_text(encoding='utf-8').strip() + '\n', encoding='utf-8')

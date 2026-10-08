@@ -1,0 +1,227 @@
+<style id="eden-floor-map">
+.fmBack{position:fixed;inset:0;z-index:430;background:rgba(10,8,6,.55);backdrop-filter:blur(3px)}
+.fm{position:fixed;inset:14px;z-index:431;display:flex;flex-direction:column;background:var(--ds-surface,#fffdf9);border-radius:18px;box-shadow:0 30px 80px rgba(0,0,0,.35);overflow:hidden;color:var(--ds-text,#2a2621)}
+.fmHead{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid var(--ds-line,#e8e0d1)}
+.fmHead h2{margin:0;font:600 22px/1.2 'Cormorant Garamond',Georgia,serif;color:var(--ds-heading,#16130f)}
+.fmHead small{display:block;font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ds-gold,#b08a42)}
+.fmLegend{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+.fmChip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;border:1px solid var(--ds-line,#e8e0d1);background:var(--ds-surface-2,#f9f5ee);font-size:12px;font-weight:700;cursor:pointer;color:var(--ds-text)}
+.fmChip i{width:10px;height:10px;border-radius:50%;background:var(--c)}
+.fmChip em{font-style:normal;color:var(--ds-muted,#83796b);font-weight:600}
+.fmChip.off{opacity:.38}
+.fmTools{display:flex;gap:8px;align-items:center}
+.fmTools input{height:34px;border:1px solid var(--ds-line);border-radius:10px;padding:0 10px;background:var(--ds-surface);color:var(--ds-text);font-size:13px;width:170px}
+.fmBtn{height:34px;padding:0 12px;border-radius:10px;border:1px solid var(--ds-gold-line,rgba(176,138,66,.32));background:var(--ds-gold-soft,rgba(176,138,66,.12));color:var(--ds-gold-strong,#8f6d2c);font-weight:700;font-size:12.5px;cursor:pointer}
+.fmBtn.on{background:var(--ds-gold,#b08a42);color:#fff}
+.fmClose{width:34px;height:34px;border-radius:10px;border:1px solid var(--ds-line);background:var(--ds-surface);font-size:20px;cursor:pointer;color:var(--ds-muted)}
+.fmBody{flex:1;display:flex;min-height:0}
+.fmStage{flex:1;overflow:auto;background:#1b1a17;position:relative;display:flex;align-items:center}.fmStage>.fmCanvas{margin:auto 0}
+.fmCanvas{position:relative;width:100%;min-width:980px;line-height:0;user-select:none}
+.fmCanvas img{width:100%;height:auto;display:block;pointer-events:none}
+.fmCanvas.placing{cursor:crosshair}
+.fmPin{position:absolute;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:var(--c);border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.45);cursor:pointer;transition:transform .12s}
+.fmPin:hover,.fmPin.sel{transform:scale(1.35);z-index:3}
+.fmPin.sel{box-shadow:0 0 0 4px rgba(255,255,255,.55),0 2px 8px rgba(0,0,0,.5)}
+.fmPin.dim{opacity:.18}
+.fmPin.hit{animation:fmPulse 1s ease-in-out infinite}
+.fmPin b{position:absolute;left:50%;bottom:calc(100% + 5px);transform:translateX(-50%);white-space:nowrap;font:700 11px/1 Inter,system-ui,sans-serif;color:#fff;background:rgba(0,0,0,.78);padding:4px 6px;border-radius:6px;display:none}
+.fmPin:hover b,.fmPin.sel b,.fmCanvas.labels .fmPin b{display:block}
+.fmCanvas.labels .fmPin b{font-size:9.5px;padding:2px 4px;bottom:calc(100% + 2px)}
+.fmCanvas.editing .fmPin{cursor:grab}
+@keyframes fmPulse{50%{box-shadow:0 0 0 8px rgba(255,255,255,.35),0 2px 6px rgba(0,0,0,.45)}}
+.fmSide{width:320px;flex:0 0 320px;border-left:1px solid var(--ds-line);overflow:auto;padding:14px;background:var(--ds-surface-2,#f9f5ee)}
+.fmCard{background:var(--ds-surface);border:1px solid var(--ds-line);border-radius:14px;padding:14px;margin-bottom:12px}
+.fmCard h3{margin:0 0 2px;font-size:18px;color:var(--ds-heading)}
+.fmKv{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;margin-top:12px}
+.fmKv span{display:block;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ds-muted)}
+.fmKv b{font-size:13px;color:var(--ds-heading)}
+.fmStatus{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;padding:3px 10px;border-radius:999px;background:color-mix(in srgb,var(--c) 16%,transparent);color:var(--c)}
+.fmStatus i{width:8px;height:8px;border-radius:50%;background:var(--c)}
+.fmHint{font-size:12.5px;color:var(--ds-muted);line-height:1.5}
+.fmList{display:flex;flex-direction:column;gap:4px;margin-top:8px}
+.fmItem{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:9px;border:1px solid transparent;background:none;cursor:pointer;text-align:left;font:inherit;color:var(--ds-text);font-size:12.5px}
+.fmItem:hover{background:var(--ds-gold-soft)}
+.fmItem.sel{border-color:var(--ds-gold);background:var(--ds-gold-soft)}
+.fmItem i{width:9px;height:9px;border-radius:50%;background:var(--c);flex:0 0 9px}
+.fmItem em{margin-left:auto;font-style:normal;font-size:11px;color:var(--ds-muted)}
+.fmItem em.ok{color:var(--ds-green,#2f9e62)}
+.fmMsg{font-size:12px;margin-top:8px;color:var(--ds-muted)}
+.fmLoading{position:absolute;inset:0;display:grid;place-items:center;color:#eee;font-size:14px;line-height:1.4}
+@media(max-width:820px){.fm{inset:0;border-radius:0}.fmBody{flex-direction:column}.fmSide{width:auto;flex:0 0 auto;max-height:42vh;border-left:0;border-top:1px solid var(--ds-line)}.fmTools input{width:120px}}
+</style>
+<script>
+/* =====================================================================
+   EDEN BI — Floor Map
+   Inventory → Floor Map. The floor plan with every unit pinned and
+   coloured by its live Inventory status. Click a unit for its details
+   and client. Admins place the pins once (Edit pins).
+   ===================================================================== */
+const FM_={data:null,sel:null,editing:false,placing:null,hidden:new Set(),q:'',labels:false};
+const FM_STATUS_=[
+  {k:'available',label:'Available',c:'#2f9e62',test:s=>s==='available'},
+  {k:'reservation',label:'Reservation',c:'#e0a526',test:s=>s.includes('reserv')},
+  {k:'closed',label:'Closed / Done',c:'#d64545',test:s=>['closed','done','sold','delivered'].includes(s)},
+  {k:'divided',label:'Divided / Share',c:'#7b5cc9',test:s=>s==='divided'||s==='share'},
+  {k:'na',label:'Not Available',c:'#8a8a8a',test:()=>true}
+];
+function fmEsc_(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function fmNum_(n){return Number(n||0).toLocaleString('en-US',{maximumFractionDigits:2});}
+function fmKey_(c){return String(c||'').trim().replace(/\.+$/,'').toUpperCase();}
+function fmStatus_(s){const t=String(s||'').trim().toLowerCase();return FM_STATUS_.find(x=>x.test(t));}
+function fmDeal_(code){
+  const k=fmKey_(code),rows=(typeof rawRows!=='undefined'&&rawRows)||[];
+  const cancelled=s=>typeof isCancelledStatus_==='function'?isCancelledStatus_(s):/^cancel/i.test(String(s||''));
+  return rows.find(r=>/eden\s*walk/i.test(String(r.project||''))&&fmKey_(r.unitCode)===k&&!cancelled(r.status))||null;
+}
+
+function fmMount_(){
+  const menu=document.querySelector('#inventoriesModule .moduleMenu');
+  if(!menu||menu.querySelector('[data-fm]'))return;
+  const b=document.createElement('button');b.type='button';b.dataset.fm='1';b.textContent='Floor Map';
+  b.addEventListener('click',()=>fmOpen_('EW_G'));
+  menu.appendChild(b);
+}
+
+function fmOpen_(mapKey){
+  fmClose_();
+  const back=document.createElement('div');back.className='fmBack';back.id='fmBack';back.addEventListener('click',fmClose_);
+  const el=document.createElement('section');el.className='fm';el.id='fm';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');
+  el.innerHTML=`<div class="fmHead"><div><small>Floor Map</small><h2>Loading…</h2></div>
+      <div class="fmLegend"></div>
+      <div class="fmTools"><input type="search" placeholder="Find unit…" aria-label="Find unit"><button type="button" class="fmBtn" data-a="labels">Codes</button><button type="button" class="fmClose" aria-label="Close">×</button></div></div>
+    <div class="fmBody"><div class="fmStage"><div class="fmCanvas"><div class="fmLoading">Loading floor map…</div></div></div><aside class="fmSide"></aside></div>`;
+  document.body.append(back,el);
+  el.querySelector('.fmClose').addEventListener('click',fmClose_);
+  el.querySelector('.fmTools input').addEventListener('input',e=>{FM_.q=e.target.value.trim().toUpperCase();fmDraw_();});
+  el.querySelector('[data-a="labels"]').addEventListener('click',e=>{FM_.labels=!FM_.labels;e.currentTarget.classList.toggle('on',FM_.labels);fmDraw_();});
+  document.addEventListener('keydown',fmKey2_);
+  FM_.sel=null;FM_.placing=null;FM_.editing=false;
+  google.script.run.withSuccessHandler(d=>{FM_.data=d;fmBuild_();}).withFailureHandler(err=>{
+    const c=el.querySelector('.fmCanvas');if(c)c.innerHTML=`<div class="fmLoading">Could not load the floor map.<br>${fmEsc_(err&&err.message||err)}</div>`;
+  }).getFloorMap(AUTH_TOKEN,mapKey);
+}
+function fmClose_(){document.getElementById('fm')?.remove();document.getElementById('fmBack')?.remove();document.removeEventListener('keydown',fmKey2_);}
+function fmKey2_(e){if(e.key==='Escape'){if(FM_.placing){FM_.placing=null;fmSide_();fmDraw_();}else fmClose_();}}
+
+function fmBuild_(){
+  const el=document.getElementById('fm');if(!el||!FM_.data)return;
+  const d=FM_.data;
+  el.querySelector('.fmHead h2').textContent=d.map.title;
+  if(d.canEdit){
+    const b=document.createElement('button');b.type='button';b.className='fmBtn';b.dataset.a='edit';b.textContent='Edit pins';
+    b.addEventListener('click',()=>{FM_.editing=!FM_.editing;FM_.placing=null;b.classList.toggle('on',FM_.editing);b.textContent=FM_.editing?'Done editing':'Edit pins';fmSide_();fmDraw_();});
+    el.querySelector('.fmTools').insertBefore(b,el.querySelector('.fmClose'));
+  }
+  const canvas=el.querySelector('.fmCanvas');
+  canvas.innerHTML=`<img alt="${fmEsc_(d.map.title)}" src="${fmEsc_(d.map.image)}"><div class="fmPins"></div>`;
+  canvas.addEventListener('click',fmCanvasClick_);
+  fmLegend_();fmSide_();fmDraw_();
+}
+
+function fmLegend_(){
+  const el=document.getElementById('fm');const d=FM_.data;
+  const counts={};d.units.forEach(u=>{const s=fmStatus_(u.status);counts[s.k]=(counts[s.k]||0)+1;});
+  el.querySelector('.fmLegend').innerHTML=FM_STATUS_.filter(s=>counts[s.k]).map(s=>
+    `<button type="button" class="fmChip${FM_.hidden.has(s.k)?' off':''}" data-k="${s.k}" style="--c:${s.c}"><i></i>${s.label}<em>${counts[s.k]}</em></button>`).join('');
+  el.querySelectorAll('.fmChip').forEach(b=>b.addEventListener('click',()=>{
+    const k=b.dataset.k;FM_.hidden.has(k)?FM_.hidden.delete(k):FM_.hidden.add(k);fmLegend_();fmDraw_();
+  }));
+}
+
+function fmDraw_(){
+  const el=document.getElementById('fm');if(!el||!FM_.data)return;
+  const canvas=el.querySelector('.fmCanvas'),box=el.querySelector('.fmPins');if(!box)return;
+  canvas.classList.toggle('placing',!!FM_.placing);
+  canvas.classList.toggle('editing',FM_.editing);
+  canvas.classList.toggle('labels',FM_.labels);
+  const d=FM_.data;
+  box.innerHTML=d.units.filter(u=>d.pins[u.code]).map(u=>{
+    const p=d.pins[u.code],s=fmStatus_(u.status);
+    const dim=FM_.hidden.has(s.k)||(FM_.q&&!fmKey_(u.code).includes(FM_.q));
+    const hit=FM_.q&&fmKey_(u.code).includes(FM_.q);
+    return `<span class="fmPin${FM_.sel===u.code?' sel':''}${dim?' dim':''}${hit?' hit':''}" data-code="${fmEsc_(u.code)}" style="left:${p.x*100}%;top:${p.y*100}%;--c:${s.c}"><b>${fmEsc_(fmKey_(u.code).replace(/^EW-G-/,''))}</b></span>`;
+  }).join('');
+  box.querySelectorAll('.fmPin').forEach(pin=>{
+    pin.addEventListener('click',e=>{e.stopPropagation();if(FM_.placing)return;FM_.sel=pin.dataset.code;fmSide_();fmDraw_();});
+    if(FM_.editing)fmDraggable_(pin);
+  });
+}
+
+function fmPoint_(e){
+  const img=document.querySelector('#fm .fmCanvas img');const r=img.getBoundingClientRect();
+  return {x:Math.min(1,Math.max(0,(e.clientX-r.left)/r.width)),y:Math.min(1,Math.max(0,(e.clientY-r.top)/r.height))};
+}
+function fmCanvasClick_(e){
+  if(!FM_.editing||!FM_.placing)return;
+  const p=fmPoint_(e),code=FM_.placing;
+  FM_.data.pins[code]=p;FM_.sel=code;FM_.placing=null;
+  fmSave_(code,p);fmSide_();fmDraw_();
+}
+function fmDraggable_(pin){
+  pin.addEventListener('pointerdown',e=>{
+    e.preventDefault();e.stopPropagation();
+    const code=pin.dataset.code;let moved=false;
+    pin.setPointerCapture(e.pointerId);
+    const move=ev=>{moved=true;const p=fmPoint_(ev);pin.style.left=p.x*100+'%';pin.style.top=p.y*100+'%';};
+    const up=ev=>{
+      pin.removeEventListener('pointermove',move);pin.removeEventListener('pointerup',up);
+      if(moved){const p=fmPoint_(ev);FM_.data.pins[code]=p;fmSave_(code,p);}
+      FM_.sel=code;fmSide_();fmDraw_();
+    };
+    pin.addEventListener('pointermove',move);pin.addEventListener('pointerup',up);
+  });
+}
+function fmSave_(code,p){
+  const msg=document.querySelector('#fm .fmMsg');if(msg)msg.textContent='Saving…';
+  google.script.run.withSuccessHandler(()=>{const m=document.querySelector('#fm .fmMsg');if(m)m.textContent='Saved ✓';})
+    .withFailureHandler(err=>{const m=document.querySelector('#fm .fmMsg');if(m)m.textContent='Not saved: '+(err&&err.message||err);})
+    .saveFloorMapPin(AUTH_TOKEN,FM_.data.map.key,code,p?p.x:null,p?p.y:null);
+}
+
+function fmSide_(){
+  const side=document.querySelector('#fm .fmSide');if(!side||!FM_.data)return;
+  const d=FM_.data,cur=d.map.currency;
+  const u=FM_.sel&&d.units.find(x=>x.code===FM_.sel);
+  let html='';
+  if(u){
+    const s=fmStatus_(u.status),deal=fmDeal_(u.code);
+    html+=`<div class="fmCard"><h3>${fmEsc_(fmKey_(u.code))}</h3>
+      <span class="fmStatus" style="--c:${s.c}"><i></i>${fmEsc_(u.status||'—')}</span>
+      <div class="fmKv">
+        <div><span>Type</span><b>${fmEsc_(u.type||'—')}</b></div>
+        <div><span>Area</span><b>${fmNum_(u.area)} m²${u.outdoor?` + ${fmNum_(u.outdoor)} out`:''}</b></div>
+        <div><span>Meter price</span><b>${u.meterPrice?fmNum_(u.meterPrice)+' '+cur:'—'}</b></div>
+        <div><span>Total price</span><b>${u.totalPrice?fmNum_(u.totalPrice)+' '+cur:'—'}</b></div>
+        <div><span>Finishing</span><b>${fmEsc_(u.finishing||'—')}</b></div>
+        <div><span>Tab</span><b>${fmEsc_(u.category||'—')}</b></div>
+      </div>
+      ${deal?`<div class="fmKv" style="grid-template-columns:1fr"><div><span>Client</span><b>${fmEsc_(deal.clientName||'')}</b> <small style="color:var(--ds-muted)">· ${fmEsc_(deal.status||'')} · ${fmEsc_(deal.salesName||'')}</small></div></div>
+        ${typeof c360Open_==='function'?`<button type="button" class="fmBtn" style="margin-top:10px" onclick="fmClose_();c360Open_('${fmEsc_(typeof clientKeyOf==='function'?clientKeyOf(deal):deal.clientName).replace(/'/g,"\\'")}')">Open client</button>`:''}`:''}
+      ${FM_.editing?`<div style="display:flex;gap:8px;margin-top:12px"><button type="button" class="fmBtn" data-a="move">Place again</button><button type="button" class="fmBtn" data-a="remove">Remove pin</button></div>`:''}
+    </div>`;
+  }
+  if(FM_.editing){
+    const q=FM_.q;
+    const list=d.units.filter(x=>!q||fmKey_(x.code).includes(q))
+      .sort((a,b)=>(!!d.pins[a.code]-!!d.pins[b.code])||String(a.code).localeCompare(String(b.code),undefined,{numeric:true}));
+    const placed=d.units.filter(x=>d.pins[x.code]).length;
+    html+=`<div class="fmCard"><b>Place units</b><div class="fmHint">${placed} of ${d.units.length} placed. Pick a unit, then click its spot on the map. Drag a pin to move it.</div>
+      ${FM_.placing?`<div class="fmHint" style="color:var(--ds-gold-strong);font-weight:700;margin-top:6px">Click on the map to place ${fmEsc_(fmKey_(FM_.placing))} (Esc to cancel)</div>`:''}
+      <div class="fmMsg"></div>
+      <div class="fmList">${list.map(x=>`<button type="button" class="fmItem${FM_.placing===x.code?' sel':''}" data-code="${fmEsc_(x.code)}" style="--c:${fmStatus_(x.status).c}"><i></i>${fmEsc_(fmKey_(x.code))}<em class="${d.pins[x.code]?'ok':''}">${d.pins[x.code]?'placed ✓':'not placed'}</em></button>`).join('')}</div></div>`;
+  } else if(!u){
+    const placed=d.units.filter(x=>d.pins[x.code]).length;
+    html+=`<div class="fmCard"><b>${fmEsc_(d.map.title)}</b><div class="fmHint" style="margin-top:6px">${d.units.length} units on this floor${placed<d.units.length?` · ${placed} placed on the map`:''}.<br>Click a unit on the map to see its details and client. Use the colours above to show or hide a status.</div>
+      ${placed===0&&d.canEdit?`<div class="fmHint" style="margin-top:8px;color:var(--ds-gold-strong);font-weight:700">No units are placed yet — press “Edit pins” to place them.</div>`:''}</div>`;
+  }
+  side.innerHTML=html;
+  side.querySelectorAll('.fmItem').forEach(b=>b.addEventListener('click',()=>{FM_.placing=b.dataset.code;FM_.sel=b.dataset.code;fmSide_();fmDraw_();}));
+  side.querySelector('[data-a="move"]')?.addEventListener('click',()=>{FM_.placing=FM_.sel;fmSide_();fmDraw_();});
+  side.querySelector('[data-a="remove"]')?.addEventListener('click',()=>{const c=FM_.sel;delete FM_.data.pins[c];fmSave_(c,null);fmSide_();fmDraw_();});
+}
+
+(function(){
+  const go=()=>fmMount_();
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();
+})();
+</script>
