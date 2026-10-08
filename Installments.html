@@ -294,7 +294,7 @@ function ipCollectionsBlock_(){
     if(!IP_OVERVIEW_)el.innerHTML='<h3>Installments</h3><div class="ipMsg">Loading…</div>';
     if(!IP_OVERVIEW_BUSY_){
       IP_OVERVIEW_BUSY_=true;
-      google.script.run.withSuccessHandler(d=>{IP_OVERVIEW_BUSY_=false;IP_OVERVIEW_=d;IP_OVERVIEW_AT_=Date.now();ipCollectionsBlock_();})
+      google.script.run.withSuccessHandler(d=>{IP_OVERVIEW_BUSY_=false;IP_OVERVIEW_=d;IP_OVERVIEW_AT_=Date.now();if(typeof dsCollectionsRender_==='function')dsCollectionsRender_();else ipCollectionsBlock_();})
         .withFailureHandler(()=>{IP_OVERVIEW_BUSY_=false;el.innerHTML='<h3>Installments</h3><div class="ipMsg err">Could not load installments.</div>';})
         .getInstallmentsOverview(AUTH_TOKEN);
     }
@@ -315,6 +315,7 @@ function ipCollectionsBlock_(){
       <div class="ipKpi"><span>Due next 30 days EGP</span><b>${ipNum_(tot(next,'EGP'))}</b><small>${next.filter(x=>(x.currency||'EGP')==='EGP').length} installments</small></div>
       <div class="ipKpi"><span>Due next 30 days USD</span><b>${ipNum_(tot(next,'USD'))}</b><small>${next.filter(x=>x.currency==='USD').length} installments</small></div>
     </div>
+    <div class="ipMsg">Not yet due (all future installments): <b>${ipNum_(tot(rows.filter(x=>x.d>=today),'EGP'))}</b> EGP · <b>${ipNum_(tot(rows.filter(x=>x.d>=today),'USD'))}</b> USD. Units with a schedule are counted above by what is due up to today, after every payment recorded.</div>
     <div class="ipSec" style="margin-top:6px">Overdue</div>${list(late,true)}
     <div class="ipSec">Due in the next 30 days</div>${list(next,false)}
     ${units?'':'<div class="ipMsg">Open a client → Payments on a unit to create its schedule.</div>'}`;
@@ -422,6 +423,47 @@ function ipC360Fill_(){
     const orig=c360Open_;
     c360Open_=function(){const out=orig.apply(this,arguments);try{ipC360Fill_();}catch(e){console.warn(e);}return out;};
     c360Open_.__ip=true;return true;
+  };
+  if(!hook())document.addEventListener('DOMContentLoaded',hook);
+})();
+
+/* ---------- Collections: use the schedule for units that have one ----------
+   Units without a schedule keep the Deals sheet "Remain" (down payment).
+   Units with a schedule show what is DUE up to today and not yet paid —
+   every recorded payment (down payment or installment) is deducted. */
+function ipDueByUnit_(){
+  const out={};if(!IP_OVERVIEW_)return out;
+  const today=ipToday_();
+  (IP_OVERVIEW_.rows||[]).forEach(x=>{
+    const k=ipNormProj_(x.project)+'|'+ipNormUnit_(x.unitCode);
+    const o=out[k]||(out[k]={due:0,paid:0,left:0,future:0,oldest:null});
+    const d=ipParse_(x.due),paid=Math.min(x.amount,x.paid||0),left=Math.max(0,x.amount-(x.paid||0));
+    if(d&&d<=today){o.due+=x.amount;o.paid+=paid;o.left+=left;if(left>1&&(!o.oldest||d<o.oldest))o.oldest=d;}
+    else o.future+=left;
+  });
+  return out;
+}
+(function(){
+  const hook=()=>{
+    if(typeof dsCollRows_!=='function'||dsCollRows_.__ip)return false;
+    const orig=dsCollRows_;
+    dsCollRows_=function(){
+      if(!IP_OVERVIEW_)return orig.apply(this,arguments);
+      const by=ipDueByUnit_();
+      const rows=dsScopeRows_().map(r=>{
+        const o=by[ipNormProj_(r.project)+'|'+ipNormUnit_(r.unitCode)];
+        if(!o)return r;
+        return {...r,actualDP:o.due,actualPaid:o.paid,dpPaid:o.paid,remain:Math.round(o.left),__ipOldest:o.oldest,__ipSched:true};
+      });
+      return rows.filter(r=>Number(r.remain)>0);
+    };
+    dsCollRows_.__ip=true;
+    if(typeof dsAgeDays_==='function'&&!dsAgeDays_.__ip){
+      const oa=dsAgeDays_;
+      dsAgeDays_=function(r){if(r&&r.__ipSched)return r.__ipOldest?Math.max(0,Math.floor((Date.now()-r.__ipOldest.getTime())/864e5)):0;return oa.apply(this,arguments);};
+      dsAgeDays_.__ip=true;
+    }
+    return true;
   };
   if(!hook())document.addEventListener('DOMContentLoaded',hook);
 })();
