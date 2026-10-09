@@ -1,0 +1,111 @@
+<style id="eden-audit-log">
+.alBack{position:fixed;inset:0;z-index:430;background:rgba(10,8,6,.5);backdrop-filter:blur(2px)}
+.al{position:fixed;inset:14px;z-index:431;display:flex;flex-direction:column;background:var(--ds-surface,#fffdf9);color:var(--ds-text,#2a2621);border-radius:18px;box-shadow:0 30px 80px rgba(0,0,0,.35);overflow:hidden}
+.alHead{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid var(--ds-line,#e8e0d1)}
+.alHead small{display:block;font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ds-gold,#b08a42)}
+.alHead h2{margin:0;font:600 22px/1.2 'Cormorant Garamond',Georgia,serif;color:var(--ds-heading,#16130f)}
+.alTools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-left:auto}
+.alTools input,.alTools select{height:34px;border:1px solid var(--ds-line);border-radius:10px;padding:0 10px;background:var(--ds-surface);color:var(--ds-text);font:inherit;font-size:13px}
+.alTools input[type=search]{width:220px}
+.alBtn{height:34px;padding:0 12px;border-radius:10px;border:1px solid var(--ds-gold-line,rgba(176,138,66,.32));background:var(--ds-gold-soft,rgba(176,138,66,.12));color:var(--ds-gold-strong,#8f6d2c);font-weight:700;font-size:12.5px;cursor:pointer}
+.alX{width:34px;height:34px;border-radius:10px;border:1px solid var(--ds-line);background:var(--ds-surface);font-size:20px;cursor:pointer;color:var(--ds-muted)}
+.alKpis{display:flex;gap:8px;flex-wrap:wrap;padding:10px 18px;border-bottom:1px solid var(--ds-line);background:var(--ds-surface-2,#f9f5ee)}
+.alKpi{font-size:12px;color:var(--ds-muted);padding:5px 10px;border-radius:999px;background:var(--ds-surface);border:1px solid var(--ds-line);cursor:pointer}
+.alKpi b{color:var(--ds-heading)}
+.alKpi.on{background:var(--ds-gold,#b08a42);color:#fff;border-color:transparent}.alKpi.on b{color:#fff}
+.alBody{flex:1;overflow:auto;padding:0 18px 18px}
+.alTable{width:100%;border-collapse:collapse;font-size:12.5px}
+.alTable th{position:sticky;top:0;background:var(--ds-surface);text-align:left;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ds-muted);padding:10px 8px;border-bottom:1px solid var(--ds-line);z-index:1}
+.alTable td{padding:8px;border-bottom:1px solid var(--ds-line);vertical-align:top}
+.alTable td.t{white-space:nowrap;color:var(--ds-muted);font-variant-numeric:tabular-nums}
+.alTable td.d{min-width:320px;line-height:1.45}
+.alAct{display:inline-block;font-size:11px;font-weight:800;padding:2px 9px;border-radius:999px;white-space:nowrap;background:color-mix(in srgb,var(--c) 14%,transparent);color:var(--c)}
+.alEmpty{padding:40px;text-align:center;color:var(--ds-muted)}
+@media(max-width:760px){.al{inset:0;border-radius:0}.alTools input[type=search]{width:100%}}
+</style>
+<script>
+/* =====================================================================
+   EDEN BI — Activity Log (System → Activity Log, admins only)
+   Who did what, and when: deals added / updated, payment schedules,
+   payments recorded or deleted, Inventory status changes, sign-ins.
+   ===================================================================== */
+const AL_={rows:[],q:'',action:'',user:'',from:'',to:''};
+const AL_COLORS_={'Deal added':'#2f9e62','Deal updated':'#3b6fd8','Deal status changed':'#7b5cc9','Payment recorded':'#2f9e62','Payment deleted':'#d64545','Payment schedule saved':'#b08a42','Inventory status changed':'#e0a526','Signed in':'#8a8a8a'};
+function alEsc_(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function alIsAdmin_(){const r=String((typeof AUTH_USER!=='undefined'&&AUTH_USER&&AUTH_USER.role)||'').trim().toLowerCase();return r==='admin'||r==='super admin';}
+function alMount_(){
+  const menu=document.querySelector('#systemModule .moduleMenu');
+  if(!menu)return;
+  let b=menu.querySelector('[data-al]');
+  if(!b){b=document.createElement('button');b.type='button';b.dataset.al='1';b.textContent='Activity Log';b.addEventListener('click',alOpen_);menu.appendChild(b);}
+  b.style.display=alIsAdmin_()?'':'none';
+}
+function alOpen_(){
+  alClose_();
+  const back=document.createElement('div');back.className='alBack';back.id='alBack';back.addEventListener('click',alClose_);
+  const el=document.createElement('section');el.className='al';el.id='al';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');
+  el.innerHTML=`<div class="alHead"><div><small>System</small><h2>Activity Log</h2></div>
+    <div class="alTools">
+      <input type="search" data-f="q" placeholder="Search client, unit, details…">
+      <select data-f="user"><option value="">All users</option></select>
+      <input type="date" data-f="from" title="From"><input type="date" data-f="to" title="To">
+      <button type="button" class="alBtn" data-a="csv">Export CSV</button>
+      <button type="button" class="alBtn" data-a="reload">↻</button>
+      <button type="button" class="alX" aria-label="Close">×</button>
+    </div></div>
+    <div class="alKpis"></div>
+    <div class="alBody"><div class="alEmpty">Loading…</div></div>`;
+  document.body.append(back,el);
+  el.querySelector('.alX').addEventListener('click',alClose_);
+  el.querySelectorAll('[data-f]').forEach(i=>i.addEventListener('input',()=>{AL_[i.dataset.f]=i.value.trim();alRender_();}));
+  el.querySelector('[data-a="csv"]').addEventListener('click',alCsv_);
+  el.querySelector('[data-a="reload"]').addEventListener('click',alLoad_);
+  document.addEventListener('keydown',alKey_);
+  alLoad_();
+}
+function alClose_(){document.getElementById('al')?.remove();document.getElementById('alBack')?.remove();document.removeEventListener('keydown',alKey_);}
+function alKey_(e){if(e.key==='Escape')alClose_();}
+function alLoad_(){
+  const body=document.querySelector('#al .alBody');if(body)body.innerHTML='<div class="alEmpty">Loading…</div>';
+  google.script.run.withSuccessHandler(d=>{
+    AL_.rows=(d&&d.rows)||[];AL_.total=(d&&d.total)||0;
+    const sel=document.querySelector('#al [data-f="user"]');
+    if(sel){const users=[...new Set(AL_.rows.map(r=>r.user).filter(Boolean))].sort();sel.innerHTML='<option value="">All users</option>'+users.map(u=>`<option${u===AL_.user?' selected':''}>${alEsc_(u)}</option>`).join('');}
+    alRender_();
+  }).withFailureHandler(err=>{const b=document.querySelector('#al .alBody');if(b)b.innerHTML=`<div class="alEmpty">${alEsc_(err&&err.message||err)}</div>`;})
+    .getAuditLog(AUTH_TOKEN,{limit:3000});
+}
+function alFiltered_(ignoreAction){
+  const q=AL_.q.toLowerCase();
+  return AL_.rows.filter(r=>
+    (ignoreAction||!AL_.action||r.action===AL_.action)&&
+    (!AL_.user||r.user===AL_.user)&&
+    (!AL_.from||r.time.slice(0,10)>=AL_.from)&&(!AL_.to||r.time.slice(0,10)<=AL_.to)&&
+    (!q||[r.user,r.action,r.project,r.unit,r.client,r.details,r.ref].join(' ').toLowerCase().includes(q)));
+}
+function alRender_(){
+  const el=document.getElementById('al');if(!el)return;
+  const base=alFiltered_(true),rows=alFiltered_(false);
+  const counts={};base.forEach(r=>counts[r.action]=(counts[r.action]||0)+1);
+  el.querySelector('.alKpis').innerHTML=`<span class="alKpi${AL_.action?'':' on'}" data-act="">All <b>${base.length}</b></span>`+
+    Object.keys(counts).sort((a,b)=>counts[b]-counts[a]).map(a=>`<span class="alKpi${AL_.action===a?' on':''}" data-act="${alEsc_(a)}">${alEsc_(a)} <b>${counts[a]}</b></span>`).join('')+
+    (AL_.total>AL_.rows.length?`<span style="margin-left:auto;font-size:11.5px;color:var(--ds-muted)">Showing the latest ${AL_.rows.length} of ${AL_.total}</span>`:'');
+  el.querySelectorAll('.alKpi[data-act]').forEach(k=>k.addEventListener('click',()=>{AL_.action=k.dataset.act;alRender_();}));
+  const body=el.querySelector('.alBody');
+  if(!rows.length){body.innerHTML=`<div class="alEmpty">${AL_.rows.length?'Nothing matches these filters.':'No activity recorded yet. Every change made from the system will appear here.'}</div>`;return;}
+  body.innerHTML=`<table class="alTable"><thead><tr><th>Time</th><th>User</th><th>Action</th><th>Project</th><th>Unit</th><th>Client</th><th>Details</th><th>Ref</th></tr></thead><tbody>
+    ${rows.slice(0,1500).map(r=>`<tr><td class="t">${alEsc_(r.time)}</td><td><b>${alEsc_(r.user)}</b>${r.role?`<br><small style="color:var(--ds-muted)">${alEsc_(r.role)}</small>`:''}</td>
+      <td><span class="alAct" style="--c:${AL_COLORS_[r.action]||'#8a8a8a'}">${alEsc_(r.action)}</span></td><td>${alEsc_(r.project)}</td><td>${alEsc_(r.unit)}</td><td>${alEsc_(r.client)}</td>
+      <td class="d">${alEsc_(r.details)}</td><td class="t">${alEsc_(r.ref)}</td></tr>`).join('')}</tbody></table>`;
+}
+function alCsv_(){
+  const rows=alFiltered_(false),q=v=>`"${String(v??'').replace(/"/g,'""')}"`;
+  const lines=[['Time','User','Role','Action','Project','Unit','Client','Details','Ref'].map(q).join(',')].concat(rows.map(r=>[r.time,r.user,r.role,r.action,r.project,r.unit,r.client,r.details,r.ref].map(q).join(',')));
+  const blob=new Blob(['﻿'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`EDEN_Activity_Log_${new Date().toISOString().slice(0,10)}.csv`;document.body.appendChild(a);a.click();a.remove();
+}
+(function(){
+  const go=()=>{alMount_();setInterval(alMount_,4000);};   // shows/hides the menu item after sign-in
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();
+})();
+</script>

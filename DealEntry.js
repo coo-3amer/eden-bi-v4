@@ -480,6 +480,11 @@ function saveNewDeal(authToken, payload) {
     const saved = saveDealToMainSheet_(user, Object.assign({}, payload, { project: project, unitCode: unitCode }), unit);
     const inv = syncInventoryForDeal_(project, unitCode, payload.status,
       { inventoryCategory: dealText_(payload.inventoryCategory) || unit.inventoryCategory, by: user.name || user.username });
+    auditLog_(user, 'Deal added', { project: project, unit: unitCode, client: dealText_(payload.clientName),
+      details: ['Status ' + dealText_(payload.status), payload.salesName ? 'Sales ' + dealText_(payload.salesName) : '',
+        payload.finalPrice ? 'Final price ' + dealText_(payload.finalPrice) : ''].filter(Boolean).join(' · ') +
+        (saved.rejected && saved.rejected.length ? ' · Not saved: ' + saved.rejected.join('; ') : ''),
+      ref: 'Deals row ' + saved.row + (saved.dealNum ? ' · #' + saved.dealNum : '') });
     clearDashboardCache_();
     const ref = saved.dealNum ? 'Deal #' + saved.dealNum : 'The deal';
     const result = {
@@ -999,7 +1004,7 @@ function updateDealRecord(authToken, req) {
     try { const o = dashCacheRead_('DEALOPT', 24 * 60 * 60 * 1000); lists = (o && o.sheetLists) || {}; } catch (e) {}
     const pct = v => { if (v === '' || v == null) return ''; const n = dealNumber_(v); return Math.abs(n) > 1 ? n / 100 : n; };
     const tz = Session.getScriptTimeZone();
-    const written = [], rejected = [];
+    const written = [], rejected = [], diffs = [];
     const oldStatus = at(['Status']);
 
     DEAL_UPDATE_FIELDS_.forEach(k => {
@@ -1021,7 +1026,16 @@ function updateDealRecord(authToken, req) {
       } else v = dealText_(v);
       const fit = dealFitList_(rules[c - 1], v, lists[k]);
       if (fit.blocked) { rejected.push(label + ': "' + v + '" is not in the sheet list'); return; }
-      try { sheet.getRange(row, c).setValue(fit.value); written.push(label); }
+      try {
+        sheet.getRange(row, c).setValue(fit.value); written.push(label);
+        const before = String(disp[c - 1] || '').trim();
+        const nv = fit.value;
+        const shown = nv instanceof Date ? Utilities.formatDate(nv, tz, 'dd-MMM-yyyy')
+          : nv === '' ? '—'
+          : (k === 'dpPercent' || k === 'dpPaid') && typeof nv === 'number' ? Math.round(nv * 10000) / 100 + '%'
+          : typeof nv === 'number' ? nv.toLocaleString('en-US') : String(nv);
+        diffs.push(k === 'notes' ? 'Note added: ' + dealText_(changes[k]) : label + ': ' + (before || '—') + ' → ' + shown);
+      }
       catch (err) { rejected.push(label + ': ' + (err && err.message ? err.message : err)); }
     });
 
@@ -1039,6 +1053,8 @@ function updateDealRecord(authToken, req) {
     if (newStatus && !same(newStatus, oldStatus) && written.indexOf(mainDealLabel_(MAIN_DEAL_FIELDS_.filter(x => x.k === 'status')[0])) >= 0) {
       inv = syncInventoryForDeal_(at(['Project']), at(['Unit Code']), newStatus, { by: user.name || user.username });
     }
+    if (diffs.length) auditLog_(user, newStatus && !same(newStatus, oldStatus) ? 'Deal status changed' : 'Deal updated',
+      { project: at(['Project']), unit: at(['Unit Code']), client: at(['Final Client Name', 'Client Name']), details: diffs.join(' · '), ref: 'Deals row ' + row });
     clearDashboardCache_();
     return { success: true, row: row, written: written, rejected: rejected, inventory: inv,
       message: (written.length ? 'Deal updated (' + written.join(', ') + ').' : 'Nothing was changed.') + (inv.message ? ' ' + inv.message : '') };

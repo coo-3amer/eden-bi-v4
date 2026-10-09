@@ -100,6 +100,7 @@ function loginUser(username, password) {
       };
 
       CacheService.getScriptCache().put('LOGIN_' + token, JSON.stringify(user), 21600); // 6 hours
+      if (typeof auditLog_ === 'function') auditLog_(user, 'Signed in', {});
 
       return {
         success: true,

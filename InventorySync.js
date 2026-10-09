@@ -127,6 +127,8 @@ function syncInventoryForDeal_(project, unitCode, dealStatus, opts) {
       dashCacheWrite_('INV_' + key, data);
     } catch (e) { console.warn('Inventory cache update: ' + e); }
 
+    auditLog_(opts.by || 'System', 'Inventory status changed', { project: cfg.project, unit: m.unitCode,
+      details: (current || '—') + ' → ' + value + ' (deal ' + dealText_(dealStatus) + ')', ref: m.sourceSheetName + ' row ' + m.sourceRow });
     return { changed: true, from: current, to: value, message: 'Inventory: ' + m.unitCode + ' ' + (current || '—') + ' → ' + value + '.' };
   } catch (err) {
     console.warn('syncInventoryForDeal_: ' + err);

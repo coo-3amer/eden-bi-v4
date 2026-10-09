@@ -135,6 +135,10 @@ function saveInstallmentSchedule(authToken, req) {
   } finally {
     lock.releaseLock();
   }
+  const main = rows.filter(r => !/^(down payment|maintenance)$/i.test(String(r.name || ''))).length;
+  const total = rows.reduce((t, r) => t + (Number(r.amount) || 0), 0);
+  auditLog_(user, 'Payment schedule saved', { project: req.project, unit: req.unitCode, client: req.client,
+    details: main + ' installments · total ' + Math.round(total).toLocaleString('en-US') + ' ' + dealText_(req.currency) + (Number(req.carryPaid) > 0 ? ' · down payment carried ' + Number(req.carryPaid).toLocaleString('en-US') : '') });
   return getInstallmentSchedule(authToken, req.project, req.unitCode);
 }
 
@@ -168,6 +172,10 @@ function recordInstallmentPayment(authToken, req) {
   } finally {
     lock.releaseLock();
   }
+  const inst = instRows_(instSheet_(INST_SHEET_, INST_HEAD_, false)).find(r => String(r[0]) === key && String(r[5]) === String(req.no));
+  auditLog_(user, 'Payment recorded', { project: req.project, unit: req.unitCode, client: inst ? String(inst[3] || '') : '',
+    details: Math.round(amount).toLocaleString('en-US') + ' on ' + (inst ? String(inst[6]) : '#' + req.no) + ' · ' + Utilities.formatDate(date, instTz_(), 'dd-MMM-yyyy') +
+      (req.method ? ' · ' + dealText_(req.method) : '') + (req.receipt ? ' · Receipt ' + dealText_(req.receipt) : ''), ref: '' });
   return getInstallmentSchedule(authToken, req.project, req.unitCode);
 }
 
@@ -184,7 +192,10 @@ function deleteInstallmentPayment(authToken, req) {
     const ids = sh.getLastRow() >= 2 ? sh.getRange(2, 1, sh.getLastRow() - 1, 1).getValues() : [];
     const i = ids.findIndex(r => String(r[0]) === String(req.id));
     if (i < 0) throw new Error('Payment not found.');
+    const old = sh.getRange(i + 2, 1, 1, INST_PAY_HEAD_.length).getValues()[0];
     sh.deleteRow(i + 2);
+    auditLog_(user, 'Payment deleted', { project: req.project, unit: req.unitCode,
+      details: Math.round(Number(old[5]) || 0).toLocaleString('en-US') + ' (installment ' + old[4] + ', paid ' + instDateOut_(old[6]) + (old[7] ? ', ' + old[7] : '') + (old[8] ? ', receipt ' + old[8] : '') + ')', ref: String(old[0]) });
   } finally {
     lock.releaseLock();
   }
