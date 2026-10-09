@@ -36,8 +36,20 @@ jobs:
           if [ -z "$CLASPRC_JSON" ]; then echo "::error::Add the CLASPRC_JSON secret (content of .clasprc.json) in GitHub → Settings → Secrets → Actions"; exit 1; fi
           printf '%s' "$CLASPRC_JSON" > "$HOME/.clasprc.json"
       - name: Push code (clasp)
-        run: npx --yes @google/clasp@3 push --force
+        run: |
+          set +e
+          out=$(npx --yes @google/clasp@3 push --force 2>&1); code=$?
+          echo "$out" | tail -40
+          if [ $code -ne 0 ]; then
+            msg=$(echo "$out" | tr '\n' ' ' | tail -c 900)
+            echo "::error title=clasp push failed::$msg"
+            exit $code
+          fi
       - name: New version + update the live deployment
         env:
           CLASPRC_PATH: /home/runner/.clasprc.json
-        run: node tools/deploy_appsscript.js
+        run: |
+          set +e
+          out=$(node tools/deploy_appsscript.js 2>&1); code=$?
+          echo "$out"
+          if [ $code -ne 0 ]; then echo "::error title=Deploy failed::$(echo "$out" | tr '\n' ' ' | tail -c 900)"; exit $code; fi
