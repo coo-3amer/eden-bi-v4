@@ -30,7 +30,7 @@
    payments recorded or deleted, Inventory status changes, sign-ins.
    ===================================================================== */
 const AL_={rows:[],q:'',action:'',user:'',from:'',to:''};
-const AL_COLORS_={'Deal added':'#2f9e62','Deal updated':'#3b6fd8','Deal status changed':'#7b5cc9','Payment recorded':'#2f9e62','Payment deleted':'#d64545','Payment schedule saved':'#b08a42','Inventory status changed':'#e0a526','Signed in':'#8a8a8a'};
+const AL_COLORS_={'Deal added':'#2f9e62','Deal updated':'#3b6fd8','Deal status changed':'#7b5cc9','Payment recorded':'#2f9e62','Payment deleted':'#d64545','Payment schedule saved':'#b08a42','Inventory status changed':'#e0a526','Signed in':'#8a8a8a','Sheet edit':'#5b6b7c','Sheet edit · Status':'#c2410c','Sheet edit (several cells)':'#5b6b7c'};
 function alEsc_(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function alIsAdmin_(){const r=String((typeof AUTH_USER!=='undefined'&&AUTH_USER&&AUTH_USER.role)||'').trim().toLowerCase();return r==='admin'||r==='super admin';}
 function alMount_(){

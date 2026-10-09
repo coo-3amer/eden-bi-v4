@@ -57,3 +57,48 @@ function getAuditLog(authToken, req) {
   }));
   return { rows: rows, total: total };
 }
+
+/* Hand edits in the Deals sheet (called by the LiveSync edit trigger). */
+function auditDealsSheetEdit_(e) {
+  try {
+    if (!e || !e.range) return;
+    const sheet = e.range.getSheet();
+    if (sheet.getSheetId() !== DEALS_GID) return;
+    const r0 = e.range.getRow(), c0 = e.range.getColumn(), nR = e.range.getNumRows(), nC = e.range.getNumColumns();
+    if (r0 + nR - 1 < DATA_START_ROW) return;                       // header rows
+    let who = '';
+    try { who = (e.user && e.user.getEmail && e.user.getEmail()) || ''; } catch (err) {}
+    const cols = mainDealsColumns_(sheet);
+    const heads = sheet.getRange(HEADER_ROW, 1, 1, cols.lastCol).getDisplayValues()[0];
+    const groups = HEADER_ROW > 1 ? sheet.getRange(HEADER_ROW - 1, 1, 1, cols.lastCol).getDisplayValues()[0] : [];
+    const groupOf = c => { for (let i = c - 1; i >= 0; i--) if (String(groups[i] || '').trim()) return String(groups[i]).trim(); return ''; };
+    const colName = c => {
+      const h = String(heads[c - 1] || '').replace(/\s+/g, ' ').trim() || ('Column ' + c);
+      const g = groupOf(c);
+      return g && !/^(client details|project details)$/i.test(g) ? g + ' › ' + h : h;
+    };
+    const rowInfo = row => {
+      const v = sheet.getRange(row, 1, 1, cols.lastCol).getDisplayValues()[0];
+      const at = names => { const c = mainDealsCol_(cols, names); return c ? String(v[c - 1] || '').trim() : ''; };
+      return { project: at(['Project']), unit: at(['Unit Code']), client: at(['Final Client Name', 'Client Name']) };
+    };
+    const first = Math.max(r0, DATA_START_ROW);
+    const info = rowInfo(first);
+    if (nR === 1 && nC === 1) {
+      const oldV = e.oldValue === undefined ? '' : String(e.oldValue);
+      const newV = e.value === undefined ? String(e.range.getDisplayValue() || '') : String(e.value);
+      if (oldV === newV) return;
+      const name = colName(c0);
+      auditLog_(who || 'Sheet user', /^status$/i.test(String(heads[c0 - 1] || '').trim()) ? 'Sheet edit · Status' : 'Sheet edit',
+        { project: info.project, unit: info.unit, client: info.client, details: name + ': ' + (oldV || '—') + ' → ' + (newV || '—'), ref: 'Deals row ' + r0 });
+    } else {
+      const last = r0 + nR - 1;
+      auditLog_(who || 'Sheet user', 'Sheet edit (several cells)', {
+        project: nR === 1 ? info.project : '', unit: nR === 1 ? info.unit : '', client: nR === 1 ? info.client : '',
+        details: (nR * nC) + ' cells changed · ' + colName(c0) + (nC > 1 ? ' … ' + colName(c0 + nC - 1) : ''),
+        ref: 'Deals rows ' + first + (last > first ? '–' + last : '') });
+    }
+  } catch (err) {
+    console.warn('auditDealsSheetEdit_: ' + err);
+  }
+}
