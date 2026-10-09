@@ -1,0 +1,176 @@
+<style id="eden-scorecard">
+.scBack{position:fixed;inset:0;z-index:430;background:rgba(10,8,6,.5);backdrop-filter:blur(2px)}
+.sc{position:fixed;inset:14px;z-index:431;display:flex;flex-direction:column;background:var(--ds-surface,#fffdf9);color:var(--ds-text,#2a2621);border-radius:18px;box-shadow:0 30px 80px rgba(0,0,0,.35);overflow:hidden}
+.scHead{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid var(--ds-line,#e8e0d1)}
+.scHead small{display:block;font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ds-gold,#b08a42)}
+.scHead h2{margin:0;font:600 22px/1.2 'Cormorant Garamond',Georgia,serif;color:var(--ds-heading,#16130f)}
+.scTools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-left:auto}
+.scTools input,.scTools select{height:34px;border:1px solid var(--ds-line);border-radius:10px;padding:0 10px;background:var(--ds-surface);color:var(--ds-text);font:inherit;font-size:13px}
+.scBtn{height:34px;padding:0 12px;border-radius:10px;border:1px solid var(--ds-gold-line,rgba(176,138,66,.32));background:var(--ds-gold-soft,rgba(176,138,66,.12));color:var(--ds-gold-strong,#8f6d2c);font-weight:700;font-size:12.5px;cursor:pointer;white-space:nowrap}
+.scBtn.scPrimary{background:var(--ds-gold,#b08a42);color:#fff;border-color:transparent}
+.scX{width:34px;height:34px;border-radius:10px;border:1px solid var(--ds-line);background:var(--ds-surface);font-size:20px;cursor:pointer;color:var(--ds-muted)}
+.scBody{flex:1;overflow:auto;padding:16px 18px 20px}
+.scKpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-bottom:16px}
+.scKpi{background:var(--ds-surface-2,#f9f5ee);border:1px solid var(--ds-line);border-radius:12px;padding:10px 12px}
+.scKpi span{display:block;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ds-muted)}
+.scKpi b{font-size:18px;color:var(--ds-heading);font-variant-numeric:tabular-nums}
+.scKpi small{display:block;font-size:11px;color:var(--ds-muted)}
+.scTable{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+.scTable th{position:sticky;top:-16px;background:var(--ds-surface);text-align:left;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ds-muted);padding:10px 8px;border-bottom:1px solid var(--ds-line);z-index:1}
+.scTable td{padding:9px 8px;border-bottom:1px solid var(--ds-line)}
+.scTable .num{text-align:right}
+.scRank{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--ds-surface-2);font-weight:800;font-size:11.5px}
+.scRank.r1{background:#e7c45c;color:#4a3700}.scRank.r2{background:#d5d7db}.scRank.r3{background:#e2b48d}
+.scBar{height:6px;border-radius:99px;background:var(--ds-surface-3,#f1ebe0);overflow:hidden;margin-top:4px;min-width:70px}
+.scBar i{display:block;height:100%;background:var(--c,#2f9e62)}
+.scBad{color:var(--ds-red,#d64545);font-weight:700}
+.scGood{color:var(--ds-green,#2f9e62);font-weight:700}
+.scNote{font-size:11.5px;color:var(--ds-muted);margin-top:12px;line-height:1.6}
+@media(max-width:760px){.sc{inset:0;border-radius:0}}
+</style>
+<script>
+/* =====================================================================
+   EDEN BI — Sales Scorecard (Transactions → Sales Scorecard)
+   One month, one row per salesperson: deals (shared = ½), value,
+   target and achievement, cancellations, days to close, down payment
+   collected, open reservations. Printable for everyone or per person.
+   ===================================================================== */
+const SC_={month:'',project:''};
+function scEsc_(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function scNum_(n,d=0){return Number(n||0).toLocaleString('en-US',{maximumFractionDigits:d});}
+function scShort_(n){n=Number(n)||0;const a=Math.abs(n);if(a>=1e6){let t=(n/1e6).toFixed(a>=1e8?0:2);return t.replace(/\.?0+$/,'')+'M';}if(a>=1e3)return Math.round(n/1e3).toLocaleString('en-US')+'K';return String(Math.round(n));}
+const SC_MONTHS_=['January','February','March','April','May','June','July','August','September','October','November','December'];
+function scCancelled_(s){return typeof isCancelledStatus_==='function'?isCancelledStatus_(s):/^cancel/i.test(String(s||''));}
+function scParseDate_(v){
+  const t=String(v||'').trim();if(!t)return null;let m;
+  const M={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,sept:8,oct:9,nov:10,dec:11};
+  if((m=t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/)))return new Date(+m[1],+m[2]-1,+m[3]);
+  if((m=t.match(/^(\d{1,2})[-\/ ]([A-Za-z]{3,4})[A-Za-z]*[-\/ ](\d{4})/))&&M[m[2].toLowerCase()]!=null)return new Date(+m[3],M[m[2].toLowerCase()],+m[1]);
+  if((m=t.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/)))return new Date(+m[3],+m[2]-1,+m[1]);
+  return null;
+}
+function scResDate_(r){const y=Number(r.year),m=Number(r.month);return y&&m?new Date(y,m-1,Number(r.day)||1):null;}
+function scTarget_(name,y,m,cur){
+  const key=cur==='USD'?'targetUSD':'targetEGP',n=typeof edenNormName_==='function'?edenNormName_(name):String(name).toLowerCase();
+  const all=(typeof TARGETS_DATA!=='undefined'?TARGETS_DATA:[]).filter(t=>String(t.scope||'').trim().toLowerCase()==='sales'&&
+    (typeof edenNormName_==='function'?edenNormName_(t.name):String(t.name).toLowerCase())===n&&Number(t.year)===y);
+  const val=l=>l.reduce((a,t)=>a+(Number(t[key])||0),0),per=p=>all.filter(t=>String(t.period||'Yearly').toLowerCase()===p);
+  const mo=val(per('monthly').filter(t=>String(t.month||'').trim().toLowerCase()===SC_MONTHS_[m-1].toLowerCase()));if(mo)return mo;
+  const q=val(per('quarterly').filter(t=>String(t.quarter||'').trim().toUpperCase()==='Q'+(Math.floor((m-1)/3)+1)));if(q)return q/3;
+  const yr=val(per('yearly'));return yr?yr/12:0;
+}
+function scCompute_(){
+  const [y,m]=SC_.month.split('-').map(Number);
+  const all=((typeof rawRows!=='undefined'&&rawRows)||[]).filter(r=>!SC_.project||String(r.project||'')===SC_.project);
+  const inMonth=r=>Number(r.year)===y&&Number(r.month)===m;
+  const credit=typeof salesCreditRows_==='function'?salesCreditRows_(all.filter(inMonth)):all.filter(inMonth).map(r=>({...r,dealCredit:1}));
+  const map=new Map();
+  const get=name=>{const k=String(name||'').trim()||'Not Assigned';if(!map.has(k))map.set(k,{name:k,deals:0,cancel:0,total:0,EGP:0,USD:0,paidEGP:0,paidUSD:0,days:[],open:0});return map.get(k);};
+  credit.forEach(r=>{
+    const s=get(r.salesName),c=Number(r.dealCredit)||1,cur=typeof projectCurrency_==='function'?projectCurrency_(r):'EGP';
+    s.total+=c;
+    if(scCancelled_(r.status)){s.cancel+=c;return;}
+    s.deals+=c;s[cur]+=Number(r.amount)||0;
+    s['paid'+cur]+=(Number(r.actualPaid)||0)*c;
+    const st=typeof dealStage_==='function'?dealStage_(r):String(r.status||'').toLowerCase();
+    if(st==='reservation')s.open+=c;
+    const rd=scResDate_(r),cd=scParseDate_(r.contractDate)||scParseDate_(r.clientSignDate);
+    if(rd&&cd&&cd>=rd)s.days.push((cd-rd)/864e5);
+  });
+  map.delete('Not Assigned');
+  const list=[...map.values()].map(s=>{
+    const cur=s.EGP||!s.USD?'EGP':'USD';
+    const tgt=scTarget_(s.name,y,m,cur);
+    return {...s,cur,value:s[cur],target:tgt,pct:tgt?s[cur]/tgt*100:null,cancelRate:s.total?s.cancel/s.total*100:0,
+      avgDays:s.days.length?s.days.reduce((a,b)=>a+b,0)/s.days.length:null};
+  }).sort((a,b)=>(b.EGP-a.EGP)||(b.USD-a.USD)||(b.deals-a.deals));
+  return {y,m,list};
+}
+function scMount_(){
+  const menu=document.querySelector('#transactionsModule .moduleMenu');
+  if(!menu||menu.querySelector('[data-sc]'))return;
+  const b=document.createElement('button');b.type='button';b.dataset.sc='1';b.textContent='Sales Scorecard';b.addEventListener('click',scOpen_);
+  const after=[...menu.querySelectorAll('button')].find(x=>/targets/i.test(x.textContent));
+  if(after)after.insertAdjacentElement('afterend',b);else menu.appendChild(b);
+}
+function scOpen_(){
+  scClose_();
+  const now=new Date();if(!SC_.month)SC_.month=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const projects=[...new Set(((typeof rawRows!=='undefined'&&rawRows)||[]).map(r=>String(r.project||'').trim()).filter(Boolean))].sort();
+  const back=document.createElement('div');back.className='scBack';back.id='scBack';back.addEventListener('click',scClose_);
+  const el=document.createElement('section');el.className='sc';el.id='sc';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');
+  el.innerHTML=`<div class="scHead"><div><small>Transactions</small><h2>Sales Scorecard</h2></div>
+    <div class="scTools"><input type="month" data-f="month" value="${SC_.month}">
+      <select data-f="project"><option value="">All projects</option>${projects.map(p=>`<option${p===SC_.project?' selected':''}>${scEsc_(p)}</option>`).join('')}</select>
+      <button type="button" class="scBtn scPrimary" data-a="pdf">🖨 Report PDF</button><button type="button" class="scX" aria-label="Close">×</button></div></div>
+    <div class="scBody"></div>`;
+  document.body.append(back,el);
+  el.querySelector('.scX').addEventListener('click',scClose_);
+  el.querySelectorAll('[data-f]').forEach(i=>i.addEventListener('change',()=>{SC_[i.dataset.f]=i.value;scRender_();}));
+  el.querySelector('[data-a="pdf"]').addEventListener('click',()=>scPrint_(null));
+  document.addEventListener('keydown',scKey_);
+  scRender_();
+}
+function scClose_(){document.getElementById('sc')?.remove();document.getElementById('scBack')?.remove();document.removeEventListener('keydown',scKey_);}
+function scKey_(e){if(e.key==='Escape')scClose_();}
+function scRender_(){
+  const el=document.getElementById('sc');if(!el||!SC_.month)return;
+  const {y,m,list}=scCompute_();
+  const sum=k=>list.reduce((a,s)=>a+(Number(s[k])||0),0);
+  const deals=sum('deals'),cancel=sum('cancel'),total=sum('total');
+  const days=list.flatMap(s=>s.days);
+  const body=el.querySelector('.scBody');
+  body.innerHTML=`<div class="scKpis">
+    <div class="scKpi"><span>Deals</span><b>${scNum_(deals,1)}</b><small>${SC_MONTHS_[m-1]} ${y}</small></div>
+    <div class="scKpi"><span>Value EGP</span><b>${scShort_(sum('EGP'))}</b><small>after 50/50 shares</small></div>
+    <div class="scKpi"><span>Value USD</span><b>${scShort_(sum('USD'))}</b><small>after 50/50 shares</small></div>
+    <div class="scKpi"><span>Cancellation rate</span><b class="${total&&cancel/total>.2?'scBad':''}">${total?Math.round(cancel/total*100):0}%</b><small>${scNum_(cancel,1)} of ${scNum_(total,1)} deals</small></div>
+    <div class="scKpi"><span>Avg days to sign</span><b>${days.length?Math.round(days.reduce((a,b)=>a+b,0)/days.length):'—'}</b><small>reservation → contract</small></div>
+    <div class="scKpi"><span>Open reservations</span><b>${scNum_(sum('open'),1)}</b><small>not paid / signed yet</small></div>
+  </div>
+  ${list.length?`<table class="scTable"><thead><tr><th>#</th><th>Salesperson</th><th class="num">Deals</th><th class="num">Value</th><th class="num">Target</th><th>Achieved</th><th class="num">Cancel rate</th><th class="num">Avg days to sign</th><th class="num">DP collected</th><th class="num">Open res.</th><th></th></tr></thead><tbody>
+  ${list.map((s,i)=>`<tr><td><span class="scRank r${i+1}">${i+1}</span></td><td><b>${scEsc_(s.name)}</b></td>
+    <td class="num">${scNum_(s.deals,1)}</td><td class="num">${scNum_(s.value)} <small>${s.cur}</small></td>
+    <td class="num">${s.target?scNum_(s.target):'—'}</td>
+    <td>${s.pct==null?'<small style="color:var(--ds-muted)">No target</small>':`<b class="${s.pct>=100?'scGood':s.pct<50?'scBad':''}">${Math.round(s.pct)}%</b><div class="scBar"><i style="width:${Math.min(100,s.pct)}%;--c:${s.pct>=100?'#2f9e62':s.pct<50?'#d64545':'#b08a42'}"></i></div>`}</td>
+    <td class="num ${s.cancelRate>20?'scBad':''}">${Math.round(s.cancelRate)}%</td>
+    <td class="num">${s.avgDays==null?'—':Math.round(s.avgDays)}</td>
+    <td class="num">${scNum_(s['paid'+s.cur])} <small>${s.cur}</small></td><td class="num">${scNum_(s.open,1)}</td>
+    <td><button type="button" class="scBtn" data-print="${scEsc_(s.name)}">PDF</button></td></tr>`).join('')}
+  </tbody></table>`:`<div class="scNote" style="text-align:center;padding:30px">No deals in ${SC_MONTHS_[m-1]} ${y}.</div>`}
+  <div class="scNote">Deals and value count shared deals as ½ for each salesperson (same as Top Sales). Cancellation rate = cancelled ÷ all deals made in the month.
+  Days to sign = reservation date → contract date (or client sign date). DP collected = “Actual Paid” on the month’s deals. Targets come from the Targets page (monthly, or quarter ÷ 3, or year ÷ 12).</div>`;
+  body.querySelectorAll('[data-print]').forEach(b=>b.addEventListener('click',()=>scPrint_(b.dataset.print)));
+}
+function scPrint_(only){
+  const {y,m,list}=scCompute_();
+  const rows=only?list.filter(s=>s.name===only):list;
+  const proj=SC_.project||'All projects',title=only?`${only} — ${SC_MONTHS_[m-1]} ${y}`:`Sales Scorecard — ${SC_MONTHS_[m-1]} ${y}`;
+  const deals=((typeof rawRows!=='undefined'&&rawRows)||[]).filter(r=>Number(r.year)===y&&Number(r.month)===m&&(!SC_.project||r.project===SC_.project)&&only&&
+    ((typeof salesMatchesDeal_==='function')?salesMatchesDeal_(r,[only]):r.salesName===only));
+  const html=`<!doctype html><html><head><meta charset="utf-8"><title>${scEsc_(title)}</title><style>
+*{box-sizing:border-box}body{font:12px/1.45 Inter,Segoe UI,Arial,sans-serif;color:#1f1b16;margin:28px}
+.top{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #b08a42;padding-bottom:12px;margin-bottom:16px}
+.brand{font:700 26px/1 Georgia,serif;letter-spacing:.18em}.brand small{display:block;font:600 9px/1.6 Arial;letter-spacing:.42em;color:#8f6d2c}
+h1{margin:0;font:600 19px Georgia,serif;text-align:right}h1 small{display:block;font:12px Arial;color:#83796b}
+table{width:100%;border-collapse:collapse;margin-top:8px}th{background:#f3ece0;text-align:left;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;padding:6px 8px}td{padding:6px 8px;border-bottom:1px solid #eee3d2}.n{text-align:right;font-variant-numeric:tabular-nums}
+.k{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:8px 0 14px}.k div{border:1px solid #e8e0d1;border-radius:8px;padding:8px 10px;background:#faf6ef}.k span{display:block;font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#83796b}.k b{font-size:15px}
+h2{font-size:13px;margin:16px 0 4px}.foot{margin-top:20px;font-size:10.5px;color:#83796b}
+@media print{body{margin:12mm}.noprint{display:none}tr{page-break-inside:avoid}}.noprint{position:fixed;bottom:16px;right:16px}.noprint button{font:600 13px Arial;padding:8px 14px;border-radius:8px;border:0;background:#b08a42;color:#fff;cursor:pointer}
+</style></head><body><div class="noprint"><button onclick="window.print()">Print / Save as PDF</button></div>
+<div class="top"><div class="brand">EDEN<small>DEVELOPMENT</small></div><h1>${scEsc_(title)}<small>${scEsc_(proj)} · printed ${new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</small></h1></div>
+${only&&rows[0]?`<div class="k"><div><span>Deals</span><b>${scNum_(rows[0].deals,1)}</b></div><div><span>Value</span><b>${scNum_(rows[0].value)} ${rows[0].cur}</b></div><div><span>Target</span><b>${rows[0].target?scNum_(rows[0].target):'—'}</b></div><div><span>Achieved</span><b>${rows[0].pct==null?'—':Math.round(rows[0].pct)+'%'}</b></div><div><span>Cancel rate</span><b>${Math.round(rows[0].cancelRate)}%</b></div></div>`:''}
+<table><thead><tr><th>#</th><th>Salesperson</th><th class="n">Deals</th><th class="n">Value</th><th class="n">Target</th><th class="n">Achieved</th><th class="n">Cancel rate</th><th class="n">Avg days to sign</th><th class="n">DP collected</th><th class="n">Open res.</th></tr></thead><tbody>
+${rows.map((s,i)=>`<tr><td>${only?'':i+1}</td><td><b>${scEsc_(s.name)}</b></td><td class="n">${scNum_(s.deals,1)}</td><td class="n">${scNum_(s.value)} ${s.cur}</td><td class="n">${s.target?scNum_(s.target):'—'}</td><td class="n">${s.pct==null?'—':Math.round(s.pct)+'%'}</td><td class="n">${Math.round(s.cancelRate)}%</td><td class="n">${s.avgDays==null?'—':Math.round(s.avgDays)}</td><td class="n">${scNum_(s['paid'+s.cur])} ${s.cur}</td><td class="n">${scNum_(s.open,1)}</td></tr>`).join('')}
+</tbody></table>
+${only&&deals.length?`<h2>Deals in ${SC_MONTHS_[m-1]} ${y}</h2><table><thead><tr><th>Date</th><th>Client</th><th>Project · Unit</th><th>Status</th><th>Share</th><th class="n">Final price</th></tr></thead><tbody>
+${deals.map(r=>`<tr><td>${scEsc_(String(r.day||'').padStart(2,'0'))}-${scEsc_(SC_MONTHS_[m-1].slice(0,3))}</td><td>${scEsc_(r.clientName)}</td><td>${scEsc_(r.project)} · ${scEsc_(r.unitCode)}</td><td>${scEsc_(r.status)}</td><td>${typeof isShareDeal_==='function'&&isShareDeal_(r)?'50/50 with '+scEsc_(r.salesName===only?r.sharedWith:r.salesName):'Solo'}</td><td class="n">${scNum_(r.amount)}</td></tr>`).join('')}</tbody></table>`:''}
+<div class="foot">Shared deals count ½ per salesperson. Cancellation rate = cancelled ÷ all deals of the month. EDEN Development · EDEN BI</div></body></html>`;
+  const w=window.open('','_blank');if(!w){alert('Allow pop-ups for this site to open the report.');return;}
+  w.document.open();w.document.write(html);w.document.close();setTimeout(()=>{try{w.focus();w.print();}catch(e){}},400);
+}
+(function(){
+  const go=()=>scMount_();
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();
+})();
+</script>
