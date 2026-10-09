@@ -35,6 +35,8 @@ jobs:
         run: |
           if [ -z "$CLASPRC_JSON" ]; then echo "::error::Add the CLASPRC_JSON secret (content of .clasprc.json) in GitHub → Settings → Secrets → Actions"; exit 1; fi
           printf '%s' "$CLASPRC_JSON" > "$HOME/.clasprc.json"
+          # Shows only the shape of the file (key names), never the values.
+          node -e 'try{const j=JSON.parse(require("fs").readFileSync(process.env.HOME+"/.clasprc.json","utf8"));const k=o=>o&&typeof o==="object"?Object.keys(o):[];console.log("::notice title=Secret shape::top keys: "+k(j).join(", ")+" | tokens: "+k(j.tokens).join(", ")+" | token: "+k(j.token).join(", "))}catch(e){console.log("::error title=Secret is not valid JSON::"+e.message+" (length "+(process.env.CLASPRC_JSON||"").length+")")}'
       - name: Push code (clasp)
         run: |
           set +e
