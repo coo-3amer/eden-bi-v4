@@ -201,7 +201,7 @@ function bcRenderCompany_(body,list){
   <table class="bcTable"><thead><tr><th>Reserved</th><th>Client</th><th>Project · Unit</th><th>Status</th><th class="num bcHide">Final price</th><th class="num">Rate</th><th class="num">Commission</th><th class="num">Paid</th><th class="num">Remaining</th><th></th></tr></thead><tbody>`;
   sorted.forEach(x=>{
     const r=x.r,i=list.indexOf(x);
-    const rateTxt=x.o&&x.o.amount!=null?'<small class="bcMuted">fixed</small>':x.rate!=null?bcNum_(x.rate,2)+'%'+(x.o&&x.o.rate!=null?' <small class="bcMuted">deal</small>':''):'<span class="bcWarn">no rate</span>';
+    const rateTxt=x.o&&x.o.amount!=null?(x.price?bcNum_(x.o.amount/x.price*100,2)+'%':'')+' <small class="bcMuted">fixed amount</small>':x.rate!=null?bcNum_(x.rate,2)+'%'+(x.o&&x.o.rate!=null?' <small class="bcMuted">deal</small>':''):'<span class="bcWarn">no rate</span>';
     html+=`<tr><td>${bcFmt_(bcResDate_(r))}</td><td>${bcEsc_(r.clientName||'')}</td><td>${bcEsc_(r.project)} · <b>${bcEsc_(r.unitCode)}</b></td>
       <td><span class="bcTag ${x.s.k}">${bcEsc_(x.s.label)}</span>${x.over&&x.s.k==='due'?`<br><small class="bcWarn">paid more than the commission</small>`:''}${x.early||(x.over&&x.s.k!=='due')?`<br><small class="bcWarn">paid before it was due</small>`:''}</td>
       <td class="num bcHide">${bcNum_(x.price)} <small class="bcMuted">${bcEsc_(x.cur)}</small></td><td class="num">${rateTxt}</td>
@@ -214,15 +214,16 @@ function bcRenderCompany_(body,list){
         <label>Method<select data-p="method"><option>Bank transfer</option><option>Cheque</option><option>Cash</option><option>InstaPay</option><option>Other</option></select></label>
         <label>Reference / cheque no.<input data-p="ref"></label>
         <label>Notes<input data-p="notes"></label>
+        ${x.comm==null&&x.price?`<label style="text-transform:none;letter-spacing:0;font-size:12px;flex-direction:row;align-items:center;gap:6px;color:var(--ds-text)"><input type="checkbox" data-p="setComm" checked style="width:auto;height:auto"> Make this the commission of this deal <b data-p="pctOut" class="bcMuted"></b></label>`:''}
         <button type="button" class="bcBtn bcPrimary" data-a="savePay" data-i="${i}">Save payment</button><button type="button" class="bcBtn bcGhost" data-a="cancel">Cancel</button><span class="bcMsg"></span></div></td></tr>`;
     }
     if(BC_.edit===x.key){
       html+=`<tr><td colspan="10"><div class="bcForm" data-form="edit">
-        <label>Rate for this deal %<input data-e="rate" inputmode="decimal" placeholder="${rv===''?'—':bcEsc_(rv)+' (company)'}" value="${x.o&&x.o.rate!=null?bcEsc_(x.o.rate):''}"></label>
-        <label>or fixed amount (${bcEsc_(x.cur)})<input data-e="amount" inputmode="decimal" value="${x.o&&x.o.amount!=null?bcEsc_(x.o.amount):''}"></label>
+        <label>Commission amount (${bcEsc_(x.cur)})<input data-e="amount" inputmode="decimal" value="${x.o&&x.o.amount!=null?bcEsc_(Math.round(x.o.amount)):x.o&&x.o.rate!=null&&x.price?Math.round(x.price*x.o.rate/100):''}"></label>
+        <label>= Rate %<input data-e="rate" inputmode="decimal" placeholder="${rv===''?'—':bcEsc_(rv)+' (company)'}" value="${x.o&&x.o.rate!=null?bcEsc_(x.o.rate):x.o&&x.o.amount!=null&&x.price?(Math.round(x.o.amount/x.price*10000)/100):''}"></label>
         <label>Notes<input data-e="notes" style="width:220px" value="${bcEsc_(x.o?x.o.notes:'')}"></label>
         <button type="button" class="bcBtn bcPrimary" data-a="saveEdit" data-i="${i}">Save</button><button type="button" class="bcBtn bcGhost" data-a="cancel">Cancel</button>
-        <span class="bcMsg">Leave both empty to use the company rate again.</span></div></td></tr>`;
+        <span class="bcMsg">Type the amount and the % fills in by itself (or the other way round). Final price ${bcNum_(x.price)} ${bcEsc_(x.cur)}. Leave both empty to use the company rate again.</span></div></td></tr>`;
     }
   });
   html+=`</tbody></table>
@@ -239,20 +240,42 @@ function bcRenderCompany_(body,list){
   body.querySelectorAll('[data-pay]').forEach(b=>b.addEventListener('click',()=>{const x=list[+b.dataset.pay];BC_.edit=null;BC_.pay=BC_.pay===x.key?null:x.key;bcRender_();body.querySelector('[data-p="amount"]')?.focus();}));
   body.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click',()=>{const x=list[+b.dataset.edit];BC_.pay=null;BC_.edit=BC_.edit===x.key?null:x.key;bcRender_();body.querySelector('[data-e="rate"]')?.focus();}));
   body.querySelectorAll('[data-a="cancel"]').forEach(b=>b.addEventListener('click',()=>{BC_.pay=BC_.edit=null;bcRender_();}));
+  const ef=body.querySelector('[data-form="edit"]');
+  if(ef){
+    const x=list[+ef.querySelector('[data-a="saveEdit"]').dataset.i],ea=ef.querySelector('[data-e="amount"]'),er=ef.querySelector('[data-e="rate"]');
+    const n=v=>Number(String(v||'').replace(/[,%\s]/g,''));
+    ea.addEventListener('input',()=>{ef.dataset.last='amount';const a=n(ea.value);er.value=a>0&&x.price?String(Math.round(a/x.price*10000)/100):'';});
+    er.addEventListener('input',()=>{ef.dataset.last='rate';const r=n(er.value);ea.value=r>0&&x.price?String(Math.round(x.price*r/100)):'';});
+  }
+  const pf=body.querySelector('[data-form="pay"]');
+  if(pf&&pf.querySelector('[data-p="pctOut"]')){
+    const x=list[+pf.querySelector('[data-a="savePay"]').dataset.i],pa=pf.querySelector('[data-p="amount"]'),out=pf.querySelector('[data-p="pctOut"]');
+    const upd=()=>{const a=Number(String(pa.value||'').replace(/[,\s]/g,''));out.textContent=a>0&&x.price?'(= '+bcNum_(a/x.price*100,2)+'% of '+bcNum_(x.price)+')':'';};
+    pa.addEventListener('input',upd);upd();
+  }
   const sp=body.querySelector('[data-a="savePay"]');
   if(sp)sp.addEventListener('click',()=>{
     const x=list[+sp.dataset.i],f=sp.closest('.bcForm'),g=k=>f.querySelector(`[data-p="${k}"]`).value.trim(),msg=f.querySelector('.bcMsg');
     const amt=Number(g('amount').replace(/,/g,''));
     if(!(amt>0)){msg.className='bcMsg err';msg.textContent='Enter the amount paid.';return;}
-    if(x.comm==null&&!confirm('This company has no commission rate yet, so the system can’t check this amount. Record the payment anyway?'))return;
+    const setComm=f.querySelector('[data-p="setComm"]')?.checked;
+    if(x.comm==null&&!setComm&&!confirm('This deal has no commission rate yet, so the system can’t check this amount. Record the payment anyway?'))return;
+    const pay={company:x.company,project:x.r.project,unitCode:x.r.unitCode,client:x.r.clientName,amount:amt,currency:x.cur,date:g('date'),method:g('method'),ref:g('ref'),notes:g('notes')};
+    if(x.comm==null&&setComm){
+      if(BC_.busy)return;BC_.busy=true;msg.className='bcMsg';msg.textContent='Saving…';
+      google.script.run.withSuccessHandler(()=>{BC_.busy=false;bcCall_('recordBrokerPayout',pay,msg);})
+        .withFailureHandler(err=>{BC_.busy=false;msg.className='bcMsg err';msg.textContent=err&&err.message||String(err);})
+        .saveBrokerDealCommission(AUTH_TOKEN,{company:x.company,project:x.r.project,unitCode:x.r.unitCode,dealRow:x.r.row,rate:'',amount:String(amt),notes:'Set from the payment'});
+      return;
+    }
     if(x.comm!=null&&x.paid+amt>x.comm+0.5&&!confirm(`This makes the total paid ${bcNum_(x.paid+amt)}, more than the commission (${bcNum_(x.comm)}). Save anyway?`))return;
-    bcCall_('recordBrokerPayout',{company:x.company,project:x.r.project,unitCode:x.r.unitCode,client:x.r.clientName,amount:amt,currency:x.cur,date:g('date'),method:g('method'),ref:g('ref'),notes:g('notes')},msg);
+    bcCall_('recordBrokerPayout',pay,msg);
   });
   const se=body.querySelector('[data-a="saveEdit"]');
   if(se)se.addEventListener('click',()=>{
     const x=list[+se.dataset.i],f=se.closest('.bcForm'),g=k=>f.querySelector(`[data-e="${k}"]`).value.trim().replace(/[,%]/g,''),msg=f.querySelector('.bcMsg');
-    if(g('rate')&&g('amount')){msg.className='bcMsg err';msg.textContent='Fill either the rate or the fixed amount, not both.';return;}
-    bcCall_('saveBrokerDealCommission',{company:x.company,project:x.r.project,unitCode:x.r.unitCode,dealRow:x.r.row,rate:g('rate'),amount:g('amount'),notes:f.querySelector('[data-e="notes"]').value.trim()},msg);
+    const useAmount=f.dataset.last==='amount'||(!f.dataset.last&&x.o&&x.o.amount!=null);
+    bcCall_('saveBrokerDealCommission',{company:x.company,project:x.r.project,unitCode:x.r.unitCode,dealRow:x.r.row,rate:useAmount?'':g('rate'),amount:useAmount?g('amount'):'',notes:f.querySelector('[data-e="notes"]').value.trim()},msg);
   });
   body.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{
     const p=pays.find(q=>q.id===b.dataset.del);
