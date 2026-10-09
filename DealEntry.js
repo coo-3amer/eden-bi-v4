@@ -484,7 +484,8 @@ function saveNewDeal(authToken, payload) {
       details: ['Status ' + dealText_(payload.status), payload.salesName ? 'Sales ' + dealText_(payload.salesName) : '',
         payload.finalPrice ? 'Final price ' + dealText_(payload.finalPrice) : ''].filter(Boolean).join(' · ') +
         (saved.rejected && saved.rejected.length ? ' · Not saved: ' + saved.rejected.join('; ') : ''),
-      ref: 'Deals row ' + saved.row + (saved.dealNum ? ' · #' + saved.dealNum : '') });
+      ref: 'Deals row ' + saved.row + (saved.dealNum ? ' · #' + saved.dealNum : ''),
+      discount: dealNumber_(payload.discountPercent) || (dealNumber_(unit.totalPrice) && dealNumber_(payload.finalPrice) ? (1 - dealNumber_(payload.finalPrice) / dealNumber_(unit.totalPrice)) * 100 : 0) });
     clearDashboardCache_();
     const ref = saved.dealNum ? 'Deal #' + saved.dealNum : 'The deal';
     const result = {

@@ -36,6 +36,7 @@ function auditLog_(user, action, info) {
   } catch (e) {
     console.warn('auditLog_: ' + e);
   }
+  if (typeof notifyFromAudit_ === 'function') notifyFromAudit_(typeof user === 'string' ? user : (user && (user.name || user.username)) || '', action, info || {});
 }
 
 /* Admins: the latest entries, newest first. */

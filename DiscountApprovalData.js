@@ -87,9 +87,6 @@ function decideDiscount(authToken, req) {
 
   auditLog_(user, 'Discount ' + decision.toLowerCase(), { project: req.project, unit: req.unitCode, client: req.client,
     details: 'Discount ' + (Number(req.discount) || 0) + '%' + (reason ? ' · ' + reason : ''), ref: 'Deals row ' + row });
-  if (typeof notifyTelegram_ === 'function') {
-    try { notifyTelegram_((decision === 'Approved' ? '✅' : '⛔') + ' Discount ' + decision.toLowerCase() + ' — ' + req.project + ' ' + req.unitCode + ' (' + (Number(req.discount) || 0) + '%) by ' + who + (reason ? '\n' + reason : '')); } catch (e) {}
-  }
   const out = getDiscountApprovals(authToken);
   out.message = msg;
   return out;
