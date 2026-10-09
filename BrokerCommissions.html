@@ -78,7 +78,7 @@ function bcDeals_(){
     const comm=o&&o.amount!=null?o.amount:(rate!=null?price*rate/100:null);
     const s=bcState_(r),paid=paidBy[key+'#'+ck]||0;
     const due=s.k==='due'&&comm!=null?comm:0;
-    return {r,company,ck,key,o,rate,price,comm,s,paid,due,remaining:s.k==='due'&&comm!=null?Math.max(0,comm-paid):0,over:paid>(s.k==='due'&&comm!=null?comm:0)+0.5,cur:bcCur_(r)};
+    return {r,company,ck,key,o,rate,price,comm,s,paid,due,remaining:s.k==='due'&&comm!=null?Math.max(0,comm-paid):0,over:comm!=null&&paid>(s.k==='due'?comm:0)+0.5,early:comm!=null&&s.k!=='due'&&paid>0,cur:bcCur_(r)};
   }).filter(x=>!BC_.project||x.r.project===BC_.project);
 }
 function bcCompanies_(list){
@@ -190,6 +190,7 @@ function bcRenderCompany_(body,list){
     <span class="bcMuted" style="font-size:12.5px">Rate</span><input class="bcRate${rv===''?' bcMissing':''}" data-rate="${bcEsc_(company)}" inputmode="decimal" placeholder="—" value="${bcEsc_(rv)}"><span class="bcMuted">%</span>
     ${rate&&rate.by?`<small class="bcMuted">set by ${bcEsc_(rate.by)} · ${bcFmt_(rate.at)}</small>`:''}
     <button type="button" class="bcBtn bcPrimary" data-a="stmt" style="margin-left:auto">🧾 Statement PDF</button></div>
+  ${rv===''?`<div class="bcForm" style="border-color:rgba(214,69,69,.45);display:block;font-size:12.5px;line-height:1.6"><b class="bcWarn">⚠️ No commission rate for ${bcEsc_(company)} yet.</b> Type the rate in the red <b>Rate</b> box above (for example <b>2.5</b>) and press <b>Enter</b>. Until then the system can’t work out the commission, so Due and Remaining stay empty${pays.length?' — the payments already recorded are kept and will be counted once the rate is set':''}.</div>`:''}
   <div class="bcKpis">
     <div class="bcKpi"><span>Deals</span><b>${c.active}</b><small>${c.deals-c.active?c.deals-c.active+' cancelled':'active'}</small></div>
     <div class="bcKpi"><span>Due</span><b>${bcMoney_(c.cur,'due')}</b></div>
@@ -202,7 +203,7 @@ function bcRenderCompany_(body,list){
     const r=x.r,i=list.indexOf(x);
     const rateTxt=x.o&&x.o.amount!=null?'<small class="bcMuted">fixed</small>':x.rate!=null?bcNum_(x.rate,2)+'%'+(x.o&&x.o.rate!=null?' <small class="bcMuted">deal</small>':''):'<span class="bcWarn">no rate</span>';
     html+=`<tr><td>${bcFmt_(bcResDate_(r))}</td><td>${bcEsc_(r.clientName||'')}</td><td>${bcEsc_(r.project)} · <b>${bcEsc_(r.unitCode)}</b></td>
-      <td><span class="bcTag ${x.s.k}">${bcEsc_(x.s.label)}</span>${x.over?`<br><small class="bcWarn">paid more than due</small>`:''}</td>
+      <td><span class="bcTag ${x.s.k}">${bcEsc_(x.s.label)}</span>${x.over&&x.s.k==='due'?`<br><small class="bcWarn">paid more than the commission</small>`:''}${x.early||(x.over&&x.s.k!=='due')?`<br><small class="bcWarn">paid before it was due</small>`:''}</td>
       <td class="num bcHide">${bcNum_(x.price)} <small class="bcMuted">${bcEsc_(x.cur)}</small></td><td class="num">${rateTxt}</td>
       <td class="num">${x.comm==null?'—':bcNum_(x.comm)}</td><td class="num">${x.paid?bcNum_(x.paid):'—'}</td><td class="num"><b>${x.s.k==='due'&&x.comm!=null?bcNum_(x.remaining):'—'}</b></td>
       <td style="white-space:nowrap"><button type="button" class="bcBtn bcSm" data-pay="${i}"${x.s.k==='cancel'?' disabled':''}>Pay</button> <button type="button" class="bcBtn bcSm bcGhost" data-edit="${i}" title="Different rate or fixed amount for this deal">Edit</button></td></tr>`;
@@ -243,6 +244,7 @@ function bcRenderCompany_(body,list){
     const x=list[+sp.dataset.i],f=sp.closest('.bcForm'),g=k=>f.querySelector(`[data-p="${k}"]`).value.trim(),msg=f.querySelector('.bcMsg');
     const amt=Number(g('amount').replace(/,/g,''));
     if(!(amt>0)){msg.className='bcMsg err';msg.textContent='Enter the amount paid.';return;}
+    if(x.comm==null&&!confirm('This company has no commission rate yet, so the system can’t check this amount. Record the payment anyway?'))return;
     if(x.comm!=null&&x.paid+amt>x.comm+0.5&&!confirm(`This makes the total paid ${bcNum_(x.paid+amt)}, more than the commission (${bcNum_(x.comm)}). Save anyway?`))return;
     bcCall_('recordBrokerPayout',{company:x.company,project:x.r.project,unitCode:x.r.unitCode,client:x.r.clientName,amount:amt,currency:x.cur,date:g('date'),method:g('method'),ref:g('ref'),notes:g('notes')},msg);
   });
