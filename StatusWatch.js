@@ -8,7 +8,8 @@
  * and compares it with the last Status seen (kept in the hidden tab
  * "_Status Seen"). When it differs:
  *   - Activity Log + Telegram: "Deal status changed (sheet)"
- *   - the unit's Inventory status follows (InventorySync rules)
+ *   (The Inventory is not touched by hand edits in the sheet — only deals
+ *    added / updated from the system move the unit's status.)
  * Called by LiveSync.onDataSheetEdit for edits in the Deals tab.
  ************************************************/
 
@@ -77,9 +78,7 @@ function watchDealStatus_(e) {
           auditLog_(who || 'Sheet user', 'Deal status changed (sheet)', { project: project, unit: unit, client: client,
             details: 'Status: ' + old[i] + ' → ' + (S[i] || '—'), ref: 'Deals row ' + row });
         }
-        if (project && unit && S[i] && typeof syncInventoryForDeal_ === 'function') {
-          syncInventoryForDeal_(project, unit, S[i], { by: who ? 'sheet edit by ' + who : 'sheet edit' });
-        }
+        // Inventory is NOT changed from hand edits in the Deals sheet (owner's decision).
       });
     } finally { lock.releaseLock(); }
   } catch (err) {
