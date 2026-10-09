@@ -1,0 +1,167 @@
+<style id="eden-discount-approvals">
+.daBack{position:fixed;inset:0;z-index:430;background:rgba(10,8,6,.5);backdrop-filter:blur(2px)}
+.da{position:fixed;inset:14px;z-index:431;display:flex;flex-direction:column;background:var(--ds-surface,#fffdf9);color:var(--ds-text,#2a2621);border-radius:18px;box-shadow:0 30px 80px rgba(0,0,0,.35);overflow:hidden}
+.daHead{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid var(--ds-line,#e8e0d1);position:relative}
+.daHead small{display:block;font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ds-gold,#b08a42)}
+.daHead h2{margin:0;font:600 22px/1.2 'Cormorant Garamond',Georgia,serif;color:var(--ds-heading,#16130f)}
+.daTools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-left:auto}
+.da input,.da select{height:34px;border:1px solid var(--ds-line,#e8e0d1);border-radius:10px;padding:0 10px;background:var(--ds-surface,#fff);color:var(--ds-text);font:inherit;font-size:13px}
+.daTabs{display:flex;gap:6px;padding:12px 18px 0;flex-wrap:wrap}
+.daTab{height:32px;padding:0 14px;border-radius:99px;border:1px solid var(--ds-line,#e8e0d1);background:transparent;color:var(--ds-muted,#83796b);font-weight:700;font-size:12.5px;cursor:pointer}
+.daTab.on{background:var(--ds-gold,#b08a42);border-color:transparent;color:#fff}
+.daTab b{font-variant-numeric:tabular-nums;margin-left:4px}
+.daBtn{height:30px;padding:0 11px;border-radius:9px;border:1px solid var(--ds-gold-line,rgba(176,138,66,.32));background:var(--ds-gold-soft,rgba(176,138,66,.12));color:var(--ds-gold-strong,#8f6d2c);font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap}
+.daBtn.ok{background:#2f9e62;border-color:transparent;color:#fff}
+.daBtn.no{background:transparent;border-color:rgba(214,69,69,.45);color:#b03a3a}
+.daBtn:disabled{opacity:.5;cursor:default}
+.daX{width:34px;height:34px;border-radius:10px;border:1px solid var(--ds-line);background:var(--ds-surface);font-size:20px;cursor:pointer;color:var(--ds-muted)}
+.daBody{flex:1;overflow:auto;padding:14px 18px 22px}
+.daTable{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+.daTable th{position:sticky;top:-14px;background:var(--ds-surface);text-align:left;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ds-muted);padding:10px 8px;border-bottom:1px solid var(--ds-line);z-index:1}
+.daTable td{padding:9px 8px;border-bottom:1px solid var(--ds-line);vertical-align:middle}
+.daTable .num{text-align:right;white-space:nowrap}
+.daPct{display:inline-block;min-width:52px;text-align:center;padding:3px 8px;border-radius:99px;font-weight:800;background:rgba(214,69,69,.1);color:#b03a3a}
+.daPct.mid{background:rgba(176,138,66,.14);color:#8f6d2c}
+.daMuted{color:var(--ds-muted,#83796b)}
+.daNote{font-size:11.5px;color:var(--ds-muted);margin-top:12px;line-height:1.6}
+.daReason{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 10px;background:var(--ds-surface-2,#f9f5ee);border:1px solid rgba(214,69,69,.35);border-radius:10px}
+.daReason input{flex:1;min-width:200px}
+.daMsg{font-size:12px;color:var(--ds-muted)}.daMsg.err{color:var(--ds-red,#d64545);font-weight:700}
+.daCount{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;margin-left:6px;border-radius:99px;background:#d64545;color:#fff;font-size:10.5px;font-weight:800;vertical-align:1px}
+.daHint{display:block;margin-top:4px;font-size:11px;font-weight:700;color:#b03a3a}
+@media(max-width:760px){.da{inset:0;border-radius:0}.daHide{display:none}.daHead{padding-right:58px}.daX{position:absolute;top:12px;right:14px}.daTools{margin-left:0;width:100%}}
+</style>
+<script>
+/* =====================================================================
+   EDEN BI — Discount approvals (Transactions → Discount Approvals)
+   A deal with a discount ABOVE 10% waits for the COO.
+   Approve → ticks "COO Confirmed" on the deal. Reject → reason is kept,
+   the deal is not changed. Admins see the list; only approvers decide.
+   ===================================================================== */
+const DA_={data:null,tab:'pending',from:'',q:'',rejectFor:null,busy:false};
+const DA_LIMIT_=10;
+function daEsc_(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function daNum_(n,d=0){return Number(n||0).toLocaleString('en-US',{maximumFractionDigits:d});}
+function daIsAdmin_(){const r=String((typeof AUTH_USER!=='undefined'&&AUTH_USER&&AUTH_USER.role)||'').trim().toLowerCase();return r==='admin'||r==='super admin';}
+function daTrue_(v){return typeof commissionTrue_==='function'?commissionTrue_(v):/^(true|yes|1|✓|✔)$/i.test(String(v||'').trim());}
+function daKey_(p,u){return String(p||'').trim().toUpperCase().replace(/[^A-Z0-9]+/g,'')+'|'+String(u||'').trim().replace(/\.+$/,'').toUpperCase();}
+function daDate_(r){const y=Number(r.year),m=Number(r.month);return y&&m?`${y}-${String(m).padStart(2,'0')}-${String(Number(r.day)||1).padStart(2,'0')}`:'';}
+function daFmt_(s){const m=String(s||'').match(/^(\d{4})-(\d{2})-(\d{2})/);return m?new Date(+m[1],+m[2]-1,+m[3]).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'—';}
+function daCur_(r){return typeof projectCurrency_==='function'?projectCurrency_(r):(r.currency||'EGP');}
+function daCancelled_(r){return /^cancel/i.test(String(r.status||'').trim());}
+function daDefaultFrom_(){const d=new Date();d.setMonth(d.getMonth()-3);return d.toISOString().slice(0,10);}
+function daLimit_(){return DA_.data&&DA_.data.limit!=null?Number(DA_.data.limit):DA_LIMIT_;}
+/* Every deal above the limit, with its approval state. */
+function daList_(){
+  const dec=(DA_.data&&DA_.data.decisions)||{},decBy={};
+  Object.values(dec).forEach(x=>{decBy[daKey_(x.project,x.unitCode)]=x;});
+  const lim=daLimit_();
+  return ((typeof rawRows!=='undefined'&&rawRows)||[]).filter(r=>Number(r.discountPct)>lim+1e-9&&!daCancelled_(r)).map(r=>{
+    const d=decBy[daKey_(r.project,r.unitCode)]||null,coo=daTrue_(r.cooConfirmed);
+    const state=coo||(d&&d.decision==='Approved')?'approved':d&&d.decision==='Rejected'?'rejected':'pending';
+    return {r,d,state,date:daDate_(r),pct:Number(r.discountPct)};
+  });
+}
+function daPendingCount_(){const from=DA_.from||daDefaultFrom_();return daList_().filter(x=>x.state==='pending'&&(!x.date||x.date>=from)).length;}
+function daMount_(){
+  const menu=document.querySelector('#transactionsModule .moduleMenu');
+  if(!menu)return;
+  let b=menu.querySelector('[data-da]');
+  if(!b){
+    b=document.createElement('button');b.type='button';b.dataset.da='1';b.addEventListener('click',daOpen_);
+    const after=menu.querySelector('[data-sc]')||[...menu.querySelectorAll('button')].find(x=>/targets/i.test(x.textContent));
+    if(after)after.insertAdjacentElement('afterend',b);else menu.appendChild(b);
+  }
+  b.style.display=daIsAdmin_()?'':'none';
+  const n=daIsAdmin_()?daPendingCount_():0,html=`Discount Approvals${n?`<span class="daCount">${n}</span>`:''}`;
+  if(b.innerHTML!==html)b.innerHTML=html;
+}
+function daOpen_(){
+  if(!daIsAdmin_()){alert('Discount approvals are for admins only.');return;}
+  daClose_();
+  if(!DA_.from)DA_.from=daDefaultFrom_();
+  const back=document.createElement('div');back.className='daBack';back.id='daBack';back.addEventListener('click',daClose_);
+  const el=document.createElement('section');el.className='da';el.id='da';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');
+  el.innerHTML=`<div class="daHead"><div><small>Transactions</small><h2>Discount Approvals</h2></div>
+    <div class="daTools"><input type="search" data-f="q" placeholder="Search client, unit, sales…" value="${daEsc_(DA_.q)}">
+      <label class="daMuted" style="font-size:12.5px;display:flex;gap:6px;align-items:center">Reserved from <input type="date" data-f="from" value="${daEsc_(DA_.from)}"></label>
+      <button type="button" class="daX" aria-label="Close">×</button></div></div>
+    <div class="daTabs"></div><div class="daBody"><div class="daNote" style="text-align:center;padding:40px">Loading…</div></div>`;
+  document.body.append(back,el);
+  el.querySelector('.daX').addEventListener('click',daClose_);
+  el.querySelectorAll('[data-f]').forEach(i=>i.addEventListener(i.type==='search'?'input':'change',()=>{DA_[i.dataset.f]=i.value;daRender_();}));
+  document.addEventListener('keydown',daOnKey_);
+  google.script.run.withSuccessHandler(d=>{DA_.data=d;daRender_();daMount_();})
+    .withFailureHandler(err=>{const b=el.querySelector('.daBody');if(b)b.innerHTML=`<div class="daNote daMsg err" style="text-align:center;padding:40px">Could not load.<br>${daEsc_(err&&err.message||err)}</div>`;})
+    .getDiscountApprovals(AUTH_TOKEN);
+}
+function daClose_(){document.getElementById('da')?.remove();document.getElementById('daBack')?.remove();document.removeEventListener('keydown',daOnKey_);DA_.rejectFor=null;}
+function daOnKey_(e){if(e.key!=='Escape')return;if(DA_.rejectFor){DA_.rejectFor=null;daRender_();return;}daClose_();}
+function daRender_(){
+  const el=document.getElementById('da');if(!el||!DA_.data)return;
+  const from=DA_.from||'',q=String(DA_.q||'').trim().toLowerCase(),lim=daLimit_();
+  const all=daList_().filter(x=>!from||!x.date||x.date>=from).filter(x=>!q||[x.r.clientName,x.r.unitCode,x.r.project,x.r.salesName,x.r.sharedWith].join(' ').toLowerCase().includes(q));
+  const by={pending:[],approved:[],rejected:[]};all.forEach(x=>by[x.state].push(x));
+  el.querySelector('.daTabs').innerHTML=[['pending','Waiting'],['approved','Approved'],['rejected','Rejected']].map(([k,l])=>`<button type="button" class="daTab${DA_.tab===k?' on':''}" data-tab="${k}">${l}<b>${by[k].length}</b></button>`).join('');
+  el.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{DA_.tab=b.dataset.tab;DA_.rejectFor=null;daRender_();}));
+  const list=by[DA_.tab].sort((a,b)=>DA_.tab==='pending'?(b.pct-a.pct)||String(b.date).localeCompare(a.date):String(b.d?.at||b.date).localeCompare(a.d?.at||a.date));
+  const can=!!DA_.data.canApprove,pend=DA_.tab==='pending';
+  let html='';
+  if(!list.length)html=`<div class="daNote" style="text-align:center;padding:36px">${pend?`No deals above ${lim}% waiting for approval${from?' since '+daFmt_(from):''}. ✓`:'Nothing here.'}</div>`;
+  else{
+    html=`<table class="daTable"><thead><tr><th>Reserved</th><th>Client</th><th>Project · Unit</th><th class="daHide">Sales</th><th class="num daHide">Price before</th><th class="num">Discount</th><th class="num">Final price</th><th>Status</th>${pend?(can?'<th></th>':''):'<th>Decision</th>'}</tr></thead><tbody>`;
+    list.forEach((x,i)=>{
+      const r=x.r,cur=daCur_(r),disc=Number(r.primaryTotal)&&Number(r.amount)?Number(r.primaryTotal)-Number(r.amount):0;
+      html+=`<tr><td>${daFmt_(x.date)}</td><td><b>${daEsc_(r.clientName||'')}</b></td><td>${daEsc_(r.project)} · <b>${daEsc_(r.unitCode)}</b></td>
+        <td class="daHide">${daEsc_(r.salesName||'')}${r.sharedWith?`<br><small class="daMuted">+ ${daEsc_(r.sharedWith)}</small>`:''}</td>
+        <td class="num daHide">${Number(r.primaryTotal)?daNum_(r.primaryTotal)+` <small class="daMuted">${daEsc_(cur)}</small>`:'—'}</td>
+        <td class="num"><span class="daPct${x.pct<=20?' mid':''}">${daNum_(x.pct,1)}%</span>${disc>0?`<br><small class="daMuted">${daNum_(disc)}</small>`:''}</td>
+        <td class="num">${daNum_(r.amount)} <small class="daMuted">${daEsc_(cur)}</small></td><td>${daEsc_(r.status||'')}</td>`;
+      if(pend){if(can)html+=`<td style="white-space:nowrap"><button type="button" class="daBtn ok" data-ok="${i}">✓ Approve</button> <button type="button" class="daBtn no" data-no="${i}">Reject</button></td>`;}
+      else html+=`<td>${x.d?`<b>${daEsc_(x.d.decision)}</b> <small class="daMuted">by ${daEsc_(x.d.by)} · ${daFmt_(x.d.at)}</small>${x.d.reason?`<br><small>${daEsc_(x.d.reason)}</small>`:''}`:'<small class="daMuted">COO Confirmed ticked in the sheet</small>'}</td>`;
+      html+='</tr>';
+      if(pend&&DA_.rejectFor===i)html+=`<tr><td colspan="9"><div class="daReason"><b style="font-size:12px">Reason for rejecting:</b><input data-reason placeholder="e.g. Max 10% on this unit — offer 8% instead"><button type="button" class="daBtn no" data-sendno="${i}">Reject deal discount</button><button type="button" class="daBtn" data-cancel>Cancel</button><span class="daMsg"></span></div></td></tr>`;
+    });
+    html+='</tbody></table>';
+  }
+  html+=`<div class="daNote">Every active deal with a discount above <b>${lim}%</b> appears here. <b>Approve</b> ticks “COO Confirmed” on the deal in the Deals sheet. <b>Reject</b> keeps your reason (and writes it as a note on the deal’s Discount cell) — the deal itself is not changed, so tell the sales team to correct it.
+  ${can?'':'<br><b>Only the COO can approve or reject.</b>'} Discount % = discount ÷ price before discount. Decisions are recorded in the Activity Log.</div>`;
+  const body=el.querySelector('.daBody');body.innerHTML=html;
+  body.querySelectorAll('[data-ok]').forEach(b=>b.addEventListener('click',()=>{const x=list[+b.dataset.ok];if(!confirm(`Approve the ${daNum_(x.pct,1)}% discount on ${x.r.unitCode} (${x.r.clientName||''})?`))return;b.disabled=true;daDecide_(x,'Approved','',null);}));
+  body.querySelectorAll('[data-no]').forEach(b=>b.addEventListener('click',()=>{DA_.rejectFor=+b.dataset.no;daRender_();document.querySelector('#da [data-reason]')?.focus();}));
+  body.querySelector('[data-cancel]')?.addEventListener('click',()=>{DA_.rejectFor=null;daRender_();});
+  const sn=body.querySelector('[data-sendno]');
+  if(sn){
+    const inp=body.querySelector('[data-reason]'),msg=sn.parentElement.querySelector('.daMsg');
+    const go=()=>{const why=inp.value.trim();if(!why){msg.className='daMsg err';msg.textContent='Write the reason.';inp.focus();return;}sn.disabled=true;daDecide_(list[+sn.dataset.sendno],'Rejected',why,msg);};
+    sn.addEventListener('click',go);inp.addEventListener('keydown',e=>{if(e.key==='Enter')go();});
+  }
+}
+function daDecide_(x,decision,reason,msgEl){
+  if(DA_.busy)return;DA_.busy=true;
+  if(msgEl){msgEl.className='daMsg';msgEl.textContent='Saving…';}
+  google.script.run.withSuccessHandler(d=>{
+    DA_.busy=false;DA_.data=d;DA_.rejectFor=null;
+    if(decision==='Approved')x.r.cooConfirmed='TRUE';
+    daRender_();daMount_();
+    if(d&&d.message&&/not found/i.test(d.message))alert(d.message);
+  }).withFailureHandler(err=>{
+    DA_.busy=false;const m=err&&err.message||String(err);
+    if(msgEl){msgEl.className='daMsg err';msgEl.textContent=m;}else alert(m);
+    daRender_();
+  }).decideDiscount(AUTH_TOKEN,{project:x.r.project,unitCode:x.r.unitCode,dealRow:x.r.row,client:x.r.clientName,discount:x.pct,decision,reason});
+}
+/* Deal form: warn while typing a discount above the limit. */
+function daFormHint_(){
+  const p=document.getElementById('dealDiscountPercent');if(!p)return;
+  let h=document.getElementById('daFormHint');
+  if(!h){h=document.createElement('span');h.id='daFormHint';h.className='daHint';p.insertAdjacentElement('afterend',h);}
+  const v=Number(String(p.value||'').replace(/[,%]/g,''));
+  h.textContent=v>DA_LIMIT_?`Above ${DA_LIMIT_}% — this deal will wait for the COO’s approval.`:'';
+}
+document.addEventListener('input',e=>{if(e.target&&/^deal(DiscountPercent|DiscountAmount|FinalPrice)$/.test(e.target.id))setTimeout(daFormHint_,0);});
+(function(){
+  const go=()=>{daMount_();setInterval(daMount_,5000);};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();
+})();
+</script>

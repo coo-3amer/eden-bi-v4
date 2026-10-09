@@ -279,7 +279,7 @@ function buildDashboardData_(authUser) {
 
   // DEAL CONFIRMATION: contract-stage checkboxes (client already signed).
   const confIdx = groupedHeaderIndexes_(sheet, Math.max(1, HEADER_ROW - 1), HEADER_ROW, 'Deal Confirmation',
-    ['Part of DP', 'Total DP', 'Client Sigend', 'Company Signed', 'Delivery Signed', 'Delivered']);
+    ['Part of DP', 'Total DP', 'Client Sigend', 'Company Signed', 'Delivery Signed', 'Delivered', 'COO Confirmed']);
 
   // UNIT INFO: resolve the Unit Type subheader inside its merged group.
   // Confirmed sheet structure: Unit Info -> Unit Type (AY).
@@ -474,6 +474,15 @@ function buildDashboardData_(authUser) {
       getAny_(r, idx, ['Primary Total Price'])
     );
 
+    // Discount %: older rows keep it as "10%", newer rows as an amount (price − final price).
+    const discountRaw = String(getAny_(r, idx, ['Discount']) || '').trim();
+    let discountPct = null;
+    if (/%\s*$/.test(discountRaw)) discountPct = Number(discountRaw.replace(/[%,\s]/g, ''));
+    else if (discountRaw !== '' && totalPrice) discountPct = Number(discountRaw.replace(/[,\s]/g, '')) / totalPrice * 100;
+    else if (totalPrice && finalPrice && finalPrice <= totalPrice) discountPct = (1 - finalPrice / totalPrice) * 100;
+    if (discountPct === null || !isFinite(discountPct) || discountPct < 0 || discountPct > 100) discountPct = null;
+    else discountPct = Math.round(discountPct * 100) / 100;
+
     const amount =
       finalPrice ||
       totalPrice ||
@@ -613,6 +622,9 @@ function buildDashboardData_(authUser) {
       confCompanySigned: confIdx['Company Signed'] !== undefined ? r[confIdx['Company Signed']] : '',
       confDeliverySigned: confIdx['Delivery Signed'] !== undefined ? r[confIdx['Delivery Signed']] : '',
       confDelivered: confIdx['Delivered'] !== undefined ? r[confIdx['Delivered']] : '',
+      cooConfirmed: confIdx['COO Confirmed'] !== undefined ? r[confIdx['COO Confirmed']] : '',
+      primaryTotal: totalPrice || '',
+      discountPct,
       dpDate: dpDetailsIdx['Date'] !== undefined ? String(r[dpDetailsIdx['Date']] || '').trim() : '',
       planType: planIdx['Type Of Payment Plan'] !== undefined ? String(r[planIdx['Type Of Payment Plan']] || '').trim() : '',
       planPeriod: planIdx['Installments Period'] !== undefined ? String(r[planIdx['Installments Period']] || '').trim() : '',
