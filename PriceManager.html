@@ -1,0 +1,213 @@
+<style id="eden-price-manager">
+.pmBack{position:fixed;inset:0;z-index:430;background:rgba(10,8,6,.5);backdrop-filter:blur(2px)}
+.pm{position:fixed;inset:14px;z-index:431;display:flex;flex-direction:column;background:var(--ds-surface,#fffdf9);color:var(--ds-text,#2a2621);border-radius:18px;box-shadow:0 30px 80px rgba(0,0,0,.35);overflow:hidden}
+.pmHead{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid var(--ds-line,#e8e0d1);position:relative}
+.pmHead small{display:block;font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ds-gold,#b08a42)}
+.pmHead h2{margin:0;font:600 22px/1.2 'Cormorant Garamond',Georgia,serif;color:var(--ds-heading,#16130f)}
+.pmTools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-left:auto}
+.pm input,.pm select{height:34px;border:1px solid var(--ds-line,#e8e0d1);border-radius:10px;padding:0 10px;background:var(--ds-surface,#fff);color:var(--ds-text);font:inherit;font-size:13px}
+.pmBtn{height:34px;padding:0 12px;border-radius:10px;border:1px solid var(--ds-gold-line,rgba(176,138,66,.32));background:var(--ds-gold-soft,rgba(176,138,66,.12));color:var(--ds-gold-strong,#8f6d2c);font-weight:700;font-size:12.5px;cursor:pointer;white-space:nowrap}
+.pmBtn.pmPrimary{background:var(--ds-gold,#b08a42);color:#fff;border-color:transparent}
+.pmBtn.pmGhost{background:transparent;border-color:var(--ds-line);color:var(--ds-muted,#83796b)}
+.pmBtn:disabled{opacity:.45;cursor:default}
+.pmX{width:34px;height:34px;border-radius:10px;border:1px solid var(--ds-line);background:var(--ds-surface);font-size:20px;cursor:pointer;color:var(--ds-muted)}
+.pmTabs{display:flex;gap:6px;padding:12px 18px 0}
+.pmTab{height:32px;padding:0 14px;border-radius:99px;border:1px solid var(--ds-line);background:transparent;color:var(--ds-muted);font-weight:700;font-size:12.5px;cursor:pointer}
+.pmTab.on{background:var(--ds-gold,#b08a42);border-color:transparent;color:#fff}
+.pmBody{flex:1;overflow:auto;padding:14px 18px 22px}
+.pmBar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 12px;border:1px solid var(--ds-gold-line,rgba(176,138,66,.32));background:var(--ds-surface-2,#f9f5ee);border-radius:12px;margin-bottom:12px;font-size:12.5px}
+.pmBar b{color:var(--ds-heading)}
+.pmBar input{width:90px;text-align:right}
+.pmKpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-bottom:12px}
+.pmKpi{background:var(--ds-surface-2,#f9f5ee);border:1px solid var(--ds-line);border-radius:12px;padding:10px 12px}
+.pmKpi span{display:block;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ds-muted)}
+.pmKpi b{display:block;font-size:17px;color:var(--ds-heading);font-variant-numeric:tabular-nums}
+.pmKpi small{display:block;font-size:11px;color:var(--ds-muted)}
+.pmTable{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+.pmTable th{position:sticky;top:-14px;background:var(--ds-surface);text-align:left;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ds-muted);padding:10px 8px;border-bottom:1px solid var(--ds-line);z-index:1}
+.pmTable td{padding:7px 8px;border-bottom:1px solid var(--ds-line)}
+.pmTable .num{text-align:right;white-space:nowrap}
+.pmTable tr.chg td{background:rgba(176,138,66,.08)}
+.pmIn{width:110px;text-align:right;height:30px!important}
+.pmIn.chg{border-color:var(--ds-gold,#b08a42)!important;font-weight:800}
+.pmUp{color:#2f7d4f;font-weight:700}.pmDown{color:#b03a3a;font-weight:700}
+.pmMuted{color:var(--ds-muted,#83796b)}
+.pmNote{font-size:11.5px;color:var(--ds-muted);margin-top:12px;line-height:1.6}
+.pmSave{position:sticky;bottom:-22px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:12px;margin:12px -6px -10px;background:var(--ds-surface,#fffdf9);border-top:1px solid var(--ds-line)}
+.pmSave input{flex:1;min-width:200px}
+.pmMsg{font-size:12px;color:var(--ds-muted)}.pmMsg.err{color:var(--ds-red,#d64545);font-weight:700}.pmMsg.ok{color:#2f7d4f;font-weight:700}
+@media(max-width:760px){.pm{inset:0;border-radius:0}.pmHide{display:none}.pmHead{padding-right:58px}.pmX{position:absolute;top:12px;right:14px}.pmTools{margin-left:0;width:100%}.pmKpis{grid-template-columns:repeat(2,1fr)}}
+</style>
+<script>
+/* =====================================================================
+   EDEN BI — Price Manager (Inventories → Price Manager, admins only)
+   Change the price per m² of one unit or many at once (by % or by an
+   amount per m²), see the effect before saving, then save to the
+   Inventory sheet. Every change is kept in "Price History".
+   ===================================================================== */
+const PM_PROJECTS_=[['EDEN WALK','Eden Walk'],['CITY CENTER GLDANI','City Center Gldani'],['KOBULETI','Kobuleti']];
+const PM_={project:'EDEN WALK',inv:{},draft:{},tab:'units',status:'available',floor:'',type:'',q:'',round:'1',hist:null,busy:false};
+function pmEsc_(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function pmNum_(n,d=0){return Number(n||0).toLocaleString('en-US',{maximumFractionDigits:d});}
+function pmShort_(n){n=Number(n)||0;const a=Math.abs(n);if(a>=1e6)return (n/1e6).toFixed(a>=1e8?0:2).replace(/\.?0+$/,'')+'M';if(a>=1e3)return Math.round(n/1e3).toLocaleString('en-US')+'K';return String(Math.round(n));}
+function pmIsAdmin_(){const r=String((typeof AUTH_USER!=='undefined'&&AUTH_USER&&AUTH_USER.role)||'').trim().toLowerCase();return r==='admin'||r==='super admin';}
+function pmId_(u){return u.sourceSheetId+':'+u.sourceRow;}
+function pmMount_(){
+  const menu=document.querySelector('#inventoriesModule .moduleMenu');if(!menu)return;
+  let b=menu.querySelector('[data-pm]');
+  if(!b){b=document.createElement('button');b.type='button';b.dataset.pm='1';b.textContent='Price Manager';b.addEventListener('click',pmOpen_);menu.appendChild(b);}
+  b.style.display=pmIsAdmin_()?'':'none';
+}
+function pmOpen_(){
+  if(!pmIsAdmin_()){alert('Price Manager is for admins only.');return;}
+  pmClose_();
+  const back=document.createElement('div');back.className='pmBack';back.id='pmBack';back.addEventListener('click',pmClose_);
+  const el=document.createElement('section');el.className='pm';el.id='pm';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');
+  el.innerHTML=`<div class="pmHead"><div><small>Inventories</small><h2>Price Manager</h2></div>
+    <div class="pmTools"><select data-f="project">${PM_PROJECTS_.map(([v,l])=>`<option value="${pmEsc_(v)}"${v===PM_.project?' selected':''}>${pmEsc_(l)}</option>`).join('')}</select>
+    <button type="button" class="pmBtn pmGhost" data-a="reload" title="Read the inventory sheet again">↻ Refresh</button>
+    <button type="button" class="pmX" aria-label="Close">×</button></div></div>
+    <div class="pmTabs"><button type="button" class="pmTab on" data-tab="units">Units &amp; what-if</button><button type="button" class="pmTab" data-tab="hist">Price history</button></div>
+    <div class="pmBody"></div>`;
+  document.body.append(back,el);
+  el.querySelector('.pmX').addEventListener('click',pmClose_);
+  el.querySelector('[data-f="project"]').addEventListener('change',e=>{
+    if(Object.keys(PM_.draft).length&&!confirm('Discard the unsaved price changes?')){e.target.value=PM_.project;return;}
+    PM_.project=e.target.value;PM_.draft={};PM_.floor=PM_.type='';PM_.hist=null;pmLoad_(false);
+  });
+  el.querySelector('[data-a="reload"]').addEventListener('click',()=>pmLoad_(true));
+  el.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{PM_.tab=b.dataset.tab;el.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('on',x===b));pmRender_();}));
+  document.addEventListener('keydown',pmOnKey_);
+  pmLoad_(false);
+}
+function pmClose_(){
+  if(Object.keys(PM_.draft).length&&document.getElementById('pm')&&!confirm('Close without saving the price changes?'))return;
+  PM_.draft={};document.getElementById('pm')?.remove();document.getElementById('pmBack')?.remove();document.removeEventListener('keydown',pmOnKey_);
+}
+function pmOnKey_(e){if(e.key==='Escape')pmClose_();}
+function pmBody_(h){const b=document.querySelector('#pm .pmBody');if(b)b.innerHTML=h;return b;}
+function pmLoad_(force){
+  if(PM_.inv[PM_.project]&&!force){pmRender_();return;}
+  pmBody_('<div class="pmNote" style="text-align:center;padding:40px">Loading the inventory…</div>');
+  google.script.run.withSuccessHandler(d=>{PM_.inv[PM_.project]=d;if(force)PM_.draft={};pmRender_();})
+    .withFailureHandler(err=>pmBody_(`<div class="pmNote pmMsg err" style="text-align:center;padding:40px">Could not load the inventory.<br>${pmEsc_(err&&err.message||err)}</div>`))
+    .getInventoryData(AUTH_TOKEN,PM_.project,!!force);
+}
+function pmUnits_(){
+  const d=PM_.inv[PM_.project];if(!d)return [];
+  const q=PM_.q.trim().toLowerCase();
+  return (d.rows||[]).filter(u=>{
+    const st=String(u.status||'').trim().toLowerCase();
+    if(PM_.status==='available'&&st!=='available')return false;
+    if(PM_.status&&PM_.status!=='available'&&PM_.status!=='all'&&st!==PM_.status)return false;
+    if(PM_.floor&&u.floor!==PM_.floor)return false;
+    if(PM_.type&&(u.unitType||u.type)!==PM_.type)return false;
+    if(q&&![u.unitCode,u.floor,u.unitType,u.type,u.view].join(' ').toLowerCase().includes(q))return false;
+    return true;
+  });
+}
+function pmNewTotal_(u,m){return Number(u.totalPrice)?Number(u.totalPrice)+(m-Number(u.meterPrice))*Number(u.area||0):m*Number(u.area||0);}
+function pmRound_(v){const r=Number(PM_.round)||1;return Math.round(v/r)*r;}
+function pmRender_(){
+  const el=document.getElementById('pm');if(!el)return;
+  if(PM_.tab==='hist'){pmRenderHist_();return;}
+  const d=PM_.inv[PM_.project];if(!d){pmLoad_(false);return;}
+  const cur=d.currency||'';
+  const units=pmUnits_();
+  const opts=k=>[...new Set((d.rows||[]).map(u=>k==='type'?(u.unitType||u.type):u[k]).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true}));
+  const statuses=[...new Set((d.rows||[]).map(u=>String(u.status||'').trim()).filter(Boolean))].sort();
+  let nowV=0,newV=0,nowA=0,area=0,chg=0;
+  units.forEach(u=>{const m=PM_.draft[pmId_(u)];nowV+=Number(u.totalPrice)||0;newV+=m!=null?pmNewTotal_(u,m):(Number(u.totalPrice)||0);if(m!=null)chg++;area+=Number(u.area)||0;});
+  const allChg=Object.keys(PM_.draft).length,diff=newV-nowV;
+  let html=`<div class="pmBar">
+    <select data-f="status"><option value="available"${PM_.status==='available'?' selected':''}>Available only</option><option value="all"${PM_.status==='all'?' selected':''}>All statuses</option>${statuses.filter(s=>s.toLowerCase()!=='available').map(s=>`<option value="${pmEsc_(s.toLowerCase())}"${PM_.status===s.toLowerCase()?' selected':''}>${pmEsc_(s)}</option>`).join('')}</select>
+    <select data-f="floor"><option value="">All floors</option>${opts('floor').map(f=>`<option${f===PM_.floor?' selected':''}>${pmEsc_(f)}</option>`).join('')}</select>
+    <select data-f="type"><option value="">All types</option>${opts('type').map(f=>`<option${f===PM_.type?' selected':''}>${pmEsc_(f)}</option>`).join('')}</select>
+    <input type="search" data-f="q" placeholder="Unit code…" value="${pmEsc_(PM_.q)}" style="width:140px">
+  </div>
+  <div class="pmBar"><b>Change the ${units.length} units shown:</b>
+    <input data-bulk="pct" inputmode="decimal" placeholder="+5"> %
+    <span class="pmMuted">or</span><input data-bulk="amt" inputmode="decimal" placeholder="+500"> ${pmEsc_(cur)} per m²
+    <span class="pmMuted">round to</span><select data-f="round">${['1','10','50','100'].map(r=>`<option${r===PM_.round?' selected':''}>${r}</option>`).join('')}</select>
+    <button type="button" class="pmBtn" data-a="apply">Preview</button>
+    <button type="button" class="pmBtn pmGhost" data-a="reset"${allChg?'':' disabled'}>Undo all</button>
+  </div>
+  <div class="pmKpis">
+    <div class="pmKpi"><span>Units shown</span><b>${pmNum_(units.length)}</b><small>${pmNum_(area)} m²</small></div>
+    <div class="pmKpi"><span>Value now</span><b>${pmShort_(nowV)}</b><small>${pmEsc_(cur)} · avg ${area?pmNum_(nowV/area):'—'}/m²</small></div>
+    <div class="pmKpi"><span>Value after</span><b>${pmShort_(newV)}</b><small>${pmEsc_(cur)} · avg ${area?pmNum_(newV/area):'—'}/m²</small></div>
+    <div class="pmKpi"><span>Difference</span><b class="${diff>0?'pmUp':diff<0?'pmDown':''}">${diff>0?'+':''}${pmShort_(diff)}</b><small>${nowV?(diff>=0?'+':'')+pmNum_(diff/nowV*100,2)+'%':''}</small></div>
+    <div class="pmKpi"><span>Units changed</span><b>${pmNum_(allChg)}</b><small>${chg!==allChg?chg+' in this view':'not saved yet'}</small></div>
+  </div>
+  <table class="pmTable"><thead><tr><th>Unit</th><th class="pmHide">Floor</th><th class="pmHide">Type</th><th class="num">Area</th><th>Status</th><th class="num">Price/m² now</th><th class="num">New price/m²</th><th class="num pmHide">Total now</th><th class="num">New total</th><th class="num">Change</th></tr></thead><tbody>`;
+  units.slice(0,1500).forEach(u=>{
+    const id=pmId_(u),m=PM_.draft[id],has=m!=null,pct=has&&Number(u.meterPrice)?(m/Number(u.meterPrice)-1)*100:0;
+    html+=`<tr class="${has?'chg':''}"><td><b>${pmEsc_(u.unitCode)}</b>${u.inventoryCategory&&u.inventoryCategory!=='Main Unit'?`<br><small class="pmMuted">${pmEsc_(u.inventoryCategory)}</small>`:''}</td>
+      <td class="pmHide">${pmEsc_(u.floor||'')}</td><td class="pmHide">${pmEsc_(u.unitType||u.type||'')}</td><td class="num">${pmNum_(u.area,2)}</td><td>${pmEsc_(u.status||'')}</td>
+      <td class="num">${pmNum_(u.meterPrice)}</td><td class="num"><input class="pmIn${has?' chg':''}" data-id="${pmEsc_(id)}" inputmode="decimal" value="${has?pmEsc_(m):''}" placeholder="${pmNum_(u.meterPrice)}"></td>
+      <td class="num pmHide">${pmNum_(u.totalPrice)}</td><td class="num">${has?pmNum_(pmNewTotal_(u,m)):'<span class="pmMuted">—</span>'}</td>
+      <td class="num">${has?`<span class="${pct>0?'pmUp':pct<0?'pmDown':''}">${pct>0?'+':''}${pmNum_(pct,2)}%</span>`:''}</td></tr>`;
+  });
+  html+=`</tbody></table>${units.length>1500?`<div class="pmNote">Showing the first 1,500 units — narrow the filters to see the rest.</div>`:''}
+  ${!units.length?'<div class="pmNote" style="text-align:center;padding:24px">No units match these filters.</div>':''}
+  <div class="pmNote">Nothing changes in the sheet until you press <b>Save</b>. Totals: a Total Price that is a formula in the sheet recalculates by itself; a typed total moves by (new − old price per m²) × area. Changes are written to the Inventory sheet and kept in “Price History”.</div>
+  <div class="pmSave"><input data-reason placeholder="Reason (e.g. Q4 price list +5%)"><button type="button" class="pmBtn pmPrimary" data-a="save"${allChg?'':' disabled'}>Save ${allChg||''} price change${allChg===1?'':'s'}</button><span class="pmMsg"></span></div>`;
+  const body=pmBody_(html);
+  body.querySelectorAll('[data-f]').forEach(i=>i.addEventListener(i.type==='search'?'input':'change',()=>{PM_[i.dataset.f]=i.value;if(i.type==='search'){clearTimeout(pmRender_.t);pmRender_.t=setTimeout(()=>{pmRender_();const s=document.querySelector('#pm [data-f="q"]');if(s){s.focus();s.setSelectionRange(s.value.length,s.value.length);}},250);}else pmRender_();}));
+  body.querySelectorAll('.pmIn').forEach(i=>{
+    i.addEventListener('keydown',e=>{if(e.key==='Enter')i.blur();});
+    i.addEventListener('change',()=>{const v=String(i.value).replace(/[,\s]/g,''),u=units.find(x=>pmId_(x)===i.dataset.id);
+      if(v===''||!u||Math.abs(Number(v)-Number(u.meterPrice))<0.005)delete PM_.draft[i.dataset.id];
+      else if(!(Number(v)>0)){alert('Enter a price above zero.');i.value='';return;}
+      else PM_.draft[i.dataset.id]=Number(v);
+      const top=body.scrollTop;pmRender_();document.querySelector('#pm .pmBody').scrollTop=top;});
+  });
+  body.querySelector('[data-a="apply"]').addEventListener('click',()=>{
+    const pct=Number(String(body.querySelector('[data-bulk="pct"]').value).replace(/[%,\s]/g,'')),amt=Number(String(body.querySelector('[data-bulk="amt"]').value).replace(/[,\s]/g,''));
+    if(!pct&&!amt){alert('Type a % or an amount per m².');return;}
+    if(pct&&amt){alert('Use either % or an amount, not both.');return;}
+    let n=0;units.forEach(u=>{const base=Number(u.meterPrice);if(!base)return;const v=pmRound_(pct?base*(1+pct/100):base+amt);if(v>0&&Math.abs(v-base)>=0.005){PM_.draft[pmId_(u)]=v;n++;}else delete PM_.draft[pmId_(u)];});
+    pmRender_();
+  });
+  body.querySelector('[data-a="reset"]').addEventListener('click',()=>{if(confirm('Undo all unsaved price changes?')){PM_.draft={};pmRender_();}});
+  body.querySelector('[data-a="save"]').addEventListener('click',()=>pmSave_(body));
+}
+function pmSave_(body){
+  const d=PM_.inv[PM_.project],byId={};(d.rows||[]).forEach(u=>byId[pmId_(u)]=u);
+  const changes=Object.entries(PM_.draft).map(([id,m])=>({u:byId[id],m})).filter(x=>x.u).map(x=>({unitCode:x.u.unitCode,sourceSheetId:x.u.sourceSheetId,sourceRow:x.u.sourceRow,meterPrice:x.m}));
+  if(!changes.length||PM_.busy)return;
+  const msg=body.querySelector('.pmSave .pmMsg'),reason=body.querySelector('[data-reason]').value.trim();
+  if(!confirm(`Write ${changes.length} new price${changes.length>1?'s':''} per m² to the ${d.title||PM_.project} inventory sheet?`))return;
+  PM_.busy=true;msg.className='pmMsg';msg.textContent='Saving to the inventory sheet…';
+  body.querySelector('[data-a="save"]').disabled=true;
+  google.script.run.withSuccessHandler(res=>{
+    PM_.busy=false;
+    if(res&&res.inventory)PM_.inv[PM_.project]=res.inventory;
+    const failedIds=new Set((res.failed||[]).map(f=>f.unitCode));
+    Object.keys(PM_.draft).forEach(id=>{const u=byId[id];if(!u||!failedIds.has(u.unitCode))delete PM_.draft[id];});
+    PM_.hist=null;pmRender_();
+    const m=document.querySelector('#pm .pmSave .pmMsg');
+    if(m){m.className='pmMsg '+((res.failed||[]).length?'err':'ok');m.textContent=`Saved ${res.changed} price${res.changed===1?'':'s'}.`+((res.failed||[]).length?` Not saved: ${res.failed.map(f=>f.unitCode+' ('+f.message+')').join(', ')}`:'');}
+  }).withFailureHandler(err=>{PM_.busy=false;msg.className='pmMsg err';msg.textContent=err&&err.message||String(err);body.querySelector('[data-a="save"]').disabled=false;})
+    .setUnitPrices(AUTH_TOKEN,{project:PM_.project,reason,changes});
+}
+function pmRenderHist_(){
+  if(!PM_.hist){
+    pmBody_('<div class="pmNote" style="text-align:center;padding:40px">Loading price history…</div>');
+    google.script.run.withSuccessHandler(h=>{PM_.hist=h||[];if(PM_.tab==='hist')pmRenderHist_();})
+      .withFailureHandler(err=>pmBody_(`<div class="pmNote pmMsg err" style="text-align:center;padding:40px">${pmEsc_(err&&err.message||err)}</div>`))
+      .getPriceHistory(AUTH_TOKEN,PM_.project);
+    return;
+  }
+  const h=PM_.hist;
+  pmBody_(h.length?`<table class="pmTable"><thead><tr><th>When</th><th>Unit</th><th class="num">Price/m² before</th><th class="num">After</th><th class="num">Change</th><th class="num pmHide">Total before</th><th class="num pmHide">Total after</th><th class="pmHide">Reason</th><th>By</th></tr></thead><tbody>
+    ${h.map(x=>`<tr><td>${pmEsc_(x.time)}</td><td><b>${pmEsc_(x.unitCode)}</b></td><td class="num">${pmNum_(x.oldMeter)}</td><td class="num">${pmNum_(x.newMeter)}</td>
+      <td class="num"><span class="${x.pct>0?'pmUp':x.pct<0?'pmDown':''}">${x.pct==null?'—':(x.pct>0?'+':'')+pmNum_(x.pct,2)+'%'}</span></td><td class="num pmHide">${x.oldTotal?pmNum_(x.oldTotal):'—'}</td><td class="num pmHide">${x.newTotal?pmNum_(x.newTotal):'—'}</td>
+      <td class="pmHide">${pmEsc_(x.reason)}</td><td>${pmEsc_(x.by)}</td></tr>`).join('')}</tbody></table>`
+    :'<div class="pmNote" style="text-align:center;padding:36px">No price changes recorded for this project yet.</div>');
+}
+(function(){
+  const go=()=>{pmMount_();setInterval(pmMount_,5000);};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();
+})();
+</script>
