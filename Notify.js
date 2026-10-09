@@ -17,6 +17,7 @@ const TG_EVENTS_ = {
   'Deal status changed': '🔄',
   'Deal status changed (sheet)': '🔄',
   'Deal added (sheet)': '🆕',
+  'Inventory edit (sheet)': '🏢',
   'Payment recorded': '💰',
   'Payment deleted': '🗑',
   'Discount approved': '✅',

@@ -66,6 +66,8 @@ function onDataSheetEdit(e) {
     // Status is a formula in Deals: compare it with the last Status seen (alerts + Inventory).
     if (typeof watchDealStatus_ === 'function') watchDealStatus_(e);
   }
+  // Hand edits in an Inventory sheet are announced (they never change the deals).
+  if (target.indexOf('INV:') === 0 && e && e.range && typeof auditInventorySheetEdit_ === 'function') auditInventorySheetEdit_(e, target.slice(4));
   const cache = CacheService.getScriptCache();
   const dirtyKey = 'LIVE_DIRTY_' + target;
   cache.put(dirtyKey, String(Date.now()), 600);

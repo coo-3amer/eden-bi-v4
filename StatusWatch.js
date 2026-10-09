@@ -107,3 +107,48 @@ function statusSeenRefresh_(row) {
     if (sc) statusSeenRemember_(row, deals.getRange(row, sc).getDisplayValue());
   } catch (e) {}
 }
+
+/* Hand edits in an Inventory sheet → Activity Log + Telegram (called by LiveSync). */
+function auditInventorySheetEdit_(e, key) {
+  try {
+    if (!e || !e.range) return;
+    const cfg = INVENTORY_SOURCES[key];
+    if (!cfg) return;
+    const sheet = e.range.getSheet();
+    const tab = sheet.getName();
+    if (/^BI /i.test(tab)) return;                                   // the system's own tabs
+    const r0 = e.range.getRow(), c0 = e.range.getColumn(), nR = e.range.getNumRows(), nC = e.range.getNumColumns();
+    const lastCol = sheet.getLastColumn();
+    const top = sheet.getRange(1, 1, Math.min(30, Math.max(1, sheet.getLastRow())), lastCol).getDisplayValues();
+    const hr = inventoryFindHeaderRow_(top, cfg);
+    if (hr >= 0 && r0 + nR - 1 <= hr + 1) return;                    // header rows
+    const heads = hr >= 0 ? top[hr] : [];
+    const idx = inventoryIndex_(heads);
+    let codeCol = 0;
+    for (const a of cfg.headers.unitCode || []) { const p = idx[inventoryHeaderKey_(a)]; if (p !== undefined) { codeCol = p + 1; break; } }
+    const colName = c => String(heads[c - 1] || '').replace(/\s+/g, ' ').trim() || ('Column ' + c);
+    let who = '';
+    try { who = (e.user && e.user.getEmail && e.user.getEmail()) || ''; } catch (err) {}
+    if (nR === 1 && nC === 1) {
+      const oldV = e.oldValue === undefined ? '' : String(e.oldValue);
+      const newV = e.value === undefined ? String(e.range.getDisplayValue() || '') : String(e.value);
+      if (oldV === newV) return;
+      const unit = codeCol ? String(sheet.getRange(r0, codeCol).getDisplayValue() || '').trim() : '';
+      auditLog_(who || 'Sheet user', 'Inventory edit (sheet)', { project: cfg.project, unit: unit,
+        details: tab + ' › ' + colName(c0) + ': ' + (oldV || '—') + ' → ' + (newV || '—'), ref: tab + ' row ' + r0 });
+    } else {
+      let units = [];
+      if (codeCol) {
+        const first = Math.max(r0, hr + 2), last = Math.min(r0 + nR - 1, first + 29);
+        if (last >= first) units = sheet.getRange(first, codeCol, last - first + 1, 1).getDisplayValues().map(x => String(x[0] || '').trim()).filter(Boolean);
+      }
+      auditLog_(who || 'Sheet user', 'Inventory edit (sheet)', { project: cfg.project,
+        unit: units.length === 1 ? units[0] : (units.length ? units.length + ' units' : ''),
+        details: tab + ' · ' + (nR * nC) + ' cells changed · ' + colName(c0) + (nC > 1 ? ' … ' + colName(c0 + nC - 1) : '') +
+          (units.length > 1 ? ' · ' + units.slice(0, 15).join(', ') + (units.length > 15 ? ' …' : '') : ''),
+        ref: tab + ' rows ' + r0 + (nR > 1 ? '–' + (r0 + nR - 1) : '') });
+    }
+  } catch (err) {
+    console.warn('auditInventorySheetEdit_: ' + err);
+  }
+}
