@@ -1,0 +1,58 @@
+<script>
+/* =====================================================================
+   EDEN BI — Reopen the same pop-up page after a browser refresh
+   (Broker Commissions incl. the company that was open, Sales Scorecard,
+   Discount Approvals, Price Manager, Activity Log), with its filters.
+   Kept for this tab only (sessionStorage); runs after ViewRestore.
+   ===================================================================== */
+const EDEN_OVL_KEY_='EDEN_LAST_OVERLAY';
+const EDEN_OVLS_={
+  bc:{el:'bc',open:()=>typeof bcOpen_==='function'&&bcOpen_(),
+      get:()=>({company:BC_.company,project:BC_.project,q:BC_.q,onlyOpen:BC_.onlyOpen}),
+      set:s=>{Object.assign(BC_,{project:s.project||'',q:s.q||'',onlyOpen:!!s.onlyOpen});},
+      after:s=>{if(s.company){BC_.company=s.company;if(typeof bcRender_==='function')bcRender_();}}},
+  sc:{el:'sc',open:()=>typeof scOpen_==='function'&&scOpen_(),
+      get:()=>({month:SC_.month,project:SC_.project}),set:s=>{SC_.month=s.month||SC_.month;SC_.project=s.project||'';}},
+  da:{el:'da',open:()=>typeof daOpen_==='function'&&daOpen_(),
+      get:()=>({tab:DA_.tab,from:DA_.from,q:DA_.q}),set:s=>{Object.assign(DA_,{tab:s.tab||'pending',from:s.from||'',q:s.q||''});}},
+  pm:{el:'pm',open:()=>typeof pmOpen_==='function'&&pmOpen_(),
+      get:()=>({project:PM_.project,status:PM_.status,floor:PM_.floor,type:PM_.type,q:PM_.q}),
+      set:s=>{Object.assign(PM_,{project:s.project||PM_.project,status:s.status||'available',floor:s.floor||'',type:s.type||'',q:s.q||'',tab:'units'});}},
+  al:{el:'al',open:()=>typeof alOpen_==='function'&&alOpen_(),get:()=>({}),set:()=>{}}
+};
+function edenOvlSave_(){
+  if(!EDEN_OVL_DONE_)return;                 // don't overwrite before the restore has run
+  try{
+    const k=Object.keys(EDEN_OVLS_).find(k=>document.getElementById(EDEN_OVLS_[k].el));
+    if(!k){sessionStorage.removeItem(EDEN_OVL_KEY_);return;}
+    let st={};try{st=EDEN_OVLS_[k].get()||{};}catch(e){}
+    sessionStorage.setItem(EDEN_OVL_KEY_,JSON.stringify({k,st}));
+  }catch(e){}
+}
+let EDEN_OVL_DONE_=false;
+function edenOvlRestore_(){
+  if(EDEN_OVL_DONE_)return;EDEN_OVL_DONE_=true;
+  let s=null;try{s=JSON.parse(sessionStorage.getItem(EDEN_OVL_KEY_)||'null');}catch(e){}
+  if(!s||!EDEN_OVLS_[s.k])return;
+  const o=EDEN_OVLS_[s.k];
+  try{o.set(s.st||{});o.open();if(o.after)o.after(s.st||{});}catch(e){console.warn('Overlay restore',e);}
+}
+(function(){
+  window.addEventListener('beforeunload',edenOvlSave_);
+  // Also keep it current while working (a crash or a closed tab keeps the last state).
+  setInterval(edenOvlSave_,3000);
+  // Wait until the user is signed in and the deals are loaded, then reopen.
+  let tries=0;
+  const t=setInterval(()=>{
+    tries++;
+    const ready=typeof AUTH_TOKEN!=='undefined'&&AUTH_TOKEN&&typeof rawRows!=='undefined'&&rawRows&&rawRows.length;
+    if(ready){clearInterval(t);setTimeout(edenOvlRestore_,700);}
+    else if(tries>240)clearInterval(t);          // 2 minutes
+  },500);
+  if(typeof logout==='function'&&!logout.__ovl){
+    const original=logout;
+    logout=function(){try{sessionStorage.removeItem(EDEN_OVL_KEY_);}catch(e){}return original.apply(this,arguments);};
+    logout.__ovl=true;
+  }
+})();
+</script>
