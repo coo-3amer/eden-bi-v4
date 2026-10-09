@@ -167,6 +167,7 @@ function warmDashboardCache() {
   if (cache.get('WARM_RUNNING')) return;
   cache.put('WARM_RUNNING', '1', 330);
   const t0 = Date.now(), elapsed = () => Date.now() - t0;
+  if (typeof ensureDailyBackupTrigger_ === 'function') ensureDailyBackupTrigger_();
   try {
     // 1) What every visitor needs first.
     dashCacheWrite_('ALL', buildDashboardData_({ role: 'Admin' }));

@@ -49,19 +49,32 @@ function alOpen_(){
       <input type="search" data-f="q" placeholder="Search client, unit, details…">
       <select data-f="user"><option value="">All users</option></select>
       <input type="date" data-f="from" title="From"><input type="date" data-f="to" title="To">
+      <button type="button" class="alBtn" data-a="backup" title="Copy all sheets to Google Drive now">Backup now</button>
       <button type="button" class="alBtn" data-a="csv">Export CSV</button>
       <button type="button" class="alBtn" data-a="reload">↻</button>
       <button type="button" class="alX" aria-label="Close">×</button>
     </div></div>
-    <div class="alKpis"></div>
+    <div class="alKpis"></div><div class="alBackup" style="padding:6px 18px;font-size:12px;color:var(--ds-muted);border-bottom:1px solid var(--ds-line)"></div>
     <div class="alBody"><div class="alEmpty">Loading…</div></div>`;
   document.body.append(back,el);
   el.querySelector('.alX').addEventListener('click',alClose_);
   el.querySelectorAll('[data-f]').forEach(i=>i.addEventListener('input',()=>{AL_[i.dataset.f]=i.value.trim();alRender_();}));
   el.querySelector('[data-a="csv"]').addEventListener('click',alCsv_);
   el.querySelector('[data-a="reload"]').addEventListener('click',alLoad_);
+  el.querySelector('[data-a="backup"]').addEventListener('click',e=>{
+    const b=e.currentTarget;b.disabled=true;b.textContent='Backing up…';
+    google.script.run.withSuccessHandler(r=>{b.disabled=false;b.textContent='Backup now';alBackupInfo_(r);alLoad_();})
+      .withFailureHandler(err=>{b.disabled=false;b.textContent='Backup now';alert(err&&err.message||err);}).runBackupNow(AUTH_TOKEN);
+  });
+  google.script.run.withSuccessHandler(alBackupInfo_).withFailureHandler(()=>{}).getBackupStatus(AUTH_TOKEN);
   document.addEventListener('keydown',alKey_);
   alLoad_();
+}
+function alBackupInfo_(r){
+  const box=document.querySelector('#al .alBackup');if(!box)return;
+  if(!r){box.textContent='Daily backup: runs every night at 3 AM into Google Drive › EDEN BI Backups (keeps 30 days). Not run yet.';return;}
+  const failed=(r.failed||[]).length;
+  box.innerHTML=`Daily backup to Google Drive › <b>EDEN BI Backups</b> (every night, keeps 30 days) · Last: <b>${alEsc_(r.day||'')}</b>${r.at?' '+alEsc_(String(r.at).slice(11,16)):''}${failed?` · <span style="color:var(--ds-red)">${failed} failed</span>`:' ✓'}`;
 }
 function alClose_(){document.getElementById('al')?.remove();document.getElementById('alBack')?.remove();document.removeEventListener('keydown',alKey_);}
 function alKey_(e){if(e.key==='Escape')alClose_();}
