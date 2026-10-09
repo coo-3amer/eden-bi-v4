@@ -1,0 +1,293 @@
+<style id="eden-broker-comm">
+.bcBack{position:fixed;inset:0;z-index:430;background:rgba(10,8,6,.5);backdrop-filter:blur(2px)}
+.bc{position:fixed;inset:14px;z-index:431;display:flex;flex-direction:column;background:var(--ds-surface,#fffdf9);color:var(--ds-text,#2a2621);border-radius:18px;box-shadow:0 30px 80px rgba(0,0,0,.35);overflow:hidden}
+.bcHead{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid var(--ds-line,#e8e0d1)}
+.bcHead small{display:block;font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ds-gold,#b08a42)}
+.bcHead h2{margin:0;font:600 22px/1.2 'Cormorant Garamond',Georgia,serif;color:var(--ds-heading,#16130f)}
+.bcTools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-left:auto}
+.bc input,.bc select{height:34px;border:1px solid var(--ds-line,#e8e0d1);border-radius:10px;padding:0 10px;background:var(--ds-surface,#fff);color:var(--ds-text);font:inherit;font-size:13px}
+.bcBtn{height:34px;padding:0 12px;border-radius:10px;border:1px solid var(--ds-gold-line,rgba(176,138,66,.32));background:var(--ds-gold-soft,rgba(176,138,66,.12));color:var(--ds-gold-strong,#8f6d2c);font-weight:700;font-size:12.5px;cursor:pointer;white-space:nowrap}
+.bcBtn.bcPrimary{background:var(--ds-gold,#b08a42);color:#fff;border-color:transparent}
+.bcBtn.bcGhost{background:transparent;border-color:var(--ds-line,#e8e0d1);color:var(--ds-muted,#83796b)}
+.bcBtn.bcSm{height:28px;padding:0 9px;font-size:11.5px;border-radius:8px}
+.bcBtn:disabled{opacity:.5;cursor:default}
+.bcX{width:34px;height:34px;border-radius:10px;border:1px solid var(--ds-line);background:var(--ds-surface);font-size:20px;cursor:pointer;color:var(--ds-muted)}
+.bcBody{flex:1;overflow:auto;padding:16px 18px 22px}
+.bcKpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:10px;margin-bottom:16px}
+.bcKpi{background:var(--ds-surface-2,#f9f5ee);border:1px solid var(--ds-line);border-radius:12px;padding:10px 12px}
+.bcKpi span{display:block;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ds-muted)}
+.bcKpi b{display:block;font-size:17px;color:var(--ds-heading);font-variant-numeric:tabular-nums;line-height:1.35}
+.bcKpi small{display:block;font-size:11px;color:var(--ds-muted)}
+.bcTable{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+.bcTable th{position:sticky;top:-16px;background:var(--ds-surface);text-align:left;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ds-muted);padding:10px 8px;border-bottom:1px solid var(--ds-line);z-index:1}
+.bcTable td{padding:8px;border-bottom:1px solid var(--ds-line);vertical-align:middle}
+.bcTable .num{text-align:right;white-space:nowrap}
+.bcTable tr.bcRow{cursor:pointer}.bcTable tr.bcRow:hover td{background:var(--ds-surface-2,#f9f5ee)}
+.bcRate{width:78px;text-align:right}
+.bcRate.bcMissing{border-color:var(--ds-red,#d64545)!important;background:rgba(214,69,69,.06)!important}
+.bcTag{display:inline-block;padding:3px 8px;border-radius:99px;font-size:11px;font-weight:700;background:var(--c-soft,rgba(0,0,0,.06));color:var(--c,#555);white-space:nowrap}
+.bcTag.due{--c:#2f7d4f;--c-soft:rgba(47,158,98,.12)}.bcTag.pending{--c:#8f6d2c;--c-soft:rgba(176,138,66,.14)}.bcTag.cancel{--c:#b03a3a;--c-soft:rgba(214,69,69,.12)}.bcTag.paid{--c:#2b5f9e;--c-soft:rgba(43,95,158,.12)}
+.bcCur{font-style:normal;font-size:11px;font-weight:700;color:var(--ds-muted,#83796b)}
+.bcWarn{color:var(--ds-red,#d64545);font-weight:700}
+.bcMuted{color:var(--ds-muted,#83796b)}
+.bcNote{font-size:11.5px;color:var(--ds-muted);margin-top:12px;line-height:1.6}
+.bcForm{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;padding:10px 12px;background:var(--ds-surface-2,#f9f5ee);border:1px solid var(--ds-gold-line,rgba(176,138,66,.32));border-radius:12px;margin:6px 0}
+.bcForm label{display:flex;flex-direction:column;gap:3px;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ds-muted)}
+.bcForm input,.bcForm select{width:150px}
+.bcMsg{font-size:12px;color:var(--ds-muted)}.bcMsg.err{color:var(--ds-red,#d64545);font-weight:700}
+.bcH3{font:600 16px 'Cormorant Garamond',Georgia,serif;color:var(--ds-heading);margin:18px 0 6px}
+@media(max-width:760px){.bc{inset:0;border-radius:0}.bcHide{display:none}.bcHead{padding-right:58px;position:relative}.bcX{position:absolute;top:12px;right:14px}.bcTools{margin-left:0;width:100%}.bcTools input[type=search]{flex:1;min-width:0}.bcKpis{grid-template-columns:repeat(2,1fr)}.bcKpi b{font-size:15px}}
+</style>
+<script>
+/* =====================================================================
+   EDEN BI — Broker Commissions (Brokers → Broker Commissions, admins only)
+   Commission of a deal = Final price × the company's rate (typed by the
+   admin), unless the deal has its own rate or a fixed amount.
+   It becomes due once the client signs (or the deal is Closed / Delivered);
+   reservations and unsigned DP show as "Pending"; cancelled deals owe nothing.
+   ===================================================================== */
+const BC_={data:null,company:null,project:'',q:'',onlyOpen:false,pay:null,edit:null,busy:false};
+function bcEsc_(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function bcNum_(n,d=0){return Number(n||0).toLocaleString('en-US',{maximumFractionDigits:d});}
+function bcIsAdmin_(){const r=String((typeof AUTH_USER!=='undefined'&&AUTH_USER&&AUTH_USER.role)||'').trim().toLowerCase();return r==='admin'||r==='super admin';}
+function bcCo_(s){return String(s||'').trim().replace(/\s+/g,' ').toLowerCase();}
+function bcProjKey_(p){return String(p||'').trim().toUpperCase().replace(/[^A-Z0-9]+/g,'');}
+function bcKey_(project,unit){return bcProjKey_(project)+'|'+String(unit||'').trim().replace(/\.+$/,'').toUpperCase();}
+function bcCur_(r){return typeof projectCurrency_==='function'?projectCurrency_(r):(r.currency||'EGP');}
+function bcFmt_(v){const t=String(v||'').trim();const m=t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);const d=m?new Date(+m[1],+m[2]-1,+m[3]):null;return d?d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):(t||'—');}
+function bcResDate_(r){const y=Number(r.year),m=Number(r.month),d=Number(r.day)||1;return y&&m?`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`:'';}
+function bcState_(r){
+  const st=typeof dealStage_==='function'?dealStage_(r):(/^cancel/i.test(String(r.status||''))?'cancel':/^closed$/i.test(String(r.status||''))?'closed':'reservation');
+  if(st==='cancel')return {k:'cancel',label:'Cancelled'};
+  if(['csPart','csTotal','coPart','coTotal','closed','delivered'].includes(st))return {k:'due',label:'Due'};
+  if(st==='review')return {k:'pending',label:'Check deal ticks'};
+  return {k:'pending',label:st==='reservation'?'Pending · reservation':'Pending · not signed'};
+}
+/* One line per broker deal, with its commission figures. */
+function bcDeals_(){
+  const d=BC_.data||{rates:{},deals:{},payouts:[]};
+  const paidBy={};
+  (d.payouts||[]).forEach(p=>{const k=bcKey_(p.project,p.unitCode)+'#'+bcCo_(p.company);paidBy[k]=(paidBy[k]||0)+(Number(p.amount)||0);});
+  const ov={};Object.values(d.deals||{}).forEach(o=>{ov[bcKey_(o.project,o.unitCode)]=o;});
+  return ((typeof rawRows!=='undefined'&&rawRows)||[]).filter(r=>String(r.brokerageCompany||'').trim()).map(r=>{
+    const company=String(r.brokerageCompany).trim().replace(/\s+/g,' '),ck=bcCo_(company),key=bcKey_(r.project,r.unitCode);
+    const o=ov[key]&&(!ov[key].company||bcCo_(ov[key].company)===ck)?ov[key]:null;
+    const coRate=d.rates[ck]?d.rates[ck].rate:null;
+    const rate=o&&o.rate!=null?o.rate:coRate;
+    const price=Number(r.amount)||0;
+    const comm=o&&o.amount!=null?o.amount:(rate!=null?price*rate/100:null);
+    const s=bcState_(r),paid=paidBy[key+'#'+ck]||0;
+    const due=s.k==='due'&&comm!=null?comm:0;
+    return {r,company,ck,key,o,rate,price,comm,s,paid,due,remaining:s.k==='due'&&comm!=null?Math.max(0,comm-paid):0,over:paid>(s.k==='due'&&comm!=null?comm:0)+0.5,cur:bcCur_(r)};
+  }).filter(x=>!BC_.project||x.r.project===BC_.project);
+}
+function bcCompanies_(list){
+  const by={};
+  list.forEach(x=>{
+    const c=by[x.ck]||(by[x.ck]={company:x.company,ck:x.ck,deals:0,active:0,noRate:0,cur:{}});
+    c.deals++;if(x.s.k!=='cancel')c.active++;
+    if(x.s.k!=='cancel'&&x.comm==null)c.noRate++;
+    const t=c.cur[x.cur]||(c.cur[x.cur]={comm:0,due:0,paid:0,rem:0,pending:0});
+    if(x.s.k!=='cancel'&&x.comm!=null)t.comm+=x.comm;
+    if(x.s.k==='pending'&&x.comm!=null)t.pending+=x.comm;
+    t.due+=x.due;t.paid+=x.paid;t.rem+=x.remaining;
+  });
+  return Object.values(by).sort((a,b)=>{const ra=Object.values(a.cur).reduce((s,t)=>s+t.rem,0),rb=Object.values(b.cur).reduce((s,t)=>s+t.rem,0);return (rb-ra)||b.active-a.active||a.company.localeCompare(b.company);});
+}
+function bcMoney_(cur,k){const e=Object.entries(cur).filter(([,t])=>Math.round(t[k]));return e.length?e.map(([c,t])=>`${bcNum_(t[k])} <i class="bcCur">${bcEsc_(c)}</i>`).join('<br>'):'<span class="bcMuted">—</span>';}
+
+function bcMount_(){
+  const menu=document.querySelector('#brokersModule .moduleMenu');
+  if(!menu)return;
+  let b=menu.querySelector('[data-bc]');
+  if(!b){b=document.createElement('button');b.type='button';b.dataset.bc='1';b.textContent='Broker Commissions';b.addEventListener('click',bcOpen_);menu.appendChild(b);}
+  b.style.display=bcIsAdmin_()?'':'none';
+}
+function bcOpen_(){
+  if(!bcIsAdmin_()){alert('Broker commissions are for admins only.');return;}
+  bcClose_();
+  const projects=[...new Set(((typeof rawRows!=='undefined'&&rawRows)||[]).filter(r=>r.brokerageCompany).map(r=>String(r.project||'').trim()).filter(Boolean))].sort();
+  const back=document.createElement('div');back.className='bcBack';back.id='bcBack';back.addEventListener('click',bcClose_);
+  const el=document.createElement('section');el.className='bc';el.id='bc';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');
+  el.innerHTML=`<div class="bcHead"><div><small>Brokers</small><h2>Broker Commissions</h2></div>
+    <div class="bcTools"><input type="search" data-f="q" placeholder="Search company…" value="${bcEsc_(BC_.q)}">
+      <select data-f="project"><option value="">All projects</option>${projects.map(p=>`<option${p===BC_.project?' selected':''}>${bcEsc_(p)}</option>`).join('')}</select>
+      <label class="bcMuted" style="display:flex;gap:6px;align-items:center;font-size:12.5px"><input type="checkbox" data-f="onlyOpen" style="height:auto"${BC_.onlyOpen?' checked':''}> Only with balance</label>
+      <button type="button" class="bcX" aria-label="Close">×</button></div></div>
+    <div class="bcBody"><div class="bcNote" style="text-align:center;padding:40px">Loading commissions…</div></div>`;
+  document.body.append(back,el);
+  el.querySelector('.bcX').addEventListener('click',bcClose_);
+  el.querySelectorAll('[data-f]').forEach(i=>i.addEventListener(i.type==='search'?'input':'change',()=>{BC_[i.dataset.f]=i.type==='checkbox'?i.checked:i.value;bcRender_();}));
+  document.addEventListener('keydown',bcOnKey_);
+  bcLoad_();
+}
+function bcLoad_(){
+  google.script.run.withSuccessHandler(d=>{BC_.data=d;bcRender_();})
+    .withFailureHandler(err=>{const b=document.querySelector('#bc .bcBody');if(b)b.innerHTML=`<div class="bcNote bcWarn" style="text-align:center;padding:40px">Could not load commissions.<br>${bcEsc_(err&&err.message||err)}</div>`;})
+    .getBrokerCommissions(AUTH_TOKEN);
+}
+function bcClose_(){document.getElementById('bc')?.remove();document.getElementById('bcBack')?.remove();document.removeEventListener('keydown',bcOnKey_);BC_.company=null;BC_.pay=null;BC_.edit=null;}
+function bcOnKey_(e){if(e.key!=='Escape')return;if(BC_.pay||BC_.edit){BC_.pay=BC_.edit=null;bcRender_();return;}if(BC_.company){BC_.company=null;bcRender_();return;}bcClose_();}
+function bcCall_(fn,req,msgEl){
+  if(BC_.busy)return;BC_.busy=true;
+  if(msgEl){msgEl.className='bcMsg';msgEl.textContent='Saving…';}
+  google.script.run.withSuccessHandler(d=>{BC_.busy=false;BC_.data=d;BC_.pay=null;BC_.edit=null;bcRender_();})
+    .withFailureHandler(err=>{BC_.busy=false;const m=err&&err.message||String(err);if(msgEl){msgEl.className='bcMsg err';msgEl.textContent=m;}else alert(m);})
+    [fn](AUTH_TOKEN,req);
+}
+function bcSaveRate_(company,input){
+  const v=String(input.value||'').replace(/[%\s,]/g,'');
+  if(v!==''&&(isNaN(+v)||+v<0||+v>100)){input.classList.add('bcMissing');alert('Rate must be a number between 0 and 100.');return;}
+  const old=BC_.data.rates[bcCo_(company)];
+  if((old&&old.rate!=null?String(old.rate):'')===v)return;
+  input.disabled=true;
+  bcCall_('saveBrokerCommissionRate',{company,rate:v});
+}
+function bcRender_(){
+  const el=document.getElementById('bc');if(!el||!BC_.data)return;
+  const body=el.querySelector('.bcBody');
+  const list=bcDeals_();
+  if(BC_.company){bcRenderCompany_(body,list.filter(x=>x.ck===BC_.company));return;}
+  let cos=bcCompanies_(list);
+  const q=bcCo_(BC_.q);if(q)cos=cos.filter(c=>c.ck.includes(q));
+  if(BC_.onlyOpen)cos=cos.filter(c=>Object.values(c.cur).some(t=>t.rem>0.5)||c.noRate);
+  const tot={};list.forEach(x=>{const t=tot[x.cur]||(tot[x.cur]={comm:0,due:0,paid:0,rem:0,pending:0});if(x.s.k!=='cancel'&&x.comm!=null)t.comm+=x.comm;if(x.s.k==='pending'&&x.comm!=null)t.pending+=x.comm;t.due+=x.due;t.paid+=x.paid;t.rem+=x.remaining;});
+  const allCos=bcCompanies_(list),noRate=allCos.filter(c=>c.active&&!BC_.data.rates[c.ck]?.rate&&BC_.data.rates[c.ck]?.rate!==0).length;
+  body.innerHTML=`<div class="bcKpis">
+    <div class="bcKpi"><span>Due to brokers</span><b>${bcMoney_(tot,'due')}</b><small>signed / closed deals</small></div>
+    <div class="bcKpi"><span>Paid</span><b>${bcMoney_(tot,'paid')}</b><small>${(BC_.data.payouts||[]).length} payouts recorded</small></div>
+    <div class="bcKpi"><span>Remaining</span><b>${bcMoney_(tot,'rem')}</b><small>due − paid</small></div>
+    <div class="bcKpi"><span>Pending</span><b>${bcMoney_(tot,'pending')}</b><small>becomes due when the client signs</small></div>
+    <div class="bcKpi"><span>Companies without a rate</span><b class="${noRate?'bcWarn':''}">${noRate}</b><small>type the rate in the table below</small></div>
+  </div>
+  ${cos.length?`<table class="bcTable"><thead><tr><th>Company</th><th class="num">Rate %</th><th class="num">Deals</th><th class="num bcHide">Commission</th><th class="num">Due</th><th class="num">Paid</th><th class="num">Remaining</th><th></th></tr></thead><tbody>
+  ${cos.map(c=>{const r=BC_.data.rates[c.ck],rv=r&&r.rate!=null?r.rate:'';return `<tr class="bcRow" data-co="${bcEsc_(c.ck)}">
+    <td><b>${bcEsc_(c.company)}</b>${c.noRate?`<br><small class="bcWarn">${c.noRate} deal${c.noRate>1?'s':''} without a rate</small>`:''}</td>
+    <td class="num"><input class="bcRate${rv===''&&c.active?' bcMissing':''}" data-rate="${bcEsc_(c.company)}" inputmode="decimal" placeholder="—" value="${bcEsc_(rv)}" title="Commission rate of ${bcEsc_(c.company)} (% of the final price)"></td>
+    <td class="num">${c.active}${c.deals>c.active?` <small class="bcMuted">+${c.deals-c.active} cancelled</small>`:''}</td>
+    <td class="num bcHide">${bcMoney_(c.cur,'comm')}</td><td class="num">${bcMoney_(c.cur,'due')}</td><td class="num">${bcMoney_(c.cur,'paid')}</td>
+    <td class="num"><b>${bcMoney_(c.cur,'rem')}</b></td><td><button type="button" class="bcBtn bcSm" data-open="${bcEsc_(c.ck)}">Open</button></td></tr>`;}).join('')}
+  </tbody></table>`:`<div class="bcNote" style="text-align:center;padding:30px">No broker deals${q||BC_.onlyOpen?' match this search':''}.</div>`}
+  <div class="bcNote">Commission = final price × the company’s rate. Type the rate in the Rate % box and press Enter (it saves for every deal of that company); a single deal can get its own rate or a fixed amount from the company page.
+  A commission becomes <b>due</b> once the client signs (or the deal is Closed / Delivered). Reservations and unsigned down payments show as <b>pending</b>. Cancelled deals owe nothing.</div>`;
+  body.querySelectorAll('[data-rate]').forEach(i=>{
+    i.addEventListener('click',e=>e.stopPropagation());
+    i.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();i.blur();}});
+    i.addEventListener('change',()=>bcSaveRate_(i.dataset.rate,i));
+  });
+  body.querySelectorAll('tr[data-co]').forEach(tr=>tr.addEventListener('click',()=>{BC_.company=tr.dataset.co;bcRender_();body.scrollTop=0;}));
+}
+function bcRenderCompany_(body,list){
+  const company=list[0]?list[0].company:BC_.company,ck=BC_.company;
+  const rate=BC_.data.rates[ck],rv=rate&&rate.rate!=null?rate.rate:'';
+  const c=bcCompanies_(list)[0]||{cur:{},active:0,deals:0};
+  const pays=(BC_.data.payouts||[]).filter(p=>bcCo_(p.company)===ck&&(!BC_.project||list.some(x=>x.key===bcKey_(p.project,p.unitCode)))).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  const sorted=list.slice().sort((a,b)=>({due:0,pending:1,cancel:2}[a.s.k]-{due:0,pending:1,cancel:2}[b.s.k])||(b.remaining-a.remaining)||String(bcResDate_(b.r)).localeCompare(bcResDate_(a.r)));
+  const today=new Date().toISOString().slice(0,10);
+  let html=`<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+    <button type="button" class="bcBtn bcGhost" data-a="back">← All companies</button>
+    <h3 class="bcH3" style="margin:0">${bcEsc_(company)}</h3>
+    <span class="bcMuted" style="font-size:12.5px">Rate</span><input class="bcRate${rv===''?' bcMissing':''}" data-rate="${bcEsc_(company)}" inputmode="decimal" placeholder="—" value="${bcEsc_(rv)}"><span class="bcMuted">%</span>
+    ${rate&&rate.by?`<small class="bcMuted">set by ${bcEsc_(rate.by)} · ${bcFmt_(rate.at)}</small>`:''}
+    <button type="button" class="bcBtn bcPrimary" data-a="stmt" style="margin-left:auto">🧾 Statement PDF</button></div>
+  <div class="bcKpis">
+    <div class="bcKpi"><span>Deals</span><b>${c.active}</b><small>${c.deals-c.active?c.deals-c.active+' cancelled':'active'}</small></div>
+    <div class="bcKpi"><span>Due</span><b>${bcMoney_(c.cur,'due')}</b></div>
+    <div class="bcKpi"><span>Paid</span><b>${bcMoney_(c.cur,'paid')}</b></div>
+    <div class="bcKpi"><span>Remaining</span><b>${bcMoney_(c.cur,'rem')}</b></div>
+    <div class="bcKpi"><span>Pending</span><b>${bcMoney_(c.cur,'pending')}</b><small>not signed yet</small></div>
+  </div>
+  <table class="bcTable"><thead><tr><th>Reserved</th><th>Client</th><th>Project · Unit</th><th>Status</th><th class="num bcHide">Final price</th><th class="num">Rate</th><th class="num">Commission</th><th class="num">Paid</th><th class="num">Remaining</th><th></th></tr></thead><tbody>`;
+  sorted.forEach(x=>{
+    const r=x.r,i=list.indexOf(x);
+    const rateTxt=x.o&&x.o.amount!=null?'<small class="bcMuted">fixed</small>':x.rate!=null?bcNum_(x.rate,2)+'%'+(x.o&&x.o.rate!=null?' <small class="bcMuted">deal</small>':''):'<span class="bcWarn">no rate</span>';
+    html+=`<tr><td>${bcFmt_(bcResDate_(r))}</td><td>${bcEsc_(r.clientName||'')}</td><td>${bcEsc_(r.project)} · <b>${bcEsc_(r.unitCode)}</b></td>
+      <td><span class="bcTag ${x.s.k}">${bcEsc_(x.s.label)}</span>${x.over?`<br><small class="bcWarn">paid more than due</small>`:''}</td>
+      <td class="num bcHide">${bcNum_(x.price)} <small class="bcMuted">${bcEsc_(x.cur)}</small></td><td class="num">${rateTxt}</td>
+      <td class="num">${x.comm==null?'—':bcNum_(x.comm)}</td><td class="num">${x.paid?bcNum_(x.paid):'—'}</td><td class="num"><b>${x.s.k==='due'&&x.comm!=null?bcNum_(x.remaining):'—'}</b></td>
+      <td style="white-space:nowrap"><button type="button" class="bcBtn bcSm" data-pay="${i}"${x.s.k==='cancel'?' disabled':''}>Pay</button> <button type="button" class="bcBtn bcSm bcGhost" data-edit="${i}" title="Different rate or fixed amount for this deal">Edit</button></td></tr>`;
+    if(BC_.pay===x.key){
+      html+=`<tr><td colspan="10"><div class="bcForm" data-form="pay">
+        <label>Amount (${bcEsc_(x.cur)})<input data-p="amount" inputmode="decimal" value="${x.remaining?Math.round(x.remaining):''}"></label>
+        <label>Paid on<input type="date" data-p="date" value="${today}"></label>
+        <label>Method<select data-p="method"><option>Bank transfer</option><option>Cheque</option><option>Cash</option><option>InstaPay</option><option>Other</option></select></label>
+        <label>Reference / cheque no.<input data-p="ref"></label>
+        <label>Notes<input data-p="notes"></label>
+        <button type="button" class="bcBtn bcPrimary" data-a="savePay" data-i="${i}">Save payment</button><button type="button" class="bcBtn bcGhost" data-a="cancel">Cancel</button><span class="bcMsg"></span></div></td></tr>`;
+    }
+    if(BC_.edit===x.key){
+      html+=`<tr><td colspan="10"><div class="bcForm" data-form="edit">
+        <label>Rate for this deal %<input data-e="rate" inputmode="decimal" placeholder="${rv===''?'—':bcEsc_(rv)+' (company)'}" value="${x.o&&x.o.rate!=null?bcEsc_(x.o.rate):''}"></label>
+        <label>or fixed amount (${bcEsc_(x.cur)})<input data-e="amount" inputmode="decimal" value="${x.o&&x.o.amount!=null?bcEsc_(x.o.amount):''}"></label>
+        <label>Notes<input data-e="notes" style="width:220px" value="${bcEsc_(x.o?x.o.notes:'')}"></label>
+        <button type="button" class="bcBtn bcPrimary" data-a="saveEdit" data-i="${i}">Save</button><button type="button" class="bcBtn bcGhost" data-a="cancel">Cancel</button>
+        <span class="bcMsg">Leave both empty to use the company rate again.</span></div></td></tr>`;
+    }
+  });
+  html+=`</tbody></table>
+  <h3 class="bcH3">Payouts</h3>
+  ${pays.length?`<table class="bcTable"><thead><tr><th>Date</th><th>Unit</th><th>Client</th><th class="num">Amount</th><th>Method</th><th class="bcHide">Reference</th><th class="bcHide">Notes</th><th class="bcHide">By</th><th></th></tr></thead><tbody>
+  ${pays.map(p=>`<tr><td>${bcFmt_(p.date)}</td><td>${bcEsc_(p.project)} · <b>${bcEsc_(p.unitCode)}</b></td><td>${bcEsc_(p.client)}</td><td class="num">${bcNum_(p.amount)} <small class="bcMuted">${bcEsc_(p.currency)}</small></td><td>${bcEsc_(p.method)}</td><td class="bcHide">${bcEsc_(p.ref)}</td><td class="bcHide">${bcEsc_(p.notes)}</td><td class="bcHide">${bcEsc_(p.by)}</td><td><button type="button" class="bcBtn bcSm bcGhost" data-del="${bcEsc_(p.id)}" title="Delete this payout">✕</button></td></tr>`).join('')}
+  </tbody></table>`:'<div class="bcNote">No payouts recorded for this company yet. Press “Pay” on a deal to record one.</div>'}`;
+  body.innerHTML=html;
+  const rin=body.querySelector('[data-rate]');
+  rin.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();rin.blur();}});
+  rin.addEventListener('change',()=>bcSaveRate_(company,rin));
+  body.querySelector('[data-a="back"]').addEventListener('click',()=>{BC_.company=null;BC_.pay=BC_.edit=null;bcRender_();});
+  body.querySelector('[data-a="stmt"]').addEventListener('click',()=>bcStatement_(company,list,pays));
+  body.querySelectorAll('[data-pay]').forEach(b=>b.addEventListener('click',()=>{const x=list[+b.dataset.pay];BC_.edit=null;BC_.pay=BC_.pay===x.key?null:x.key;bcRender_();body.querySelector('[data-p="amount"]')?.focus();}));
+  body.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click',()=>{const x=list[+b.dataset.edit];BC_.pay=null;BC_.edit=BC_.edit===x.key?null:x.key;bcRender_();body.querySelector('[data-e="rate"]')?.focus();}));
+  body.querySelectorAll('[data-a="cancel"]').forEach(b=>b.addEventListener('click',()=>{BC_.pay=BC_.edit=null;bcRender_();}));
+  const sp=body.querySelector('[data-a="savePay"]');
+  if(sp)sp.addEventListener('click',()=>{
+    const x=list[+sp.dataset.i],f=sp.closest('.bcForm'),g=k=>f.querySelector(`[data-p="${k}"]`).value.trim(),msg=f.querySelector('.bcMsg');
+    const amt=Number(g('amount').replace(/,/g,''));
+    if(!(amt>0)){msg.className='bcMsg err';msg.textContent='Enter the amount paid.';return;}
+    if(x.comm!=null&&x.paid+amt>x.comm+0.5&&!confirm(`This makes the total paid ${bcNum_(x.paid+amt)}, more than the commission (${bcNum_(x.comm)}). Save anyway?`))return;
+    bcCall_('recordBrokerPayout',{company:x.company,project:x.r.project,unitCode:x.r.unitCode,client:x.r.clientName,amount:amt,currency:x.cur,date:g('date'),method:g('method'),ref:g('ref'),notes:g('notes')},msg);
+  });
+  const se=body.querySelector('[data-a="saveEdit"]');
+  if(se)se.addEventListener('click',()=>{
+    const x=list[+se.dataset.i],f=se.closest('.bcForm'),g=k=>f.querySelector(`[data-e="${k}"]`).value.trim().replace(/[,%]/g,''),msg=f.querySelector('.bcMsg');
+    if(g('rate')&&g('amount')){msg.className='bcMsg err';msg.textContent='Fill either the rate or the fixed amount, not both.';return;}
+    bcCall_('saveBrokerDealCommission',{company:x.company,project:x.r.project,unitCode:x.r.unitCode,dealRow:x.r.row,rate:g('rate'),amount:g('amount'),notes:f.querySelector('[data-e="notes"]').value.trim()},msg);
+  });
+  body.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{
+    const p=pays.find(q=>q.id===b.dataset.del);
+    if(!p||!confirm(`Delete the payout of ${bcNum_(p.amount)} ${p.currency} on ${bcFmt_(p.date)} for ${p.unitCode}?`))return;
+    b.disabled=true;bcCall_('deleteBrokerPayout',{id:p.id});
+  }));
+}
+function bcStatement_(company,list,pays){
+  const rate=BC_.data.rates[bcCo_(company)];
+  const c=bcCompanies_(list)[0]||{cur:{}};
+  const curs=Object.keys(c.cur);
+  const money=k=>curs.map(cu=>`${bcNum_(c.cur[cu][k])} ${bcEsc_(cu)}`).join('<br>')||'—';
+  const rows=list.filter(x=>x.s.k!=='cancel'||x.paid).sort((a,b)=>String(bcResDate_(a.r)).localeCompare(bcResDate_(b.r)));
+  const html=`<!doctype html><html><head><meta charset="utf-8"><title>Commission statement - ${bcEsc_(company)}</title><style>
+*{box-sizing:border-box}body{font:12px/1.45 Inter,Segoe UI,Arial,sans-serif;color:#1f1b16;margin:28px}
+.top{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #b08a42;padding-bottom:12px;margin-bottom:16px}
+.brand{font:700 26px/1 Georgia,serif;letter-spacing:.18em}.brand small{display:block;font:600 9px/1.6 Arial;letter-spacing:.42em;color:#8f6d2c}
+h1{margin:0;font:600 19px Georgia,serif;text-align:right}h1 small{display:block;font:12px Arial;color:#83796b}
+table{width:100%;border-collapse:collapse;margin-top:8px}th{background:#f3ece0;text-align:left;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;padding:6px 8px}td{padding:6px 8px;border-bottom:1px solid #eee3d2}.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.k{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:8px 0 14px}.k div{border:1px solid #e8e0d1;border-radius:8px;padding:8px 10px;background:#faf6ef}.k span{display:block;font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#83796b}.k b{font-size:14px}
+h2{font-size:13px;margin:18px 0 4px}.foot{margin-top:22px;font-size:10.5px;color:#83796b}.sig{display:flex;justify-content:space-between;margin-top:46px}.sig div{width:40%;border-top:1px solid #999;padding-top:6px;font-size:11px;color:#555}
+@media print{body{margin:12mm}.noprint{display:none}tr{page-break-inside:avoid}}.noprint{position:fixed;bottom:16px;right:16px}.noprint button{font:600 13px Arial;padding:8px 14px;border-radius:8px;border:0;background:#b08a42;color:#fff;cursor:pointer}
+</style></head><body><div class="noprint"><button onclick="window.print()">Print / Save as PDF</button></div>
+<div class="top"><div class="brand">EDEN<small>DEVELOPMENT</small></div><h1>Commission statement<small>${bcEsc_(company)}${BC_.project?' · '+bcEsc_(BC_.project):''} · ${new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</small></h1></div>
+<div class="k"><div><span>Company rate</span><b>${rate&&rate.rate!=null?bcNum_(rate.rate,2)+'%':'—'}</b></div><div><span>Due</span><b>${money('due')}</b></div><div><span>Paid</span><b>${money('paid')}</b></div><div><span>Remaining</span><b>${money('rem')}</b></div></div>
+<h2>Deals</h2><table><thead><tr><th>Reserved</th><th>Client</th><th>Unit</th><th>Status</th><th class="n">Final price</th><th class="n">Rate</th><th class="n">Commission</th><th class="n">Paid</th><th class="n">Remaining</th></tr></thead><tbody>
+${rows.map(x=>`<tr><td>${bcFmt_(bcResDate_(x.r))}</td><td>${bcEsc_(x.r.clientName)}</td><td>${bcEsc_(x.r.project)} · ${bcEsc_(x.r.unitCode)}</td><td>${bcEsc_(x.s.label)}</td><td class="n">${bcNum_(x.price)} ${bcEsc_(x.cur)}</td><td class="n">${x.o&&x.o.amount!=null?'fixed':x.rate!=null?bcNum_(x.rate,2)+'%':'—'}</td><td class="n">${x.comm==null?'—':bcNum_(x.comm)}</td><td class="n">${x.paid?bcNum_(x.paid):'—'}</td><td class="n">${x.s.k==='due'&&x.comm!=null?bcNum_(x.remaining):'—'}</td></tr>`).join('')}
+</tbody></table>
+${pays.length?`<h2>Payments made</h2><table><thead><tr><th>Date</th><th>Unit</th><th>Method</th><th>Reference</th><th class="n">Amount</th></tr></thead><tbody>
+${pays.slice().reverse().map(p=>`<tr><td>${bcFmt_(p.date)}</td><td>${bcEsc_(p.project)} · ${bcEsc_(p.unitCode)}</td><td>${bcEsc_(p.method)}</td><td>${bcEsc_(p.ref||'—')}</td><td class="n">${bcNum_(p.amount)} ${bcEsc_(p.currency)}</td></tr>`).join('')}</tbody></table>`:''}
+<div class="sig"><div>EDEN Development</div><div>${bcEsc_(company)}</div></div>
+<div class="foot">Commission becomes due once the client signs the contract (or the deal is closed). Pending deals are listed for information. EDEN Development · EDEN BI</div></body></html>`;
+  const w=window.open('','_blank');if(!w){alert('Allow pop-ups for this site to open the statement.');return;}
+  w.document.open();w.document.write(html);w.document.close();setTimeout(()=>{try{w.focus();w.print();}catch(e){}},400);
+}
+(function(){
+  const go=()=>{bcMount_();setInterval(bcMount_,4000);};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();
+})();
+</script>
