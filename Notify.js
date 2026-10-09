@@ -15,7 +15,8 @@
 const TG_EVENTS_ = {
   'Deal added': '🆕',
   'Deal status changed': '🔄',
-  'Sheet edit · Status': '🔄',
+  'Deal status changed (sheet)': '🔄',
+  'Deal added (sheet)': '🆕',
   'Payment recorded': '💰',
   'Payment deleted': '🗑',
   'Discount approved': '✅',
@@ -54,7 +55,6 @@ function notifyFromAudit_(who, action, info) {
     if (!icon) return;
     const details = String(info.details || '');
     if (action === 'Daily backup' && details.indexOf('Failed') < 0) return;
-    if (action === 'Sheet edit · Status' && !/→/.test(details)) return;
     const head = [info.project, info.unit].filter(Boolean).join(' · ');
     const lines = ['<b>' + icon + ' ' + tgEsc_(action) + '</b>' + (head ? ' — ' + tgEsc_(head) : '')];
     if (info.client) lines.push('Client: ' + tgEsc_(info.client));

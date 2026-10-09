@@ -486,6 +486,7 @@ function saveNewDeal(authToken, payload) {
         (saved.rejected && saved.rejected.length ? ' · Not saved: ' + saved.rejected.join('; ') : ''),
       ref: 'Deals row ' + saved.row + (saved.dealNum ? ' · #' + saved.dealNum : ''),
       discount: dealNumber_(payload.discountPercent) || (dealNumber_(unit.totalPrice) && dealNumber_(payload.finalPrice) ? (1 - dealNumber_(payload.finalPrice) / dealNumber_(unit.totalPrice)) * 100 : 0) });
+    if (typeof statusSeenRefresh_ === 'function') statusSeenRefresh_(saved.row);
     clearDashboardCache_();
     const ref = saved.dealNum ? 'Deal #' + saved.dealNum : 'The deal';
     const result = {
@@ -1057,6 +1058,7 @@ function updateDealRecord(authToken, req) {
     if (diffs.length) auditLog_(user, newStatus && !same(newStatus, oldStatus) ? 'Deal status changed' : 'Deal updated',
       { project: at(['Project']), unit: at(['Unit Code']), client: at(['Final Client Name', 'Client Name']), details: diffs.join(' · '), ref: 'Deals row ' + row });
     clearDashboardCache_();
+    if (typeof statusSeenRefresh_ === 'function') statusSeenRefresh_(row);
     return { success: true, row: row, written: written, rejected: rejected, inventory: inv,
       message: (written.length ? 'Deal updated (' + written.join(', ') + ').' : 'Nothing was changed.') + (inv.message ? ' ' + inv.message : '') };
   } finally {

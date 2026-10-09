@@ -63,7 +63,8 @@ function onDataSheetEdit(e) {
     try { if (e.range.getSheet().getSheetId() !== DEALS_GID) return; } catch (err) {}
     // A Status typed by hand in Deals also moves the unit in the Inventory.
     if (typeof auditDealsSheetEdit_ === 'function') auditDealsSheetEdit_(e);
-    if (typeof syncInventoryFromDealsEdit_ === 'function') syncInventoryFromDealsEdit_(e);
+    // Status is a formula in Deals: compare it with the last Status seen (alerts + Inventory).
+    if (typeof watchDealStatus_ === 'function') watchDealStatus_(e);
   }
   const cache = CacheService.getScriptCache();
   const dirtyKey = 'LIVE_DIRTY_' + target;
