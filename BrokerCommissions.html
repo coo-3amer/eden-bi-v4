@@ -228,19 +228,20 @@ function bcRenderDash_(body,list){
   // per company
   const by={};
   L.forEach(x=>{
-    const c=by[x.ck]||(by[x.ck]={company:x.company,ck:x.ck,due:0,paid:0,rem:0,pending:0,noRate:0,early:0,deals:0,oldest:null});
+    const c=by[x.ck]||(by[x.ck]={company:x.company,ck:x.ck,due:0,paid:0,rem:0,pending:0,noRate:0,early:0,deals:0,oldest:null,dueDeals:0,dueValue:0,dueNoRate:0});
     if(x.s.k==='cancel'){c.paid+=x.paid;return;}
     c.deals++;c.due+=x.due;c.paid+=x.paid;c.rem+=x.remaining;
+    if(x.s.k==='due'){c.dueDeals++;c.dueValue+=x.price;if(x.comm==null)c.dueNoRate++;}
     if(x.comm==null)c.noRate++;
     if(x.s.k==='pending'&&x.comm!=null)c.pending+=x.comm;
     if(x.early)c.early+=x.paid;
-    if(x.remaining>0.5){const d=bcParseD_(x.r.clientSignDate)||bcParseD_(x.r.contractDate)||bcParseD_(x.r.companySignDate);if(d&&(!c.oldest||d<c.oldest))c.oldest=d;}
+    if(x.remaining>0.5||(x.s.k==='due'&&x.comm==null&&!x.paid)){const d=bcParseD_(x.r.clientSignDate)||bcParseD_(x.r.contractDate)||bcParseD_(x.r.companySignDate);if(d&&(!c.oldest||d<c.oldest))c.oldest=d;}
   });
   const C=Object.values(by);
   const seg={
-    owed:C.filter(c=>c.rem>0.5&&c.paid<0.5),
-    partial:C.filter(c=>c.rem>0.5&&c.paid>=0.5),
-    paid:C.filter(c=>c.due>0.5&&c.rem<=0.5),
+    owed:C.filter(c=>c.dueDeals>0&&c.paid<0.5),
+    partial:C.filter(c=>c.paid>=0.5&&(c.rem>0.5||c.dueNoRate>0)),
+    paid:C.filter(c=>c.due>0.5&&c.rem<=0.5&&!c.dueNoRate),
     pending:C.filter(c=>c.pending>0.5&&c.due<=0.5),
     norate:C.filter(c=>c.noRate>0),
     early:C.filter(c=>c.early>0.5)
@@ -254,7 +255,7 @@ function bcRenderDash_(body,list){
   const months=[];for(let i=11;i>=0;i--){const d=new Date(today.getFullYear(),today.getMonth()-i,1);months.push({k:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'),l:d.toLocaleDateString('en-GB',{month:'short'}),v:0});}
   (BC_.data.payouts||[]).filter(p=>(p.currency||cur)===cur&&(!BC_.project||L.some(x=>x.key===bcKey_(p.project,p.unitCode)))).forEach(p=>{const m=months.find(m=>String(p.date).startsWith(m.k));if(m)m.v+=Number(p.amount)||0;});
   const maxM=Math.max(1,...months.map(m=>m.v));
-  const segDefs=[['owed','Owed — nothing paid yet','#b03a3a'],['partial','Partly paid','#8f6d2c'],['paid','Fully paid','#2f7d4f'],['pending','Coming (not due yet)','#2b5f9e'],['norate','No rate set','#b03a3a'],['early','Paid before due','#8f6d2c']];
+  const segDefs=[['owed','Not paid yet','#b03a3a'],['partial','Partly paid','#8f6d2c'],['paid','Fully paid','#2f7d4f'],['pending','Coming (not due yet)','#2b5f9e'],['norate','No rate set','#b03a3a'],['early','Paid before due','#8f6d2c']];
   if(!seg[BC_.dseg])BC_.dseg='owed';
   const rows=seg[BC_.dseg].slice().sort((a,b)=>b.rem-a.rem||b.due-a.due||b.pending-a.pending);
   const age=d=>d?Math.max(0,Math.round((today-d)/864e5)):null;
@@ -264,7 +265,9 @@ function bcRenderDash_(body,list){
     <div class="bcKpi"><span>Paid</span><b>${bcNum_(paid)}</b><small>${due?Math.round(Math.min(paid,due)/due*100):0}% of what is due</small></div>
     <div class="bcKpi"><span>Remaining</span><b class="${rem>0.5?'bcWarn':''}">${bcNum_(rem)}</b><small>${seg.owed.length+seg.partial.length} companies waiting</small></div>
     <div class="bcKpi"><span>Coming</span><b>${bcNum_(pend)}</b><small>due once the clients sign</small></div>
+    <div class="bcKpi"><span>Not paid yet</span><b class="${seg.owed.length?'bcWarn':''}">${seg.owed.length}</b><small>companies with signed deals and no payment</small></div>
   </div>
+  ${C.some(c=>c.dueNoRate)?`<div class="bcNote" style="margin:-4px 0 12px"><b class="bcWarn">${C.filter(c=>c.dueNoRate).length} companies have signed deals but no rate</b>, so their commission isn’t in the totals above yet — set the rates on “Companies &amp; payments”.</div>`:''}
   <div class="bcGrid">
     <div class="bcCard"><h4>Who is owed the most</h4><div class="sub">Due commission per company — green is paid, gold is still to pay. Click a company to open it.</div>
       <div class="bcLeg"><span style="--c:#2f9e62">Paid</span><span style="--c:var(--ds-gold,#b08a42)">Remaining</span></div>
@@ -276,10 +279,10 @@ function bcRenderDash_(body,list){
     </div>
   </div>
   <div class="bcSegs">${segDefs.map(([k,l,c])=>`<button type="button" class="bcSeg${BC_.dseg===k?' on':''}" data-seg="${k}"><b style="color:${seg[k].length?c:'inherit'}">${seg[k].length}</b><span>${l}</span></button>`).join('')}</div>
-  ${rows.length?`<table class="bcTable"><thead><tr><th>Company</th><th class="num">Deals</th><th class="num">Due</th><th class="num">Paid</th><th class="num">Remaining</th><th class="num bcHide">Coming</th><th class="num">Waiting since</th><th></th></tr></thead><tbody>
-  ${rows.map(c=>{const a=age(c.oldest);return `<tr class="bcRow" data-goto="${bcEsc_(c.ck)}"><td><b>${bcEsc_(c.company)}</b>${c.noRate?`<br><small class="bcWarn">${c.noRate} deal${c.noRate>1?'s':''} without a rate</small>`:''}</td><td class="num">${c.deals}</td><td class="num">${c.due?bcNum_(c.due):'—'}</td><td class="num">${c.paid?bcNum_(c.paid):'—'}</td><td class="num"><b>${c.rem>0.5?bcNum_(c.rem):'—'}</b></td><td class="num bcHide">${c.pending?bcNum_(c.pending):'—'}</td><td class="num">${a==null?'—':`<span class="${a>60?'bcWarn':''}">${a} days</span>`}</td><td><button type="button" class="bcBtn bcSm">Open</button></td></tr>`;}).join('')}
+  ${rows.length?`<table class="bcTable"><thead><tr><th>Company</th><th class="num">Signed deals</th><th class="num bcHide">Signed value</th><th class="num">Due</th><th class="num">Paid</th><th class="num">Remaining</th><th class="num bcHide">Coming</th><th class="num">Waiting since</th><th></th></tr></thead><tbody>
+  ${rows.map(c=>{const a=age(c.oldest);return `<tr class="bcRow" data-goto="${bcEsc_(c.ck)}"><td><b>${bcEsc_(c.company)}</b>${c.dueNoRate?`<br><small class="bcWarn">no rate — amount unknown</small>`:''}</td><td class="num">${c.dueDeals}${c.deals>c.dueDeals?` <small class="bcMuted">/ ${c.deals}</small>`:''}</td><td class="num bcHide">${c.dueValue?bcNum_(c.dueValue):'—'}</td><td class="num">${c.due?bcNum_(c.due):(c.dueNoRate?'<span class="bcWarn">set rate</span>':'—')}</td><td class="num">${c.paid?bcNum_(c.paid):'—'}</td><td class="num"><b>${c.rem>0.5?bcNum_(c.rem):'—'}</b></td><td class="num bcHide">${c.pending?bcNum_(c.pending):'—'}</td><td class="num">${a==null?'—':`<span class="${a>60?'bcWarn':''}">${a} days</span>`}</td><td><button type="button" class="bcBtn bcSm">Open</button></td></tr>`;}).join('')}
   </tbody></table>`:'<div class="bcNote" style="text-align:center;padding:20px">No companies in this group.</div>'}
-  <div class="bcNote">“Waiting since” = days since the oldest unpaid deal was signed by the client (or contracted). Due = signed / closed deals; Coming = reservations and unsigned down payments. Cancelled deals are left out (payments already made on them still count as paid).</div>`;
+  <div class="bcNote">“Signed deals” = deals that make the commission due (client signed, closed or delivered) / all active deals. “Waiting since” = days since the oldest unpaid deal was signed by the client (or contracted). Due = signed / closed deals; Coming = reservations and unsigned down payments. Cancelled deals are left out (payments already made on them still count as paid).</div>`;
   body.innerHTML=html;
   body.querySelectorAll('[data-dcur]').forEach(b=>b.addEventListener('click',()=>{BC_.dcur=b.dataset.dcur;bcRender_();}));
   body.querySelectorAll('[data-seg]').forEach(b=>b.addEventListener('click',()=>{BC_.dseg=b.dataset.seg;bcRender_();}));
