@@ -8,8 +8,8 @@
 const EDEN_OVL_KEY_='EDEN_LAST_OVERLAY';
 const EDEN_OVLS_={
   bc:{el:'bc',open:()=>typeof bcOpen_==='function'&&bcOpen_(),
-      get:()=>({company:BC_.company,project:BC_.project,q:BC_.q,onlyOpen:BC_.onlyOpen}),
-      set:s=>{Object.assign(BC_,{project:s.project||'',q:s.q||'',onlyOpen:!!s.onlyOpen});},
+      get:()=>({company:BC_.company,project:BC_.project,q:BC_.q,onlyOpen:BC_.onlyOpen,view:BC_.view,dseg:BC_.dseg,dcur:BC_.dcur}),
+      set:s=>{Object.assign(BC_,{project:s.project||'',q:s.q||'',onlyOpen:!!s.onlyOpen,view:s.view||'dash',dseg:s.dseg||'owed',dcur:s.dcur||''});},
       after:s=>{if(s.company){BC_.company=s.company;if(typeof bcRender_==='function')bcRender_();}}},
   sc:{el:'sc',open:()=>typeof scOpen_==='function'&&scOpen_(),
       get:()=>({month:SC_.month,project:SC_.project}),set:s=>{SC_.month=s.month||SC_.month;SC_.project=s.project||'';}},
