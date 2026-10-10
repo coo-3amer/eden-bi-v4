@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="EdenTheme" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/eden_bg</item>
+        <item name="android:statusBarColor">@color/eden_bg</item>
+        <item name="android:navigationBarColor">@color/eden_bg</item>
+        <item name="android:colorAccent">@color/eden_gold</item>
+    </style>
+</resources>

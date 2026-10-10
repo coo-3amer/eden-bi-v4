@@ -11,7 +11,8 @@ on:
   push:
     branches: [redesign]
     paths:
-      - 'android/build_twa.js'
+      - 'android/app/**'
+      - 'android/*.gradle'
       - '.github/workflows/android.yml'
       - 'web/manifest.webmanifest'
       - 'web/icon-512.png'
@@ -33,10 +34,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
+    
       - name: Signing key
         env:
           KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -73,37 +71,28 @@ jobs:
             gh workflow run pages.yml --ref redesign   # republish the site with assetlinks.json
           fi
 
-      - name: Generate Android project
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+
+      - name: Build + sign APK
         env:
           VERSION_CODE: ${{ github.run_number }}
         run: |
-          npm i --no-save --no-audit --no-fund @bubblewrap/core@1 >/dev/null
-          set +e
-          out=$(node android/build_twa.js twa 2>&1); code=$?
-          echo "$out" | tail -60
-          if [ $code -ne 0 ]; then echo "::error title=Generate project failed::$(echo "$out" | tr '\n' ' ' | tail -c 900)"; exit $code; fi
-
-      - name: Build + sign APK
-        run: |
           [ -z "$KS_PASS" ] && KS_PASS="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}"; export KS_PASS
           set +e
-          cd twa
-          chmod +x gradlew
-          out=$(./gradlew --no-daemon assembleRelease 2>&1); code=$?
+          out=$(cd android && gradle --no-daemon assembleRelease 2>&1); code=$?
           echo "$out" | tail -80
-          if [ $code -ne 0 ]; then echo "::error title=Gradle failed::$(echo "$out" | grep -iE 'error|failed|what went wrong' | head -15 | tr '\n' ' ' | tail -c 900)"; exit $code; fi
+          if [ $code -ne 0 ]; then echo "::error title=Gradle failed::$(echo "$out" | grep -iE 'error|failed|what went wrong|\.java:' | head -15 | tr '\n' ' ' | tail -c 900)"; exit $code; fi
           BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
-          UNSIGNED=$(ls app/build/outputs/apk/release/*.apk | head -1)
+          UNSIGNED=$(ls android/app/build/outputs/apk/release/*.apk | head -1)
           "$BT/zipalign" -f -p 4 "$UNSIGNED" aligned.apk
-          "$BT/apksigner" sign --ks ../android/eden-release.p12 --ks-key-alias eden --ks-pass env:KS_PASS --key-pass env:KS_PASS --out ../EDEN-BI.apk aligned.apk
+          "$BT/apksigner" sign --ks android/eden-release.p12 --ks-key-alias eden --ks-pass env:KS_PASS --key-pass env:KS_PASS --out EDEN-BI.apk aligned.apk
           code=$?
           if [ $code -ne 0 ]; then echo "::error title=Signing failed::apksigner exit $code"; exit $code; fi
-          "$BT/apksigner" verify ../EDEN-BI.apk && ls -la ../EDEN-BI.apk
-          # Diagnostics (shown on the run page)
-          B=$("$BT/aapt2" dump badging ../EDEN-BI.apk 2>&1 | grep -E "^(package|sdkVersion|targetSdkVersion|launchable-activity)" | tr '\n' ' ')
+          "$BT/apksigner" verify EDEN-BI.apk && ls -la EDEN-BI.apk
+          B=$("$BT/aapt2" dump badging EDEN-BI.apk 2>&1 | grep -E "^(package|sdkVersion|targetSdkVersion|launchable-activity)" | tr '\n' ' ')
           echo "::notice title=APK badging::$B"
-          echo "::notice title=Gradle sdk::$(grep -E 'compileSdk|targetSdk|minSdk|versionCode|androidbrowserhelper' app/build.gradle | tr -s ' ' | tr '\n' ' ')"
-          echo "::notice title=Manifest::$(tr -s ' \n' ' ' < app/src/main/AndroidManifest.xml | cut -c1-950)"
 
       - name: Keep the test APK (test builds)
         if: env.TEST_BUILD == '1'
