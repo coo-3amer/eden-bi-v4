@@ -4,7 +4,7 @@
    Branch, Unit type, More filters), date presets, active-filter chips,
    saved views, and the other filters grouped by topic in a drawer.
    ===================================================================== */
-html[data-theme] #appRoot section.filters.fbOn{display:block!important;padding:14px 16px!important}
+html[data-theme] #appRoot section.filters.fbOn{display:block!important;padding:14px 16px!important;overflow:visible!important;position:relative;z-index:20}
 section.filters.fbOn > .fbHold{display:none!important}
 .fbBar{display:grid;grid-template-columns:minmax(200px,1.6fr) auto repeat(3,minmax(130px,1fr)) auto auto;gap:10px;align-items:end}
 @media(max-width:1100px){.fbBar{grid-template-columns:1fr 1fr}.fbBar .dashboardSearchCell{grid-column:1/-1}}
@@ -19,6 +19,15 @@ html[data-theme="dark"] .fbMore{background:#e3c27a!important;color:#16130f!impor
 .fbMore b{background:var(--ds-gold,#b08a42);color:#fff;border-radius:99px;padding:1px 8px;font-size:11px}
 .fbLbl{display:block;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ds-muted,#8a7f70);margin:0 0 5px 2px}
 .fbBar .dashboardClearAll{height:40px!important;align-self:flex-end}
+.fbPop{display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:60;width:320px;padding:12px;border-radius:14px;background:var(--ds-surface,#fff);border:1px solid var(--ds-line,#e3d9c7);box-shadow:0 18px 40px rgba(0,0,0,.18)}
+.fbPop.open{display:block}
+html[dir="rtl"] .fbPop{left:auto;right:0}
+.fbPop .grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.fbPop .fbP{width:100%;text-align:center}
+.fbPop .cr{margin-top:10px;padding-top:10px;border-top:1px dashed var(--ds-line,#e3d9c7);display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;font-weight:700;color:var(--ds-muted)}
+.fbPop .cr input{height:34px;border:1px solid var(--ds-line,#e3d9c7);border-radius:9px;padding:0 8px;background:var(--ds-surface);color:var(--ds-text);font:inherit;font-size:12.5px;width:100%}
+.fbPop .cr .fbP{grid-column:1/-1}
+.fbPop .any{grid-column:1/-1}
 .fbPresets{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;align-items:center}
 .fbP{padding:6px 12px;border-radius:99px;border:1px solid var(--ds-line,#e3d9c7);font-size:12.5px;font-weight:700;color:var(--ds-muted,#6f6556);background:var(--ds-surface,#fff);cursor:pointer;font-family:inherit}
 .fbP.on{background:#1f6b52;border-color:#1f6b52;color:#fff}
@@ -116,7 +125,9 @@ html[data-theme="dark"] .fbSave{border-color:#3fbf8e;color:#3fbf8e}
     const bar=mk('div','fbBar'),presets=mk('div','fbPresets'),chips=mk('div','fbChips'),views=mk('div','fbViews'),drawer=mk('div','fbDrawer'),hold=mk('div','fbHold');
     // bar: search, date, Sales, Branch, Unit type, More, Clear all
     bar.appendChild(sec.querySelector('.dashboardSearchCell'));
-    const date=mk('div','fbDate');date.innerHTML='<div class="dashboardFilterName">Date</div><button type="button" class="fbBtn" data-fb="date">📅 <span>Any date</span> ▾</button>';
+    const date=mk('div','fbDate');date.innerHTML='<div class="dashboardFilterName">Date</div><button type="button" class="fbBtn" data-fb="date">📅 <span>Any date</span> ▾</button>'+
+      '<div class="fbPop"><div class="grid">'+PRESETS.filter(p=>p[0]!=='custom').map(([k,l])=>`<button type="button" class="fbP" data-p="${k}">${l}</button>`).join('')+
+      '<button type="button" class="fbP any" data-p="">Any date</button></div><div class="cr"><label>From<input type="date" data-r="from"></label><label>To<input type="date" data-r="to"></label><button type="button" class="fbP" data-r="apply">Apply range</button></div></div>';
     bar.appendChild(date);
     BAR.forEach(id=>{const g=document.getElementById(id);if(g)bar.appendChild(g);});
     const moreW=mk('div','');moreW.innerHTML='<div class="dashboardFilterName">&nbsp;</div><button type="button" class="fbBtn fbMore" data-fb="more">⚙ <span>More filters</span> <b>0</b></button>';
@@ -131,7 +142,15 @@ html[data-theme="dark"] .fbSave{border-color:#3fbf8e;color:#3fbf8e}
     sec.prepend(bar);bar.after(presets);presets.after(chips);chips.after(views);views.after(drawer);sec.appendChild(hold);
     els={bar,presets,chips,views,drawer,date};
     // events
-    date.querySelector('button').addEventListener('click',()=>{presets.scrollIntoView({block:'nearest'});presets.classList.add('fbFlash');});
+    const pop=date.querySelector('.fbPop');
+    date.querySelector('[data-fb="date"]').addEventListener('click',e=>{e.stopPropagation();pop.classList.toggle('open');});
+    document.addEventListener('click',e=>{if(!date.contains(e.target))pop.classList.remove('open');});
+    pop.addEventListener('click',e=>{
+      const p=e.target.closest('[data-p]');
+      if(p){applyPreset(p.dataset.p);pop.classList.remove('open');return;}
+      if(e.target.closest('[data-r="apply"]')){const v=n=>{const x=pop.querySelector(`[data-r="${n}"]`).value;if(!x)return null;const [y,m,d]=x.split('-').map(Number);return new Date(y,m-1,d);};
+        const f=v('from'),t=v('to');applyPreset(f||t?'custom':'',f,t);pop.classList.remove('open');}
+    });
     moreW.querySelector('button').addEventListener('click',()=>{drawer.classList.toggle('open');render();});
     presets.addEventListener('click',e=>{
       const p=e.target.closest('[data-p]');
@@ -181,7 +200,7 @@ html[data-theme="dark"] .fbSave{border-color:#3fbf8e;color:#3fbf8e}
     const inDrawer=list.filter(x=>x.inDrawer).length;
     const mb=els.bar.querySelector('[data-fb="more"]');mb.querySelector('b').textContent=inDrawer;mb.querySelector('b').style.display=inDrawer?'':'none';
     mb.querySelector('span').textContent=els.drawer.classList.contains('open')?'Hide filters':'More filters';
-    els.presets.querySelectorAll('[data-p]').forEach(b=>b.classList.toggle('on',b.dataset.p===EDEN_DATE_RANGE_.key&&!!dl||(b.dataset.p==='custom'&&EDEN_DATE_RANGE_.key==='custom'&&!!dl)));
+    [...els.presets.querySelectorAll('[data-p]'),...els.date.querySelectorAll('.fbPop [data-p]')].forEach(b=>b.classList.toggle('on',b.dataset.p===EDEN_DATE_RANGE_.key&&!!dl||(b.dataset.p==='custom'&&EDEN_DATE_RANGE_.key==='custom'&&!!dl)));
     els.chips.innerHTML=list.length?'<span class="lbl">ACTIVE</span>'+list.map(x=>`<span class="fbChip" title="${esc(x.t+': '+x.v)}"><span>${esc(x.t)}: <b>${esc(x.v)}</b></span><button type="button" data-x="${esc(x.n)}" aria-label="Remove">✕</button></span>`).join('')+
       '<button type="button" class="fbClr">Clear all</button><button type="button" class="fbSave">☆ Save as my view</button>':'';
     const v=loadViews();
