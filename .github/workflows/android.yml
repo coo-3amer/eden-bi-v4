@@ -99,6 +99,11 @@ jobs:
           code=$?
           if [ $code -ne 0 ]; then echo "::error title=Signing failed::apksigner exit $code"; exit $code; fi
           "$BT/apksigner" verify ../EDEN-BI.apk && ls -la ../EDEN-BI.apk
+          # Diagnostics (shown on the run page)
+          B=$("$BT/aapt2" dump badging ../EDEN-BI.apk 2>&1 | grep -E "^(package|sdkVersion|targetSdkVersion|launchable-activity)" | tr '\n' ' ')
+          echo "::notice title=APK badging::$B"
+          echo "::notice title=Gradle sdk::$(grep -E 'compileSdk|targetSdk|minSdk|versionCode|androidbrowserhelper' app/build.gradle | tr -s ' ' | tr '\n' ' ')"
+          echo "::notice title=Manifest::$(tr -s ' \n' ' ' < app/src/main/AndroidManifest.xml | cut -c1-950)"
 
       - name: Keep the test APK (test builds)
         if: env.TEST_BUILD == '1'
