@@ -6,7 +6,7 @@
    ===================================================================== */
 html[data-theme] #appRoot section.filters.fbOn{display:block!important;padding:14px 16px!important;overflow:visible!important;position:relative;z-index:20}
 section.filters.fbOn > .fbHold{display:none!important}
-.fbBar{display:grid;grid-template-columns:minmax(200px,1.6fr) auto repeat(3,minmax(130px,1fr)) auto auto;gap:10px;align-items:end}
+.fbBar{display:grid;grid-template-columns:minmax(220px,2fr) auto minmax(160px,1fr) auto auto;gap:10px;align-items:end}
 @media(max-width:1100px){.fbBar{grid-template-columns:1fr 1fr}.fbBar .dashboardSearchCell{grid-column:1/-1}}
 .fbBar > *{margin:0!important}
 .fbBar .dashboardSearchCell,.fbBar .filterGroup{min-width:0!important;width:auto!important}
@@ -109,11 +109,11 @@ html[data-theme="dark"] .fbSave{border-color:#3fbf8e;color:#3fbf8e}
   const TITLES={unitCategory:'Unit type',sales:'Sales',salesManager:'Sales manager',dealType:'Deal type',sharedWith:'Shared with',nationality:'Nationality',
     commission:'Commission',clientType:'Client type',branch:'Branch',renovation:'Renovation',mainSource:'Main source',sourceType:'Source type',
     campaignName:'Campaign',mediaBuyer:'Media buyer',brokerageCompany:'Brokerage',bcSales:'BC sales',bcManager:'BC manager'};
-  const GROUPS=[['👥 Sales team',['salesManagerMulti','sharedWithMulti','dealTypeMulti','commissionMulti']],
+  const GROUPS=[['👥 Sales team',['salesMulti','branchMulti','salesManagerMulti','sharedWithMulti','dealTypeMulti','commissionMulti']],
     ['📣 Source',['mainSourceMulti','sourceTypeMulti','campaignNameMulti','mediaBuyerMulti','brokerageCompanyMulti']],
     ['👤 Client',['clientTypeMulti','nationalityMulti']],
     ['🏢 Unit',['renovationMulti']]];
-  const BAR=['salesMulti','branchMulti','unitCategoryMulti'];
+  const BAR=['unitCategoryMulti'];
   const HOLD=['projectMulti','statusMulti','contractMulti','bcSalesMulti','bcManagerMulti','dayMulti','monthMulti','yearMulti'];
   let sec=null,els={};
   function build(){
