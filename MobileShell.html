@@ -1,0 +1,97 @@
+<style id="eden-mobile-shell">
+#mBar,#mBack,.mFilterToggle{display:none}
+@media(max-width:760px){
+  html[data-theme] #appRoot .sidebar,#appRoot .sidebar{position:fixed!important;top:0!important;bottom:0!important;left:0!important;width:min(86vw,320px)!important;height:100dvh!important;
+    transform:translateX(-105%);transition:transform .22s ease;z-index:520!important;overflow:auto!important;box-shadow:0 0 40px rgba(0,0,0,.25);
+    padding-top:calc(env(safe-area-inset-top,0px) + 18px)!important;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 18px)!important}
+  body.mNav #appRoot .sidebar{transform:none}
+  #mBack{display:block;position:fixed;inset:0;z-index:510;background:rgba(10,8,6,.45);opacity:0;pointer-events:none;transition:opacity .2s}
+  body.mNav #mBack{opacity:1;pointer-events:auto}
+  body.mNav{overflow:hidden}
+  #appRoot:not(.hidden) ~ #mBar,body.mOn #mBar{display:flex}
+  #mBar{position:fixed;top:0;left:0;right:0;z-index:500;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 8px) 12px 8px;
+    background:color-mix(in srgb,var(--ds-surface,#fffdf9) 92%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--ds-line,#e8e0d1)}
+  #mBar button{width:40px;height:40px;border-radius:12px;border:1px solid var(--ds-line,#e8e0d1);background:var(--ds-surface,#fff);color:var(--ds-heading,#16130f);font-size:19px;display:grid;place-items:center;cursor:pointer;flex:0 0 auto}
+  #mBar .mT{flex:1;min-width:0}
+  #mBar .mT small{display:block;font-size:9.5px;font-weight:800;letter-spacing:.16em;color:var(--ds-gold,#b08a42)}
+  #mBar .mT b{display:block;font:600 17px/1.2 'Cormorant Garamond',Georgia,serif;color:var(--ds-heading,#16130f);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  body.mOn html[data-theme] #appRoot .main,body.mOn #appRoot .main{padding-top:calc(env(safe-area-inset-top,0px) + 68px)!important}
+  body.mOn #appRoot .main{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 24px)!important}
+  /* Filters fold away behind one button */
+  .mFilterToggle{display:flex;width:100%;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px;padding:12px 14px;border-radius:14px;
+    border:1px solid var(--ds-gold-line,rgba(176,138,66,.32));background:var(--ds-gold-soft,rgba(176,138,66,.12));color:var(--ds-gold-strong,#8f6d2c);font-weight:800;font-size:14px;cursor:pointer}
+  .mFilterToggle i{font-style:normal;font-size:12px;color:var(--ds-muted,#83796b);font-weight:700}
+  .mFilterToggle.hidden{display:none!important}
+  body.mOn #appRoot section.filters:not(.mOpen){display:none!important}
+  /* Tables scroll sideways inside their card, never the whole page */
+  #appRoot .tableWrap,#appRoot .tableBox{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  #appRoot{overflow-x:hidden}
+  /* Bigger touch targets in the menu */
+  #appRoot .moduleMenu button{padding:12px 12px!important;font-size:14px!important}
+}
+</style>
+<div id="mBack"></div>
+<div id="mBar" role="banner">
+  <button type="button" data-m="menu" aria-label="Open menu">☰</button>
+  <div class="mT"><small>EDEN BI</small><b>Overview</b></div>
+  <button type="button" data-m="top" aria-label="Back to top">↑</button>
+</div>
+<script>
+/* =====================================================================
+   EDEN BI — Phone layout: top bar + slide-in menu, filters behind one
+   button, tables that scroll inside their card. Desktop is unchanged.
+   ===================================================================== */
+(function(){
+  const mq=window.matchMedia('(max-width:760px)');
+  const bar=document.getElementById('mBar'),back=document.getElementById('mBack');
+  const isPhone=()=>mq.matches;
+  const appOn=()=>{const a=document.getElementById('appRoot');return a&&!a.classList.contains('hidden');};
+  function setOn(){document.body.classList.toggle('mOn',isPhone()&&appOn());if(!isPhone())document.body.classList.remove('mNav');}
+  function openNav(v){document.body.classList.toggle('mNav',v);}
+  function title(){
+    const t=document.querySelector('#appRoot .moduleMenu button.active');
+    const h=document.querySelector('#appRoot .main .title');
+    const txt=String((t&&t.textContent)||(h&&h.textContent)||'Overview').replace(/\s+/g,' ').replace(/\d+$/,'').trim();
+    const b=bar.querySelector('.mT b');if(b.textContent!==txt)b.textContent=txt;
+  }
+  function filterCount(sec){
+    let n=0;
+    sec.querySelectorAll('.multiBtn span').forEach(s=>{const t=String(s.textContent||'').trim();if(t&&!/^all\b/i.test(t)&&!/^select/i.test(t))n++;});
+    sec.querySelectorAll('select:not([multiple])').forEach(s=>{if(s.closest('.filterGroup')&&s.closest('.filterGroup').querySelector('.multiBtn'))return;if(s.value&&!/^all/i.test(s.value))n++;});
+    sec.querySelectorAll('input[type=search],input[type=text],input[type=date]').forEach(i=>{if(String(i.value||'').trim())n++;});
+    return n;
+  }
+  function toggles(){
+    document.querySelectorAll('#appRoot section.filters').forEach(sec=>{
+      let b=sec.previousElementSibling;
+      if(!b||!b.classList||!b.classList.contains('mFilterToggle')){
+        b=document.createElement('button');b.type='button';b.className='mFilterToggle';
+        b.addEventListener('click',()=>{sec.classList.toggle('mOpen');toggles();});
+        sec.parentNode.insertBefore(b,sec);
+      }
+      b.classList.toggle('hidden',sec.classList.contains('hidden'));
+      const n=filterCount(sec),open=sec.classList.contains('mOpen');
+      const html=`<span>⚙ Filters${n?` · ${n} on`:''}</span><i>${open?'Hide ▲':'Show ▼'}</i>`;
+      if(b.innerHTML!==html)b.innerHTML=html;
+    });
+  }
+  bar.querySelector('[data-m="menu"]').addEventListener('click',()=>openNav(!document.body.classList.contains('mNav')));
+  bar.querySelector('[data-m="top"]').addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
+  back.addEventListener('click',()=>openNav(false));
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')openNav(false);});
+  // A page picked in the menu closes the menu.
+  document.addEventListener('click',e=>{
+    if(!isPhone())return;
+    const b=e.target.closest('#appRoot .sidebar .moduleMenu button, #appRoot .sidebar .projectBtn');
+    if(b)setTimeout(()=>{openNav(false);title();window.scrollTo({top:0});},60);
+  });
+  // Swipe left on the open menu closes it.
+  let x0=null;
+  document.addEventListener('touchstart',e=>{if(document.body.classList.contains('mNav'))x0=e.touches[0].clientX;},{passive:true});
+  document.addEventListener('touchend',e=>{if(x0!=null&&e.changedTouches[0].clientX<x0-60)openNav(false);x0=null;},{passive:true});
+  mq.addEventListener?mq.addEventListener('change',()=>{setOn();toggles();}):mq.addListener(()=>{setOn();toggles();});
+  const tick=()=>{setOn();if(isPhone()&&appOn()){title();toggles();}};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',tick);else tick();
+  setInterval(tick,1000);
+})();
+</script>
