@@ -4730,7 +4730,8 @@ function tableDataset_(){
     cols=cols.filter(c=>!['renovationStatus','unitCategory','currency'].includes(c));
   }
   // Reservation filter on: show how many days each reservation has been held.
-  if(cols[0]==='project'&&getMulti('status').some(v=>/reserv/i.test(v))){
+  // (the Status filter or the Deal Stage chip "Reservation")
+  if(cols[0]==='project'&&(getMulti('status').some(v=>/reserv/i.test(v))||getMulti('contract').includes('reservation'))){
     cols=cols.concat('reservationDays');
     rows=rows.map(r=>({...r,reservationDays:reservationDays_(r)}));
   }
