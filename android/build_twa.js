@@ -23,6 +23,7 @@ const { TwaManifest, TwaGenerator, ConsoleLog } = require('@bubblewrap/core');
   m.appVersionName = process.env.VERSION_NAME || ('1.0.' + m.appVersionCode);
   m.signingKey = { path: path.resolve('android/eden-release.p12'), alias: 'eden' };
   m.generatorApp = 'eden-bi-ci';
+  m.minSdkVersion = 24;   // Android 7+ (required by androidbrowserhelper)
   await new TwaGenerator().createTwaProject(out, m, log, () => {});
   console.log('Android project ready in ' + out);
 })().catch(e => { console.error(e && e.stack || e); process.exit(1); });
