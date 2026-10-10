@@ -7,8 +7,8 @@ android {
         applicationId 'com.edenalkhalij.dashboard'
         minSdk 24
         targetSdk 35
-        versionCode (System.getenv('VERSION_CODE') ?: '1').toInteger()
-        versionName '2.0.' + (System.getenv('VERSION_CODE') ?: '1')
+        versionCode = (System.getenv('VERSION_CODE') ?: '1').toInteger()
+        versionName = '2.0.' + (System.getenv('VERSION_CODE') ?: '1')
     }
     buildTypes {
         release { minifyEnabled false }
