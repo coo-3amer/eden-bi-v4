@@ -49,6 +49,12 @@ def main():
         for f in maps.iterdir():
             if f.is_file():
                 (OUT / 'maps' / f.name).write_bytes(f.read_bytes())
+    wk = ROOT / 'web' / '.well-known'   # Android app link (assetlinks.json)
+    if wk.is_dir():
+        (OUT / '.well-known').mkdir(exist_ok=True)
+        for f in wk.iterdir():
+            if f.is_file():
+                (OUT / '.well-known' / f.name).write_bytes(f.read_bytes())
     cname = ROOT / 'web' / 'CNAME'
     if cname.exists():  # custom domain for GitHub Pages
         (OUT / 'CNAME').write_text(cname.read_text(encoding='utf-8').strip() + '\n', encoding='utf-8')
