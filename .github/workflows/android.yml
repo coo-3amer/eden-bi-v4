@@ -83,7 +83,7 @@ jobs:
           set +e
           out=$(cd android && gradle --no-daemon assembleRelease 2>&1); code=$?
           echo "$out" | tail -80
-          if [ $code -ne 0 ]; then echo "::error title=Gradle failed::$(echo "$out" | grep -iE 'error|failed|what went wrong|\.java:' | head -15 | tr '\n' ' ' | tail -c 900)"; exit $code; fi
+          if [ $code -ne 0 ]; then echo "::error title=Gradle failed::$(echo "$out" | grep -iE -A4 'what went wrong|error:|\.java:[0-9]+' | grep -v '^--$' | head -24 | tr '\n' ' ' | tail -c 900)"; exit $code; fi
           BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
           UNSIGNED=$(ls android/app/build/outputs/apk/release/*.apk | head -1)
           "$BT/zipalign" -f -p 4 "$UNSIGNED" aligned.apk
