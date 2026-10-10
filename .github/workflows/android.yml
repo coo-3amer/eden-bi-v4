@@ -68,6 +68,7 @@ jobs:
           git add android/eden-release.p12 web/.well-known/assetlinks.json
           if ! git diff --cached --quiet; then
             git commit -m "Android signing key / asset links"
+            git pull --rebase origin redesign
             git push origin HEAD:redesign
             gh workflow run pages.yml --ref redesign   # republish the site with assetlinks.json
           fi
