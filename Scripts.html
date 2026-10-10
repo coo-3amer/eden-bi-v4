@@ -1744,6 +1744,7 @@ function applyFilters(){
     (!days.length||days.includes(String(r.day))) &&
     (!months.length||months.includes(String(r.month))) &&
     (!years.length||years.includes(String(r.year))) &&
+    (typeof edenDateRangeMatch_!=='function'||edenDateRangeMatch_(r)) &&
     (!q||Object.values(r).join(' ').toLowerCase().includes(q));
   const projectMatch=r=>!projects.length||projects.includes(String(r.project));
   const statusMatch=r=>!statuses.length||statuses.includes(String(r.status));
@@ -1986,6 +1987,7 @@ function teamComparisonBaseRows_(){
     (!days.length||days.includes(String(r.day))) &&
     (!months.length||months.includes(String(r.month))) &&
     (!years.length||years.includes(String(r.year))) &&
+    (typeof edenDateRangeMatch_!=='function'||edenDateRangeMatch_(r)) &&
     (!q||Object.values(r).join(' ').toLowerCase().includes(q))
   );
 

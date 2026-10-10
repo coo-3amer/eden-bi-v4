@@ -1,0 +1,224 @@
+<style id="eden-filter-bar">
+/* =====================================================================
+   EDEN BI — Transactions filters: one compact bar (search, date, Sales,
+   Branch, Unit type, More filters), date presets, active-filter chips,
+   saved views, and the other filters grouped by topic in a drawer.
+   ===================================================================== */
+html[data-theme] #appRoot section.filters.fbOn{display:block!important;padding:14px 16px!important}
+section.filters.fbOn > .fbHold{display:none!important}
+.fbBar{display:grid;grid-template-columns:minmax(200px,1.6fr) auto repeat(3,minmax(130px,1fr)) auto auto;gap:10px;align-items:end}
+@media(max-width:1100px){.fbBar{grid-template-columns:1fr 1fr}.fbBar .dashboardSearchCell{grid-column:1/-1}}
+.fbBar > *{margin:0!important}
+.fbBar .dashboardSearchCell,.fbBar .filterGroup{min-width:0!important;width:auto!important}
+.fbDate{position:relative;flex:0 0 auto}
+.fbBtn{height:40px;border-radius:12px;padding:0 14px;display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:13.5px;cursor:pointer;
+  border:1px solid var(--ds-line,#e3d9c7);background:var(--ds-surface,#fff);color:var(--ds-heading,#16130f);white-space:nowrap;font-family:inherit}
+.fbBtn.on{border-color:var(--ds-gold,#b08a42);background:var(--ds-gold-soft,#fbf4e6);color:var(--ds-gold-strong,#8f6d2c)}
+.fbMore{background:var(--ds-heading,#16130f)!important;color:#f3e7cc!important;border-color:transparent!important}
+html[data-theme="dark"] .fbMore{background:#e3c27a!important;color:#16130f!important}
+.fbMore b{background:var(--ds-gold,#b08a42);color:#fff;border-radius:99px;padding:1px 8px;font-size:11px}
+.fbLbl{display:block;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ds-muted,#8a7f70);margin:0 0 5px 2px}
+.fbBar .dashboardClearAll{height:40px!important;align-self:flex-end}
+.fbPresets{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;align-items:center}
+.fbP{padding:6px 12px;border-radius:99px;border:1px solid var(--ds-line,#e3d9c7);font-size:12.5px;font-weight:700;color:var(--ds-muted,#6f6556);background:var(--ds-surface,#fff);cursor:pointer;font-family:inherit}
+.fbP.on{background:#1f6b52;border-color:#1f6b52;color:#fff}
+.fbRange{display:none;gap:6px;align-items:center;font-size:12px;color:var(--ds-muted)}
+.fbRange.open{display:inline-flex}
+.fbRange input{height:32px;border:1px solid var(--ds-line,#e3d9c7);border-radius:9px;padding:0 8px;background:var(--ds-surface);color:var(--ds-text);font:inherit;font-size:12.5px}
+.fbChips{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap;min-height:0}
+.fbChips:empty{display:none}
+.fbChips .lbl{font-size:10.5px;font-weight:800;letter-spacing:.12em;color:var(--ds-muted)}
+.fbChip{display:inline-flex;align-items:center;gap:7px;padding:5px 6px 5px 11px;border-radius:99px;background:var(--ds-gold-soft,#f3ead8);border:1px solid var(--ds-gold-line,#e3cf9f);font-size:12.5px;color:var(--ds-text,#5b4a26);max-width:420px}
+.fbChip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fbChip b{color:var(--ds-gold-strong,#8f6d2c)}
+.fbChip button{border:0;width:19px;height:19px;border-radius:50%;background:var(--ds-gold-line,#e3cf9f);color:var(--ds-heading);font-size:11px;cursor:pointer;flex:none;line-height:1}
+.fbClr{border:0;background:none;color:#c0533b;font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit}
+.fbSave{margin-left:auto;border:1px dashed #1f6b52;color:#1f6b52;background:none;border-radius:99px;padding:5px 12px;font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit}
+html[data-theme="dark"] .fbSave{border-color:#3fbf8e;color:#3fbf8e}
+.fbViews{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.fbViews:empty{display:none}
+.fbV{display:inline-flex;align-items:center;gap:8px;padding:6px 8px 6px 12px;border-radius:12px;background:var(--ds-surface,#fff);border:1px solid var(--ds-line,#e3d9c7);font-size:12.5px;font-weight:700;cursor:pointer;color:var(--ds-heading)}
+.fbV small{color:var(--ds-muted);font-weight:600}
+.fbV i{font-style:normal;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;color:var(--ds-muted);font-size:11px}
+.fbV i:hover{background:var(--ds-red-soft,#f9e3e3);color:#c0533b}
+.fbDrawer{display:none;margin-top:14px;border-top:1px dashed var(--ds-line,#e3d9c7);padding-top:14px;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.fbDrawer.open{display:grid}
+.fbGrp{background:var(--ds-surface-2,#faf6ef);border:1px solid var(--ds-line,#efe6d6);border-radius:14px;padding:12px}
+.fbGrp h4{margin:0 0 10px;font-size:11px;font-weight:800;letter-spacing:.14em;color:var(--ds-gold,#b08a42);text-transform:uppercase}
+.fbGrp .filterGroup{margin:0 0 10px!important;width:100%!important}
+.fbGrp .filterGroup:last-child{margin-bottom:0!important}
+@media(max-width:1100px){.fbDrawer{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.fbDrawer{grid-template-columns:1fr}.fbSave{margin-left:0}}
+</style>
+<script>
+(function(){
+  /* ---------- Date range (presets / custom) ---------- */
+  window.EDEN_DATE_RANGE_={key:'',from:null,to:null,label:''};
+  window.edenDateRangeMatch_=function(r){
+    const R=EDEN_DATE_RANGE_;if(!R.from&&!R.to)return true;
+    const y=Number(r.year),m=Number(r.month),d=Number(r.day)||1;if(!y||!m)return false;
+    const t=new Date(y,m-1,d).getTime();
+    return (!R.from||t>=R.from.getTime())&&(!R.to||t<=R.to.getTime());
+  };
+  const D0=d=>new Date(d.getFullYear(),d.getMonth(),d.getDate());
+  const fmt=d=>d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  const PRESETS=[['today','Today'],['week','This week'],['month','This month'],['lastMonth','Last month'],['quarter','This quarter'],['year','This year'],['custom','Custom range…']];
+  function presetRange(k){
+    const n=new Date(),t=D0(n);
+    if(k==='today')return {from:t,to:t,label:'Today'};
+    if(k==='week'){const f=new Date(t);f.setDate(t.getDate()-((t.getDay()+1)%7));return {from:f,to:t,label:'This week'};} // week starts Saturday
+    if(k==='quarter'){const q=Math.floor(t.getMonth()/3)*3;return {from:new Date(t.getFullYear(),q,1),to:new Date(t.getFullYear(),q+3,0),label:'This quarter'};}
+    return null;
+  }
+  function setChecks(name,vals){
+    document.querySelectorAll(`input[name="${name}"]`).forEach(cb=>{cb.checked=vals.includes(String(cb.value));});
+  }
+  function refresh(){try{if(typeof updateMultiLabels==='function')updateMultiLabels();}catch(e){}if(typeof applyFilters==='function')applyFilters();}
+  function applyPreset(k,from,to){
+    const n=new Date();
+    EDEN_DATE_RANGE_={key:'',from:null,to:null,label:''};
+    setChecks('day',[]);setChecks('month',[]);setChecks('year',[]);
+    if(k==='month'){setChecks('year',[String(n.getFullYear())]);setChecks('month',[String(n.getMonth()+1)]);EDEN_DATE_RANGE_.key='month';}
+    else if(k==='lastMonth'){const d=new Date(n.getFullYear(),n.getMonth()-1,1);setChecks('year',[String(d.getFullYear())]);setChecks('month',[String(d.getMonth()+1)]);EDEN_DATE_RANGE_.key='lastMonth';}
+    else if(k==='year'){setChecks('year',[String(n.getFullYear())]);EDEN_DATE_RANGE_.key='year';}
+    else if(k==='custom'){if(from||to)EDEN_DATE_RANGE_={key:'custom',from:from||null,to:to||null,label:(from?fmt(from):'…')+' → '+(to?fmt(to):'…')};else EDEN_DATE_RANGE_.key='custom';}
+    else if(k){const r=presetRange(k);EDEN_DATE_RANGE_={key:k,...r};}
+    refresh();render();
+  }
+  function dateLabel(){
+    const R=EDEN_DATE_RANGE_;
+    if(R.key==='custom'&&R.label)return R.label;
+    if(R.key&&R.key!=='custom'){const p=PRESETS.find(x=>x[0]===R.key);if(p){const y=getM('year'),m=getM('month');if(['month','lastMonth','year'].includes(R.key)&&!(y.length===1&&(R.key==='year'?!m.length:m.length===1)))return '';return p[1];}}
+    const y=getM('year'),m=getM('month'),d=getM('day');
+    if(!y.length&&!m.length&&!d.length)return '';
+    const MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return [d.length?'Day '+d.join(', '):'',m.length?m.map(x=>MN[+x-1]||x).join(', '):'',y.join(', ')].filter(Boolean).join(' ');
+  }
+  const getM=n=>typeof getMulti==='function'?getMulti(n):[];
+
+  /* ---------- Layout ---------- */
+  const TITLES={unitCategory:'Unit type',sales:'Sales',salesManager:'Sales manager',dealType:'Deal type',sharedWith:'Shared with',nationality:'Nationality',
+    commission:'Commission',clientType:'Client type',branch:'Branch',renovation:'Renovation',mainSource:'Main source',sourceType:'Source type',
+    campaignName:'Campaign',mediaBuyer:'Media buyer',brokerageCompany:'Brokerage',bcSales:'BC sales',bcManager:'BC manager'};
+  const GROUPS=[['👥 Sales team',['salesManagerMulti','sharedWithMulti','dealTypeMulti','commissionMulti']],
+    ['📣 Source',['mainSourceMulti','sourceTypeMulti','campaignNameMulti','mediaBuyerMulti','brokerageCompanyMulti']],
+    ['👤 Client',['clientTypeMulti','nationalityMulti']],
+    ['🏢 Unit',['renovationMulti']]];
+  const BAR=['salesMulti','branchMulti','unitCategoryMulti'];
+  const HOLD=['projectMulti','statusMulti','contractMulti','bcSalesMulti','bcManagerMulti','dayMulti','monthMulti','yearMulti'];
+  let sec=null,els={};
+  function build(){
+    sec=[...document.querySelectorAll('#appRoot section.filters')].find(s=>s.id!=='brokerFilters'&&s.id!=='inventoryFilters'&&s.querySelector('#salesMulti'));
+    if(!sec||sec.classList.contains('fbOn'))return !!sec;
+    if(!sec.querySelector('.dashboardSearchCell')||!sec.querySelector('.dashboardClearAll'))return false;   // wait for the base layout
+    sec.classList.add('fbOn');
+    const mk=(t,c)=>{const e=document.createElement(t);if(c)e.className=c;return e;};
+    const bar=mk('div','fbBar'),presets=mk('div','fbPresets'),chips=mk('div','fbChips'),views=mk('div','fbViews'),drawer=mk('div','fbDrawer'),hold=mk('div','fbHold');
+    // bar: search, date, Sales, Branch, Unit type, More, Clear all
+    bar.appendChild(sec.querySelector('.dashboardSearchCell'));
+    const date=mk('div','fbDate');date.innerHTML='<div class="dashboardFilterName">Date</div><button type="button" class="fbBtn" data-fb="date">📅 <span>Any date</span> ▾</button>';
+    bar.appendChild(date);
+    BAR.forEach(id=>{const g=document.getElementById(id);if(g)bar.appendChild(g);});
+    const moreW=mk('div','');moreW.innerHTML='<div class="dashboardFilterName">&nbsp;</div><button type="button" class="fbBtn fbMore" data-fb="more">⚙ <span>More filters</span> <b>0</b></button>';
+    bar.appendChild(moreW);
+    bar.appendChild(sec.querySelector('.dashboardClearAll'));
+    presets.innerHTML=PRESETS.map(([k,l])=>`<button type="button" class="fbP" data-p="${k}">${l}</button>`).join('')+
+      '<span class="fbRange"><input type="date" data-r="from"> → <input type="date" data-r="to"><button type="button" class="fbP" data-r="apply">Apply</button></span>';
+    GROUPS.forEach(([t,ids])=>{const g=mk('div','fbGrp');g.innerHTML=`<h4>${t}</h4>`;ids.forEach(id=>{const x=document.getElementById(id);if(x)g.appendChild(x);});drawer.appendChild(g);});
+    HOLD.forEach(id=>{const x=document.getElementById(id);if(x)hold.appendChild(x);});
+    // anything left (future filters) goes to the drawer's last group
+    [...sec.querySelectorAll(':scope > .filterGroup')].forEach(x=>drawer.lastElementChild.appendChild(x));
+    sec.prepend(bar);bar.after(presets);presets.after(chips);chips.after(views);views.after(drawer);sec.appendChild(hold);
+    els={bar,presets,chips,views,drawer,date};
+    // events
+    date.querySelector('button').addEventListener('click',()=>{presets.scrollIntoView({block:'nearest'});presets.classList.add('fbFlash');});
+    moreW.querySelector('button').addEventListener('click',()=>{drawer.classList.toggle('open');render();});
+    presets.addEventListener('click',e=>{
+      const p=e.target.closest('[data-p]');
+      if(p){const k=p.dataset.p;if(k==='custom'){presets.querySelector('.fbRange').classList.toggle('open');return;}
+        if(EDEN_DATE_RANGE_.key===k){applyPreset('');return;}applyPreset(k);return;}
+      if(e.target.closest('[data-r="apply"]')){const v=n=>{const x=presets.querySelector(`[data-r="${n}"]`).value;if(!x)return null;const [y,m,d]=x.split('-').map(Number);return new Date(y,m-1,d);};
+        const f=v('from'),t=v('to');if(!f&&!t){applyPreset('');return;}applyPreset('custom',f,t);}
+    });
+    sec.querySelector('.dashboardClearAll').addEventListener('click',()=>{const had=!!(EDEN_DATE_RANGE_.from||EDEN_DATE_RANGE_.to);EDEN_DATE_RANGE_={key:'',from:null,to:null,label:''};if(had)refresh();setTimeout(render,0);},true);
+    chips.addEventListener('click',e=>{
+      const x=e.target.closest('[data-x]');
+      if(x){const n=x.dataset.x;if(n==='__date'){applyPreset('');return;}if(n==='__search'){const s=document.getElementById('search');s.value='';refresh();render();return;}
+        setChecks(n,[]);refresh();render();return;}
+      if(e.target.closest('.fbClr')){sec.querySelector('.dashboardClearAll').click();return;}
+      if(e.target.closest('.fbSave'))saveView();
+    });
+    views.addEventListener('click',e=>{
+      const del=e.target.closest('[data-del]');if(del){e.stopPropagation();const v=loadViews();v.splice(+del.dataset.del,1);storeViews(v);render();return;}
+      const b=e.target.closest('[data-v]');if(b)applyView(loadViews()[+b.dataset.v]);
+    });
+    sec.addEventListener('change',()=>setTimeout(render,0));
+    document.getElementById('search')?.addEventListener('input',()=>{clearTimeout(render.t);render.t=setTimeout(render,250);});
+    render();
+    return true;
+  }
+
+  /* ---------- Chips + counts ---------- */
+  function activeList(){
+    const out=[];
+    const dl=dateLabel();if(dl)out.push({n:'__date',t:'Date',v:dl});
+    Object.keys(TITLES).forEach(n=>{
+      if(['bcSales','bcManager'].includes(n)&&!getM(n).length)return;
+      const v=getM(n);if(!v.length)return;
+      const g=document.querySelector(`input[name="${n}"]`)?.closest('.filterGroup');
+      const lab=v.map(x=>{const cb=document.querySelector(`input[name="${n}"][value="${CSS.escape(x)}"]`);return (cb?.closest('label')?.textContent||x).replace(/\s+\(\d+\)\s*$/,'').trim();});
+      out.push({n,t:TITLES[n],v:lab.length>2?lab.slice(0,2).join(', ')+' +'+(lab.length-2):lab.join(', '),inDrawer:!!g?.closest('.fbDrawer')});
+    });
+    const q=String(document.getElementById('search')?.value||'').trim();if(q)out.push({n:'__search',t:'Search',v:q});
+    return out;
+  }
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  function render(){
+    if(!sec||!els.bar)return;
+    const list=activeList();
+    const dl=dateLabel();
+    const db=els.date.querySelector('button');db.classList.toggle('on',!!dl);db.querySelector('span').textContent=dl||'Any date';
+    const inDrawer=list.filter(x=>x.inDrawer).length;
+    const mb=els.bar.querySelector('[data-fb="more"]');mb.querySelector('b').textContent=inDrawer;mb.querySelector('b').style.display=inDrawer?'':'none';
+    mb.querySelector('span').textContent=els.drawer.classList.contains('open')?'Hide filters':'More filters';
+    els.presets.querySelectorAll('[data-p]').forEach(b=>b.classList.toggle('on',b.dataset.p===EDEN_DATE_RANGE_.key&&!!dl||(b.dataset.p==='custom'&&EDEN_DATE_RANGE_.key==='custom'&&!!dl)));
+    els.chips.innerHTML=list.length?'<span class="lbl">ACTIVE</span>'+list.map(x=>`<span class="fbChip" title="${esc(x.t+': '+x.v)}"><span>${esc(x.t)}: <b>${esc(x.v)}</b></span><button type="button" data-x="${esc(x.n)}" aria-label="Remove">✕</button></span>`).join('')+
+      '<button type="button" class="fbClr">Clear all</button><button type="button" class="fbSave">☆ Save as my view</button>':'';
+    const v=loadViews();
+    els.views.innerHTML=v.map((x,i)=>`<span class="fbV" data-v="${i}" title="Apply this view">★ ${esc(x.name)} <small>${Object.keys(x.checks||{}).length+(x.date?1:0)+(x.q?1:0)} filters</small><i data-del="${i}" title="Delete this view">✕</i></span>`).join('');
+  }
+
+  /* ---------- Saved views (per user, on this device) ---------- */
+  const vKey=()=>'EDEN_VIEWS_'+String((typeof AUTH_USER!=='undefined'&&AUTH_USER&&(AUTH_USER.username||AUTH_USER.name))||'me');
+  function loadViews(){try{return JSON.parse(localStorage.getItem(vKey())||'[]');}catch(e){return [];}}
+  function storeViews(v){try{localStorage.setItem(vKey(),JSON.stringify(v));}catch(e){alert('Could not save views on this device.');}}
+  function saveView(){
+    const name=prompt('Name for this view (e.g. Broker deals this month):');if(!name||!name.trim())return;
+    const checks={};
+    sec.querySelectorAll('input[type="checkbox"]:checked').forEach(cb=>{if(!cb.name)return;(checks[cb.name]=checks[cb.name]||[]).push(String(cb.value));});
+    const R=EDEN_DATE_RANGE_;
+    const view={name:name.trim().slice(0,40),checks,q:String(document.getElementById('search')?.value||''),
+      date:R.key?{key:R.key,from:R.from?R.from.toISOString():null,to:R.to?R.to.toISOString():null}:null};
+    const v=loadViews().filter(x=>x.name!==view.name);v.push(view);storeViews(v.slice(-12));render();
+  }
+  function applyView(view){
+    if(!view)return;
+    sec.querySelectorAll('input[type="checkbox"]').forEach(cb=>cb.checked=false);
+    Object.entries(view.checks||{}).forEach(([n,vals])=>setChecks(n,vals));
+    const s=document.getElementById('search');if(s)s.value=view.q||'';
+    EDEN_DATE_RANGE_={key:'',from:null,to:null,label:''};
+    if(view.date&&view.date.key){
+      // "This month" etc. are re-calculated for today; custom ranges keep their dates
+      if(view.date.key==='custom')applyPreset('custom',view.date.from?new Date(view.date.from):null,view.date.to?new Date(view.date.to):null);
+      else applyPreset(view.date.key);
+      return;
+    }
+    refresh();render();
+  }
+
+  const tick=()=>{try{build();}catch(e){console.warn('FilterBar',e);}};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',tick);else tick();
+  setInterval(()=>{if(!sec||!sec.classList.contains('fbOn'))tick();},800);
+  window.edenFilterBarRender_=render;
+})();
+</script>
