@@ -56,7 +56,7 @@
   }
   function filterCount(sec){
     let n=0;
-    sec.querySelectorAll('.multiBtn span').forEach(s=>{const t=String(s.textContent||'').trim();if(t&&!/^all\b/i.test(t)&&!/^select/i.test(t))n++;});
+    sec.querySelectorAll('.multiBtn span').forEach(s=>{const t=String(s.textContent||'').trim();if(t&&!/^all\b/i.test(t)&&!/^select/i.test(t)&&!/^(كل|الكل|اختار)/.test(t))n++;});
     sec.querySelectorAll('select:not([multiple])').forEach(s=>{if(s.closest('.filterGroup')&&s.closest('.filterGroup').querySelector('.multiBtn'))return;if(s.value&&!/^all/i.test(s.value))n++;});
     sec.querySelectorAll('input[type=search],input[type=text],input[type=date]').forEach(i=>{if(String(i.value||'').trim())n++;});
     return n;
@@ -71,7 +71,8 @@
       }
       b.classList.toggle('hidden',sec.classList.contains('hidden'));
       const n=filterCount(sec),open=sec.classList.contains('mOpen');
-      const html=`<span>⚙ Filters${n?` · ${n} on`:''}</span><i>${open?'Hide ▲':'Show ▼'}</i>`;
+      const ar=typeof EDEN_LANG_!=='undefined'&&EDEN_LANG_==='ar';
+      const html=ar?`<span>⚙ الفلاتر${n?` · ${n} شغال`:''}</span><i>${open?'إخفاء ▲':'عرض ▼'}</i>`:`<span>⚙ Filters${n?` · ${n} on`:''}</span><i>${open?'Hide ▲':'Show ▼'}</i>`;
       if(b.innerHTML!==html)b.innerHTML=html;
     });
   }

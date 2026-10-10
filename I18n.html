@@ -1,0 +1,212 @@
+<style id="eden-i18n">
+.langBtn{height:36px;min-width:42px;padding:0 10px;border-radius:12px;border:1px solid var(--ds-line,#e8e0d1);background:var(--ds-surface,#fff);color:var(--ds-heading,#16130f);font-weight:800;font-size:14px;cursor:pointer;font-family:'Cairo',Inter,sans-serif}
+.langBtn:hover{border-color:var(--ds-gold,#b08a42);color:var(--ds-gold-strong,#8f6d2c)}
+html[lang="ar"] body,html[lang="ar"] button,html[lang="ar"] input,html[lang="ar"] select,html[lang="ar"] textarea{font-family:'Cairo','Segoe UI',Tahoma,Arial,sans-serif!important}
+html[lang="ar"] .title,html[lang="ar"] h1,html[lang="ar"] h2,html[lang="ar"] h3,html[lang="ar"] h4{font-family:'Cairo','Segoe UI',Tahoma,serif!important;letter-spacing:0!important}
+html[lang="ar"] *{letter-spacing:0!important}
+/* ---- right-to-left layout ---- */
+html[dir="rtl"] .lxCap{direction:ltr;text-align:left}
+html[dir="rtl"] #appRoot .sidebar{left:auto!important;right:0!important;border-right:0!important;border-left:1px solid var(--ds-line,#e8e0d1)!important}
+@media(min-width:1201px){html[dir="rtl"] #appRoot .main{margin-left:0!important;margin-right:280px!important}}
+html[dir="rtl"] #appRoot .moduleMenu{border-left:0!important;border-right:1px solid var(--ds-line,#e8e0d1)!important;margin-left:0!important;margin-right:10px!important;padding:4px 10px 8px 0!important}
+html[dir="rtl"] #appRoot .moduleHeader,html[dir="rtl"] #appRoot .moduleMenu button,html[dir="rtl"] #appRoot .nav button{text-align:right!important}
+html[dir="rtl"] #appRoot .moduleArrow{transform:scaleX(-1)}
+html[dir="rtl"] th,html[dir="rtl"] td{text-align:right}
+html[dir="rtl"] .multiBtn,html[dir="rtl"] .checkRow{text-align:right}
+html[dir="rtl"] .num,html[dir="rtl"] td.num,html[dir="rtl"] th.num{text-align:left!important}
+html[dir="rtl"] input[type="number"],html[dir="rtl"] input[inputmode="decimal"]{direction:ltr;text-align:right}
+@media(max-width:760px){
+  html[dir="rtl"] #appRoot .sidebar{transform:translateX(105%)}
+  html[dir="rtl"] body.mNav #appRoot .sidebar{transform:none}
+}
+</style>
+<script>
+/* =====================================================================
+   EDEN BI — Arabic interface (ع / EN button in the top bar).
+   Arabic turns the layout right-to-left and translates the interface
+   text (menus, titles, buttons, labels, column titles). Data — client
+   names, unit codes, numbers, table rows — stays exactly as it is.
+   The choice is remembered on this device; switching reloads the page.
+   ===================================================================== */
+const EDEN_LANG_KEY_='EDEN_LANG';
+let EDEN_LANG_='en';
+try{EDEN_LANG_=localStorage.getItem(EDEN_LANG_KEY_)==='ar'?'ar':'en';}catch(e){}
+if(EDEN_LANG_==='ar'){document.documentElement.lang='ar';document.documentElement.dir='rtl';}
+
+const I18N_AR_={
+// ---- shell / menus
+'transactions':'المبيعات','brokers':'البروكرز','inventory':'المخزون','inventories':'المخزون','system':'النظام',
+'overview':'نظرة عامة','projects':'المشروعات','sales':'السيلز','branches':'الفروع','clients analysis':'تحليل العملاء',
+'deals details':'تفاصيل الديلات','commissions':'العمولات','data check':'مراجعة البيانات','collections':'التحصيلات',
+'targets':'التارجت','sales scorecard':'تقييم السيلز','discount approvals':'موافقات الخصم','add new deal':'إضافة ديل جديد',
+'update deal':'تعديل ديل','update a deal':'تعديل ديل','broker overview':'نظرة عامة على البروكرز','broker performance':'أداء البروكرز',
+'broker companies':'شركات البروكر','eden sales':'سيلز إيدن','orientations':'الأورينتيشن','company health':'صحة الشركات',
+'broker commissions':'عمولات البروكرز',
+'price manager':'إدارة الأسعار','floor map':'خريطة الدور','users':'المستخدمين','system users':'مستخدمين النظام','activity log':'سجل النشاط',
+'business intelligence':'ذكاء الأعمال','search':'بحث','light':'فاتح','dark':'غامق','live data':'بيانات مباشرة',
+'reset':'إعادة ضبط','export csv':'تصدير CSV','export excel':'تصدير Excel','export pdf':'تصدير PDF','clear':'مسح','clear all':'مسح الكل',
+'select all':'تحديد الكل','select':'اختار','select one or more':'اختار واحد أو أكتر','active filters':'الفلاتر الشغالة','current filters':'الفلاتر الحالية',
+'save':'حفظ','preview':'معاينة','next':'التالي','previous':'السابق','approve':'موافقة','reject':'رفض','approved':'موافَق عليه','rejected':'مرفوض',
+'waiting':'في الانتظار','dashboard':'لوحة المتابعة','open dashboard':'افتح اللوحة','view':'عرض','change':'تغيير','actions':'إجراءات',
+'not logged in':'مش مسجل دخول','system online':'السيستم شغال','refresh inventory':'تحديث المخزون','↻ refresh':'↻ تحديث','open source sheet':'افتح الشيت',
+'loading…':'جاري التحميل…','loading transactions dashboard...':'جاري تحميل لوحة المبيعات...','loading deal options...':'جاري تحميل الاختيارات...',
+'transactions dashboard':'لوحة المبيعات','overview for projects, sales, branches, meters and deals.':'نظرة عامة على المشروعات والسيلز والفروع والأمتار والديلات.',
+// ---- login
+'welcome back':'أهلاً بيك','welcome back,':'أهلاً بيك،','secure access':'دخول آمن','sign in to your eden workspace.':'سجّل دخولك على مساحة EDEN.',
+'username':'اسم المستخدم','password':'كلمة السر','access dashboard':'دخول','sign in':'تسجيل الدخول','access granted':'تم الدخول',
+'access granted. preparing your workspace…':'تم الدخول. بنجهزلك المساحة…',
+// ---- filters
+'project':'المشروع','branch':'الفرع','status':'الحالة','statuses':'الحالات','year':'السنة','month':'الشهر','day':'اليوم','period':'الفترة',
+'unit type':'نوع الوحدة','unit category':'فئة الوحدة','unit type category':'فئة نوع الوحدة','deal type':'نوع الديل','deals type':'نوع الديلات',
+'shared with':'مشترك مع','nationality':'الجنسية','commission':'العمولة','client type':'نوع العميل','renovation':'تشطيب','main source':'المصدر الرئيسي',
+'source type':'نوع المصدر','campaign name':'اسم الحملة','media buyer':'الميديا باير','brokerage company':'شركة البروكر','brokerage companies':'شركات البروكر',
+'bc sales':'سيلز البروكر','bc manager':'مدير البروكر','bc managers':'مديرين البروكر','sales manager':'مدير المبيعات','sales name':'اسم السيلز',
+'deal status':'حالة الديل','deal stage':'مرحلة الديل','additional status':'حالة إضافية','floor':'الدور','type':'النوع','area':'المساحة',
+'all projects':'كل المشروعات','all branches':'كل الفروع','all status':'كل الحالات','all statuses':'كل الحالات','all years':'كل السنين','all months':'كل الشهور',
+'all days':'كل الأيام','all unit types':'كل أنواع الوحدات','all unit categories':'كل فئات الوحدات','all deal types':'كل أنواع الديلات','all deals types':'كل أنواع الديلات',
+'all shared sales':'كل السيلز المشتركين','all nationalities':'كل الجنسيات','all commission':'كل العمولات','all client types':'كل أنواع العملاء',
+'all renovation':'الكل','all main sources':'كل المصادر','all source types':'كل أنواع المصادر','all campaigns':'كل الحملات','all media buyers':'كل الميديا باير',
+'all brokerage companies':'كل شركات البروكر','all bc sales':'كل سيلز البروكر','all bc managers':'كل مديرين البروكر','all sales':'كل السيلز',
+'all sales managers':'كل مديرين المبيعات','all deal status':'كل حالات الديل','all deal statuss':'كل حالات الديل','all deal stages':'كل المراحل','all managers':'كل المديرين',
+'all types':'كل الأنواع','all floors':'كل الأدوار','all users':'كل المستخدمين','all companies':'كل الشركات','all broker status':'كل الحالات',
+'all eden sales':'كل سيلز إيدن','all created by':'الكل','all creation days':'كل الأيام','all creation months':'كل الشهور','all creation years':'كل السنين',
+'all link status':'الكل','all previous sales':'الكل','all active':'كل الشغال','search options...':'دوّر...',
+// ---- deal stages / statuses
+'reservation':'حجز','closed':'مقفول','cancel':'ملغي','delivered':'اتسلم','part of dp':'جزء من المقدم','total dp':'المقدم كامل',
+'client signed':'العميل وقّع','company signed':'الشركة وقّعت','client signed (part of dp)':'العميل وقّع (جزء من المقدم)','client signed (total dp)':'العميل وقّع (المقدم كامل)',
+'company signed (part of dp)':'الشركة وقّعت (جزء من المقدم)','company signed (total dp)':'الشركة وقّعت (المقدم كامل)','part of dp (not signed)':'جزء من المقدم (من غير توقيع)',
+'total dp (not signed)':'المقدم كامل (من غير توقيع)','(part of dp)':'(جزء من المقدم)','(total dp)':'(المقدم كامل)','(not signed)':'(من غير توقيع)',
+'needs review (ticks don’t match)':'محتاج مراجعة (العلامات مش متطابقة)','available':'متاح','available only':'المتاح بس','solo':'لوحده','share':'مشترك',
+'cash':'كاش','instant transfer':'تحويل فوري','internal':'داخلي','overseas':'خارجي','walk-in':'ووك إن','digital':'ديجيتال','broker':'بروكر',
+'active':'شغال','inactive':'مش شغال','closed / sold':'مقفول / مباع','without renovation':'من غير تشطيب','main unit':'وحدة رئيسية','shared unit':'وحدة مشتركة','divided unit':'وحدة مقسومة',
+// ---- KPIs & headings
+'total deals':'إجمالي الديلات','deals':'الديلات','deals count':'عدد الديلات','total value egp':'إجمالي القيمة بالجنيه','total value usd':'إجمالي القيمة بالدولار',
+'unique clients':'عملاء فريدين','avg deal egp':'متوسط الديل بالجنيه','avg deal usd':'متوسط الديل بالدولار','avg deal value':'متوسط قيمة الديل',
+'sales value egp':'قيمة المبيعات بالجنيه','sales value usd':'قيمة المبيعات بالدولار','total actual dp':'إجمالي المقدم الفعلي','total actual paid':'إجمالي المدفوع الفعلي',
+'total dp paid':'إجمالي المقدم المدفوع','total remain':'إجمالي المتبقي','actual dp':'المقدم الفعلي','actual paid':'المدفوع الفعلي','remain':'المتبقي','remaining':'المتبقي',
+'dp paid':'المقدم المدفوع','dp %':'نسبة المقدم','dp paid %':'نسبة المقدم المدفوع','final price':'السعر النهائي','price':'السعر','price / m²':'سعر المتر',
+'meters':'الأمتار','units':'الوحدات','sold units':'الوحدات المباعة','sold meters':'الأمتار المباعة','total units':'إجمالي الوحدات','clients':'العملاء','client':'العميل',
+'client name':'اسم العميل','unit':'الوحدة','unit code':'كود الوحدة','unit codes':'أكواد الوحدات','date':'التاريخ','currency':'العملة','mobile':'الموبايل','email':'الإيميل',
+'name':'الاسم','notes':'ملاحظات','row':'الصف','age':'السن','gender':'النوع','job title':'الوظيفة','birth date':'تاريخ الميلاد','id type':'نوع الهوية',
+'id number':'رقم الهوية','id address':'عنوان الهوية','residence address':'عنوان السكن','salesperson':'السيلز','salespeople':'السيلز','manager':'المدير','managers':'المديرين',
+'staff':'الموظفين','head of sales':'رئيس المبيعات','cco':'CCO','discount %':'نسبة الخصم','discount amount':'قيمة الخصم','discount offer':'عرض الخصم','discount value':'قيمة الخصم',
+'maintenance %':'نسبة الصيانة','maintenance amount':'قيمة الصيانة','installments':'الأقساط','installment plan':'خطة الأقساط','installments period':'مدة الأقساط',
+'type of payment plan':'نوع خطة الدفع','period type':'نوع الفترة','paid':'مدفوع','due':'مستحق','coming':'جاي','scope':'النطاق','metric':'المؤشر','problem':'المشكلة',
+'excluding cancel by default':'من غير الملغي','filtered transaction value':'قيمة الديلات بعد الفلتر','filtered deals • cancel excluded by default':'الديلات بعد الفلتر • من غير الملغي',
+'stale reservations':'حجوزات قديمة','reserved more than 15 days ago':'محجوزة من أكتر من 15 يوم','awaiting company signature':'مستني توقيع الشركة',
+'client signed, company not yet':'العميل وقّع والشركة لسه','average days to close':'متوسط أيام الإقفال','sales performance curve':'منحنى أداء المبيعات',
+'annual performance':'الأداء السنوي','year comparison':'مقارنة السنين','year total':'إجمالي السنة','this month':'الشهر ده','sales trend':'اتجاه المبيعات',
+'project performance':'أداء المشروعات','branch performance':'أداء الفروع','branches performance':'أداء الفروع','sales performance':'أداء السيلز','area performance':'أداء المساحات',
+'top salespeople':'أعلى السيلز','top project':'أعلى مشروع','leaderboard':'الترتيب','deals by project':'الديلات حسب المشروع','value by project':'القيمة حسب المشروع',
+'meters by project':'الأمتار حسب المشروع','deals by branch':'الديلات حسب الفرع','status breakdown':'توزيع الحالات','projects summary':'ملخص المشروعات','branches summary':'ملخص الفروع',
+'sales summary':'ملخص السيلز','clients by nationality':'العملاء حسب الجنسية','deals by nationality':'الديلات حسب الجنسية','nationality distribution':'توزيع الجنسيات',
+'top nationalities':'أعلى الجنسيات','new clients':'عملاء جداد','customer journey':'رحلة العميل','customer value':'قيمة العميل','market share':'الحصة السوقية',
+'project mix':'توزيع المشروعات','pipeline mix':'توزيع المراحل','sales velocity':'سرعة المبيعات','projects dashboard':'لوحة المشروعات','deals details ':'تفاصيل الديلات',
+'egp portfolio':'محفظة الجنيه','usd portfolio':'محفظة الدولار','egp sales':'مبيعات الجنيه','usd sales':'مبيعات الدولار','shared deals':'ديلات مشتركة',
+'shared value egp':'قيمة مشتركة بالجنيه','shared value usd':'قيمة مشتركة بالدولار','combined deals':'إجمالي الديلات','combined value':'إجمالي القيمة',
+'down payment totals':'إجماليات المقدم','actual dp egp':'المقدم الفعلي بالجنيه','actual dp usd':'المقدم الفعلي بالدولار','actual paid egp':'المدفوع بالجنيه','actual paid usd':'المدفوع بالدولار',
+'remain egp':'المتبقي بالجنيه','remain usd':'المتبقي بالدولار','outstanding egp':'المستحق بالجنيه','outstanding usd':'المستحق بالدولار',
+'clients with a balance':'عملاء عليهم فلوس','clients with a remaining balance':'عملاء عليهم متبقي','aging of remaining balance':'أعمار المتبقي','overdue 90+ days':'متأخر أكتر من 90 يوم',
+'remaining down payment':'المتبقي من المقدم','contracted dp':'المقدم المتعاقد عليه','contracted down payment':'المقدم المتعاقد عليه',
+// ---- targets / scorecard
+'target center':'مركز التارجت','target system':'نظام التارجت','manage targets':'إدارة التارجت','set target':'حدد التارجت','save target':'حفظ التارجت',
+'target egp':'التارجت بالجنيه','target usd':'التارجت بالدولار','achieved':'المحقق','behind pace':'متأخر عن المعدل','days left':'أيام متبقية','needed per day':'المطلوب يومياً',
+'monthly':'شهري','quarterly':'ربع سنوي','yearly':'سنوي','quarter':'ربع سنة','cancellation rate':'نسبة الإلغاء','cancel rate':'نسبة الإلغاء','avg days to sign':'متوسط أيام التوقيع',
+'open reservations':'حجوزات مفتوحة','🖨 report pdf':'🖨 تقرير PDF','salespeople with a target':'سيلز ليهم تارجت',
+// ---- commissions / brokers
+'commission paid':'العمولة اتصرفت','commission not paid':'العمولة ما اتصرفتش','commissioned deals':'ديلات اتصرف عليها عمولة','employee commissions':'عمولات الموظفين',
+'broker companies dashboard':'لوحة شركات البروكر','broker performance center':'مركز أداء البروكرز','broker deals details':'تفاصيل ديلات البروكرز','broker information':'بيانات البروكر',
+'broker status':'حالة البروكر','company':'الشركة','companies':'الشركات','company deals':'ديلات الشركة','company profile':'ملف الشركة','company ranking':'ترتيب الشركات',
+'top brokerage companies':'أعلى شركات البروكر','top bc sales':'أعلى سيلز البروكر','top bc managers':'أعلى مديرين البروكر','eden sales ':'سيلز إيدن','health status':'الحالة',
+'companies & payments':'الشركات والمدفوعات','due to brokers':'المستحق للبروكرز','not paid yet':'ما خدتش لسه','partly paid':'خدت جزء','fully paid':'خدت كامل',
+'coming (not due yet)':'جاي (لسه ما استحقش)','no rate set':'من غير نسبة','paid before due':'اتدفع قبل الاستحقاق','who is owed the most':'مين ليه أكتر',
+'paid to brokers per month':'المدفوع للبروكرز كل شهر','signed deals':'ديلات موقّعة','signed value':'قيمة الموقّع','waiting since':'مستني من','only with balance':'اللي ليهم باقي بس',
+'due once the clients sign':'بتستحق لما العملاء يوقّعوا','companies with signed deals and no payment':'شركات عندها ديلات موقّعة ومتصرفلهاش',
+// ---- discount / prices / installments / log
+'reserved from':'محجوز من','price history':'سجل الأسعار','units & what-if':'الوحدات والسيناريوهات','undo all':'تراجع عن الكل','units shown':'الوحدات المعروضة',
+'value now':'القيمة دلوقتي','value after':'القيمة بعد','difference':'الفرق','units changed':'وحدات اتغيرت','price/m² now':'سعر المتر دلوقتي','new price/m²':'سعر المتر الجديد',
+'total now':'الإجمالي دلوقتي','new total':'الإجمالي الجديد','round to':'قرّب لـ','or':'أو','not saved yet':'لسه ما اتحفظش','save price changes':'حفظ تغييرات الأسعار',
+'backup now':'نسخة احتياطية دلوقتي','open':'فتح','set rate':'حط النسبة','no rate — amount unknown':'من غير نسبة — المبلغ مش معروف','← all companies':'← كل الشركات','🧾 statement pdf':'🧾 كشف حساب PDF','pay':'دفع','edit':'تعديل','rate':'النسبة','rate %':'النسبة %','final price ':'السعر النهائي','commission ':'العمولة','reserved':'تاريخ الحجز','method':'الطريقة','reference':'المرجع','by':'بواسطة','payouts':'المدفوعات','save payment':'حفظ الدفعة','cancel ':'إلغاء','search':'بحث',
+// ---- data check
+'rows checked':'صفوف اتراجعت','must fix':'لازم يتصلح','to check':'للمراجعة','possible typos':'أخطاء كتابة محتملة','price problems':'مشاكل أسعار','duplicate units':'وحدات متكررة',
+'what is wrong':'إيه الغلط','requires review':'محتاج مراجعة','deal check':'مراجعة الديل',
+// ---- deal form
+'1. project & unit':'1. المشروع والوحدة','2. client details':'2. بيانات العميل','3. transaction & source':'3. الديل والمصدر','4. down payment & payment plan':'4. المقدم وخطة الدفع',
+'5. review & save':'5. مراجعة وحفظ','save deal':'حفظ الديل','clear form':'مسح الفورم','new / clear':'جديد / مسح','reservation amount':'مبلغ الحجز','reservation currency':'عملة الحجز',
+'reservation payment method':'طريقة دفع الحجز','dp currency':'عملة المقدم','dp payment date':'تاريخ دفع المقدم','dp payment method':'طريقة دفع المقدم',
+'transaction date *':'تاريخ الديل *','transaction status *':'حالة الديل *','project *':'المشروع *','unit code *':'كود الوحدة *','client name *':'اسم العميل *','mobile *':'الموبايل *',
+'branch *':'الفرع *','sales name *':'اسم السيلز *','select unit':'اختار الوحدة','select project':'اختار المشروع','select branch':'اختار الفرع','select status':'اختار الحالة',
+'select sales':'اختار السيلز','select nationality':'اختار الجنسية','select gender':'اختار النوع','select currency':'اختار العملة','select payment method':'اختار طريقة الدفع',
+'auto (from mobile)':'أوتوماتيك (من الموبايل)','maintenance based on':'الصيانة محسوبة على','price after discount':'السعر بعد الخصم','price before discount':'السعر قبل الخصم',
+'final price (after discount)':'السعر النهائي (بعد الخصم)','primary total price (before discount)':'السعر الأصلي (قبل الخصم)',
+'i reviewed the client, unit, source and payment details.':'راجعت بيانات العميل والوحدة والمصدر والدفع.',
+// ---- users
+'+ new user':'+ مستخدم جديد','save user':'حفظ المستخدم','manage dashboard users and roles':'إدارة المستخدمين والصلاحيات','admin':'أدمن','super admin':'سوبر أدمن','viewer':'مشاهد',
+// ---- months
+'jan':'يناير','feb':'فبراير','mar':'مارس','apr':'أبريل','may':'مايو','jun':'يونيو','jul':'يوليو','aug':'أغسطس','sep':'سبتمبر','sept':'سبتمبر','oct':'أكتوبر','nov':'نوفمبر','dec':'ديسمبر',
+'january':'يناير','february':'فبراير','march':'مارس','april':'أبريل','june':'يونيو','july':'يوليو','august':'أغسطس','september':'سبتمبر','october':'أكتوبر','november':'نوفمبر','december':'ديسمبر'
+};
+const I18N_PH_AR_={
+'search client, unit or campaign...':'دوّر على عميل أو وحدة أو حملة...','search client / unit / campaign...':'دوّر على عميل / وحدة / حملة...','search company…':'دوّر على شركة…',
+'search client, unit or sales…':'دوّر على عميل أو وحدة أو سيلز…','search client, unit, sales…':'دوّر على عميل أو وحدة أو سيلز…','unit code…':'كود الوحدة…',
+'enter username':'اكتب اسم المستخدم','enter password':'اكتب كلمة السر','username':'اسم المستخدم','password':'كلمة السر','optional':'اختياري','full name':'الاسم بالكامل',
+'select a unit first':'اختار الوحدة الأول','find unit…':'دوّر على وحدة…','search by unit code, floor, type or view':'دوّر بكود الوحدة أو الدور أو النوع'
+};
+const I18N_RULES_=[
+  [/^(\d[\d,.]*)\s+deals?$/i,'$1 ديل'],[/^(\d[\d,.]*)\s+companies$/i,'$1 شركة'],[/^(\d[\d,.]*)\s+records?$/i,'$1 سجل'],
+  [/^(\d[\d,.]*)\s+options?$/i,'$1 اختيار'],[/^(\d[\d,.]*)\s+projects?$/i,'$1 مشروع'],[/^(\d[\d,.]*)\s+rows?$/i,'$1 صف'],
+  [/^(\d[\d,.]*)\s+days$/i,'$1 يوم'],[/^showing (\d[\d,.]*) rows from transactions$/i,'عرض $1 صف من المبيعات'],
+  [/^step (\d) of (\d)$/i,'خطوة $1 من $2'],[/^view more \((\d+)\)$/i,'عرض المزيد ($1)']
+];
+const I18N_SKIP_='script,style,tbody,textarea,code,pre,.dsLogo,.lxCap,.welcomeStack,.noI18n,[data-noi18n],#mBar .mT small';
+function i18nText_(t){
+  const k=t.replace(/\s+/g,' ').trim();if(!k)return null;
+  const v=I18N_AR_[k.toLowerCase()];if(v)return t.replace(t.trim(),v);
+  for(const [re,rep] of I18N_RULES_)if(re.test(k))return t.replace(t.trim(),k.replace(re,rep));
+  return null;
+}
+function i18nNode_(n){
+  if(n.nodeType===3){
+    const p=n.parentElement;if(!p||p.closest(I18N_SKIP_))return;
+    if(n.__ar!==undefined&&n.nodeValue===n.__ar)return;
+    const t=i18nText_(n.nodeValue||'');if(t!=null&&t!==n.nodeValue){n.__ar=t;n.nodeValue=t;}
+    return;
+  }
+  if(n.nodeType!==1||n.closest&&n.closest(I18N_SKIP_))return;
+  ['placeholder','title','aria-label'].forEach(a=>{
+    const v=n.getAttribute&&n.getAttribute(a);if(!v||n.getAttribute('data-i18n-'+a)===v)return;
+    const t=I18N_PH_AR_[v.trim().toLowerCase()]||I18N_AR_[v.trim().toLowerCase()];
+    if(t){n.setAttribute(a,t);n.setAttribute('data-i18n-'+a,t);}
+  });
+  const w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT|NodeFilter.SHOW_ELEMENT,{acceptNode:x=>x.nodeType===1&&x.matches(I18N_SKIP_)?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT});
+  let x;while((x=w.nextNode()))if(x!==n)i18nNode_(x);
+}
+function edenSetLang_(l){try{localStorage.setItem(EDEN_LANG_KEY_,l);}catch(e){}location.reload();}
+(function(){
+  // Language button (desktop app bar + phone top bar).
+  const mount=()=>{
+    const label=EDEN_LANG_==='ar'?'EN':'ع',title=EDEN_LANG_==='ar'?'English':'عربي';
+    const bar=document.querySelector('.dsAppBarRight');
+    if(bar&&!bar.querySelector('.langBtn')){const b=document.createElement('button');b.type='button';b.className='langBtn noI18n';b.textContent=label;b.title=title;b.addEventListener('click',()=>edenSetLang_(EDEN_LANG_==='ar'?'en':'ar'));bar.insertBefore(b,bar.firstChild);}
+    const mb=document.getElementById('mBar');
+    if(mb&&!mb.querySelector('.langBtn')){const b=document.createElement('button');b.type='button';b.className='langBtn noI18n';b.textContent=label;b.title=title;b.addEventListener('click',()=>edenSetLang_(EDEN_LANG_==='ar'?'en':'ar'));mb.insertBefore(b,mb.lastElementChild);}
+  };
+  const start=()=>{
+    mount();
+    if(EDEN_LANG_!=='ar')return;
+    if(!document.querySelector('link[data-cairo]')){const l=document.createElement('link');l.rel='stylesheet';l.dataset.cairo='1';l.href='https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap';document.head.appendChild(l);}
+    i18nNode_(document.body);
+    let queued=new Set(),pending=false;
+    const flush=()=>{pending=false;const list=[...queued];queued.clear();list.forEach(n=>{if(n.isConnected)i18nNode_(n);});};
+    new MutationObserver(ms=>{
+      ms.forEach(m=>{
+        if(m.type==='characterData')queued.add(m.target);
+        else if(m.type==='attributes')queued.add(m.target);
+        else m.addedNodes.forEach(n=>queued.add(n));
+      });
+      if(!pending&&queued.size){pending=true;requestAnimationFrame(flush);}
+    }).observe(document.body,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['placeholder','title']});
+  };
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
+})();
+</script>
