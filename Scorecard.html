@@ -141,6 +141,39 @@ function scRender_(){
   <div class="scNote">Deals and value count shared deals as ½ for each salesperson (same as Top Sales). Cancellation rate = cancelled ÷ all deals made in the month.
   Days to sign = reservation date → contract date (or client sign date). DP collected = “Actual Paid” on the month’s deals. Targets come from the Targets page (monthly, or quarter ÷ 3, or year ÷ 12).</div>`;
   body.querySelectorAll('[data-print]').forEach(b=>b.addEventListener('click',()=>scPrint_(b.dataset.print)));
+  const tb=scTeamsHtml_(list,y,m);
+  if(tb&&list.length)[...body.querySelectorAll('.scNote')].pop().insertAdjacentHTML('beforebegin',tb);
+}
+/* Teams (EDEN_TEAM_DEFINITIONS): manager + members, side by side for the month. */
+function scTeams_(list){
+  const defs=(typeof EDEN_TEAM_DEFINITIONS!=='undefined'?EDEN_TEAM_DEFINITIONS:[]).filter(d=>(d.members||[]).length);
+  const nk=v=>String(v||'').trim().toLowerCase().replace(/\s+/g,' ');
+  return defs.map(d=>{
+    const names=new Set([d.manager].concat(d.members).map(nk));
+    const ppl=list.filter(s=>names.has(nk(s.name)));
+    const sum=k=>ppl.reduce((a,s)=>a+(Number(s[k])||0),0);
+    const days=ppl.flatMap(s=>s.days);
+    const total=sum('total'),cancel=sum('cancel');
+    const tE=ppl.reduce((a,s)=>a+(s.cur==='EGP'?Number(s.target)||0:0),0);
+    return {manager:d.manager,size:d.members.length,active:ppl.filter(s=>s.deals>0).length,deals:sum('deals'),EGP:sum('EGP'),USD:sum('USD'),
+      paidEGP:sum('paidEGP'),open:sum('open'),cancelRate:total?cancel/total*100:0,avgDays:days.length?days.reduce((a,b)=>a+b,0)/days.length:null,
+      target:tE,pct:tE?sum('EGP')/tE*100:null,group:(d.branch||'')+(d.project?' · '+d.project:'')};
+  });
+}
+function scTeamsHtml_(list,y,m){
+  const T=scTeams_(list).sort((a,b)=>(b.EGP-a.EGP)||(b.deals-a.deals));
+  if(!T.length)return '';
+  const maxV=Math.max(1,...T.map(t=>t.EGP)),cols=['#1f6b52','#b0832c','#23777e','#c0533b','#7b3f70'];
+  return `<h3 style="margin:22px 0 4px;font:600 19px 'Cormorant Garamond',Georgia,serif;color:var(--ds-heading)">Teams — ${SC_MONTHS_[m-1]} ${y}</h3>
+  <div class="scNote" style="margin:0 0 10px">Each team = its manager + the salespeople set for that team (${scEsc_([...new Set(T.map(t=>t.group).filter(Boolean))].join(', '))}). Shared deals count ½.</div>
+  <table class="scTable"><thead><tr><th>#</th><th>Team</th><th>Sales value EGP</th><th class="num">Deals</th><th class="num">Active / team</th><th class="num">Target</th><th>Achieved</th><th class="num">Cancel rate</th><th class="num">Avg days to sign</th><th class="num">DP collected</th><th class="num">Open res.</th></tr></thead><tbody>
+  ${T.map((t,i)=>`<tr><td><span class="scRank r${i+1}">${i+1}</span></td><td><b>${scEsc_(t.manager)}</b><br><small style="color:var(--ds-muted)">${t.size} salespeople</small></td>
+    <td style="min-width:200px"><b>${scNum_(t.EGP)}</b>${t.USD?` <small>+ ${scNum_(t.USD)} USD</small>`:''}<div class="scBar"><i style="width:${t.EGP/maxV*100}%;--c:${cols[i%5]}"></i></div></td>
+    <td class="num">${scNum_(t.deals,1)}</td><td class="num">${t.active} / ${t.size+1}</td><td class="num">${t.target?scNum_(t.target):'—'}</td>
+    <td>${t.pct==null?'<small style="color:var(--ds-muted)">No target</small>':`<b class="${t.pct>=100?'scGood':t.pct<50?'scBad':''}">${Math.round(t.pct)}%</b>`}</td>
+    <td class="num ${t.cancelRate>20?'scBad':''}">${Math.round(t.cancelRate)}%</td><td class="num">${t.avgDays==null?'—':Math.round(t.avgDays)}</td>
+    <td class="num">${scNum_(t.paidEGP)}</td><td class="num">${scNum_(t.open,1)}</td></tr>`).join('')}
+  </tbody></table>`;
 }
 function scPrint_(only){
   const {y,m,list}=scCompute_();
