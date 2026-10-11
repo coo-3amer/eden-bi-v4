@@ -52,7 +52,7 @@ html[data-theme="dark"] .fbSave{border-color:#3fbf8e;color:#3fbf8e}
 .fbV small{color:var(--ds-muted);font-weight:600}
 .fbV i{font-style:normal;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;color:var(--ds-muted);font-size:11px}
 .fbV i:hover{background:var(--ds-red-soft,#f9e3e3);color:#c0533b}
-.fbDrawer{display:none;margin-top:14px;border-top:1px dashed var(--ds-line,#e3d9c7);padding-top:14px;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.fbDrawer{display:none;margin-top:14px;border-top:1px dashed var(--ds-line,#e3d9c7);padding-top:14px;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:start}
 .fbDrawer.open{display:grid}
 .fbGrp{background:var(--ds-surface-2,#faf6ef);border:1px solid var(--ds-line,#efe6d6);border-radius:14px;padding:12px}
 .fbGrp h4{margin:0 0 10px;font-size:11px;font-weight:800;letter-spacing:.14em;color:var(--ds-gold,#b08a42);text-transform:uppercase}
@@ -113,8 +113,7 @@ html[data-theme="dark"] .fbSave{border-color:#3fbf8e;color:#3fbf8e}
     campaignName:'Campaign',mediaBuyer:'Media buyer',brokerageCompany:'Brokerage',bcSales:'BC sales',bcManager:'BC manager'};
   const GROUPS=[['👥 Sales team',['branchMulti','salesManagerMulti','salesMulti','dealTypeMulti','sharedWithMulti','commissionMulti']],
     ['📣 Source',['mainSourceMulti','sourceTypeMulti','campaignNameMulti','mediaBuyerMulti','brokerageCompanyMulti']],
-    ['👤 Client',['clientTypeMulti']],
-    ['🏢 Unit',['unitCategoryMulti']]];
+    ['👤 Client',['clientTypeMulti','unitCategoryMulti']]];
   const BAR=[];
   const HOLD=['nationalityMulti','renovationMulti','projectMulti','statusMulti','contractMulti','bcSalesMulti','bcManagerMulti','dayMulti','monthMulti','yearMulti'];
   let sec=null,els={};
