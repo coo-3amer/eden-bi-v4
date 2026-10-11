@@ -28,7 +28,9 @@ html[dir="rtl"] .fbPop{left:auto;right:0}
 .fbPop .cr input{height:34px;border:1px solid var(--ds-line,#e3d9c7);border-radius:9px;padding:0 8px;background:var(--ds-surface);color:var(--ds-text);font:inherit;font-size:12.5px;width:100%}
 .fbPop .cr .fbP{grid-column:1/-1}
 .fbPop .any{grid-column:1/-1}
-.fbPresets{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;align-items:center}
+.fbPresets{display:none!important}
+html[data-theme] #appRoot .checkRow.fbRosterHidden{display:none!important}
+.checkRow.fbRosterAdd span{font-style:italic}
 .fbP{padding:6px 12px;border-radius:99px;border:1px solid var(--ds-line,#e3d9c7);font-size:12.5px;font-weight:700;color:var(--ds-muted,#6f6556);background:var(--ds-surface,#fff);cursor:pointer;font-family:inherit}
 .fbP.on{background:#1f6b52;border-color:#1f6b52;color:#fff}
 .fbRange{display:none;gap:6px;align-items:center;font-size:12px;color:var(--ds-muted)}
@@ -111,10 +113,10 @@ html[data-theme="dark"] .fbSave{border-color:#3fbf8e;color:#3fbf8e}
     campaignName:'Campaign',mediaBuyer:'Media buyer',brokerageCompany:'Brokerage',bcSales:'BC sales',bcManager:'BC manager'};
   const GROUPS=[['👥 Sales team',['branchMulti','salesManagerMulti','salesMulti','dealTypeMulti','sharedWithMulti','commissionMulti']],
     ['📣 Source',['mainSourceMulti','sourceTypeMulti','campaignNameMulti','mediaBuyerMulti','brokerageCompanyMulti']],
-    ['👤 Client',['clientTypeMulti','nationalityMulti']],
-    ['🏢 Unit',['renovationMulti']]];
-  const BAR=['unitCategoryMulti'];
-  const HOLD=['projectMulti','statusMulti','contractMulti','bcSalesMulti','bcManagerMulti','dayMulti','monthMulti','yearMulti'];
+    ['👤 Client',['clientTypeMulti']],
+    ['🏢 Unit',['unitCategoryMulti']]];
+  const BAR=[];
+  const HOLD=['nationalityMulti','renovationMulti','projectMulti','statusMulti','contractMulti','bcSalesMulti','bcManagerMulti','dayMulti','monthMulti','yearMulti'];
   let sec=null,els={};
   function build(){
     sec=[...document.querySelectorAll('#appRoot section.filters')].find(s=>s.id!=='brokerFilters'&&s.id!=='inventoryFilters'&&s.querySelector('#salesMulti'));
@@ -240,25 +242,43 @@ html[data-theme="dark"] .fbSave{border-color:#3fbf8e;color:#3fbf8e}
      EDEN_TEAM_DEFINITIONS (e.g. EGY - Al-Rehab + EDEN WALK), the Sales, Shared with and
      Sales manager lists show only that roster (anything already ticked stays visible). */
   const nk=v=>String(v||'').trim().toLowerCase().replace(/\s+/g,' ');
+  const bk=v=>nk(typeof branchDisplayLabel_==='function'?branchDisplayLabel_(v):v).replace(/\s+branch$/,'');
+  const pk=v=>String(v||'').toLowerCase().replace(/[^a-z0-9]/g,'');
   function roster(){
     const b=getM('branch'),p=getM('project');
     if(b.length!==1||p.length!==1||typeof EDEN_TEAM_DEFINITIONS==='undefined')return null;
-    const teams=EDEN_TEAM_DEFINITIONS.filter(t=>t.branch&&t.project&&nk(t.branch)===nk(b[0])&&nk(t.project)===nk(p[0]));
+    const teams=EDEN_TEAM_DEFINITIONS.filter(t=>t.branch&&t.project&&bk(t.branch)===bk(b[0])&&pk(t.project)===pk(p[0]));
     if(!teams.length)return null;
-    return {managers:new Set(teams.map(t=>nk(t.manager))),people:new Set(teams.flatMap(t=>[t.manager].concat(t.members||[])).map(nk))};
+    const mgr=teams.map(t=>t.manager),ppl=teams.flatMap(t=>[t.manager].concat(t.members||[]));
+    return {managers:new Set(mgr.map(nk)),people:new Set(ppl.map(nk)),list:{managers:mgr,people:[...new Set(ppl)]}};
   }
   function applyRoster(){
     const R=roster();
-    [['salesManager','managers'],['sales','people'],['sharedWith','people']].forEach(([n,k])=>{
+    [['salesManager','managers','salesManagerChecks'],['sales','people','salesChecks'],['sharedWith','people','sharedWithChecks']].forEach(([n,k,box])=>{
+      // roster people with no deals yet (e.g. a new team) still get a row
+      const host=document.getElementById(box);
+      if(host){
+        host.querySelectorAll('.fbRosterAdd').forEach(r=>{const cb=r.querySelector('input');if(!R||(!R[k].has(nk(cb.value))&&!cb.checked))r.remove();});
+        if(R){
+          const have=new Set([...document.querySelectorAll(`input[name="${n}"]`)].map(c=>nk(c.value)));
+          R.list[k].filter(x=>!have.has(nk(x))).forEach(x=>{
+            const l=document.createElement('label');l.className='checkRow fbRosterAdd';l.title='No deals yet';
+            const cb=document.createElement('input');cb.type='checkbox';cb.name=n;cb.value=x;cb.dataset.label=x;
+            const sp=document.createElement('span');sp.textContent=x;l.append(cb,sp);
+            const after=[...host.querySelectorAll('.checkRow')].find(r=>String(r.querySelector('input')?.value||'').localeCompare(x,undefined,{sensitivity:'base'})>0);
+            if(after)host.insertBefore(l,after);else host.appendChild(l);
+            cb.addEventListener('change',()=>{if(typeof updateMultiLabels==='function')updateMultiLabels();if(typeof applyFilters==='function')applyFilters();});
+          });
+        }
+      }
       document.querySelectorAll(`input[name="${n}"]`).forEach(cb=>{
         const row=cb.closest('label,.checkRow');if(!row)return;
-        const hide=!!R&&!cb.checked&&!R[k].has(nk(cb.value));
-        if(hide){row.dataset.fbRoster='1';row.style.display='none';}
-        else if(row.dataset.fbRoster){delete row.dataset.fbRoster;row.style.display='';}
+        row.classList.toggle('fbRosterHidden',!!R&&!cb.checked&&!R[k].has(nk(cb.value)));
+        if(R&&R[k].has(nk(cb.value)))row.classList.remove('dsCascadeHidden');   // roster people always listed
       });
     });
   }
-  document.addEventListener('change',e=>{if(e.target&&['branch','project'].includes(e.target.name))setTimeout(applyRoster,0);});
+  document.addEventListener('change',e=>{if(e.target&&e.target.type==='checkbox')setTimeout(applyRoster,30);});
   document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('.multiBtn,[data-project],.dsProjBtn,.projectBtn'))setTimeout(applyRoster,0);},true);
   setInterval(applyRoster,1500);
   window.edenApplyRoster_=applyRoster;
