@@ -249,10 +249,11 @@ html[data-theme="dark"] .fbSave{border-color:#3fbf8e;color:#3fbf8e}
     if(b.length!==1||p.length!==1||typeof EDEN_TEAM_DEFINITIONS==='undefined')return null;
     const teams=EDEN_TEAM_DEFINITIONS.filter(t=>t.branch&&t.project&&bk(t.branch)===bk(b[0])&&pk(t.project)===pk(p[0]));
     if(!teams.length)return null;
-    const mgr=teams.map(t=>t.manager),ppl=teams.flatMap(t=>[t.manager].concat(t.members||[]));
+    // Sales / Shared with list the salespeople only — managers stay in the Sales manager list
+    const mgr=teams.map(t=>t.manager),ppl=teams.flatMap(t=>t.members||[]);
     // a ticked Sales manager narrows Sales to that manager's own team
     const picked=new Set(getM('salesManager').map(nk)),mine=teams.filter(t=>picked.has(nk(t.manager)));
-    const team=mine.length?mine.flatMap(t=>[t.manager].concat(t.members||[])):ppl;
+    const team=mine.length?mine.flatMap(t=>t.members||[]):ppl;
     return {managers:new Set(mgr.map(nk)),people:new Set(ppl.map(nk)),team:new Set(team.map(nk)),
       list:{managers:mgr,people:[...new Set(ppl)],team:[...new Set(team)]}};
   }
