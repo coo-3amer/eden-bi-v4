@@ -250,11 +250,15 @@ html[data-theme="dark"] .fbSave{border-color:#3fbf8e;color:#3fbf8e}
     const teams=EDEN_TEAM_DEFINITIONS.filter(t=>t.branch&&t.project&&bk(t.branch)===bk(b[0])&&pk(t.project)===pk(p[0]));
     if(!teams.length)return null;
     const mgr=teams.map(t=>t.manager),ppl=teams.flatMap(t=>[t.manager].concat(t.members||[]));
-    return {managers:new Set(mgr.map(nk)),people:new Set(ppl.map(nk)),list:{managers:mgr,people:[...new Set(ppl)]}};
+    // a ticked Sales manager narrows Sales to that manager's own team
+    const picked=new Set(getM('salesManager').map(nk)),mine=teams.filter(t=>picked.has(nk(t.manager)));
+    const team=mine.length?mine.flatMap(t=>[t.manager].concat(t.members||[])):ppl;
+    return {managers:new Set(mgr.map(nk)),people:new Set(ppl.map(nk)),team:new Set(team.map(nk)),
+      list:{managers:mgr,people:[...new Set(ppl)],team:[...new Set(team)]}};
   }
   function applyRoster(){
     const R=roster();
-    [['salesManager','managers','salesManagerChecks'],['sales','people','salesChecks'],['sharedWith','people','sharedWithChecks']].forEach(([n,k,box])=>{
+    [['salesManager','managers','salesManagerChecks'],['sales','team','salesChecks'],['sharedWith','people','sharedWithChecks']].forEach(([n,k,box])=>{
       // roster people with no deals yet (e.g. a new team) still get a row
       const host=document.getElementById(box);
       if(host){
