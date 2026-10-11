@@ -235,6 +235,34 @@ html[data-theme="dark"] .fbSave{border-color:#3fbf8e;color:#3fbf8e}
     refresh();render();
   }
 
+  /* ---------- Team roster: Branch + Project narrow the Sales / Sales manager lists ----------
+     When exactly one branch and one project are selected and that pair has a roster in
+     EDEN_TEAM_DEFINITIONS (e.g. EGY - Al-Rehab + EDEN WALK), the Sales, Shared with and
+     Sales manager lists show only that roster (anything already ticked stays visible). */
+  const nk=v=>String(v||'').trim().toLowerCase().replace(/\s+/g,' ');
+  function roster(){
+    const b=getM('branch'),p=getM('project');
+    if(b.length!==1||p.length!==1||typeof EDEN_TEAM_DEFINITIONS==='undefined')return null;
+    const teams=EDEN_TEAM_DEFINITIONS.filter(t=>t.branch&&t.project&&nk(t.branch)===nk(b[0])&&nk(t.project)===nk(p[0]));
+    if(!teams.length)return null;
+    return {managers:new Set(teams.map(t=>nk(t.manager))),people:new Set(teams.flatMap(t=>[t.manager].concat(t.members||[])).map(nk))};
+  }
+  function applyRoster(){
+    const R=roster();
+    [['salesManager','managers'],['sales','people'],['sharedWith','people']].forEach(([n,k])=>{
+      document.querySelectorAll(`input[name="${n}"]`).forEach(cb=>{
+        const row=cb.closest('label,.checkRow');if(!row)return;
+        const hide=!!R&&!cb.checked&&!R[k].has(nk(cb.value));
+        if(hide){row.dataset.fbRoster='1';row.style.display='none';}
+        else if(row.dataset.fbRoster){delete row.dataset.fbRoster;row.style.display='';}
+      });
+    });
+  }
+  document.addEventListener('change',e=>{if(e.target&&['branch','project'].includes(e.target.name))setTimeout(applyRoster,0);});
+  document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('.multiBtn,[data-project],.dsProjBtn,.projectBtn'))setTimeout(applyRoster,0);},true);
+  setInterval(applyRoster,1500);
+  window.edenApplyRoster_=applyRoster;
+
   const tick=()=>{try{build();}catch(e){console.warn('FilterBar',e);}};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',tick);else tick();
   setInterval(()=>{if(!sec||!sec.classList.contains('fbOn'))tick();},800);
