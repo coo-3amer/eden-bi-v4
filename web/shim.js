@@ -146,3 +146,47 @@
     host: { close: function () {}, setHeight: function () {}, setWidth: function () {}, editor: { focus: function () {} } }
   };
 })();
+
+/* New version check: every few minutes (and when the app comes back to the
+   front) ask for version.json; if the site was updated since this page
+   loaded, show a small "Update" bar. Clicking it loads the new version. */
+(function () {
+  'use strict';
+  var mine = window.EDEN_BUILD;
+  if (!mine || !window.fetch) return;
+  try {                                   // clean the ?v= left by the update click
+    var u = new URL(location.href);
+    if (u.searchParams.has('v')) { u.searchParams.delete('v'); history.replaceState(history.state, '', u.pathname + (u.search || '') + u.hash); }
+  } catch (e) {}
+  var shown = false, last = 0;
+  function bar(v) {
+    if (shown || !document.body) return; shown = true;
+    var ar = document.documentElement.dir === 'rtl' || /^ar/i.test(document.documentElement.lang || '');
+    var d = document.createElement('div');
+    d.id = 'edenUpdateBar';
+    d.setAttribute('style', 'position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:2147483000;display:flex;align-items:center;gap:12px;' +
+      'padding:10px 12px 10px 18px;border-radius:14px;background:#16130f;color:#f3e7cc;box-shadow:0 12px 34px rgba(0,0,0,.35);' +
+      'font:600 13.5px Inter,Segoe UI,Arial,sans-serif;max-width:calc(100vw - 32px)');
+    d.innerHTML = '<span>' + (ar ? '✨ فيه تحديث جديد للسيستم' : '✨ A new version of EDEN BI is ready') + '</span>' +
+      '<button type="button" style="border:0;border-radius:10px;padding:8px 14px;background:#c9a55c;color:#16130f;font:800 13px inherit;cursor:pointer">' +
+      (ar ? 'تحديث' : 'Update') + '</button>' +
+      '<button type="button" aria-label="Later" style="border:0;background:transparent;color:#8d7f66;font-size:18px;cursor:pointer;padding:0 4px">×</button>';
+    var b = d.querySelectorAll('button');
+    b[0].onclick = function () { location.replace(location.pathname + '?v=' + encodeURIComponent(v) + location.hash); };
+    b[1].onclick = function () { d.remove(); setTimeout(function () { shown = false; }, 30 * 60 * 1000); };
+    document.body.appendChild(d);
+  }
+  function check() {
+    var now = Date.now();
+    if (now - last < 60 * 1000) return; last = now;
+    fetch('version.json?_=' + now.toString(36), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) { if (j && j.v && j.v !== mine) bar(j.v); })
+      .catch(function () {});
+  }
+  setInterval(check, 5 * 60 * 1000);
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') check(); });
+  window.addEventListener('focus', check);
+  setTimeout(check, 20 * 1000);
+})();
+

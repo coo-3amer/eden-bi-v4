@@ -23,6 +23,9 @@ def include(name, seen=()):
 def main():
     cfg = json.loads((ROOT / 'web' / 'config.json').read_text(encoding='utf-8'))
     shim = (ROOT / 'web' / 'shim.js').read_text(encoding='utf-8')
+    # build id: lets open pages (browser, phone app, Windows app) notice a newer version
+    import os, time
+    BUILD = (os.environ.get('GITHUB_SHA') or '')[:12] or time.strftime('%Y%m%d%H%M%S')
     html = include('Index')
     if '<?' in html:
         raise SystemExit('Index.html still has Apps Script scriptlets the static build cannot run.')
@@ -33,7 +36,7 @@ def main():
         '<meta name="apple-mobile-web-app-title" content="EDEN">'
         '<link rel="apple-touch-icon" href="apple-touch-icon.png">'
         '<link rel="manifest" href="manifest.webmanifest">'
-        f'<script>window.EDEN_API_URL={json.dumps(cfg["apiUrl"])};</script>'
+        f'<script>window.EDEN_API_URL={json.dumps(cfg["apiUrl"])};window.EDEN_BUILD={json.dumps(BUILD)};</script>'
         f'<script>{shim}</script>'
     )
     html = html.replace('<head>', '<head>' + head, 1)
@@ -41,6 +44,7 @@ def main():
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / 'index.html').write_text(html, encoding='utf-8')
     (OUT / '.nojekyll').write_text('', encoding='utf-8')
+    (OUT / 'version.json').write_text(json.dumps({'v': BUILD}), encoding='utf-8')
     for name in ('favicon.png', 'favicon-32.png', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'manifest.webmanifest'):
         (OUT / name).write_bytes((ROOT / 'web' / name).read_bytes())
     maps = ROOT / 'web' / 'maps'   # floor plan images for the Floor Map page
