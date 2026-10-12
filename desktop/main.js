@@ -168,7 +168,11 @@ function offlineCache(ses) {
     if (!cacheable) return net.fetch(req, { bypassCustomProtocolHandlers: true }).catch(() => Response.error());
     const key = u.host === HOST ? u.origin + u.pathname : req.url;
     try {
-      const res = await net.fetch(req, { bypassCustomProtocolHandlers: true });
+      // the dashboard's own files are always re-checked with the server (cheap 304 when
+      // unchanged), so a new version shows on the next refresh instead of up to 10 min later
+      const res = u.host === HOST
+        ? await net.fetch(req.url, { headers: req.headers, cache: 'no-cache', bypassCustomProtocolHandlers: true })
+        : await net.fetch(req, { bypassCustomProtocolHandlers: true });
       if (res.ok) {
         const buf = Buffer.from(await res.clone().arrayBuffer());
         const meta = { type: res.headers.get('content-type') || '', at: Date.now() };
