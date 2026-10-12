@@ -18,6 +18,7 @@ const EDEN_OVLS_={
   pm:{el:'pm',open:()=>typeof pmOpen_==='function'&&pmOpen_(),
       get:()=>({project:PM_.project,status:PM_.status,floor:PM_.floor,type:PM_.type,q:PM_.q}),
       set:s=>{Object.assign(PM_,{project:s.project||PM_.project,status:s.status||'available',floor:s.floor||'',type:s.type||'',q:s.q||'',tab:'units'});}},
+  ew:{el:'ew',open:()=>typeof ewOpen_==='function'&&ewOpen_(),get:()=>({cat:EW_.cat,unit:EW_.unit}),set:s=>{EW_.cat=s.cat||'';},after:s=>{if(s.unit){EW_.unit=s.unit;}}},
   al:{el:'al',open:()=>typeof alOpen_==='function'&&alOpen_(),get:()=>({}),set:()=>{}}
 };
 function edenOvlSave_(){

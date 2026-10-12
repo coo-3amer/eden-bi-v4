@@ -202,7 +202,7 @@ ipcMain.on('net:state', (e, off) => setOffline(!!off));
 const PAGE_PROBE = `(() => {
   const t = document.documentElement.dataset.theme || 'light';
   const logged = typeof AUTH_TOKEN !== 'undefined' && !!AUTH_TOKEN;
-  const ov = {bc:'Broker Commissions',sc:'Sales Scorecard',da:'Discount Approvals',pm:'Price Manager',al:'Activity Log'};
+  const ov = {bc:'Broker Commissions',sc:'Sales Scorecard',da:'Discount Approvals',pm:'Price Manager',al:'Activity Log',ew:'EDEN WALK Partners'};
   let crumb = '';
   const mod = el => { const m = el && el.closest('.module'); const h = m && m.querySelector('.moduleHeader span'); return h ? h.textContent.trim() : ''; };
   const o = Object.keys(ov).find(k => document.getElementById(k));
@@ -240,7 +240,7 @@ function openPage(name) {
     const b = [...document.querySelectorAll('.moduleMenu button')].find(x => x.textContent.replace(/\\d+$/,'').trim().toLowerCase() === want);
     if (!b) return false;
     const m = b.closest('.module'); if (m && !m.classList.contains('open') && typeof toggleModule === 'function') toggleModule(m.id);
-    ['bc','sc','da','pm','al'].forEach(k => { if (document.getElementById(k) && !b.dataset[k] && typeof window[k + 'Close_'] === 'function') window[k + 'Close_'](); });
+    ['bc','sc','da','pm','al','ew'].forEach(k => { if (document.getElementById(k) && !b.dataset[k] && typeof window[k + 'Close_'] === 'function') window[k + 'Close_'](); });
     b.click(); return true;
   })()`;
   dash.webContents.executeJavaScript(js, true).then(() => setTimeout(probe, 300)).catch(() => {});

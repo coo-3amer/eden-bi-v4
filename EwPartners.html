@@ -1,0 +1,325 @@
+<style id="eden-ew-partners">
+.ewBack{position:fixed;inset:0;z-index:430;background:rgba(10,8,6,.5);backdrop-filter:blur(2px)}
+.ew{position:fixed;inset:14px;z-index:431;display:flex;flex-direction:column;background:var(--ds-surface,#fffdf9);color:var(--ds-text,#2a2621);border-radius:18px;box-shadow:0 30px 80px rgba(0,0,0,.35);overflow:hidden}
+.ewHead{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid var(--ds-line,#e8e0d1)}
+.ewHead small{display:block;font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ds-gold,#b08a42)}
+.ewHead h2{margin:0;font:600 22px/1.2 'Cormorant Garamond',Georgia,serif;color:var(--ds-heading,#16130f)}
+.ewTools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-left:auto}
+.ew input,.ew select,.ew textarea{height:34px;border:1px solid var(--ds-line,#e8e0d1);border-radius:10px;padding:0 10px;background:var(--ds-surface,#fff);color:var(--ds-text);font:inherit;font-size:13px;min-width:0}
+.ew textarea{height:58px;padding:8px 10px;resize:vertical}
+.ewBtn{height:34px;padding:0 12px;border-radius:10px;border:1px solid var(--ds-gold-line,rgba(176,138,66,.32));background:var(--ds-gold-soft,rgba(176,138,66,.12));color:var(--ds-gold-strong,#8f6d2c);font-weight:700;font-size:12.5px;cursor:pointer;white-space:nowrap}
+.ewBtn.p{background:var(--ds-gold,#b08a42);color:#fff;border-color:transparent}
+.ewBtn.g{background:transparent;border-color:var(--ds-line,#e8e0d1);color:var(--ds-muted,#83796b)}
+.ewBtn.sm{height:28px;padding:0 9px;font-size:11.5px;border-radius:8px}
+.ewBtn.danger{color:#b4452f;border-color:rgba(192,83,59,.35);background:transparent}
+.ewBtn:disabled{opacity:.5;cursor:default}
+.ewX{width:34px;height:34px;border-radius:10px;border:1px solid var(--ds-line);background:var(--ds-surface);font-size:20px;cursor:pointer;color:var(--ds-muted)}
+.ewBody{flex:1;overflow:auto;padding:16px 18px 24px}
+.ewK{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:12px}
+.ewC{background:var(--ds-surface,#fffdf9);border:1px solid var(--ds-line,#e8e0d1);border-radius:16px;padding:13px 15px;position:relative;overflow:hidden}
+.ewC:before{content:"";position:absolute;inset:0 0 auto 0;height:4px;background:var(--a)}
+.ewC span{font-size:10.5px;font-weight:800;letter-spacing:.12em;color:var(--ds-muted,#8a7f6c);text-transform:uppercase}
+.ewC b{display:block;font-size:23px;color:var(--a);margin:4px 0 2px;font-variant-numeric:tabular-nums}
+.ewC small{color:var(--ds-muted,#8a7f6c);font-size:11.5px}
+.ewSplit{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.ewSp{background:#16130f;color:#f3e7cc;border-radius:16px;padding:14px 18px;display:flex;gap:16px;align-items:center}
+.ewSp.b{background:#2a231b}
+.ewSp .pc{font:700 30px Georgia,serif;color:#e3c27a}.ewSp.b .pc{color:#c9b48a}
+.ewSp b{font-size:21px;display:block;font-variant-numeric:tabular-nums}.ewSp small{color:#b9ab90;font-size:11.5px}
+.ewBox{background:var(--ds-surface,#fffdf9);border:1px solid var(--ds-line,#e8e0d1);border-radius:16px;padding:15px 17px;margin-bottom:14px}
+.ewBox h3{margin:0 0 2px;font:600 21px 'Cormorant Garamond',Georgia,serif;color:var(--ds-heading,#16130f)}
+.ewBox>p{margin:0 0 12px;color:var(--ds-muted,#8a7f6c);font-size:12px}
+.ewYrs{display:flex;gap:8px;align-items:stretch}
+.ewYc{flex:1;display:flex;flex-direction:column;align-items:center;min-width:0;cursor:default}
+.ewYv{font-size:11px;font-weight:700;color:var(--ds-text);margin-bottom:4px;white-space:nowrap}
+.ewUp{height:150px;display:flex;align-items:flex-end;width:100%;justify-content:center;border-bottom:1px solid var(--ds-line,#d9cfbd)}
+.ewUp i{width:62%;max-width:56px;background:#c9b48a;border-radius:6px 6px 0 0;display:flex;align-items:flex-end;overflow:hidden}
+.ewUp em{display:block;width:100%;background:#1f6b52}
+.ewDn{height:42px;width:100%;display:flex;justify-content:center}.ewDn i{width:62%;max-width:56px;background:#c0533b;border-radius:0 0 6px 6px;opacity:.85}
+.ewYc>b{font-size:11.5px;color:var(--ds-muted);margin-top:4px}
+.ewLeg{display:flex;gap:16px;font-size:12px;color:var(--ds-muted);margin-top:8px;flex-wrap:wrap}.ewLeg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.ewTabs{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center}
+.ewTab{padding:7px 13px;border-radius:99px;border:1px solid var(--ds-line,#e3d9c7);font-size:12.5px;font-weight:700;background:var(--ds-surface);color:var(--ds-text);cursor:pointer}
+.ewTab.on{background:#16130f;color:#f3e7cc;border-color:#16130f}.ewTab em{font-style:normal;opacity:.6;margin-left:4px}
+html[data-theme="dark"] .ewTab.on{background:#e3c27a;color:#16130f;border-color:#e3c27a}
+.ewTbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.ewTbl th{text-align:left;font-size:10.5px;font-weight:800;letter-spacing:.1em;color:var(--ds-muted);padding:8px;border-bottom:1px solid var(--ds-line);text-transform:uppercase;white-space:nowrap;cursor:pointer;user-select:none}
+.ewTbl td{padding:9px 8px;border-bottom:1px solid var(--ds-line-soft,#f0e9dc);vertical-align:middle}
+.ewTbl tbody tr{cursor:pointer}.ewTbl tbody tr:hover{background:var(--ds-surface-2,#faf6ef)}
+.ewTbl td small{display:block;color:var(--ds-muted);font-size:11px}
+.ewTbl tfoot td{font-weight:800;border-top:2px solid var(--ds-line);border-bottom:0}
+.ewN{text-align:right!important;font-variant-numeric:tabular-nums;white-space:nowrap}.ewR{color:#c0533b}.ewE{color:#1f6b52;font-weight:700}.ewA{color:#b0832c;font-weight:700}
+html[data-theme="dark"] .ewE{color:#3fbf8e}html[data-theme="dark"] .ewA{color:#e3b85a}
+.ewDp{height:6px;background:var(--ds-surface-3,#efe7d8);border-radius:9px;overflow:hidden;width:130px}.ewDp i{display:block;height:100%;background:#2f9e62}
+.ewTag{padding:3px 9px;border-radius:99px;font-size:11px;font-weight:700;background:#f3ead8;color:#8f6d2c;white-space:nowrap}
+.ewTag.Return{background:#fbeae5;color:#b4452f}.ewTag.Semi{background:#e7f3ec;color:#1f6b52}.ewTag.KSA{background:#ece8f5;color:#5b4b8a}
+.ewNote{font-size:12px;color:var(--ds-muted);line-height:1.6}
+.ewMsg{font-size:12.5px;color:var(--ds-muted)}.ewMsg.err{color:#c0533b;font-weight:700}
+.ewEmpty{text-align:center;padding:50px 20px}
+.ewEmpty h3{font:600 24px 'Cormorant Garamond',Georgia,serif;margin:0 0 6px}
+/* unit panel */
+.ewU{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:14px}
+.ewGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.ewGrid label,.ewF label{display:flex;flex-direction:column;gap:4px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ds-muted)}
+.ewGrid label.w2{grid-column:span 2}.ewGrid label.w4{grid-column:1/-1}
+.ewPlan{width:100%;border-collapse:collapse;font-size:12.5px}.ewPlan th,.ewPlan td{padding:5px 6px;border-bottom:1px solid var(--ds-line-soft,#f0e9dc)}
+.ewPlan th{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ds-muted);text-align:left}
+.ewPlan input{width:100%;height:30px;text-align:right}
+.ewCalc{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0}
+.ewCalc div{background:var(--ds-surface-2,#faf6ef);border:1px solid var(--ds-line);border-radius:10px;padding:8px 10px}
+.ewCalc span{display:block;font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ds-muted)}.ewCalc b{font-size:14.5px;font-variant-numeric:tabular-nums}
+.ewF{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;align-items:end}
+@media(max-width:1100px){.ewK{grid-template-columns:repeat(2,minmax(0,1fr))}.ewU{grid-template-columns:1fr}}
+@media(max-width:760px){.ew{inset:0;border-radius:0}.ewK,.ewSplit,.ewGrid,.ewF,.ewCalc{grid-template-columns:1fr 1fr}.ewYv{font-size:9px}.ewTblWrap{overflow-x:auto}}
+</style>
+<script>
+/* =====================================================================
+   EDEN BI — EDEN WALK partners & cash flow (admins only)
+   Replaces the "EDEN WALK PORTAL" sheet. EDEN 64% / AFROA 36% of
+   (net − commission); installments and guaranteed returns per year.
+   Data: EwPartnersData.js (tabs "EW Units" + "EW Collections").
+   ===================================================================== */
+const EW_={data:null,cat:'',q:'',sort:'net',dir:-1,unit:null,mode:'',busy:false};
+const EW_CATS_UI_=['Semi Cash','Return','Normal','KSA Old'];
+function ewEsc_(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function ewN_(n){return Math.round(Number(n)||0).toLocaleString('en-US');}
+function ewM_(n){const v=Number(n)||0,a=Math.abs(v);return (a>=1e6?(v/1e6).toFixed(1)+'M':a>=1e3?(v/1e3).toFixed(0)+'K':String(Math.round(v)));}
+function ewIsAdmin_(){const r=String((typeof AUTH_USER!=='undefined'&&AUTH_USER&&AUTH_USER.role)||'').trim().toLowerCase();return r==='admin'||r==='super admin';}
+function ewFmtD_(v){const m=String(v||'').match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);return m?new Date(+m[1],+m[2]-1,+m[3]).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):(v||'—');}
+function ewKey_(u){return String(u||'').trim().toUpperCase().replace(/\s+/g,'');}
+/* calculated figures of one unit */
+function ewCalc_(u){
+  const D=EW_.data||{},share=D.share||0.64,yrs=D.years||[];
+  let inst=0,ret=0;yrs.forEach(y=>{const p=(u.plan||{})[y]||[0,0];inst+=Number(p[0])||0;ret+=Number(p[1])||0;});
+  const dp=Number(u.dp)||0,contract=dp+inst,net=contract+ret,comm=Number(u.commission)||0,base=net-comm;
+  const basic=(Number(u.inArea)||0)*(Number(u.inPrice)||0)+(Number(u.outArea)||0)*(Number(u.outPrice)||0);
+  const coll=(D.collections||[]).filter(c=>ewKey_(c.unit)===ewKey_(u.unit));
+  const instPaid=coll.filter(c=>c.type==='Installment').reduce((a,c)=>a+(Number(c.amount)||0),0);
+  return {inst,ret,dp,contract,net,comm,base,eden:base*share,afroa:base*(1-share),dpPaid:Number(u.dpPaid)||0,dpRem:Math.max(0,dp-(Number(u.dpPaid)||0)),basic,coll,instPaid,
+    dpEden:(dp-comm)*share,dpAfroa:(dp-comm)*(1-share)};
+}
+/* client / sales from the Deals sheet (by unit code) */
+function ewDeal_(code){
+  const k=ewKey_(code);
+  return ((typeof rawRows!=='undefined'&&rawRows)||[]).find(r=>/eden\s*walk/i.test(String(r.project||''))&&ewKey_(r.unitCode)===k&&!/^cancel/i.test(String(r.status||'')))
+    ||((typeof rawRows!=='undefined'&&rawRows)||[]).find(r=>/eden\s*walk/i.test(String(r.project||''))&&ewKey_(r.unitCode)===k)||null;
+}
+function ewMount_(){
+  const menu=document.querySelector('#transactionsModule .moduleMenu');
+  if(!menu)return;
+  let b=menu.querySelector('[data-ew]');
+  if(!b){b=document.createElement('button');b.type='button';b.dataset.ew='1';b.textContent='EDEN WALK Partners';b.addEventListener('click',ewOpen_);
+    const after=menu.querySelector('[data-da]')||menu.querySelector('[data-sc]');if(after)after.insertAdjacentElement('afterend',b);else menu.appendChild(b);}
+  b.style.display=ewIsAdmin_()?'':'none';
+}
+function ewOpen_(){
+  if(!ewIsAdmin_()){alert('This page is for admins only.');return;}
+  ewClose_();
+  const back=document.createElement('div');back.className='ewBack';back.id='ewBack';back.addEventListener('click',ewClose_);
+  const el=document.createElement('section');el.className='ew';el.id='ew';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');
+  el.innerHTML=`<div class="ewHead"><div><small>Transactions · admins only</small><h2>EDEN WALK — Partners &amp; Cash Flow</h2></div>
+    <div class="ewTools"><input type="search" data-f="q" placeholder="Search unit or client…" value="${ewEsc_(EW_.q)}">
+      <button type="button" class="ewBtn g" data-act="excel">⬇ Excel</button><button type="button" class="ewBtn g" data-act="pdf">🖨 Partner report</button>
+      <button type="button" class="ewBtn p" data-act="new">＋ New sale</button><button type="button" class="ewX" aria-label="Close">×</button></div></div>
+    <div class="ewBody"><div class="ewNote ewEmpty">Loading…</div></div>`;
+  document.body.append(back,el);
+  el.querySelector('.ewX').addEventListener('click',ewClose_);
+  el.querySelector('[data-f="q"]').addEventListener('input',e=>{EW_.q=e.target.value;if(!EW_.unit&&!EW_.mode)ewRender_();});
+  el.querySelector('[data-act="new"]').addEventListener('click',()=>{EW_.unit=null;EW_.mode='new';ewRender_();});
+  el.querySelector('[data-act="excel"]').addEventListener('click',ewExcel_);
+  el.querySelector('[data-act="pdf"]').addEventListener('click',ewReport_);
+  document.addEventListener('keydown',ewOnKey_);
+  ewLoad_();
+}
+function ewClose_(){document.getElementById('ew')?.remove();document.getElementById('ewBack')?.remove();document.removeEventListener('keydown',ewOnKey_);EW_.unit=null;EW_.mode='';}
+function ewOnKey_(e){if(e.key!=='Escape')return;if(EW_.unit||EW_.mode){EW_.unit=null;EW_.mode='';ewRender_();return;}ewClose_();}
+function ewLoad_(){
+  google.script.run.withSuccessHandler(d=>{EW_.data=d;ewRender_();})
+    .withFailureHandler(err=>{const b=document.querySelector('#ew .ewBody');if(b)b.innerHTML=`<div class="ewEmpty ewMsg err">${ewEsc_(err&&err.message||err)}</div>`;})
+    .getEwPartners(AUTH_TOKEN);
+}
+function ewCall_(fn,req,msgEl,after){
+  if(EW_.busy)return;EW_.busy=true;
+  if(msgEl){msgEl.className='ewMsg';msgEl.textContent='Saving…';}
+  google.script.run.withSuccessHandler(d=>{EW_.busy=false;EW_.data=d;if(after)after(d);ewRender_();})
+    .withFailureHandler(err=>{EW_.busy=false;const m=err&&err.message||String(err);if(msgEl){msgEl.className='ewMsg err';msgEl.textContent=m;}else alert(m);})
+    [fn](AUTH_TOKEN,req);
+}
+function ewList_(){
+  const D=EW_.data||{units:[]},q=EW_.q.trim().toLowerCase();
+  return D.units.map(u=>{const c=ewCalc_(u),d=ewDeal_(u.unit);return {u,c,client:d?String(d.clientName||''):'',sales:d?String(d.salesName||''):''};})
+    .filter(x=>!q||[x.u.unit,x.client,x.sales,x.u.offer].join(' ').toLowerCase().includes(q));
+}
+function ewRender_(){
+  const body=document.querySelector('#ew .ewBody');if(!body||!EW_.data)return;
+  const D=EW_.data;
+  if(!D.imported&&EW_.mode!=='new'){
+    body.innerHTML=`<div class="ewEmpty"><h3>Bring EDEN WALK in from the portal sheet</h3>
+      <p class="ewNote">Copies every sold unit from <b>EDEN WALK PORTAL › Eden_Walk_New</b> (price, discount, down payment, commission, installments and returns per year).<br>The portal sheet itself is not changed.</p>
+      <button type="button" class="ewBtn p" data-imp>Import units</button> <span class="ewMsg"></span></div>`;
+    body.querySelector('[data-imp]').addEventListener('click',e=>{e.target.disabled=true;ewCall_('importEwFromPortal',{},body.querySelector('.ewMsg'));});
+    return;
+  }
+  if(EW_.mode==='new'||EW_.unit){ewRenderUnit_(body);return;}
+  const all=ewList_();
+  const list=all.filter(x=>!EW_.cat||x.u.category===EW_.cat);
+  const S=(k,l=list)=>l.reduce((a,x)=>a+(x.c[k]||0),0);
+  const yrs=D.years||[];
+  const inst=yrs.map(y=>list.reduce((a,x)=>a+(Number((x.u.plan[y]||[0])[0])||0),0)),ret=yrs.map(y=>list.reduce((a,x)=>a+(Number((x.u.plan[y]||[0,0])[1])||0),0));
+  const mx=Math.max(1,...inst),share=D.share||0.64;
+  const bars=yrs.map((y,i)=>{const h=inst[i]/mx*145,hr=Math.min(42,-ret[i]/mx*145);
+    return `<div class="ewYc" title="${y}: installments ${ewN_(inst[i])} · returns ${ewN_(ret[i])} · net ${ewN_(inst[i]+ret[i])}\nEDEN ${ewN_((inst[i]+ret[i])*share)} · AFROA ${ewN_((inst[i]+ret[i])*(1-share))}">
+      <div class="ewYv">${ewM_(inst[i]+ret[i])}</div><div class="ewUp"><i style="height:${h}px"><em style="height:${h*share}px"></em></i></div><div class="ewDn">${ret[i]?`<i style="height:${hr}px"></i>`:''}</div><b>${y}</b></div>`;}).join('');
+  const sortV=x=>({unit:x.u.unit,date:x.u.date,net:x.c.net,dp:x.c.dpPaid,comm:x.c.comm,ret:x.c.ret,eden:x.c.eden,afroa:x.c.afroa,client:x.client}[EW_.sort]);
+  const rows=list.slice().sort((a,b)=>{const A=sortV(a),B=sortV(b);return (typeof A==='number'?A-B:String(A).localeCompare(String(B)))*EW_.dir;});
+  const cnt=c=>all.filter(x=>x.u.category===c).length;
+  const th=(k,l,n)=>`<th class="${n?'ewN':''}" data-sort="${k}">${l}${EW_.sort===k?(EW_.dir>0?' ▲':' ▼'):''}</th>`;
+  body.innerHTML=`
+  <div class="ewK">
+    <div class="ewC" style="--a:#1f6b52"><span>Net sales</span><b>${ewM_(S('net'))}</b><small>${list.length} units · contract ${ewM_(S('contract'))}${S('ret')?' · returns '+ewM_(S('ret')):''}</small></div>
+    <div class="ewC" style="--a:#b0832c"><span>Down payment collected</span><b>${ewM_(S('dpPaid'))}</b><small>of ${ewM_(S('dp'))} · remaining ${ewM_(S('dpRem'))}</small></div>
+    <div class="ewC" style="--a:#23777e"><span>Installments</span><b>${ewM_(S('inst'))}</b><small>${yrs.length?yrs[0]+' → '+yrs[yrs.length-1]:''}${S('instPaid')?' · received '+ewM_(S('instPaid')):''}</small></div>
+    <div class="ewC" style="--a:#c0533b"><span>Commissions</span><b>${ewM_(S('comm'))}</b><small>taken before the split</small></div>
+  </div>
+  <div class="ewSplit">
+    <div class="ewSp"><div class="pc">${Math.round(share*100)}%</div><div><small>EDEN share</small><b>${ewN_(S('eden'))} EGP</b><small>DP ${ewM_(S('dpEden'))} · installments − returns ${ewM_(S('eden')-S('dpEden'))}</small></div></div>
+    <div class="ewSp b"><div class="pc">${Math.round((1-share)*100)}%</div><div><small>AFROA share</small><b>${ewN_(S('afroa'))} EGP</b><small>DP ${ewM_(S('dpAfroa'))} · installments − returns ${ewM_(S('afroa')-S('dpAfroa'))}</small></div></div>
+  </div>
+  <div class="ewBox"><h3>Cash flow by year</h3><p>Installments due each year (green = EDEN ${Math.round(share*100)}%), minus guaranteed returns paid to “Return” buyers (red). Number on top = net. Hover a year for the figures.</p>
+    <div class="ewYrs">${bars}</div><div class="ewLeg"><span><i style="background:#1f6b52"></i>EDEN ${Math.round(share*100)}%</span><span><i style="background:#c9b48a"></i>AFROA ${Math.round((1-share)*100)}%</span><span><i style="background:#c0533b"></i>Returns paid out</span></div></div>
+  <div class="ewBox"><div class="ewTabs"><button type="button" class="ewTab${EW_.cat?'':' on'}" data-cat="">All<em>${all.length}</em></button>
+    ${EW_CATS_UI_.map(c=>`<button type="button" class="ewTab${EW_.cat===c?' on':''}" data-cat="${c}">${c}<em>${cnt(c)}</em></button>`).join('')}</div>
+    <div class="ewTblWrap"><table class="ewTbl" data-nosort><thead><tr>${th('unit','Unit · sale date')}${th('client','Client · sales')}<th>Offer</th>${th('net','Net price',1)}${th('dp','Down payment paid')}${th('comm','Commission',1)}${th('ret','Returns',1)}${th('eden','EDEN '+Math.round(share*100)+'%',1)}${th('afroa','AFROA '+Math.round((1-share)*100)+'%',1)}</tr></thead>
+    <tbody>${rows.map(x=>{const pct=x.c.dp?Math.min(100,x.c.dpPaid/x.c.dp*100):0;const cat=x.u.category||'—';
+      return `<tr data-unit="${ewEsc_(x.u.unit)}"><td><b>${ewEsc_(x.u.unit)}</b><small>${ewFmtD_(x.u.date)}</small></td>
+        <td>${ewEsc_(x.client||'—')}<small>${ewEsc_(x.sales)}</small></td>
+        <td><span class="ewTag ${ewEsc_(cat.split(' ')[0])}" title="${ewEsc_(x.u.offer)}">${ewEsc_(cat)}</span></td>
+        <td class="ewN">${ewN_(x.c.net)}</td>
+        <td><div class="ewDp"><i style="width:${pct.toFixed(0)}%"></i></div><small>${ewN_(x.c.dpPaid)} / ${ewN_(x.c.dp)}</small></td>
+        <td class="ewN">${ewN_(x.c.comm)}</td><td class="ewN ewR">${x.c.ret?ewN_(x.c.ret):'—'}</td>
+        <td class="ewN ewE">${ewN_(x.c.eden)}</td><td class="ewN ewA">${ewN_(x.c.afroa)}</td></tr>`;}).join('')||`<tr><td colspan="9" class="ewNote" style="text-align:center;padding:24px">No units.</td></tr>`}</tbody>
+    <tfoot><tr><td>${list.length} units</td><td></td><td></td><td class="ewN">${ewN_(S('net'))}</td><td><small>${ewN_(S('dpPaid'))} / ${ewN_(S('dp'))}</small></td><td class="ewN">${ewN_(S('comm'))}</td><td class="ewN ewR">${ewN_(S('ret'))}</td><td class="ewN ewE">${ewN_(S('eden'))}</td><td class="ewN ewA">${ewN_(S('afroa'))}</td></tr></tfoot></table></div>
+    <p class="ewNote" style="margin:10px 0 0">Click a unit to see / edit its full plan or record a payment. Client and sales come from the Deals sheet (same unit code). EDEN / AFROA = ${Math.round(share*100)}% / ${Math.round((1-share)*100)}% of (net price − commission).</p></div>`;
+  body.querySelectorAll('[data-cat]').forEach(b=>b.addEventListener('click',()=>{EW_.cat=b.dataset.cat;ewRender_();}));
+  body.querySelectorAll('[data-sort]').forEach(h=>h.addEventListener('click',()=>{const k=h.dataset.sort;if(EW_.sort===k)EW_.dir*=-1;else{EW_.sort=k;EW_.dir=['unit','client','date'].includes(k)?1:-1;}ewRender_();}));
+  body.querySelectorAll('tbody tr[data-unit]').forEach(tr=>tr.addEventListener('click',()=>{EW_.unit=tr.dataset.unit;EW_.mode='';ewRender_();body.scrollTop=0;}));
+}
+/* one unit: view + edit form, and its payments */
+function ewRenderUnit_(body){
+  const D=EW_.data,yrs=(D.years||[]).slice(),isNew=EW_.mode==='new';
+  const u=EW_.draft?EW_.draft:isNew?{unit:'',category:'Normal',offer:'',date:new Date().toISOString().slice(0,10),inArea:'',outArea:'',inPrice:'',outPrice:'',discount:'',netTotal:'',dpPct:'',dp:'',dpPaid:0,commission:'',notes:'',plan:{}}
+    :D.units.find(x=>ewKey_(x.unit)===ewKey_(EW_.unit));
+  EW_.draft=null;
+  if(!u){EW_.unit=null;ewRender_();return;}
+  const c=ewCalc_(u),deal=isNew?null:ewDeal_(u.unit),share=D.share||0.64;
+  const pctIn=v=>v===''||v==null?'':(Number(v)*100).toFixed(2).replace(/\.00$/,'');
+  const nv=v=>v===''||v==null?'':Math.round(Number(v)*100)/100;
+  body.innerHTML=`<div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+      <button type="button" class="ewBtn g" data-back>← All units</button>
+      <h3 style="margin:0;font:600 24px 'Cormorant Garamond',Georgia,serif">${isNew?'New EDEN WALK sale':ewEsc_(u.unit)}</h3>
+      ${deal?`<span class="ewNote">${ewEsc_(deal.clientName||'')} · sales ${ewEsc_(deal.salesName||'—')} · ${ewEsc_(deal.status||'')}</span>`:''}
+      ${!isNew&&u.by?`<span class="ewNote" style="margin-left:auto">Last change: ${ewEsc_(u.by)} · ${ewFmtD_(u.at)}</span>`:''}</div>
+  <div class="ewU"><div class="ewBox" style="margin:0"><h3>Sale & price</h3><p></p>
+    <div class="ewGrid">
+      <label>Unit code<input data-k="unit" value="${ewEsc_(u.unit)}" placeholder="EW-F1-B9"></label>
+      <label>Offer type<select data-k="category">${EW_CATS_UI_.map(x=>`<option${x===u.category?' selected':''}>${x}</option>`).join('')}</select></label>
+      <label>Sale date<input type="date" data-k="date" value="${ewEsc_(u.date)}"></label>
+      <label>Discount %<input data-k="discount" inputmode="decimal" value="${pctIn(u.discount)}"></label>
+      <label class="w4">Offer (as written)<input data-k="offer" value="${ewEsc_(u.offer)}" placeholder="D.P. 10% - DIS. 10% - Installments …"></label>
+      <label>Indoor m²<input data-k="inArea" inputmode="decimal" value="${nv(u.inArea)}"></label>
+      <label>Basic indoor price/m<input data-k="inPrice" inputmode="decimal" value="${nv(u.inPrice)}"></label>
+      <label>Outdoor m²<input data-k="outArea" inputmode="decimal" value="${nv(u.outArea)}"></label>
+      <label>Basic outdoor price/m<input data-k="outPrice" inputmode="decimal" value="${nv(u.outPrice)}"></label>
+      <label class="w2">Net total price<input data-k="netTotal" inputmode="decimal" value="${nv(u.netTotal)}"></label>
+      <label>DP %<input data-k="dpPct" inputmode="decimal" value="${pctIn(u.dpPct)}"></label>
+      <label>DP amount<input data-k="dp" inputmode="decimal" value="${nv(u.dp)}"></label>
+      <label>DP paid<input data-k="dpPaid" inputmode="decimal" value="${nv(u.dpPaid)}"></label>
+      <label>Commission <span style="text-transform:none;letter-spacing:0">(10% of contract)</span><input data-k="commission" inputmode="decimal" value="${nv(u.commission)}"></label>
+      <label class="w2">Notes<input data-k="notes" value="${ewEsc_(u.notes)}"></label>
+    </div>
+    <div class="ewCalc" data-calc></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button type="button" class="ewBtn p" data-save>${isNew?'Add sale':'Save changes'}</button>
+      ${isNew?'':'<button type="button" class="ewBtn danger" data-del>Delete unit</button>'}<span class="ewMsg" data-msg></span></div>
+  </div>
+  <div class="ewBox" style="margin:0"><h3>Payment plan by year</h3><p>Installments the client pays, and the guaranteed return EDEN pays back (Return offers).</p>
+    <table class="ewPlan" data-nosort><thead><tr><th>Year</th><th class="ewN">Installments</th><th class="ewN">Return paid out</th><th class="ewN">Net</th><th class="ewN">EDEN</th><th class="ewN">AFROA</th><th class="ewN">Received</th></tr></thead>
+    <tbody>${yrs.map(y=>{const p=u.plan[y]||[0,0];return `<tr data-y="${y}"><td><b>${y}</b></td><td><input data-i inputmode="decimal" value="${p[0]?Math.round(p[0]):''}"></td><td><input data-r inputmode="decimal" value="${p[1]?Math.round(Math.abs(p[1])):''}"></td>
+      <td class="ewN" data-net></td><td class="ewN ewE" data-e></td><td class="ewN ewA" data-a></td><td class="ewN">${(v=>v?ewN_(v):'—')(c.coll.filter(x=>x.type==='Installment'&&Number(x.year)===y).reduce((a,x)=>a+x.amount,0))}</td></tr>`;}).join('')}</tbody></table>
+    <button type="button" class="ewBtn g sm" data-addyear style="margin-top:8px">＋ Add year ${yrs.length?yrs[yrs.length-1]+1:new Date().getFullYear()}</button>
+  </div></div>
+  ${isNew?'':`<div class="ewBox" style="margin-top:14px"><h3>Payments received</h3><p>A down-payment receipt also raises “DP paid”. Installment receipts are counted against their year.</p>
+    <div class="ewF" style="grid-template-columns:repeat(7,minmax(0,1fr))">
+      <label>Type<select data-p="type"><option>Down payment</option><option>Installment</option></select></label>
+      <label>For year<select data-p="year">${yrs.map(y=>`<option${y===new Date().getFullYear()?' selected':''}>${y}</option>`).join('')}</select></label>
+      <label>Amount<input data-p="amount" inputmode="decimal"></label>
+      <label>Date<input type="date" data-p="date" value="${new Date().toISOString().slice(0,10)}"></label>
+      <label>Method<select data-p="method"><option>Cheque</option><option>Bank transfer</option><option>Cash</option><option>Other</option></select></label>
+      <label>Reference<input data-p="ref" placeholder="cheque / receipt no."></label>
+      <button type="button" class="ewBtn p" data-pay>Record payment</button></div><span class="ewMsg" data-pmsg></span>
+    ${c.coll.length?`<table class="ewTbl" data-nosort style="margin-top:10px"><thead><tr><th>Date</th><th>Type</th><th>Year</th><th>Method</th><th>Reference</th><th class="ewN">Amount</th><th>By</th><th></th></tr></thead><tbody>
+      ${c.coll.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(p=>`<tr style="cursor:default"><td>${ewFmtD_(p.date)}</td><td>${ewEsc_(p.type)}</td><td>${p.year||'—'}</td><td>${ewEsc_(p.method)}</td><td>${ewEsc_(p.ref||'—')}</td><td class="ewN">${ewN_(p.amount)}</td><td><small>${ewEsc_(p.by)}</small></td><td><button type="button" class="ewBtn danger sm" data-delpay="${ewEsc_(p.id)}">Delete</button></td></tr>`).join('')}</tbody></table>`:'<p class="ewNote" style="margin-top:8px">No payments recorded here yet.</p>'}</div>`}`;
+  const read=()=>{const o={row:isNew?'':u.row,plan:{}};body.querySelectorAll('[data-k]').forEach(i=>{o[i.dataset.k]=i.value;});
+    body.querySelectorAll('tr[data-y]').forEach(tr=>{const n=s=>Number(String(s||'').replace(/,/g,''))||0;o.plan[tr.dataset.y]=[n(tr.querySelector('[data-i]').value),-Math.abs(n(tr.querySelector('[data-r]').value))];});return o;};
+  const num=v=>Number(String(v||'').replace(/,/g,''))||0;
+  const recalc=()=>{const o=read();const t={...o,dp:num(o.dp),dpPaid:num(o.dpPaid),commission:num(o.commission),inArea:num(o.inArea),inPrice:num(o.inPrice),outArea:num(o.outArea),outPrice:num(o.outPrice)};
+    const k=ewCalc_(t);
+    body.querySelector('[data-calc]').innerHTML=`<div><span>Basic price</span><b>${ewN_(k.basic)}</b></div><div><span>Contract (DP + installments)</span><b>${ewN_(k.contract)}</b></div><div><span>Net (after returns)</span><b>${ewN_(k.net)}</b></div>
+      <div><span>10% of contract</span><b>${ewN_(k.contract*0.1)}</b></div><div><span>EDEN ${Math.round(share*100)}%</span><b class="ewE">${ewN_(k.eden)}</b></div><div><span>AFROA ${Math.round((1-share)*100)}%</span><b class="ewA">${ewN_(k.afroa)}</b></div>`;
+    body.querySelectorAll('tr[data-y]').forEach(tr=>{const p=o.plan[tr.dataset.y],n=p[0]+p[1];tr.querySelector('[data-net]').textContent=n?ewN_(n):'—';tr.querySelector('[data-e]').textContent=n?ewN_(n*share):'—';tr.querySelector('[data-a]').textContent=n?ewN_(n*(1-share)):'—';});};
+  body.querySelectorAll('input,select').forEach(i=>i.addEventListener('input',recalc));recalc();
+  body.querySelector('[data-back]').addEventListener('click',()=>{EW_.unit=null;EW_.mode='';ewRender_();});
+  body.querySelector('[data-addyear]').addEventListener('click',()=>{const y=yrs.length?yrs[yrs.length-1]+1:new Date().getFullYear();
+    if(!EW_.data.years.includes(y))EW_.data.years.push(y);
+    const o=read(),pct=v=>v===''?'':num(v)/100;EW_.draft={...u,...o,discount:pct(o.discount),dpPct:pct(o.dpPct)};ewRenderUnit_(body);});
+  body.querySelector('[data-save]').addEventListener('click',()=>{const o=read();if(!String(o.unit).trim()){const m=body.querySelector('[data-msg]');m.className='ewMsg err';m.textContent='Enter the unit code.';return;}
+    if(o.commission===''){o.commission=Math.round(ewCalc_({...o,dp:num(o.dp)}).contract*0.1);}
+    ewCall_('saveEwUnit',o,body.querySelector('[data-msg]'),()=>{EW_.unit=o.unit;EW_.mode='';});});
+  const del=body.querySelector('[data-del]');
+  if(del)del.addEventListener('click',()=>{if(!confirm('Delete '+u.unit+' from the EDEN WALK partners list?'))return;ewCall_('deleteEwUnit',{row:u.row,unit:u.unit},body.querySelector('[data-msg]'),()=>{EW_.unit=null;});});
+  const pay=body.querySelector('[data-pay]');
+  if(pay){const ty=body.querySelector('[data-p="type"]'),yr=body.querySelector('[data-p="year"]');const sync=()=>{yr.disabled=ty.value!=='Installment';};ty.addEventListener('change',sync);sync();
+    pay.addEventListener('click',()=>{const o={unit:u.unit};body.querySelectorAll('[data-p]').forEach(i=>{o[i.dataset.p]=i.value;});ewCall_('recordEwCollection',o,body.querySelector('[data-pmsg]'));});}
+  body.querySelectorAll('[data-delpay]').forEach(b=>b.addEventListener('click',()=>{if(confirm('Delete this payment?'))ewCall_('deleteEwCollection',{id:b.dataset.delpay},body.querySelector('[data-pmsg]'));}));
+}
+/* Excel (CSV that Excel opens) */
+function ewExcel_(){
+  if(!EW_.data)return;const yrs=EW_.data.years||[];
+  const head=['Unit','Client','Sales','Category','Offer','Sale date','Net price','Contract','DP','DP paid','DP remaining','Commission','Returns','EDEN','AFROA',...yrs.flatMap(y=>['Installments '+y,'Return '+y])];
+  const lines=[head].concat(ewList_().filter(x=>!EW_.cat||x.u.category===EW_.cat).map(x=>[x.u.unit,x.client,x.sales,x.u.category,x.u.offer,x.u.date,x.c.net,x.c.contract,x.c.dp,x.c.dpPaid,x.c.dpRem,x.c.comm,x.c.ret,Math.round(x.c.eden),Math.round(x.c.afroa),...yrs.flatMap(y=>(x.u.plan[y]||[0,0]).map(v=>Math.round(v)))]));
+  const csv='﻿'+lines.map(r=>r.map(v=>{const s=String(v??'');return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}).join(',')).join('\r\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='EDEN WALK partners '+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);
+}
+/* Partner report (print / save as PDF) */
+function ewReport_(){
+  if(!EW_.data)return;
+  const D=EW_.data,yrs=D.years||[],share=D.share||0.64,list=ewList_().filter(x=>!EW_.cat||x.u.category===EW_.cat);
+  const S=k=>list.reduce((a,x)=>a+(x.c[k]||0),0);
+  const yr=y=>{const i=list.reduce((a,x)=>a+((x.u.plan[y]||[0])[0]||0),0),r=list.reduce((a,x)=>a+((x.u.plan[y]||[0,0])[1]||0),0);return [i,r,i+r];};
+  const html=`<!doctype html><html><head><meta charset="utf-8"><title>EDEN WALK partner report</title><style>
+*{box-sizing:border-box}body{font:11.5px/1.45 Inter,Segoe UI,Arial,sans-serif;color:#1f1b16;margin:26px}
+.top{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #b08a42;padding-bottom:10px;margin-bottom:14px}
+.brand{font:700 26px/1 Georgia,serif;letter-spacing:.18em}.brand small{display:block;font:600 9px/1.6 Arial;letter-spacing:.42em;color:#8f6d2c}
+h1{margin:0;font:600 18px Georgia,serif;text-align:right}h1 small{display:block;font:11.5px Arial;color:#83796b}
+.k{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:8px 0 12px}.k div{border:1px solid #e8e0d1;border-radius:8px;padding:8px 10px;background:#faf6ef}.k span{display:block;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#83796b}.k b{font-size:13.5px}
+table{width:100%;border-collapse:collapse;margin-top:6px}th{background:#f3ece0;text-align:left;font-size:9px;letter-spacing:.06em;text-transform:uppercase;padding:5px 6px}td{padding:5px 6px;border-bottom:1px solid #eee3d2}.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+h2{font-size:12.5px;margin:16px 0 4px}tfoot td{font-weight:800;border-top:2px solid #d9cfbd}.sig{display:flex;justify-content:space-between;margin-top:40px}.sig div{width:40%;border-top:1px solid #999;padding-top:6px;font-size:11px;color:#555}
+@media print{body{margin:10mm}.noprint{display:none}tr{page-break-inside:avoid}}.noprint{position:fixed;bottom:16px;right:16px}.noprint button{font:600 13px Arial;padding:8px 14px;border-radius:8px;border:0;background:#b08a42;color:#fff;cursor:pointer}
+</style></head><body><div class="noprint"><button onclick="window.print()">Print / Save as PDF</button></div>
+<div class="top"><div class="brand">EDEN<small>DEVELOPMENT</small></div><h1>EDEN WALK — partner report<small>EDEN ${Math.round(share*100)}% · AFROA ${Math.round((1-share)*100)}%${EW_.cat?' · '+ewEsc_(EW_.cat)+' offers':''} · ${new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</small></h1></div>
+<div class="k"><div><span>Units</span><b>${list.length}</b></div><div><span>Net sales</span><b>${ewN_(S('net'))}</b></div><div><span>Commissions</span><b>${ewN_(S('comm'))}</b></div><div><span>Returns</span><b>${ewN_(S('ret'))}</b></div>
+<div><span>DP collected</span><b>${ewN_(S('dpPaid'))}</b></div><div><span>DP remaining</span><b>${ewN_(S('dpRem'))}</b></div><div><span>EDEN ${Math.round(share*100)}%</span><b>${ewN_(S('eden'))}</b></div><div><span>AFROA ${Math.round((1-share)*100)}%</span><b>${ewN_(S('afroa'))}</b></div></div>
+<h2>Cash flow by year</h2><table><thead><tr><th>Year</th><th class="n">Installments</th><th class="n">Returns</th><th class="n">Net</th><th class="n">EDEN</th><th class="n">AFROA</th></tr></thead><tbody>
+<tr><td>Down payment (after commission)</td><td class="n">${ewN_(S('dp'))}</td><td class="n">—</td><td class="n">${ewN_(S('dp')-S('comm'))}</td><td class="n">${ewN_(S('dpEden'))}</td><td class="n">${ewN_(S('dpAfroa'))}</td></tr>
+${yrs.map(y=>{const [i,r,n]=yr(y);return n||i?`<tr><td>${y}</td><td class="n">${ewN_(i)}</td><td class="n">${r?ewN_(r):'—'}</td><td class="n">${ewN_(n)}</td><td class="n">${ewN_(n*share)}</td><td class="n">${ewN_(n*(1-share))}</td></tr>`:'';}).join('')}
+</tbody><tfoot><tr><td>Total</td><td class="n">${ewN_(S('dp')+S('inst'))}</td><td class="n">${ewN_(S('ret'))}</td><td class="n">${ewN_(S('net')-S('comm'))}</td><td class="n">${ewN_(S('eden'))}</td><td class="n">${ewN_(S('afroa'))}</td></tr></tfoot></table>
+<h2>Units</h2><table><thead><tr><th>Unit</th><th>Client</th><th>Offer</th><th>Sale date</th><th class="n">Net price</th><th class="n">DP paid</th><th class="n">Commission</th><th class="n">Returns</th><th class="n">EDEN</th><th class="n">AFROA</th></tr></thead><tbody>
+${list.slice().sort((a,b)=>String(a.u.date).localeCompare(String(b.u.date))).map(x=>`<tr><td>${ewEsc_(x.u.unit)}</td><td>${ewEsc_(x.client||'—')}</td><td>${ewEsc_(x.u.category)}</td><td>${ewFmtD_(x.u.date)}</td><td class="n">${ewN_(x.c.net)}</td><td class="n">${ewN_(x.c.dpPaid)} / ${ewN_(x.c.dp)}</td><td class="n">${ewN_(x.c.comm)}</td><td class="n">${x.c.ret?ewN_(x.c.ret):'—'}</td><td class="n">${ewN_(x.c.eden)}</td><td class="n">${ewN_(x.c.afroa)}</td></tr>`).join('')}
+</tbody></table><div class="sig"><div>EDEN Development</div><div>AFROA</div></div></body></html>`;
+  const w=window.open('','_blank');if(!w){alert('Allow pop-ups for this site to open the report.');return;}
+  w.document.open();w.document.write(html);w.document.close();setTimeout(()=>{try{w.focus();w.print();}catch(e){}},400);
+}
+(function(){
+  const go=()=>{ewMount_();setInterval(ewMount_,4000);};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();
+})();
+</script>

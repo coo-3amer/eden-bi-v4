@@ -24,6 +24,9 @@ const TG_EVENTS_ = {
   'Discount rejected': '⛔',
   'Broker commission paid': '🤝',
   'Prices changed': '🏷',
+  'EW sale added': '🏬',
+  'EW payment recorded': '💵',
+  'EW unit deleted': '🗑',
   'Daily backup': '⚠️'      // only when something failed
 };
 
