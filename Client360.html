@@ -38,6 +38,16 @@ html[data-theme] #appRoot #mainTable td[data-ck]:hover{color:var(--ds-gold-stron
 .c360Grid span{display:block;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ds-muted)}
 .c360Grid b{font-weight:600;color:var(--ds-heading);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .c360Pay{display:grid;gap:5px}
+.c360Comm{display:grid;gap:6px;padding:10px 12px;border-radius:12px;background:var(--ds-surface-2,#faf6ef);border:1px solid var(--ds-line,#efe6d6);font-size:12px}
+.c360Comm .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.c360Comm .lbl{font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--ds-muted,#8a7f6c);min-width:118px}
+.c360Comm .pill{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:99px;font-weight:700;font-size:11.5px;border:1px solid transparent}
+.c360Comm .ok{background:#e7f3ec;color:#1f6b52;border-color:#bfdccb}.c360Comm .no{background:#fbeae5;color:#b4452f;border-color:#efc6bb}
+.c360Comm .part{background:#fbf2e0;color:#8f6d2c;border-color:#ead6a8}.c360Comm .wait{background:var(--ds-surface,#fff);color:var(--ds-muted,#8a7f6c);border-color:var(--ds-line,#e3d9c7)}
+.c360Comm .sub{color:var(--ds-muted,#8a7f6c)}.c360Comm .sub b{color:var(--ds-text,#2a2621)}
+html[data-theme="dark"] .c360Comm .ok{background:rgba(63,191,142,.12);color:#3fbf8e;border-color:rgba(63,191,142,.3)}
+html[data-theme="dark"] .c360Comm .no{background:rgba(240,122,90,.12);color:#f07a5a;border-color:rgba(240,122,90,.3)}
+html[data-theme="dark"] .c360Comm .part{background:rgba(227,184,90,.12);color:#e3b85a;border-color:rgba(227,184,90,.3)}
 .c360PayTrack{height:7px;border-radius:999px;background:var(--ds-surface-3);overflow:hidden}
 .c360PayTrack i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#4f9a6c,#6fc08d)}
 .c360PayTxt{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ds-muted);font-variant-numeric:tabular-nums}
@@ -72,6 +82,40 @@ function c360FmtDate_(v){
 }
 function c360Date_(r){const y=Number(r.year),m=Number(r.month);if(!y||!m)return null;return new Date(y,m-1,Number(r.day)||1);}
 
+/* Commission on each unit: internal (Sales / Managers / Staff ticks in the Deals
+   sheet) and, for broker deals, the broker commission (Broker Commissions page). */
+function c360CommHtml_(r){
+  const T=v=>typeof commissionTrue_==='function'&&commissionTrue_(v);
+  const ticks=[['Sales',r.internalCommSales],['Managers',r.internalCommManagers],['Staff',r.internalCommStaff]];
+  const done=ticks.filter(t=>T(t[1])).map(t=>t[0]);
+  const internal=`<div class="row"><span class="lbl">Sales commission</span>${done.length?`<span class="pill ok">✓ Paid</span><span class="sub">${done.join(' · ')}${done.length<3?' — not yet: '+ticks.filter(t=>!T(t[1])).map(t=>t[0]).join(' · '):''}</span>`:'<span class="pill no">✗ Not paid</span>'}</div>`;
+  const co=String(r.brokerageCompany||'').trim();
+  if(!co)return internal;
+  let broker='<span class="sub">Loading…</span>';
+  const isAdmin=typeof bcIsAdmin_==='function'&&bcIsAdmin_();
+  if(!isAdmin)broker='<span class="sub">Admins only</span>';
+  else if(typeof BC_!=='undefined'&&BC_.data&&typeof bcDeals_==='function'){
+    const x=bcDeals_().find(d=>Number(d.r.row)===Number(r.row))||bcDeals_().find(d=>d.key===bcKey_(r.project,r.unitCode));
+    if(!x)broker='<span class="sub">—</span>';
+    else{
+      const N=v=>c360Num_(Math.round(v)),cur=x.cur,amt=x.comm!=null?`<span class="sub"><b>${N(x.comm)} ${cur}</b>${x.rate!=null?' ('+x.rate+'%)':''}</span>`:'';
+      if(x.comm==null)broker=x.paid?`<span class="pill ok">✓ Paid ${N(x.paid)} ${cur}</span><span class="sub">no rate set</span>`:'<span class="pill wait">No rate set</span><span class="sub">set it in Broker Commissions</span>';
+      else if(x.paid>=x.comm-0.5)broker=`<span class="pill ok">✓ Paid in full</span>${amt}`;
+      else if(x.paid>0)broker=`<span class="pill part">Partly paid · ${N(x.paid)} of ${N(x.comm)} ${cur}</span><span class="sub">remaining <b>${N(x.comm-x.paid)}</b></span>`;
+      else if(x.s.k==='due')broker=`<span class="pill no">✗ Not paid yet · due</span>${amt}`;
+      else broker=`<span class="pill wait">Not due yet</span>${amt}<span class="sub">· ${c360Esc_(x.s.label)}</span>`;
+    }
+  }
+  return internal+`<div class="row"><span class="lbl">Broker · ${c360Esc_(co)}</span>${broker}</div>`;
+}
+function c360CommLoad_(panel,rows){
+  if(!rows.some(r=>String(r.brokerageCompany||'').trim())||typeof bcIsAdmin_!=='function'||!bcIsAdmin_())return;
+  const fill=()=>panel.querySelectorAll('[data-c360comm]').forEach(el=>{const r=rows.find(x=>String(Number(x.row)||'')===el.dataset.c360comm);if(r)el.innerHTML=c360CommHtml_(r);});
+  if(typeof BC_!=='undefined'&&BC_.data)return fill();
+  google.script.run.withSuccessHandler(d=>{if(typeof BC_!=='undefined')BC_.data=d;if(document.body.contains(panel))fill();})
+    .withFailureHandler(()=>{panel.querySelectorAll('[data-c360comm] .sub').forEach(e=>{if(e.textContent==='Loading…')e.textContent='Could not load';});})
+    .getBrokerCommissions(AUTH_TOKEN);
+}
 function c360Open_(key){
   if(!key)return;
   const rows=(typeof rawRows!=='undefined'?rawRows:[]).filter(r=>clientKeyOf(r)===key);
@@ -119,6 +163,7 @@ function c360Open_(key){
         <div><span>Remaining DP</span><b>${c360Num_(r.remain)} ${cur}</b></div>
       </div>
       ${dp?`<div class="c360Pay"><div class="c360PayTrack"><i style="width:${pct}%"></i></div><div class="c360PayTxt"><span>Paid ${c360Num_(paid)} of ${c360Num_(dp)} DP</span><span>${pct.toFixed(0)}%</span></div></div>`:''}
+      ${cancelled(r)?'':`<div class="c360Comm" data-c360comm="${Number(r.row)||''}">${c360CommHtml_(r)}</div>`}
       <div class="c360Foot"><span>Sales: <b>${c360Esc_(r.salesName||'—')}</b>${shared?` + ${c360Esc_(r.sharedWith)} <em>(50/50)</em>`:''}${r.branch?' · '+c360Esc_(r.branch):''}</span>
         <span style="display:inline-flex;gap:8px;align-items:center">${resDays!=null?`<span class="c360Hold${resDays>limit?' over':''}">Reserved ${resDays} days</span>`:''}${/^https?:\/\//i.test(url)?`<a class="c360Files" href="${c360Esc_(url)}" target="_blank" rel="noopener">${folder}Files</a>`:''}${typeof ipOpen_==='function'&&!cancelled(r)&&Number(r.row)?`<button type="button" class="c360Files" onclick="ipOpen_(${Number(r.row)})">💳 Payments</button>`:''}${typeof dsOpenDealUpdate_==='function'&&dsuCanEdit_()&&!cancelled(r)?`<button type="button" class="c360Files" onclick="dsOpenDealUpdate_(${Number(r.row)})">✎ Update</button>`:''}</span></div>
     </article>`;
@@ -143,6 +188,7 @@ function c360Open_(key){
       ${deals}
     </div>`;
   document.body.appendChild(back);document.body.appendChild(panel);
+  c360CommLoad_(panel,sorted);
   const close=()=>c360Close_();
   back.addEventListener('click',close);
   panel.querySelector('.c360Close').addEventListener('click',close);
