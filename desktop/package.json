@@ -1,0 +1,34 @@
+{
+  "name": "eden-bi-desktop",
+  "productName": "EDEN BI",
+  "version": "1.0.0",
+  "description": "EDEN Business Intelligence for Windows",
+  "author": "EDEN Development",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis --publish never"
+  },
+  "devDependencies": {
+    "electron": "33.2.1",
+    "electron-builder": "25.1.8"
+  },
+  "build": {
+    "appId": "com.edenalkhalij.dashboard",
+    "productName": "EDEN BI",
+    "copyright": "EDEN Development",
+    "directories": { "output": "dist", "buildResources": "build" },
+    "files": ["main.js", "offline.html", "build/icon.png"],
+    "win": { "target": "nsis", "icon": "build/icon.png", "artifactName": "EDEN-BI-Setup.exe" },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "EDEN BI",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}

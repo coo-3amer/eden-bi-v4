@@ -1,0 +1,51 @@
+# Builds the EDEN BI Windows app (EDEN-BI-Setup.exe) and publishes it on the
+# "desktop-app" release:
+#   https://github.com/<repo>/releases/download/desktop-app/EDEN-BI-Setup.exe
+# The app is a window around https://dashboard.edenalkhalij.com, so dashboard
+# changes show up without rebuilding it.
+name: Build Windows app
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [redesign]
+    paths:
+      - 'desktop/**'
+      - '.github/workflows/desktop.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: desktop-build
+  cancel-in-progress: false
+
+jobs:
+  exe:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install
+        run: npm install --no-audit --no-fund
+      - name: Version from build number
+        run: npm version "1.0.${{ github.run_number }}" --no-git-tag-version --allow-same-version
+      - name: Build installer
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: |
+          npx electron-builder --win nsis --x64 --publish never
+          ls -la dist
+      - name: Publish on the "desktop-app" release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view desktop-app >/dev/null 2>&1 || gh release create desktop-app --title "EDEN BI — Windows app" --notes "Download EDEN-BI-Setup.exe and open it to install. First run: Windows may show 'Windows protected your PC' → More info → Run anyway."
+          gh release upload desktop-app dist/EDEN-BI-Setup.exe --clobber
+          echo "::notice title=EXE ready::https://github.com/${GITHUB_REPOSITORY}/releases/download/desktop-app/EDEN-BI-Setup.exe (build ${{ github.run_number }})"
