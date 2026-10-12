@@ -89,6 +89,22 @@ function ewEsc_(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':
 function ewN_(n){return Math.round(Number(n)||0).toLocaleString('en-US');}
 function ewM_(n){const v=Number(n)||0,a=Math.abs(v);return (a>=1e6?(v/1e6).toFixed(1)+'M':a>=1e3?(v/1e3).toFixed(0)+'K':String(Math.round(v)));}
 function ewIsAdmin_(){const r=String((typeof AUTH_USER!=='undefined'&&AUTH_USER&&AUTH_USER.role)||'').trim().toLowerCase();return r==='admin'||r==='super admin';}
+/* access: admins edit; usernames in the EW viewers list (default cfo) view only; Egypt never */
+const EW_ACC_={token:'',see:false,edit:false,busy:false};
+function ewAccess_(){
+  const t=(typeof AUTH_TOKEN!=='undefined'&&AUTH_TOKEN)||'';
+  if(!t){EW_ACC_.token='';EW_ACC_.see=EW_ACC_.edit=false;return EW_ACC_;}
+  if(t!==EW_ACC_.token&&!EW_ACC_.busy){
+    const role=String((typeof AUTH_USER!=='undefined'&&AUTH_USER&&AUTH_USER.role)||'').trim().toLowerCase();
+    if(/egypt/.test(role)){EW_ACC_.token=t;EW_ACC_.see=EW_ACC_.edit=false;return EW_ACC_;}
+    if(ewIsAdmin_()){EW_ACC_.token=t;EW_ACC_.see=EW_ACC_.edit=true;return EW_ACC_;}
+    EW_ACC_.busy=true;
+    google.script.run.withSuccessHandler(a=>{EW_ACC_.busy=false;EW_ACC_.token=t;EW_ACC_.see=!!(a&&a.see);EW_ACC_.edit=!!(a&&a.edit);ewMount_();})
+      .withFailureHandler(()=>{EW_ACC_.busy=false;EW_ACC_.token=t;EW_ACC_.see=EW_ACC_.edit=false;}).getEwAccess(t);
+  }
+  return EW_ACC_;
+}
+function ewCanEdit_(){return !!(EW_.data?EW_.data.canEdit:ewAccess_().edit);}
 function ewFmtD_(v){const m=String(v||'').match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);return m?new Date(+m[1],+m[2]-1,+m[3]).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):(v||'—');}
 function ewKey_(u){return String(u||'').trim().toUpperCase().replace(/\s+/g,'');}
 /* calculated figures of one unit */
@@ -126,14 +142,15 @@ function ewMount_(){
     const anchor=brokers&&brokers.nextElementSibling&&brokers.nextElementSibling.classList.contains('sectionDivider')?brokers.nextElementSibling:null;
     if(anchor){anchor.after(m);m.after(div);}else side.appendChild(m);
   }
-  const show=ewIsAdmin_();
+  const show=ewAccess_().see&&EW_ACC_.token===((typeof AUTH_TOKEN!=='undefined'&&AUTH_TOKEN)||'');
   m.style.display=show?'':'none';
   const d=side.querySelector('[data-ewdiv]');if(d)d.style.display=show?'':'none';
+  const st=m.querySelector('[data-ewtab="settings"]');if(st)st.style.display=EW_ACC_.edit?'':'none';
   const open=!!document.getElementById('ew');
   m.querySelectorAll('[data-ewtab]').forEach(b=>b.classList.toggle('active',open&&b.dataset.ewtab===EW_.tab));
 }
 function ewOpen_(tab){
-  if(!ewIsAdmin_()){alert('This page is for admins only.');return;}
+  if(!ewAccess_().see){alert('This page is not available for this account.');return;}
   if(typeof tab==='string'&&EW_TABS_.some(t=>t[0]===tab))EW_.tab=tab;else if(!EW_.tab)EW_.tab='overview';
   EW_.unit=null;EW_.mode='';
   if(document.getElementById('ew')){ewTabsSync_();ewRender_();ewMount_();return;}
@@ -180,7 +197,11 @@ function ewList_(){
 }
 function ewRender_(){
   const body=document.querySelector('#ew .ewBody');if(!body||!EW_.data)return;
-  const D=EW_.data;
+  const D=EW_.data,ed=!!D.canEdit;
+  const nb=document.querySelector('#ew [data-act="new"]');if(nb)nb.style.display=ed?'':'none';
+  const stb=document.querySelector('#ew [data-tab="settings"]');if(stb)stb.style.display=ed?'':'none';
+  if(!ed&&(EW_.tab==='settings'||EW_.mode==='new')){EW_.tab='overview';EW_.mode='';ewTabsSync_();}
+  if(!D.imported&&!ed){body.innerHTML='<div class="ewEmpty ewNote">EDEN WALK units have not been brought into the system yet.</div>';return;}
   if(!D.imported&&EW_.mode!=='new'){
     body.innerHTML=`<div class="ewEmpty"><h3>Bring EDEN WALK in from the portal sheet</h3>
       <p class="ewNote">Copies every sold unit from <b>EDEN WALK PORTAL › Eden_Walk_New</b> (price, discount, down payment, commission, installments and returns per year).<br>The portal sheet itself is not changed.</p>
@@ -283,7 +304,7 @@ function ewTabColl_(body){
       <div class="ewC" style="--a:#1f6b52"><span>Received (shown)</span><b>${ewN_(tot(''))}</b><small>${rows.length} payments</small></div>
       <div class="ewC" style="--a:#b0832c"><span>Down payments</span><b>${ewN_(tot('Down payment'))}</b><small>also counted in “DP paid”</small></div>
       <div class="ewC" style="--a:#23777e"><span>Installments</span><b>${ewN_(tot('Installment'))}</b><small>against their year</small></div></div>
-    <div class="ewBox"><h3>Record a payment</h3><p>Pick the unit; a down payment also raises its “DP paid”.</p>
+    ${D.canEdit?'':'<!--'}<div class="ewBox"><h3>Record a payment</h3><p>Pick the unit; a down payment also raises its “DP paid”.</p>
       <div class="ewF" style="grid-template-columns:repeat(7,minmax(0,1fr))">
         <label>Unit<input data-p="unit" list="ewUnitList" placeholder="EW-…"><datalist id="ewUnitList">${units.map(u=>`<option value="${ewEsc_(u)}">`).join('')}</datalist></label>
         <label>Type<select data-p="type"><option>Down payment</option><option>Installment</option></select></label>
@@ -291,18 +312,19 @@ function ewTabColl_(body){
         <label>Amount<input data-p="amount" inputmode="decimal"></label>
         <label>Date<input type="date" data-p="date" value="${new Date().toISOString().slice(0,10)}"></label>
         <label>Reference<input data-p="ref" placeholder="cheque / receipt no."></label>
-        <button type="button" class="ewBtn p" data-pay>Record</button></div><span class="ewMsg" data-pmsg></span></div>
+        <button type="button" class="ewBtn p" data-pay>Record</button></div><span class="ewMsg" data-pmsg></span></div>${D.canEdit?'':'-->'}
     <div class="ewBox"><div class="ewTabs">
       <select data-cf="type"><option value="">All types</option><option${f.type==='Down payment'?' selected':''}>Down payment</option><option${f.type==='Installment'?' selected':''}>Installment</option></select>
       <select data-cf="month"><option value="">All months</option>${months.map(m=>`<option value="${m}"${f.month===m?' selected':''}>${new Date(m+'-01').toLocaleDateString('en-GB',{month:'long',year:'numeric'})}</option>`).join('')}</select></div>
       ${rows.length?`<div class="ewTblWrap"><table class="ewTbl" data-nosort><thead><tr><th>Date</th><th>Unit</th><th>Client</th><th>Type</th><th>Year</th><th>Method</th><th>Reference</th><th class="ewN">Amount</th><th>By</th></tr></thead><tbody>
       ${rows.map(c=>`<tr data-unit="${ewEsc_(c.unit)}"><td>${ewFmtD_(c.date)}</td><td><b>${ewEsc_(c.unit)}</b></td><td>${ewEsc_((ewDeal_(c.unit)||{}).clientName||'—')}</td><td>${ewEsc_(c.type)}</td><td>${c.year||'—'}</td><td>${ewEsc_(c.method||'—')}</td><td>${ewEsc_(c.ref||'—')}</td><td class="ewN">${ewN_(c.amount)}</td><td><small>${ewEsc_(c.by)}</small></td></tr>`).join('')}</tbody></table></div>`
       :'<p class="ewNote" style="text-align:center;padding:24px">No payments recorded yet. Payments you record here (or inside a unit) show up in this list.</p>'}</div>`;
+  body.querySelectorAll('[data-cf]').forEach(s=>s.addEventListener('change',()=>{f[s.dataset.cf]=s.value;ewRender_();}));
+  if(!D.canEdit)return;
   const ty=body.querySelector('[data-p="type"]'),yr=body.querySelector('[data-p="year"]');const sync=()=>{yr.disabled=ty.value!=='Installment';};ty.addEventListener('change',sync);sync();
   body.querySelector('[data-pay]').addEventListener('click',()=>{const o={};body.querySelectorAll('[data-p]').forEach(i=>{o[i.dataset.p]=i.value;});
     const m=body.querySelector('[data-pmsg]');if(!units.some(u=>ewKey_(u)===ewKey_(o.unit))){m.className='ewMsg err';m.textContent='Pick a unit from the list.';return;}
     ewCall_('recordEwCollection',o,m);});
-  body.querySelectorAll('[data-cf]').forEach(s=>s.addEventListener('change',()=>{f[s.dataset.cf]=s.value;ewRender_();}));
 }
 function ewTabSettings_(body){
   const D=EW_.data,share=D.share||0.64,rate=D.commRate||0.1;
@@ -310,11 +332,13 @@ function ewTabSettings_(body){
     <div class="ewF"><label>EDEN share %<input data-s="share" inputmode="decimal" value="${+(share*100).toFixed(2)}"></label>
       <label>AFROA share %<input value="${+((1-share)*100).toFixed(2)}" disabled></label>
       <label>Commission % of contract<input data-s="commRate" inputmode="decimal" value="${+(rate*100).toFixed(2)}"></label></div>
+    <div class="ewF" style="grid-template-columns:1fr;margin-top:10px"><label>View-only accounts (usernames, comma separated)<input data-s="viewers" value="${ewEsc_((D.viewers||[]).join(', '))}" placeholder="cfo"></label></div>
+    <p class="ewNote" style="margin:6px 0 0">These accounts can open the section and see everything, but cannot change anything. Admin accounts can always edit. The Egypt account never sees this section.</p>
     <div style="margin-top:12px;display:flex;gap:8px;align-items:center"><button type="button" class="ewBtn p" data-ssave>Save settings</button><span class="ewMsg" data-smsg></span></div></div>
   <div class="ewBox" style="max-width:720px"><h3>Data</h3><p>Units live in the tab <b>EW Units</b> and payments in <b>EW Collections</b> of the main EDEN BI sheet. Imported once from <b>EDEN WALK PORTAL › Eden_Walk_New</b>; the portal sheet is no longer used.</p>
     <button type="button" class="ewBtn danger" data-reimp>Re-import from the portal sheet…</button> <span class="ewMsg" data-rmsg></span></div>`;
   body.querySelector('[data-s="share"]').addEventListener('input',e=>{const v=Number(e.target.value)||0;body.querySelectorAll('.ewF input')[1].value=+(100-v).toFixed(2);});
-  body.querySelector('[data-ssave]').addEventListener('click',()=>{ewCall_('saveEwSettings',{share:body.querySelector('[data-s="share"]').value,commRate:body.querySelector('[data-s="commRate"]').value},body.querySelector('[data-smsg]'));});
+  body.querySelector('[data-ssave]').addEventListener('click',()=>{ewCall_('saveEwSettings',{share:body.querySelector('[data-s="share"]').value,commRate:body.querySelector('[data-s="commRate"]').value,viewers:body.querySelector('[data-s="viewers"]').value},body.querySelector('[data-smsg]'));});
   body.querySelector('[data-reimp]').addEventListener('click',()=>{if(!confirm('Replace ALL units in the system with the portal sheet again?\nEdits made in the system to units will be lost (payments in Collections stay).'))return;
     ewCall_('importEwFromPortal',{replace:true},body.querySelector('[data-rmsg]'));});
 }
@@ -372,6 +396,11 @@ function ewRenderUnit_(body){
       <button type="button" class="ewBtn p" data-pay>Record payment</button></div><span class="ewMsg" data-pmsg></span>
     ${c.coll.length?`<table class="ewTbl" data-nosort style="margin-top:10px"><thead><tr><th>Date</th><th>Type</th><th>Year</th><th>Method</th><th>Reference</th><th class="ewN">Amount</th><th>By</th><th></th></tr></thead><tbody>
       ${c.coll.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(p=>`<tr style="cursor:default"><td>${ewFmtD_(p.date)}</td><td>${ewEsc_(p.type)}</td><td>${p.year||'—'}</td><td>${ewEsc_(p.method)}</td><td>${ewEsc_(p.ref||'—')}</td><td class="ewN">${ewN_(p.amount)}</td><td><small>${ewEsc_(p.by)}</small></td><td><button type="button" class="ewBtn danger sm" data-delpay="${ewEsc_(p.id)}">Delete</button></td></tr>`).join('')}</tbody></table>`:'<p class="ewNote" style="margin-top:8px">No payments recorded here yet.</p>'}</div>`}`;
+  if(!D.canEdit){
+    body.querySelectorAll('.ewU input,.ewU select').forEach(i=>{i.disabled=true;});
+    body.querySelectorAll('[data-save],[data-del],[data-addyear]').forEach(b=>b.remove());
+    const pf=body.querySelector('[data-pay]');if(pf){pf.closest('.ewF').remove();}
+  }
   const read=()=>{const o={row:isNew?'':u.row,plan:{}};body.querySelectorAll('[data-k]').forEach(i=>{o[i.dataset.k]=i.value;});
     body.querySelectorAll('tr[data-y]').forEach(tr=>{const n=s=>Number(String(s||'').replace(/,/g,''))||0;o.plan[tr.dataset.y]=[n(tr.querySelector('[data-i]').value),-Math.abs(n(tr.querySelector('[data-r]').value))];});return o;};
   const num=v=>Number(String(v||'').replace(/,/g,''))||0;
@@ -382,13 +411,14 @@ function ewRenderUnit_(body){
     body.querySelectorAll('tr[data-y]').forEach(tr=>{const p=o.plan[tr.dataset.y],n=p[0]+p[1];tr.querySelector('[data-net]').textContent=n?ewN_(n):'—';tr.querySelector('[data-e]').textContent=n?ewN_(n*share):'—';tr.querySelector('[data-a]').textContent=n?ewN_(n*(1-share)):'—';});};
   body.querySelectorAll('input,select').forEach(i=>i.addEventListener('input',recalc));recalc();
   body.querySelector('[data-back]').addEventListener('click',()=>{EW_.unit=null;EW_.mode='';ewRender_();});
-  body.querySelector('[data-addyear]').addEventListener('click',()=>{const y=yrs.length?yrs[yrs.length-1]+1:new Date().getFullYear();
+  if(D.canEdit)body.querySelector('[data-addyear]').addEventListener('click',()=>{const y=yrs.length?yrs[yrs.length-1]+1:new Date().getFullYear();
     if(!EW_.data.years.includes(y))EW_.data.years.push(y);
     const o=read(),pct=v=>v===''?'':num(v)/100;EW_.draft={...u,...o,discount:pct(o.discount),dpPct:pct(o.dpPct)};ewRenderUnit_(body);});
-  body.querySelector('[data-save]').addEventListener('click',()=>{const o=read();if(!String(o.unit).trim()){const m=body.querySelector('[data-msg]');m.className='ewMsg err';m.textContent='Enter the unit code.';return;}
+  if(D.canEdit)body.querySelector('[data-save]').addEventListener('click',()=>{const o=read();if(!String(o.unit).trim()){const m=body.querySelector('[data-msg]');m.className='ewMsg err';m.textContent='Enter the unit code.';return;}
     if(o.commission===''){o.commission=Math.round(ewCalc_({...o,dp:num(o.dp)}).contract*(D.commRate||0.1));}
     ewCall_('saveEwUnit',o,body.querySelector('[data-msg]'),()=>{EW_.unit=o.unit;EW_.mode='';});});
   const del=body.querySelector('[data-del]');
+  body.querySelectorAll('[data-delpay]').forEach(b=>{if(!D.canEdit)b.remove();});
   if(del)del.addEventListener('click',()=>{if(!confirm('Delete '+u.unit+' from the EDEN WALK partners list?'))return;ewCall_('deleteEwUnit',{row:u.row,unit:u.unit},body.querySelector('[data-msg]'),()=>{EW_.unit=null;});});
   const pay=body.querySelector('[data-pay]');
   if(pay){const ty=body.querySelector('[data-p="type"]'),yr=body.querySelector('[data-p="year"]');const sync=()=>{yr.disabled=ty.value!=='Installment';};ty.addEventListener('change',sync);sync();

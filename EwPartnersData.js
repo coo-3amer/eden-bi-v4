@@ -33,6 +33,28 @@ function ewAdmin_(authToken) {
   if (role !== 'admin' && role !== 'super admin') throw new Error('EDEN WALK partners page is for admins only.');
   return user;
 }
+/* Who can open the section: admins (edit) + usernames in Script Property
+   EW_VIEWERS (view only, default "cfo"). Egypt viewers never, whatever the list says. */
+function ewViewers_() {
+  const v = PropertiesService.getScriptProperties().getProperty('EW_VIEWERS');
+  return (v === null ? 'cfo' : v).split(',').map(x => x.trim().toLowerCase()).filter(Boolean);
+}
+function ewAccessOf_(user) {
+  const role = String(user && user.role || '').trim().toLowerCase();
+  if (/egypt/.test(role)) return { see: false, edit: false };
+  if (role === 'admin' || role === 'super admin') return { see: true, edit: true };
+  const un = String(user && user.username || '').trim().toLowerCase();
+  return { see: !!un && ewViewers_().indexOf(un) >= 0, edit: false };
+}
+function ewViewer_(authToken) {
+  const user = validateAuthToken_(authToken);
+  if (!ewAccessOf_(user).see) throw new Error('EDEN WALK partners page is not available for this account.');
+  return user;
+}
+function getEwAccess(authToken) {
+  const user = validateAuthToken_(authToken);
+  return ewAccessOf_(user);
+}
 function ewWho_(user) { return String(user && (user.name || user.username || user.email) || 'Admin'); }
 function ewNum_(v) {
   if (v === '' || v === null || v === undefined) return 0;
@@ -90,6 +112,10 @@ function ewSettings_() {
 }
 function saveEwSettings(authToken, req) {
   const user = ewAdmin_(authToken);
+  if (req && req.viewers !== undefined) {
+    const list = String(req.viewers || '').split(/[,\s]+/).map(x => x.trim().toLowerCase()).filter(Boolean);
+    PropertiesService.getScriptProperties().setProperty('EW_VIEWERS', list.join(','));
+  }
   const share = ewNum_(req && req.share) / 100, rate = ewNum_(req && req.commRate) / 100;
   if (!(share > 0 && share < 1)) throw new Error('EDEN share must be between 0 and 100 %.');
   if (!(rate >= 0 && rate < 1)) throw new Error('Commission must be between 0 and 100 %.');
@@ -101,14 +127,14 @@ function saveEwSettings(authToken, req) {
 
 /* Everything the page needs. */
 function getEwPartners(authToken) {
-  ewAdmin_(authToken);
+  const user = ewViewer_(authToken), acc = ewAccessOf_(user);
   const d = ewRead_();
   const coll = instRows_(instSheet_(EW_COLL_SHEET_, EW_COLL_HEAD_, false)).filter(r => r[0]).map(r => ({
     id: String(r[0]), unit: String(r[1] || ''), date: instDateOut_(r[2]), type: String(r[3] || ''), year: Number(r[4]) || '',
     amount: ewNum_(r[5]), method: String(r[6] || ''), ref: String(r[7] || ''), notes: String(r[8] || ''), by: String(r[9] || ''), at: instDateOut_(r[10])
   }));
   const st = ewSettings_();
-  return { units: d.units, years: d.years, collections: coll, share: st.share, commRate: st.commRate, categories: EW_CATS_, imported: d.units.length > 0 };
+  return { canEdit: acc.edit, viewers: acc.edit ? ewViewers_() : [], units: d.units, years: d.years, collections: coll, share: st.share, commRate: st.commRate, categories: EW_CATS_, imported: d.units.length > 0 };
 }
 
 /* One-time copy from the old portal sheet (tab Eden_Walk_New). Refuses if units already exist unless replace=true. */
