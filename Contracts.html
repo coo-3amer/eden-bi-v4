@@ -1,0 +1,56 @@
+<style id="eden-contracts">
+.ctBack{position:fixed;inset:0;z-index:470;background:rgba(10,8,6,.5)}
+.ct{position:fixed;z-index:471;left:50%;top:50%;transform:translate(-50%,-50%);width:440px;max-width:calc(100vw - 24px);background:var(--ds-surface,#fffdf9);color:var(--ds-text,#2a2621);border-radius:16px;box-shadow:0 28px 70px rgba(0,0,0,.35);padding:18px 20px;font-family:Inter,'Segoe UI',Tahoma,Arial,sans-serif}
+.ct h3{margin:0 0 2px;font:600 22px 'Cormorant Garamond',Georgia,serif;color:var(--ds-heading,#16130f)}
+.ct p{margin:0 0 12px;font-size:12.5px;color:var(--ds-muted,#8a7f6c);line-height:1.55}
+.ct label{display:flex;flex-direction:column;gap:4px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ds-muted)}
+.ct input{height:36px;border:1px solid var(--ds-line,#e3d9c7);border-radius:10px;padding:0 10px;font:inherit;font-size:13.5px;background:var(--ds-surface,#fff);color:var(--ds-text)}
+.ctRow{display:flex;gap:8px;align-items:center;margin-top:14px;flex-wrap:wrap}
+.ctBtn{height:36px;padding:0 14px;border-radius:10px;border:1px solid var(--ds-line,#e3d9c7);background:transparent;color:var(--ds-text);font-weight:700;cursor:pointer}
+.ctBtn.p{background:var(--ds-gold,#b08a42);border-color:transparent;color:#fff}
+.ctMsg{font-size:12.5px;margin-top:10px;line-height:1.6}.ctMsg.err{color:#c0533b;font-weight:700}.ctMsg a{color:var(--ds-gold-strong,#8f6d2c);font-weight:700}
+</style>
+<script>
+/* EDEN BI — Sale contract (Word) for a deal: ContractGen.js fills the template. Admins, EDEN WALK. */
+function ctCan_(r){
+  const role=String((typeof AUTH_USER!=='undefined'&&AUTH_USER&&AUTH_USER.role)||'').trim().toLowerCase();
+  if(role!=='admin'&&role!=='super admin')return false;
+  if(!r||!Number(r.row)||!r.unitCode)return false;
+  if(/^cancel/i.test(String(r.status||'')))return false;
+  return /^edenwalk$/.test(String(r.project||'').toUpperCase().replace(/[^A-Z]/g,'').toLowerCase());
+}
+function ctButton_(r,cls){
+  if(!ctCan_(r))return '';
+  const u=String(r.unitCode).replace(/['"\\<>]/g,'');
+  return `<button type="button" class="${cls||'c360Files'}" onclick="ctOpen_(${Number(r.row)},'${u}')">📄 Contract</button>`;
+}
+function ctClose_(){document.getElementById('ct')?.remove();document.getElementById('ctBack')?.remove();}
+function ctOpen_(row,unit){
+  ctClose_();
+  const r=((typeof rawRows!=='undefined'&&rawRows)||[]).find(x=>Number(x.row)===Number(row))||{};
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const back=document.createElement('div');back.className='ctBack';back.id='ctBack';back.addEventListener('click',ctClose_);
+  const el=document.createElement('div');el.className='ct';el.id='ct';el.setAttribute('role','dialog');
+  el.innerHTML=`<h3>Sale contract</h3><p>${esc(r.project||'')} · <b>${esc(unit)}</b> · ${esc(r.clientName||'')}<br>
+    Fills the EDEN WALK contract (Word) from the Deals sheet: client, ID, address, unit, area, floor, price, down payment and the payment schedule (Annex 2). A copy is saved in Google Drive › “EDEN BI Contracts”.</p>
+    <label>Contract date<input type="date" data-d value="${new Date().toISOString().slice(0,10)}"></label>
+    <div class="ctRow"><button type="button" class="ctBtn p" data-go>Generate contract</button><button type="button" class="ctBtn" data-x>Close</button></div>
+    <div class="ctMsg" data-m></div>`;
+  document.body.append(back,el);
+  el.querySelector('[data-x]').addEventListener('click',ctClose_);
+  el.querySelector('[data-go]').addEventListener('click',e=>{
+    const b=e.target,m=el.querySelector('[data-m]');b.disabled=true;m.className='ctMsg';m.textContent='Preparing the contract…';
+    google.script.run.withSuccessHandler(res=>{
+      b.disabled=false;
+      try{
+        const bin=atob(res.b64),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
+        const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([u8],{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}));
+        a.download=res.name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},800);
+      }catch(x){}
+      m.innerHTML=`✅ Downloaded: <b>${esc(res.name)}</b>${res.url?`<br><a href="${esc(res.url)}" target="_blank" rel="noopener">Open the copy in Google Drive</a>`:''}`+
+        (res.missing&&res.missing.length?`<br><span style="color:#b4452f">Missing in the Deals sheet: ${esc(res.missing.join(', ').replace(/_/g,' ').toLowerCase())} — left as “..........” to fill by hand.</span>`:'');
+    }).withFailureHandler(err=>{b.disabled=false;m.className='ctMsg err';m.textContent=err&&err.message||String(err);})
+      .generateDealContract(AUTH_TOKEN,{row:row,unitCode:unit,date:el.querySelector('[data-d]').value});
+  });
+}
+</script>

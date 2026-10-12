@@ -356,6 +356,7 @@ function ewRenderUnit_(body){
       <button type="button" class="ewBtn g" data-back>← All units</button>
       <h3 style="margin:0;font:600 24px 'Cormorant Garamond',Georgia,serif">${isNew?'New EDEN WALK sale':ewEsc_(u.unit)}</h3>
       ${deal?`<span class="ewNote">${ewEsc_(deal.clientName||'')} · sales ${ewEsc_(deal.salesName||'—')} · ${ewEsc_(deal.status||'')}</span>`:''}
+      ${deal&&typeof ctButton_==='function'?ctButton_(deal,'ewBtn sm'):''}
       ${!isNew&&u.by?`<span class="ewNote" style="margin-left:auto">Last change: ${ewEsc_(u.by)} · ${ewFmtD_(u.at)}</span>`:''}</div>
   <div class="ewU"><div class="ewBox" style="margin:0"><h3>Sale & price</h3><p></p>
     <div class="ewGrid">
