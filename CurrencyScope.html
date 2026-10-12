@@ -2,7 +2,9 @@
 /* Cards / charts for a currency that isn't in the current selection. */
 html[data-theme] #appRoot .dsCurHide{display:none!important}
 /* The remaining "Value by Project" card takes the freed space. */
-html[data-theme] #appRoot .edenInsightCard.dsCurWide{grid-column:span 2}
+/* Only where the grid has 2+ columns: on a phone (1 column) "span 2" would add a
+   thin extra column and squeeze the other charts. */
+@media(min-width:901px){html[data-theme] #appRoot .edenInsightCard.dsCurWide{grid-column:span 2}}
 </style>
 <script>
 /* =====================================================================
