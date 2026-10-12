@@ -1,0 +1,310 @@
+<style id="eden-assistant">
+.asFab{position:fixed;right:22px;bottom:22px;z-index:420;height:48px;padding:0 18px 0 14px;border-radius:99px;border:0;background:#16130f;color:#f3e7cc;font:700 14px Inter,'Segoe UI',Arial,sans-serif;display:flex;align-items:center;gap:8px;box-shadow:0 12px 30px rgba(0,0,0,.28);cursor:pointer}
+.asFab i{font-style:normal;font-size:18px;color:#e3c27a}
+html[data-theme="dark"] .asFab{background:#e3c27a;color:#16130f}html[data-theme="dark"] .asFab i{color:#16130f}
+.asP{position:fixed;right:22px;bottom:84px;z-index:440;width:430px;max-width:calc(100vw - 24px);height:600px;max-height:calc(100vh - 110px);display:flex;flex-direction:column;background:var(--ds-surface,#fffdf9);color:var(--ds-text,#2a2621);border:1px solid var(--ds-line,#e8e0d1);border-radius:18px;box-shadow:0 28px 70px rgba(0,0,0,.3);overflow:hidden;font-family:Inter,'Segoe UI',Tahoma,Arial,sans-serif}
+.asH{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--ds-line,#e8e0d1);background:#16130f;color:#f3e7cc}
+.asH b{font:600 18px 'Cormorant Garamond',Georgia,serif}.asH small{display:block;font-size:11px;color:#b9ab90}
+.asH button{margin-left:auto;width:30px;height:30px;border-radius:9px;border:1px solid #3a3228;background:transparent;color:#b9ab90;font-size:18px;cursor:pointer}
+.asB{flex:1;overflow:auto;padding:12px 12px 4px;display:flex;flex-direction:column;gap:10px}
+.asM{max-width:92%;padding:9px 12px;border-radius:14px;font-size:13.5px;line-height:1.55;word-wrap:break-word}
+.asM.q{align-self:flex-end;background:#16130f;color:#f3e7cc;border-bottom-right-radius:4px}
+html[data-theme="dark"] .asM.q{background:#e3c27a;color:#16130f}
+.asM.a{align-self:flex-start;background:var(--ds-surface-2,#f6f1e7);border:1px solid var(--ds-line,#ece4d4);border-bottom-left-radius:4px}
+.asM.a b.big{display:block;font-size:20px;color:var(--ds-gold-strong,#8f6d2c);margin:2px 0}
+.asM table{width:100%;border-collapse:collapse;margin-top:6px;font-size:12.5px}
+.asM td,.asM th{padding:4px 6px;border-bottom:1px solid var(--ds-line,#e8e0d1);text-align:start}
+.asM th{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ds-muted,#8a7f6c)}
+.asM td.n{text-align:end;font-variant-numeric:tabular-nums;white-space:nowrap}
+.asM small{color:var(--ds-muted,#8a7f6c)}
+.asAct{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.asAct button,.asChips button{border:1px solid var(--ds-gold-line,rgba(176,138,66,.35));background:var(--ds-gold-soft,rgba(176,138,66,.1));color:var(--ds-gold-strong,#8f6d2c);border-radius:99px;padding:5px 10px;font:600 12px inherit;cursor:pointer}
+.asChips{display:flex;gap:6px;flex-wrap:wrap;padding:6px 12px}
+.asF{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--ds-line,#e8e0d1)}
+.asF input{flex:1;height:40px;border:1px solid var(--ds-line,#e3d9c7);border-radius:12px;padding:0 12px;font:inherit;font-size:14px;background:var(--ds-surface,#fff);color:var(--ds-text)}
+.asF button{height:40px;padding:0 14px;border:0;border-radius:12px;background:var(--ds-gold,#b08a42);color:#fff;font-weight:800;cursor:pointer}
+.asM[dir="rtl"],.asChips[dir="rtl"]{text-align:right}
+@media(max-width:760px){.asFab{right:14px;bottom:14px;height:44px;padding:0 14px 0 12px}.asFab span{display:none}.asP{right:8px;left:8px;bottom:70px;width:auto;height:calc(100vh - 150px)}}
+@media print{.asFab,.asP{display:none!important}}
+</style>
+<script>
+/* =====================================================================
+   EDEN BI — Assistant ("اسأل EDEN")
+   Free, offline question answering over the data already on the page
+   (the same rows the user can see). Understands Arabic (Egyptian) and
+   English questions about sales, deals, cancellations, collections,
+   discounts, reservations, brokers, salespeople, projects, branches,
+   clients and the EDEN WALK partners split. No external service.
+   ===================================================================== */
+const AS_={open:false,log:[],busy:false};
+function asEsc_(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function asNorm_(s){
+  return String(s||'').toLowerCase()
+    .replace(/[٠-٩]/g,d=>String(d.charCodeAt(0)-0x0660)).replace(/[۰-۹]/g,d=>String(d.charCodeAt(0)-0x06F0))
+    .replace(/[ً-ٰٟـ]/g,'').replace(/[إأآٱ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').replace(/ؤ/g,'و').replace(/ئ/g,'ي')
+    .replace(/[؟?!.,،:;"'()]/g,' ').replace(/\s+/g,' ').trim();
+}
+function asAr_(s){return /[؀-ۿ]/.test(String(s||''));}
+function asN_(n,d=0){return Number(n||0).toLocaleString('en-US',{maximumFractionDigits:d});}
+function asM_(n){const v=Number(n)||0,a=Math.abs(v);return a>=1e6?(v/1e6).toFixed(a>=1e8?0:1)+'M':a>=1e4?Math.round(v/1e3)+'K':asN_(v);}
+function asHas_(q,words){return words.some(w=>q.includes(w));}
+function asRows_(){return (typeof rawRows!=='undefined'&&Array.isArray(rawRows))?rawRows:[];}
+function asCancelled_(r){return typeof isCancelledStatus_==='function'?isCancelledStatus_(r.status):/^cancel/i.test(String(r.status||''));}
+function asCur_(r){return typeof projectCurrency_==='function'?projectCurrency_(r):'EGP';}
+function asDate_(r){const y=Number(r.year),m=Number(r.month);return y&&m?new Date(y,m-1,Number(r.day)||1):null;}
+function asNk_(s){return String(s||'').trim().toLowerCase().replace(/\s+/g,' ');}
+
+/* ---------- time ---------- */
+const AS_MONTHS_=[['january','jan','يناير','كانون الثاني'],['february','feb','فبراير','براير'],['march','mar','مارس'],['april','apr','ابريل','أبريل'],['may','مايو'],['june','jun','يونيو','يونيه'],
+  ['july','jul','يوليو','يوليه'],['august','aug','اغسطس','أغسطس'],['september','sep','sept','سبتمبر'],['october','oct','اكتوبر','أكتوبر'],['november','nov','نوفمبر'],['december','dec','ديسمبر']];
+function asTime_(q,ar){
+  const now=new Date(),Y=now.getFullYear(),M=now.getMonth(),D=now.getDate();
+  const day=(y,m,d)=>new Date(y,m,d),L=(a,e)=>ar?a:e;
+  const has=w=>asHas_(q,w);
+  let m;
+  if(has(['النهارده','النهاردا','انهارده','اليوم','today']))return {from:day(Y,M,D),to:day(Y,M,D+1),label:L('النهارده','today')};
+  if(has(['امبارح','امس','البارح','yesterday']))return {from:day(Y,M,D-1),to:day(Y,M,D),label:L('امبارح','yesterday')};
+  if(has(['الاسبوع اللي فات','الاسبوع الماضي','الاسبوع اللى فات','last week'])){const s=day(Y,M,D-((now.getDay()+1)%7)-7);return {from:s,to:day(s.getFullYear(),s.getMonth(),s.getDate()+7),label:L('الأسبوع اللي فات','last week')};}
+  if(has(['الاسبوع ده','الاسبوع دا','هذا الاسبوع','الاسبوع الحالي','this week'])){const s=day(Y,M,D-((now.getDay()+1)%7));return {from:s,to:day(Y,M,D+1),label:L('الأسبوع ده','this week')};}
+  if((m=q.match(/(?:اخر|last)\s*(\d{1,3})\s*(?:يوم|ايام|days?)/)))return {from:day(Y,M,D-Number(m[1])+1),to:day(Y,M,D+1),label:L('آخر '+m[1]+' يوم','last '+m[1]+' days')};
+  if(has(['الشهر اللي فات','الشهر اللى فات','الشهر الماضي','الشهر السابق','last month','previous month']))return {from:day(Y,M-1,1),to:day(Y,M,1),label:L('الشهر اللي فات','last month')};
+  if(has(['الشهر ده','الشهر دا','هذا الشهر','الشهر الحالي','this month','current month']))return {from:day(Y,M,1),to:day(Y,M+1,1),label:L('الشهر ده','this month')};
+  if((m=q.match(/(?:q|الربع\s*)([1-4]|الاول|التاني|الثاني|التالت|الثالث|الرابع)/))){const map={'الاول':1,'التاني':2,'الثاني':2,'التالت':3,'الثالث':3,'الرابع':4};const n=Number(m[1])||map[m[1]];const yy=Number((q.match(/20\d\d/)||[])[0])||Y;return {from:day(yy,(n-1)*3,1),to:day(yy,n*3,1),label:'Q'+n+' '+yy};}
+  if(has(['السنه اللي فاتت','السنه اللى فاتت','السنه الماضيه','العام الماضي','last year']))return {from:day(Y-1,0,1),to:day(Y,0,1),label:String(Y-1)};
+  for(let i=0;i<12;i++){if(AS_MONTHS_[i].some(w=>new RegExp('(^|\\s)'+asNorm_(w)+'($|\\s)').test(q))){const yy=Number((q.match(/20\d\d/)||[])[0])||(i>M?Y-1:Y);return {from:day(yy,i,1),to:day(yy,i+1,1),label:new Date(yy,i,1).toLocaleDateString(ar?'ar-EG':'en-GB',{month:'long',year:'numeric'})};}}
+  if(has(['السنه دي','السنه دا','هذا العام','السنه الحاليه','العام ده','this year','current year']))return {from:day(Y,0,1),to:day(Y+1,0,1),label:String(Y)};
+  if((m=q.match(/(?:^|\s)(20\d\d)(?:\s|$)/)))return {from:day(+m[1],0,1),to:day(+m[1]+1,0,1),label:m[1]};
+  return null;
+}
+function asInTime_(r,t){if(!t)return true;const d=asDate_(r);return !!d&&d>=t.from&&d<t.to;}
+
+/* ---------- names in the question ---------- */
+const AS_PROJ_ALIAS_={'ايدن ووك':'EDEN WALK','ايدن وك':'EDEN WALK','ايدين ووك':'EDEN WALK','eden walk':'EDEN WALK','edenwalk':'EDEN WALK','سيتي سنتر':'CITY CENTER GLDANI','جلداني':'CITY CENTER GLDANI','ccg':'CITY CENTER GLDANI',
+  'كوبوليتي':'KOBULETI','كوبولتي':'KOBULETI','ويندهام':'KOBULETI','وندهام':'KOBULETI','اي ون':'E-ONE','ايون':'E-ONE','e one':'E-ONE','eone':'E-ONE'};
+function asFind_(q){
+  const rows=asRows_(),hit={project:[],salesName:[],salesManager:[],brokerageCompany:[],branch:[],clientName:[]};
+  const seen={};
+  const add=(k,v)=>{const key=k+'|'+asNk_(v);if(!seen[key]){seen[key]=1;hit[k].push(String(v).trim());}};
+  const projects=[...new Set(rows.map(r=>String(r.project||'').trim()).filter(Boolean))];
+  Object.entries(AS_PROJ_ALIAS_).forEach(([a,p])=>{if(q.includes(asNorm_(a))){const real=projects.find(x=>asNk_(x)===asNk_(p))||projects.find(x=>asNk_(x).includes(asNk_(p).split(' ')[0]));if(real)add('project',real);}});
+  projects.forEach(p=>{const n=asNorm_(p);if(n.length>=3&&new RegExp('(^|\\s)'+n.replace(/[.*+?^${}()|[\]\\-]/g,'\\$&')+'($|\\s)').test(q))add('project',p);});
+  const scan=(field,list,minLen)=>{
+    const names=[...new Set(list.filter(Boolean).map(s=>String(s).trim()))].filter(s=>!/^not assigned$/i.test(s));
+    names.forEach(n=>{const k=asNorm_(n);if(k.length>=minLen&&q.includes(k))add(field,n);});
+    if(!hit[field].length){   // first name alone, when unique
+      const byFirst={};names.forEach(n=>{const f=asNorm_(n).split(' ')[0];if(f.length>=4)(byFirst[f]=byFirst[f]||[]).push(n);});
+      Object.entries(byFirst).forEach(([f,arr])=>{if(arr.length===1&&new RegExp('(^|\\s)'+f.replace(/[.*+?^${}()|[\]\\-]/g,'\\$&')+'($|\\s)').test(q))add(field,arr[0]);});
+    }
+  };
+  scan('salesName',rows.flatMap(r=>[r.salesName,r.sharedWith]),4);
+  scan('salesManager',rows.map(r=>r.salesManager),4);
+  scan('brokerageCompany',rows.map(r=>r.brokerageCompany),3);
+  scan('branch',rows.map(r=>typeof branchDisplayLabel_==='function'?branchDisplayLabel_(r.branch):r.branch),4);
+  const cn=rows.map(r=>r.clientName).filter(Boolean);
+  [...new Set(cn)].forEach(n=>{const k=asNorm_(n);if(k.split(' ').length>=2&&k.length>=8&&q.includes(k))add('clientName',n);});
+  // a manager named in the question is not also a salesperson filter
+  hit.salesName=hit.salesName.filter(s=>!hit.salesManager.some(m=>asNk_(m)===asNk_(s))||asHas_(q,['سيلز','sales person','salesperson']));
+  if(hit.salesManager.length&&asHas_(q,['مدير','manager','تيم','team']))hit.salesName=hit.salesName.filter(s=>!hit.salesManager.some(m=>asNk_(m)===asNk_(s)));
+  return hit;
+}
+function asFilter_(rows,f){
+  return rows.filter(r=>(!f.project.length||f.project.some(p=>asNk_(p)===asNk_(r.project)))
+    &&(!f.salesManager.length||f.salesManager.some(p=>asNk_(p)===asNk_(r.salesManager)))
+    &&(!f.brokerageCompany.length||f.brokerageCompany.some(p=>asNk_(p)===asNk_(r.brokerageCompany)))
+    &&(!f.branch.length||f.branch.some(p=>asNk_(p)===asNk_(typeof branchDisplayLabel_==='function'?branchDisplayLabel_(r.branch):r.branch)))
+    &&(!f.clientName.length||f.clientName.some(p=>asNk_(p)===asNk_(r.clientName)))
+    &&(!f.salesName.length||(typeof salesMatchesDeal_==='function'?salesMatchesDeal_(r,f.salesName):f.salesName.some(p=>asNk_(p)===asNk_(r.salesName)))));
+}
+
+/* ---------- money by currency ---------- */
+function asMoney_(rows,field,ar){
+  const by={};rows.forEach(r=>{const c=asCur_(r);by[c]=(by[c]||0)+(Number(r[field])||0);});
+  const parts=Object.entries(by).filter(([,v])=>Math.round(v)).sort((a,b)=>b[1]-a[1]).map(([c,v])=>asN_(v)+' '+c);
+  return parts.length?parts.join(' + '):'0';
+}
+
+/* ---------- answering ---------- */
+function asAnswer_(raw){
+  const ar=asAr_(raw),q=asNorm_(raw),L=(a,e)=>ar?a:e;
+  const rows=asRows_();
+  if(!rows.length)return {html:L('البيانات لسه بتحمّل… جرّب كمان ثواني.','Data is still loading… try again in a few seconds.')};
+  const has=w=>asHas_(q,w);
+  if(!q||has(['مساعده','ساعدني','بتعمل ايه','تقدر تعمل','اسالك ازاي','help','what can you'])&&q.length<40)return asHelp_(ar);
+  const t=asTime_(q,ar),f=asFind_(q);
+  const scope=asFilter_(rows,f).filter(r=>asInTime_(r,t));
+  const live=scope.filter(r=>!asCancelled_(r));
+  const scopeLabel=[f.project.join(' + '),f.salesName.join(' + '),f.salesManager.length?L('تيم ','team ')+f.salesManager.join(' + '):'',f.brokerageCompany.join(' + '),f.branch.join(' + '),f.clientName.join(' + '),t?t.label:''].filter(Boolean).join(' · ');
+  const head=s=>`<small>${asEsc_(scopeLabel||L('كل البيانات','all data'))}</small><br>${s}`;
+
+  // EDEN WALK partners
+  if(has(['افروا','afroa','الشريك','الشركاء','partner','نصيب ايدن','نصيب eden','eden share','العائد المضمون','returns paid'])){
+    return {async:cb=>{
+      const done=d=>{if(!d||!d.units){cb({html:L('مش متاح للحساب ده.','Not available for this account.')});return;}
+        const share=d.share||0.64;let net=0,comm=0,ret=0,dp=0,paid=0;
+        d.units.forEach(u=>{let inst=0,r=0;(d.years||[]).forEach(y=>{const p=(u.plan||{})[y]||[0,0];inst+=+p[0]||0;r+=+p[1]||0;});const c=(+u.dp||0)+inst;net+=c+r;ret+=r;comm+=+u.commission||0;dp+=+u.dp||0;paid+=+u.dpPaid||0;});
+        cb({html:`<small>EDEN WALK · ${d.units.length} ${L('وحدة','units')}</small><table><tr><td>${L('صافي المبيعات','Net sales')}</td><td class="n">${asN_(net)}</td></tr><tr><td>${L('العمولات','Commissions')}</td><td class="n">${asN_(comm)}</td></tr><tr><td>${L('العائد للعملاء','Returns to buyers')}</td><td class="n">${asN_(ret)}</td></tr>
+          <tr><td><b>EDEN ${Math.round(share*100)}%</b></td><td class="n"><b>${asN_((net-comm)*share)}</b></td></tr><tr><td><b>AFROA ${Math.round((1-share)*100)}%</b></td><td class="n"><b>${asN_((net-comm)*(1-share))}</b></td></tr>
+          <tr><td>${L('المقدم المحصّل','DP collected')}</td><td class="n">${asN_(paid)} / ${asN_(dp)}</td></tr></table>`,
+          acts:typeof ewOpen_==='function'?[[L('افتح EDEN WALK Partners','Open EDEN WALK Partners'),()=>ewOpen_('overview')]]:[]});};
+      if(typeof EW_!=='undefined'&&EW_.data)return done(EW_.data);
+      google.script.run.withSuccessHandler(done).withFailureHandler(()=>done(null)).getEwPartners(AUTH_TOKEN);
+    }};
+  }
+  // discounts waiting
+  if(has(['خصم','خصومات','discount'])&&(has(['مستني','مستنيه','معلق','موافق','approval','pending','waiting','اعتماد'])||!has(['متوسط','average','avg']))&&typeof daList_==='function'){
+    const list=daList_().filter(x=>x.state==='pending'&&asFilter_([x.r],f).length&&asInTime_(x.r,t));
+    if(has(['متوسط','average','avg'])===false){
+      if(!list.length)return {html:head(L('مفيش خصومات مستنية موافقة ✓','No discounts waiting for approval ✓'))};
+      return {html:head(`<b class="big">${list.length}</b>${L('خصم مستني موافقتك (أكتر من '+daLimit_()+'%)','discounts waiting for approval (above '+daLimit_()+'%)')}
+        <table><tr><th>${L('الوحدة','Unit')}</th><th>${L('العميل','Client')}</th><th>%</th></tr>${list.slice(0,10).map(x=>`<tr><td>${asEsc_(x.r.unitCode)}</td><td>${asEsc_(x.r.clientName||'')}</td><td class="n">${asN_(x.pct,1)}%</td></tr>`).join('')}</table>`),
+        acts:[[L('افتح Discount Approvals','Open Discount Approvals'),()=>daOpen_()]]};
+    }
+  }
+  if(has(['خصم','discount'])&&has(['متوسط','average','avg'])){
+    const ds=live.filter(r=>r.discountPct!=null&&r.discountPct!=='').map(r=>Number(r.discountPct)).filter(v=>v>=0&&isFinite(v));
+    const avg=ds.length?ds.reduce((a,b)=>a+b,0)/ds.length:0;
+    return {html:head(`${L('متوسط الخصم','Average discount')}<b class="big">${asN_(avg,1)}%</b><small>${L('على','over')} ${ds.length} ${L('ديل','deals')} · ${L('أعلى خصم','highest')} ${asN_(Math.max(0,...ds),1)}%</small>`)};
+  }
+  // old reservations
+  if(has(['حجز','حجوزات','reserv'])&&has(['عدي','عدت','اكتر من','اكثر من','متاخر','قديم','قديمه','stale','old','over','more than'])&&typeof reservationDays_==='function'){
+    const lim=Number((q.match(/(\d{1,3})\s*(?:يوم|ايام|day)/)||[])[1])||15;
+    const list=live.map(r=>({r,d:reservationDays_(r)})).filter(x=>x.d!=null&&x.d>lim).sort((a,b)=>b.d-a.d);
+    if(!list.length)return {html:head(L('مفيش حجوزات عدّت '+lim+' يوم ✓','No reservations older than '+lim+' days ✓'))};
+    return {html:head(`<b class="big">${list.length}</b>${L('حجز عدّى '+lim+' يوم من غير عقد','reservations older than '+lim+' days')}
+      <table><tr><th>${L('الوحدة','Unit')}</th><th>${L('العميل','Client')}</th><th>${L('أيام','Days')}</th></tr>${list.slice(0,10).map(x=>`<tr><td>${asEsc_(x.r.project)} · ${asEsc_(x.r.unitCode)}</td><td>${asEsc_(x.r.clientName||'')}</td><td class="n">${x.d}</td></tr>`).join('')}</table>`)};
+  }
+  // down payment still owed
+  if(has(['متبقي','المتبقي','الباقي','فاضل','عليه','عليهم','مديونيه','remaining','owe','outstanding','not paid'])&&!has(['عمول','commission'])){
+    const list=live.filter(r=>Number(r.remain)>0.5).sort((a,b)=>b.remain-a.remain);
+    return {html:head(`${L('المقدم المتبقي','Down payment still owed')}<b class="big">${asMoney_(list,'remain',ar)}</b><small>${list.length} ${L('ديل','deals')}</small>
+      ${list.length?`<table><tr><th>${L('العميل','Client')}</th><th>${L('الوحدة','Unit')}</th><th>${L('متبقي','Remaining')}</th></tr>${list.slice(0,8).map(r=>`<tr><td>${asEsc_(r.clientName||'')}</td><td>${asEsc_(r.unitCode||'')}</td><td class="n">${asN_(r.remain)}</td></tr>`).join('')}</table>`:''}`),
+      acts:list.length&&typeof c360Open_==='function'?[[L('افتح أول عميل','Open the first client'),()=>c360Open_(clientKeyOf(list[0]))]]:[]};
+  }
+
+  // which measure is asked
+  const metric=has(['الغاء','الغاءات','اتلغي','اتلغت','ملغي','cancel'])?'cancel'
+    :has(['تحصيل','اتحصل','محصل','المدفوع','دفع','collected','collection','paid'])?'paid'
+    :has(['متر','مساحه','meter','sqm','area'])?'area'
+    :has(['عمول','commission'])?'comm'
+    :has(['عملاء','عميل','clients','customers'])&&!has(['مين اكتر','top'])?'clients'
+    :has(['وحدات','وحده','units'])?'units'
+    :has(['عدد','كام ديل','كام صفقه','ديلات','صفقات','deals','how many','count'])&&!has(['قيمه','فلوس','value','revenue','egp','جنيه'])?'deals'
+    :'value';
+
+  // ranking
+  const rank=has(['مين اكتر','مين احسن','مين اعلي','مين اكبر','اكتر','اعلي','احسن','اكبر','افضل','الاول','top','best','highest','most','leader','ترتيب','رتب','rank'])&&!has(['اقل','اضعف','worst','lowest','least'])?1
+    :has(['اقل','اضعف','اسوا','worst','lowest','least'])?-1:0;
+  const dim=has(['مدير','مديرين','managers','manager'])?'salesManager'
+    :has(['بروكر','بروكرز','شركه','شركات','broker','agency','company'])?'brokerageCompany'
+    :has(['مشروع','مشاريع','projects','project'])&&!f.project.length?'project'
+    :has(['فرع','فروع','branch'])?'branch'
+    :has(['عميل','عملاء','client','customer'])?'clientName'
+    :has(['سيلز','بياع','موظف','مبيعات مين','salesperson','sales person','sales people','seller','agent','مين'])?'salesName':null;
+  const cmp=has(['قارن','مقارنه','compare','vs',' ولا ','مقابل','versus']);
+
+  const measure=(rs,key)=>{
+    const lv=rs.filter(r=>!asCancelled_(r));
+    if(metric==='cancel'){const c=rs.filter(asCancelled_).length;return {v:c,s:c+(rs.length?` (${Math.round(c/rs.length*100)}%)`:'')};}
+    if(metric==='deals'||metric==='units'){const v=lv.reduce((a,r)=>a+(Number(r.dealCredit)||1),0);return {v,s:asN_(v,1)};}
+    if(metric==='clients'){const v=new Set(lv.map(r=>clientKeyOf(r))).size;return {v,s:asN_(v)};}
+    if(metric==='area'){const v=lv.reduce((a,r)=>a+(Number(r.area)||0),0);return {v,s:asN_(v)+' m²'};}
+    if(metric==='paid'){const v=lv.reduce((a,r)=>a+(Number(r.actualPaid)||0),0);return {v,s:asMoney_(lv,'actualPaid',ar)};}
+    const v=lv.reduce((a,r)=>a+(Number(r.amount)||0),0);return {v,s:asMoney_(lv,'amount',ar)};
+  };
+  const mName={cancel:L('الإلغاءات','cancellations'),deals:L('عدد الديلات','deals'),units:L('عدد الوحدات','units'),clients:L('عدد العملاء','clients'),area:L('الأمتار','meters'),paid:L('المحصّل','collected'),value:L('قيمة المبيعات','sales value'),comm:L('العمولة','commission')}[metric];
+
+  if((rank||(dim&&!cmp))&&dim){
+    const base=dim==='salesName'&&typeof salesCreditRows_==='function'?salesCreditRows_(scope):scope;
+    const groups={};
+    base.forEach(r=>{let k=dim==='branch'&&typeof branchDisplayLabel_==='function'?branchDisplayLabel_(r[dim]):r[dim];k=String(k||'').trim();if(!k||/^not assigned$/i.test(k))return;(groups[k]=groups[k]||[]).push(r);});
+    const dimName={salesName:L('سيلز','salespeople'),salesManager:L('مديرين','managers'),brokerageCompany:L('شركات بروكر','broker companies'),project:L('مشاريع','projects'),branch:L('فروع','branches'),clientName:L('عملاء','clients')}[dim];
+    const title=`${rank<0?L('الأقل','Lowest'):L('الأعلى','Top')} ${dimName} — ${mName}${metric==='value'&&dim==='salesName'?L(' (الديل المشترك بالنص)',' (shared deals count ½)'):''}`;
+    const tbl=list=>`<table>${list.slice(0,8).map((x,i)=>`<tr><td>${i+1}. ${asEsc_(x.k)}</td><td class="n">${asEsc_(x.s)}</td></tr>`).join('')}</table>${list.length>8?`<small>+${list.length-8} ${L('تاني','more')}</small>`:''}`;
+    if(metric==='value'||metric==='paid'){   // money: one ranking per currency (EGP and USD are not added together)
+      const fld=metric==='paid'?'actualPaid':'amount',curs={};
+      Object.entries(groups).forEach(([k,rs])=>rs.filter(r=>!asCancelled_(r)).forEach(r=>{const c=asCur_(r);((curs[c]=curs[c]||{})[k]=(curs[c][k]||0)+(Number(r[fld])||0));}));
+      const blocks=Object.entries(curs).map(([c,m])=>({c,list:Object.entries(m).map(([k,v])=>({k,v,s:asN_(v)+' '+c})).filter(x=>x.v>0).sort((a,b)=>(b.v-a.v)*(rank||1))})).filter(b=>b.list.length).sort((a,b)=>a.c==='EGP'?-1:b.c==='EGP'?1:0);
+      if(!blocks.length)return {html:head(L('مفيش بيانات للسؤال ده.','No data for that.'))};
+      return {html:head(title+blocks.map(b=>(blocks.length>1?`<div style="margin-top:6px"><b>${b.c}</b></div>`:'')+tbl(b.list)).join(''))};
+    }
+    const list=Object.entries(groups).map(([k,rs])=>({k,...measure(rs)})).filter(x=>x.v>0||rank<0).sort((a,b)=>(b.v-a.v)*(rank||1));
+    if(!list.length)return {html:head(L('مفيش بيانات للسؤال ده.','No data for that.'))};
+    return {html:head(title+tbl(list))};
+  }
+  if(cmp){
+    const key=['project','salesName','salesManager','brokerageCompany','branch'].find(k=>f[k].length>=2);
+    if(key){
+      const rowsFor=v=>asFilter_(rows,{...f,[key]:[v]}).filter(r=>asInTime_(r,t));
+      const items=f[key].map(v=>{const rs=rowsFor(v),lv=rs.filter(r=>!asCancelled_(r));return {v,deals:lv.reduce((a,r)=>a+(Number(r.dealCredit)||1),0),val:asMoney_(lv,'amount',ar),paid:asMoney_(lv,'actualPaid',ar),canc:rs.filter(asCancelled_).length};});
+      return {html:`<small>${asEsc_(t?t.label:L('كل الفترات','all time'))}</small><table><tr><th></th>${items.map(x=>`<th>${asEsc_(x.v)}</th>`).join('')}</tr>
+        <tr><td>${L('ديلات','Deals')}</td>${items.map(x=>`<td class="n">${asN_(x.deals,1)}</td>`).join('')}</tr><tr><td>${L('القيمة','Value')}</td>${items.map(x=>`<td class="n">${asEsc_(x.val)}</td>`).join('')}</tr>
+        <tr><td>${L('المحصّل','Collected')}</td>${items.map(x=>`<td class="n">${asEsc_(x.paid)}</td>`).join('')}</tr><tr><td>${L('إلغاءات','Cancelled')}</td>${items.map(x=>`<td class="n">${x.canc}</td>`).join('')}</tr></table>`};
+    }
+  }
+  const anyEntity=Object.values(f).some(a=>a.length);
+  const salesWords=has(['مبيعات','مبيع','اتباع','بعنا','بيع','ديل','صفق','فلوس','قيمه','تحصيل','حجز','الغاء','متر','عمول','عملاء','وحدات','ارقام','اداء','ملخص','تقرير','sales','sold','deal','revenue','value','collect','cancel','meter','unit','client','summary','report','performance','numbers']);
+  if(!anyEntity&&!t&&!salesWords&&metric==='value')return {html:L('مش فاهم السؤال ده 🤔 أنا بجاوب على أسئلة المبيعات والتحصيل والبروكرز والسيلز. اكتب <b>مساعدة</b> تشوف أمثلة.','I did not get that 🤔 I answer questions about sales, collections, brokers and salespeople. Type <b>help</b> for examples.')};
+  if(!scope.length)return {html:head(L('مفيش ديلات في الفترة أو الاختيار ده.','No deals for that selection.'))};
+  // summary for the scope
+  const m=measure(scope);
+  const lv=live,canc=scope.length-lv.length;
+  const sum=`<table><tr><td>${L('ديلات','Deals')}</td><td class="n">${asN_(lv.length)}</td></tr><tr><td>${L('قيمة المبيعات','Sales value')}</td><td class="n">${asEsc_(asMoney_(lv,'amount',ar))}</td></tr>
+    <tr><td>${L('المحصّل','Collected')}</td><td class="n">${asEsc_(asMoney_(lv,'actualPaid',ar))}</td></tr><tr><td>${L('الأمتار','Meters')}</td><td class="n">${asN_(lv.reduce((a,r)=>a+(Number(r.area)||0),0))}</td></tr>
+    <tr><td>${L('إلغاءات','Cancelled')}</td><td class="n">${canc}</td></tr></table>`;
+  const acts=[];
+  if(f.clientName.length&&typeof c360Open_==='function')acts.push([L('افتح العميل','Open client'),()=>c360Open_(clientKeyOf(scope[0]))]);
+  return {html:head(`${mName}<b class="big">${asEsc_(m.s)}</b>${sum}`),acts};
+}
+function asHelp_(ar){
+  const L=(a,e)=>ar?a:e;
+  return {html:L(`أنا بجاوب من بيانات السيستم على طول، من غير نت ولا اشتراك. جرّب:<br>
+    • مبيعات الشهر ده<br>• مبيعات ايدن ووك الشهر اللي فات<br>• مين أكتر سيلز السنة دي<br>• مين أكتر بروكر جاب فلوس<br>• عدد الإلغاءات في أكتوبر<br>• قارن Ahmed Mousa و Ashraqat Talaat<br>
+    • الخصومات اللي مستنية<br>• الحجوزات اللي عدت 15 يوم<br>• مين عليه مقدم متبقي<br>• نصيب افروا<br><small>أسماء السيلز والبروكرز والعملاء اكتبها بالإنجليزي زي ما هي في الشيت.</small>`,
+    `I answer straight from the system's data — no internet service, no cost. Try:<br>• sales this month<br>• EDEN WALK sales last month<br>• top salespeople this year<br>• top broker companies<br>• cancellations in October<br>• compare Ahmed Mousa vs Ashraqat Talaat<br>• discounts waiting<br>• reservations older than 15 days<br>• who still owes down payment<br>• AFROA share`)};
+}
+
+/* ---------- UI ---------- */
+function asMount_(){
+  if(document.getElementById('asFab'))return;
+  const logged=typeof AUTH_TOKEN!=='undefined'&&!!AUTH_TOKEN&&document.getElementById('appRoot');
+  if(!logged)return;
+  const b=document.createElement('button');b.type='button';b.id='asFab';b.className='asFab noI18n';b.innerHTML='<i>✨</i><span>اسأل EDEN</span>';b.title='Ask EDEN';
+  b.addEventListener('click',asToggle_);document.body.appendChild(b);
+}
+function asToggle_(){
+  const p=document.getElementById('asPanel');
+  if(p){p.remove();AS_.open=false;return;}
+  AS_.open=true;
+  const el=document.createElement('section');el.className='asP noI18n';el.id='asPanel';el.setAttribute('role','dialog');
+  el.innerHTML=`<div class="asH"><div><b>✨ اسأل EDEN</b><small>Ask about sales, collections, brokers…</small></div><button type="button" aria-label="Close">×</button></div>
+    <div class="asB" id="asBody"></div>
+    <div class="asChips" dir="rtl">${['مبيعات الشهر ده','مين أكتر سيلز السنة دي','الخصومات اللي مستنية','الحجوزات اللي عدت 15 يوم','مين عليه مقدم متبقي','مساعدة'].map(s=>`<button type="button">${s}</button>`).join('')}</div>
+    <form class="asF"><input type="text" placeholder="اكتب سؤالك… / Ask anything about the data" autocomplete="off"><button type="submit">↵</button></form>`;
+  document.body.appendChild(el);
+  el.querySelector('.asH button').addEventListener('click',asToggle_);
+  el.querySelectorAll('.asChips button').forEach(c=>c.addEventListener('click',()=>asAsk_(c.textContent)));
+  const inp=el.querySelector('input');
+  el.querySelector('form').addEventListener('submit',e=>{e.preventDefault();const v=inp.value.trim();if(!v)return;inp.value='';asAsk_(v);});
+  if(!AS_.log.length)asPush_('a',asHelp_(true).html,true);else AS_.log.forEach(m=>asPush_(m.k,m.h,m.rtl,null,true));
+  setTimeout(()=>inp.focus(),30);
+}
+function asPush_(k,html,rtl,acts,replay){
+  const body=document.getElementById('asBody');if(!body)return;
+  const d=document.createElement('div');d.className='asM '+k;if(rtl)d.setAttribute('dir','rtl');d.innerHTML=html;
+  if(acts&&acts.length){const a=document.createElement('div');a.className='asAct';acts.forEach(([l,fn])=>{const b=document.createElement('button');b.type='button';b.textContent=l;b.addEventListener('click',()=>{try{fn();}catch(e){}});a.appendChild(b);});d.appendChild(a);}
+  body.appendChild(d);body.scrollTop=body.scrollHeight;
+  if(!replay){AS_.log.push({k,h:html,rtl});if(AS_.log.length>40)AS_.log.shift();}
+}
+function asAsk_(text){
+  const rtl=asAr_(text);
+  asPush_('q',asEsc_(text),rtl);
+  let a;try{a=asAnswer_(text);}catch(e){console.warn('Assistant',e);a={html:rtl?'معرفتش أجاوب على ده. جرّب تكتبه بطريقة تانية أو اكتب "مساعدة".':'Could not answer that. Try rephrasing, or type "help".'};}
+  if(a.async){const ph=rtl?'لحظة…':'One moment…';asPush_('a',ph,rtl,null,true);const last=document.getElementById('asBody').lastChild;
+    a.async(r=>{last.remove();asPush_('a',r.html,rtl,r.acts);});return;}
+  asPush_('a',a.html,rtl,a.acts);
+}
+(function(){
+  const go=()=>{asMount_();setInterval(()=>{asMount_();const f=document.getElementById('asFab');if(f){const ok=typeof AUTH_TOKEN!=='undefined'&&!!AUTH_TOKEN;f.style.display=ok?'':'none';if(!ok)document.getElementById('asPanel')?.remove();}},2000);};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();
+})();
+</script>
