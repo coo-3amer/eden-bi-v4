@@ -83,6 +83,22 @@ function ewRead_() {
   return { units: units, years: years, head: head };
 }
 
+function ewSettings_() {
+  const p = PropertiesService.getScriptProperties();
+  const sh = Number(p.getProperty('EW_SHARE_EDEN')), cr = Number(p.getProperty('EW_COMM_RATE'));
+  return { share: sh > 0 && sh < 1 ? sh : EW_SHARE_EDEN_, commRate: cr >= 0 && cr < 1 && p.getProperty('EW_COMM_RATE') !== null ? cr : EW_COMM_RATE_ };
+}
+function saveEwSettings(authToken, req) {
+  const user = ewAdmin_(authToken);
+  const share = ewNum_(req && req.share) / 100, rate = ewNum_(req && req.commRate) / 100;
+  if (!(share > 0 && share < 1)) throw new Error('EDEN share must be between 0 and 100 %.');
+  if (!(rate >= 0 && rate < 1)) throw new Error('Commission must be between 0 and 100 %.');
+  const old = ewSettings_();
+  PropertiesService.getScriptProperties().setProperties({ EW_SHARE_EDEN: String(share), EW_COMM_RATE: String(rate) });
+  auditLog_(user, 'EW settings changed', { project: 'EDEN WALK', details: 'EDEN ' + Math.round(old.share * 1000) / 10 + '% → ' + Math.round(share * 1000) / 10 + '%, commission ' + Math.round(old.commRate * 1000) / 10 + '% → ' + Math.round(rate * 1000) / 10 + '%' });
+  return getEwPartners(authToken);
+}
+
 /* Everything the page needs. */
 function getEwPartners(authToken) {
   ewAdmin_(authToken);
@@ -91,7 +107,8 @@ function getEwPartners(authToken) {
     id: String(r[0]), unit: String(r[1] || ''), date: instDateOut_(r[2]), type: String(r[3] || ''), year: Number(r[4]) || '',
     amount: ewNum_(r[5]), method: String(r[6] || ''), ref: String(r[7] || ''), notes: String(r[8] || ''), by: String(r[9] || ''), at: instDateOut_(r[10])
   }));
-  return { units: d.units, years: d.years, collections: coll, share: EW_SHARE_EDEN_, commRate: EW_COMM_RATE_, categories: EW_CATS_, imported: d.units.length > 0 };
+  const st = ewSettings_();
+  return { units: d.units, years: d.years, collections: coll, share: st.share, commRate: st.commRate, categories: EW_CATS_, imported: d.units.length > 0 };
 }
 
 /* One-time copy from the old portal sheet (tab Eden_Walk_New). Refuses if units already exist unless replace=true. */
