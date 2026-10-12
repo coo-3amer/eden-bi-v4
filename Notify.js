@@ -63,10 +63,21 @@ function notifyFromAudit_(who, action, info) {
     const lines = ['<b>' + icon + ' ' + tgEsc_(action) + '</b>' + (head ? ' — ' + tgEsc_(head) : '')];
     if (info.client) lines.push('Client: ' + tgEsc_(info.client));
     if (details) lines.push(tgEsc_(details.length > 600 ? details.slice(0, 600) + '…' : details));
-    if (Number(info.discount) > (typeof DISC_LIMIT_ !== 'undefined' ? DISC_LIMIT_ : 10)) {
-      lines.push('⚠️ <b>Discount ' + (Math.round(Number(info.discount) * 10) / 10) + '%</b> — waiting for COO approval (Transactions › Discount Approvals)');
+    const bigDisc = Number(info.discount) > (typeof DISC_LIMIT_ !== 'undefined' ? DISC_LIMIT_ : 10);
+    if (bigDisc) {
+      lines.push('⚠️ <b>Discount ' + (Math.round(Number(info.discount) * 10) / 10) + '%</b> — waiting for COO approval' + (typeof tgApi_ === 'function' ? ' (buttons below, or Transactions › Discount Approvals)' : ''));
     }
     if (who) lines.push('<i>by ' + tgEsc_(who) + '</i>');
+    // a new deal above the discount limit gets ✅ / ⛔ buttons
+    const row = Number((String(info.ref || '').match(/Deals row (\d+)/) || [])[1]);
+    if (bigDisc && row && info.unit && typeof tgApi_ === 'function' && /^Deal added/.test(action)) {
+      const props = PropertiesService.getScriptProperties();
+      const chat = String(props.getProperty('TELEGRAM_CHAT_ID') || '').trim();
+      if (chat && props.getProperty('TELEGRAM_OFF') !== '1') {
+        const r = tgApi_('sendMessage', { chat_id: chat, text: lines.join('\n').slice(0, 3900), parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: tgDiscButtons_(row, info.unit) });
+        if (r && r.ok) { const sent = tgSent_(); sent[instKey_(info.project, info.unit)] = { at: Date.now(), msg: r.result.message_id, row: row }; tgSentSave_(sent); return; }
+      }
+    }
     notifyTelegram_(lines.join('\n'));
   } catch (e) {
     console.warn('notifyFromAudit_: ' + e);

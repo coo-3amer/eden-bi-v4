@@ -126,7 +126,16 @@ function daRender_(){
   }
   html+=`<div class="daNote">Every active deal with a discount above <b>${lim}%</b> appears here. <b>Approve</b> ticks “COO Confirmed” on the deal in the Deals sheet. <b>Reject</b> keeps your reason (and writes it as a note on the deal’s Discount cell) — the deal itself is not changed, so tell the sales team to correct it.
   ${can?'':'<br><b>Only the COO can approve or reject.</b>'} Discount % = discount ÷ price before discount. Decisions are recorded in the Activity Log.</div>`;
+  const tg=DA_.data&&DA_.data.telegram;
+  if(can&&tg&&tg.on)html+=`<div class="daNote" style="margin-top:14px;padding:12px 14px;border:1px solid var(--ds-line,#e8e0d1);border-radius:12px;background:var(--ds-surface-2,#faf6ef)">
+    <b>📲 Approve from Telegram</b> — new discounts above ${lim}% are posted to the Telegram group with ✅ Approve / ⛔ Reject buttons; send <b>/pending</b> in the group to list the ones waiting. Only these Telegram accounts can press the buttons (send <b>/myid</b> to the bot to see yours):
+    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center"><input data-tgapp value="${daEsc_((tg.approvers||[]).map(x=>/^\d+$/.test(x)?x:'@'+x).join(', '))}" placeholder="@your_telegram_username" style="flex:1;min-width:220px;height:34px;border:1px solid var(--ds-line);border-radius:10px;padding:0 10px">
+    <button type="button" class="daBtn" data-tgsave>Save</button><span class="daMsg" data-tgmsg></span></div></div>`;
   const body=el.querySelector('.daBody');body.innerHTML=html;
+  const tgs=body.querySelector('[data-tgsave]');
+  if(tgs)tgs.addEventListener('click',()=>{const m=body.querySelector('[data-tgmsg]');m.className='daMsg';m.textContent='Saving…';
+    google.script.run.withSuccessHandler(d=>{DA_.data=d;daRender_();}).withFailureHandler(e=>{m.className='daMsg err';m.textContent=e&&e.message||String(e);})
+      .saveTelegramApprovers(AUTH_TOKEN,{approvers:body.querySelector('[data-tgapp]').value});});
   body.querySelectorAll('[data-ok]').forEach(b=>b.addEventListener('click',()=>{const x=list[+b.dataset.ok];if(!confirm(`Approve the ${daNum_(x.pct,1)}% discount on ${x.r.unitCode} (${x.r.clientName||''})?`))return;b.disabled=true;daDecide_(x,'Approved','',null);}));
   body.querySelectorAll('[data-no]').forEach(b=>b.addEventListener('click',()=>{DA_.rejectFor=+b.dataset.no;daRender_();document.querySelector('#da [data-reason]')?.focus();}));
   body.querySelector('[data-cancel]')?.addEventListener('click',()=>{DA_.rejectFor=null;daRender_();});

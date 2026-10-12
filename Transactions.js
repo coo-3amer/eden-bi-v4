@@ -168,9 +168,11 @@ function warmDashboardCache() {
   cache.put('WARM_RUNNING', '1', 330);
   const t0 = Date.now(), elapsed = () => Date.now() - t0;
   if (typeof ensureDailyBackupTrigger_ === 'function') ensureDailyBackupTrigger_();
+  if (typeof ensureTelegramPollTrigger_ === 'function') ensureTelegramPollTrigger_();
   try {
     // 1) What every visitor needs first.
     dashCacheWrite_('ALL', buildDashboardData_({ role: 'Admin' }));
+    if (typeof tgDiscWatch_ === 'function') tgDiscWatch_();
     if (dashCacheAge_('EGV') > 12 * 60 * 1000) {
       try { dashCacheWrite_('EGV', buildDashboardData_({ role: 'Egypt Viewer' })); } catch (err) { console.warn('Egypt viewer warm-up: ' + err); }
     }

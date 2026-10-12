@@ -36,13 +36,22 @@ function getDiscountApprovals(authToken) {
     decisions[k] = { dealRow: Number(r[1]) || 0, project: String(r[2] || ''), unitCode: String(r[3] || ''), client: String(r[4] || ''),
       discount: Number(r[5]) || 0, decision: String(r[6] || ''), reason: String(r[7] || ''), by: String(r[8] || ''), at: instDateOut_(r[9]) };
   });
-  return { limit: DISC_LIMIT_, canApprove: discCanApprove_(user), decisions: decisions };
+  return { limit: DISC_LIMIT_, canApprove: discCanApprove_(user), decisions: decisions,
+    telegram: { on: !!PropertiesService.getScriptProperties().getProperty('TELEGRAM_BOT_TOKEN'), approvers: typeof tgApprovers_ === 'function' ? tgApprovers_() : [] } };
 }
 
 /* decision: 'Approved' | 'Rejected'. */
 function decideDiscount(authToken, req) {
   const user = validateAuthToken_(authToken);
   if (!discCanApprove_(user)) throw new Error('Only the COO can approve or reject discounts.');
+  const msg = discApply_(user, String(user.name || user.username || 'COO'), req);
+  const out = getDiscountApprovals(authToken);
+  out.message = msg;
+  return out;
+}
+
+/* Does the decision (from the page or from Telegram). Returns a short note. */
+function discApply_(user, who, req) {
   req = req || {};
   const decision = /^approve/i.test(String(req.decision || '')) ? 'Approved' : /^reject/i.test(String(req.decision || '')) ? 'Rejected' : '';
   if (!decision) throw new Error('Choose Approve or Reject.');
@@ -50,7 +59,6 @@ function decideDiscount(authToken, req) {
   if (decision === 'Rejected' && !reason) throw new Error('Write the reason for rejecting.');
   const row = Number(req.dealRow);
   if (!row || row < DATA_START_ROW || !req.unitCode) throw new Error('Deal is missing.');
-  const who = String(user.name || user.username || 'COO');
   const tz = Session.getScriptTimeZone() || 'Africa/Cairo';
   let msg = '';
 
@@ -87,7 +95,6 @@ function decideDiscount(authToken, req) {
 
   auditLog_(user, 'Discount ' + decision.toLowerCase(), { project: req.project, unit: req.unitCode, client: req.client,
     details: 'Discount ' + (Number(req.discount) || 0) + '%' + (reason ? ' · ' + reason : ''), ref: 'Deals row ' + row });
-  const out = getDiscountApprovals(authToken);
-  out.message = msg;
-  return out;
+  try { if (typeof tgDiscMarkDecided_ === 'function') tgDiscMarkDecided_(req.project, req.unitCode, decision, who, reason); } catch (e) {}
+  return msg;
 }
