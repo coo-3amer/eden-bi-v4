@@ -78,7 +78,30 @@
     return out;
   }
 
+  /* Desktop app only (window.edenDesktop from its preload): keep a copy of
+     every "get…" answer and use it when there is no internet. */
+  var DESK = window.edenDesktop || null;
   async function call(fn, args) {
+    if (!DESK) return callNet(fn, args);
+    var tok = (typeof AUTH_TOKEN !== 'undefined' && AUTH_TOKEN) || '';
+    var who = (typeof AUTH_USER !== 'undefined' && AUTH_USER && (AUTH_USER.username || AUTH_USER.name)) || '';
+    var read = /^get/.test(fn), key = '';
+    if (read) { try { key = who + '|' + fn + '|' + JSON.stringify((args || []).map(function (a) { return tok && a === tok ? '#token' : a; })); } catch (e) { read = false; } }
+    try {
+      var r = await callNet(fn, args);
+      DESK.offline(false);
+      if (read) { try { DESK.cacheSet(key, JSON.stringify(r)); } catch (e) {} }
+      return r;
+    } catch (err) {
+      if (read && err && err.message === OFFLINE) {
+        var c = null; try { c = await DESK.cacheGet(key); } catch (e) {}
+        if (c) { DESK.offline(true); return JSON.parse(c); }
+      }
+      if (err && err.message === OFFLINE) DESK.offline(true);
+      throw err;
+    }
+  }
+  async function callNet(fn, args) {
     var q = b64url(JSON.stringify({ fn: fn, args: args })), z = CAN_GZIP ? '1' : '0', res;
     if (q.length <= 6000) {
       res = await get({ api: 'call', q: q, z: z });

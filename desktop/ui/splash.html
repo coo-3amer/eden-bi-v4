@@ -1,0 +1,20 @@
+<!doctype html><html><head><meta charset="utf-8"><title>EDEN BI</title>
+<style>
+html,body{margin:0;height:100%;background:transparent;overflow:hidden;-webkit-user-select:none;user-select:none}
+.s{position:absolute;inset:0;border-radius:14px;background:radial-gradient(120% 90% at 50% 0%,#2a2219,#120f0c 65%);display:flex;flex-direction:column;align-items:center;justify-content:center;-webkit-app-region:drag;overflow:hidden;font-family:'Segoe UI',Tahoma,Arial,sans-serif}
+img{width:300px;opacity:0;animation:in .7s ease-out .05s forwards}
+.sub{margin-top:14px;font-size:11px;letter-spacing:.42em;color:#c9a55c;opacity:0;animation:in .7s ease-out .25s forwards}
+.bar{position:absolute;left:50%;bottom:70px;width:200px;margin-left:-100px;height:2px;background:rgba(201,165,92,.18);border-radius:2px;overflow:hidden}
+.bar i{position:absolute;top:0;bottom:0;width:40%;background:linear-gradient(90deg,transparent,#e3c27a,#c9a55c,transparent);animation:run 1.3s ease-in-out infinite}
+.bar.stop i{animation:none;left:0;width:100%;background:rgba(201,165,92,.35)}
+#st{position:absolute;bottom:42px;font-size:11.5px;color:#8d7f66;letter-spacing:.06em}
+#v{position:absolute;bottom:14px;right:18px;font-size:10px;color:#5d5345}
+@keyframes run{0%{left:-40%}100%{left:100%}}
+@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+</style></head><body>
+<div class="s"><img src="logo-white.png" alt="EDEN"><div class="sub">BUSINESS INTELLIGENCE</div>
+<div class="bar" id="bar"><i></i></div><div id="st">Loading live data…</div><div id="v"></div></div>
+<script>
+document.getElementById('v').textContent='v'+(new URLSearchParams(location.search).get('v')||'');
+window.say=(t,stuck)=>{document.getElementById('st').textContent=t;document.getElementById('bar').classList.toggle('stop',!!stuck);};
+</script></body></html>

@@ -47,5 +47,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release view desktop-app >/dev/null 2>&1 || gh release create desktop-app --title "EDEN BI — Windows app" --notes "Download EDEN-BI-Setup.exe and open it to install. First run: Windows may show 'Windows protected your PC' → More info → Run anyway."
-          gh release upload desktop-app dist/EDEN-BI-Setup.exe --clobber
+          ls dist/latest.yml dist/EDEN-BI-Setup.exe.blockmap
+          # latest.yml tells installed apps that a new version is here (self-update)
+          gh release upload desktop-app dist/EDEN-BI-Setup.exe dist/EDEN-BI-Setup.exe.blockmap --clobber
+          gh release upload desktop-app dist/latest.yml --clobber
           echo "::notice title=EXE ready::https://github.com/${GITHUB_REPOSITORY}/releases/download/desktop-app/EDEN-BI-Setup.exe (build ${{ github.run_number }})"

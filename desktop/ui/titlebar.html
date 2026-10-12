@@ -1,0 +1,82 @@
+<!doctype html><html><head><meta charset="utf-8"><title>EDEN BI</title>
+<style>
+:root{--bg:#fffdf9;--line:#e8e0d1;--sep:#e3d9c7;--txt:#2a2621;--mut:#8a7f6c;--btn:#6f6556;--hov:#f3ead8;--hovTxt:#8f6d2c;--wc:#5d5345;--wcHov:rgba(0,0,0,.06)}
+body.dark{--bg:#16130f;--line:#2c261f;--sep:#3a3228;--txt:#f3e7cc;--mut:#8d7f66;--btn:#b9ab90;--hov:#2a231b;--hovTxt:#e3c27a;--wc:#b9ab90;--wcHov:rgba(255,255,255,.08)}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);font-family:'Segoe UI',Tahoma,Arial,sans-serif;-webkit-user-select:none;user-select:none}
+.tb{height:44px;display:flex;align-items:center;gap:12px;padding-left:14px;background:var(--bg);border-bottom:1px solid var(--line);-webkit-app-region:drag;box-sizing:border-box;transition:background .2s}
+.logo{height:20px;display:block}
+.logo.d{display:none}body.dark .logo.l{display:none}body.dark .logo.d{display:block}
+.sep{width:1px;height:20px;background:var(--sep)}
+.nav{display:flex;gap:4px;margin-left:2px}
+.b{-webkit-app-region:no-drag;width:30px;height:30px;border:0;border-radius:8px;background:transparent;color:var(--btn);display:grid;place-items:center;cursor:pointer;padding:0}
+.b svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.b:hover{background:var(--hov);color:var(--hovTxt)}
+.b:disabled{opacity:.35;cursor:default;background:transparent;color:var(--btn)}
+.crumb{font-size:13px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.crumb b{color:var(--txt);font-weight:600}
+.sp{flex:1;min-width:10px}
+.upd{-webkit-app-region:no-drag;display:none;border:0;border-radius:99px;padding:5px 12px;background:#b08a42;color:#fff;font:700 12px 'Segoe UI',Arial;cursor:pointer}
+.upd.on{display:block}
+.live{font-size:11.5px;font-weight:700;display:flex;align-items:center;gap:6px;color:#1f6b52;white-space:nowrap}
+.live i{width:7px;height:7px;border-radius:50%;background:#2f9e62;box-shadow:0 0 0 3px rgba(47,158,98,.15)}
+body.dark .live{color:#3fbf8e}
+.live.off{color:#c0533b}.live.off i{background:#c0533b;box-shadow:0 0 0 3px rgba(192,83,59,.18)}
+.bell{position:relative}
+.bell b{position:absolute;top:1px;right:0;min-width:15px;height:15px;box-sizing:border-box;padding:0 4px;border-radius:99px;background:#c0533b;color:#fff;font:800 9.5px/15px 'Segoe UI',Arial;text-align:center;display:none}
+.bell.has b{display:block}
+.wc{display:flex;height:44px;-webkit-app-region:no-drag}
+.wc button{width:48px;height:44px;border:0;background:transparent;color:var(--wc);display:grid;place-items:center;cursor:pointer;padding:0}
+.wc button svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:1.1}
+.wc button:hover{background:var(--wcHov)}
+.wc .x:hover{background:#c42b1c;color:#fff}
+</style></head><body>
+<div class="tb" id="tb">
+  <img class="logo l" src="logo-dark.png" alt="EDEN"><img class="logo d" src="logo-white.png" alt="EDEN">
+  <div class="sep"></div>
+  <div class="nav">
+    <button class="b" id="back" title="Back (Alt+←)" disabled><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+    <button class="b" id="fwd" title="Forward (Alt+→)" disabled><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+    <button class="b" id="reload" title="Refresh (F5)"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button>
+    <button class="b" id="home" title="Overview (Alt+Home)"><svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7"/><path d="M6 10v10h12V10"/></svg></button>
+  </div>
+  <div class="crumb" id="crumb"></div>
+  <div class="sp"></div>
+  <button class="upd" id="upd" title="A new version is downloaded">Restart to update</button>
+  <div class="live" id="live"><i></i><span>Live</span></div>
+  <button class="b bell" id="bell" title="Discount approvals"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><b id="cnt"></b></button>
+  <div class="wc">
+    <button id="min" title="Minimise"><svg viewBox="0 0 11 11"><path d="M1 5.5h9"/></svg></button>
+    <button id="max" title="Maximise"><svg viewBox="0 0 11 11" id="maxIco"><rect x="1" y="1" width="9" height="9"/></svg></button>
+    <button id="close" class="x" title="Close (EDEN BI keeps running near the clock)"><svg viewBox="0 0 11 11"><path d="M1 1l9 9M10 1l-9 9"/></svg></button>
+  </div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const act={back:'back',fwd:'fwd',reload:'reload',home:'home',min:'min',max:'max',close:'close',upd:'update'};
+Object.keys(act).forEach(id=>$(id).addEventListener('click',()=>tb.act(act[id])));
+$('bell').addEventListener('click',()=>tb.act('open','Discount Approvals'));
+$('tb').addEventListener('dblclick',e=>{if(!e.target.closest('button'))tb.act('max');});
+const esc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const hhmm=t=>{if(!t)return '';const d=new Date(t);return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' '+d.toTimeString().slice(0,5);};
+tb.onState(s=>{
+  document.body.classList.toggle('dark',s.theme==='dark');
+  const p=String(s.crumb||'').split('›').map(x=>x.trim()).filter(Boolean);
+  $('crumb').innerHTML=p.length>1?esc(p.slice(0,-1).join(' › '))+' › <b>'+esc(p[p.length-1])+'</b>':'<b>'+esc(p[0]||'')+'</b>';
+  document.title='EDEN BI'+(p.length?' — '+p[p.length-1]:'');
+  $('back').disabled=!s.canBack;$('fwd').disabled=!s.canFwd;
+  const lv=$('live');lv.classList.toggle('off',!!s.offline);
+  lv.querySelector('span').textContent=s.offline?('Offline'+(s.lastOnline?' · data from '+hhmm(s.lastOnline):'')):'Live';
+  $('bell').classList.toggle('has',s.badge>0);$('cnt').textContent=s.badge>99?'99+':(s.badge||'');
+  $('bell').style.display=s.loggedIn?'':'none';
+  $('upd').classList.toggle('on',!!s.update);
+  $('maxIco').innerHTML=s.maximized?'<rect x="1" y="3" width="7" height="7"/><path d="M3 3V1h7v7H8"/>':'<rect x="1" y="1" width="9" height="9"/>';
+  $('max').title=s.maximized?'Restore':'Maximise';
+});
+tb.onBadge(n=>{               // red number drawn for the taskbar icon
+  const c=document.createElement('canvas');c.width=c.height=32;const x=c.getContext('2d');
+  x.fillStyle='#c0533b';x.beginPath();x.arc(16,16,15,0,Math.PI*2);x.fill();
+  x.fillStyle='#fff';x.font='bold '+(n>9?17:21)+'px Segoe UI, Arial';x.textAlign='center';x.textBaseline='middle';
+  x.fillText(n>99?'99':String(n),16,17);tb.act('badge',c.toDataURL());
+});
+tb.act('ready');
+</script></body></html>

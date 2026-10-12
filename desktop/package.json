@@ -18,9 +18,21 @@
     "appId": "com.edenalkhalij.dashboard",
     "productName": "EDEN BI",
     "copyright": "EDEN Development",
-    "directories": { "output": "dist", "buildResources": "build" },
-    "files": ["main.js", "offline.html", "build/icon.png"],
-    "win": { "target": "nsis", "icon": "build/icon.png", "artifactName": "EDEN-BI-Setup.exe" },
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "offline.html",
+      "ui/**",
+      "build/icon.png"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.png",
+      "artifactName": "EDEN-BI-Setup.exe"
+    },
     "nsis": {
       "oneClick": true,
       "perMachine": false,
@@ -29,6 +41,15 @@
       "shortcutName": "EDEN BI",
       "runAfterFinish": true,
       "deleteAppDataOnUninstall": false
-    }
+    },
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "https://github.com/coo-3amer/eden-bi-v4/releases/download/desktop-app/"
+      }
+    ]
+  },
+  "dependencies": {
+    "electron-updater": "6.3.9"
   }
 }
