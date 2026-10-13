@@ -16,6 +16,7 @@
 .ewX{width:34px;height:34px;border-radius:10px;border:1px solid var(--ds-line);background:var(--ds-surface);font-size:20px;cursor:pointer;color:var(--ds-muted)}
 .ewBody{flex:1;overflow:auto;padding:16px 18px 24px}
 .ewK{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:12px}
+.ewK.ewK15{grid-template-columns:repeat(5,minmax(0,1fr))}.ewK15 .ewC b{font-size:clamp(16px,1.45vw,21px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ewK15 .ewC span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
 .ewC{background:var(--ds-surface,#fffdf9);border:1px solid var(--ds-line,#e8e0d1);border-radius:16px;padding:13px 15px;position:relative;overflow:hidden}
 .ewC:before{content:"";position:absolute;inset:0 0 auto 0;height:4px;background:var(--a)}
 .ewC span{font-size:10.5px;font-weight:800;letter-spacing:.12em;color:var(--ds-muted,#8a7f6c);text-transform:uppercase}
@@ -227,13 +228,32 @@ function ewYearRows_(list){
     const rec=coll.filter(c=>c.type==='Installment'&&Number(c.year)===y&&keys.has(ewKey_(c.unit))).reduce((a,c)=>a+(Number(c.amount)||0),0);
     return {y,inst,ret,net:inst+ret,rec};});
 }
+/* Overview cards — same figures as the EDEN WALK PORTAL dashboard (Eden_Walk_New summary). */
+function ewKpiGrid_(list){
+  const S=k=>ewSum_(list,k),share=EW_.data.share||0.64,yrs=EW_.data.years||[],pa=Math.round(share*100),pb=100-pa;
+  const basic=S('basic'),contract=S('contract'),disc=basic-contract,dp=S('dp'),paid=S('dpPaid'),inst=S('inst');
+  const pc=(a,b)=>b?Math.round(a/b*100)+'%':'0%';
+  const cards=[
+    ['Deals',ewN_(list.length),'units','#1f6b52'],
+    ['Total Before Discount',ewN_(basic),'EGP · area × basic price','#b0832c'],
+    ['Total After Discount',ewN_(contract),'EGP · down payment + installments','#23777e'],
+    ['Total Discount',ewN_(disc),pc(disc,basic)+' of total before discount','#c0533b'],
+    ['Net Real Price',ewN_(S('net')),'EGP · after returns','#6b3f6e'],
+    ['Down Payment',ewN_(dp),'EGP','#1f6b52'],
+    ['DP Paid',ewN_(paid),pc(paid,dp)+' of down payment','#b0832c'],
+    ['DP Remaining',ewN_(dp-paid),'EGP','#23777e'],
+    ['DP '+pa+'%',ewN_(S('dpEden')),'EDEN · down payment after commission','#c0533b'],
+    ['DP '+pb+'%',ewN_(S('dpAfroa')),'AFROA · down payment after commission','#6b3f6e'],
+    ['Installments',ewN_(inst),(yrs.length?yrs[0]+' → '+yrs[yrs.length-1]:'EGP')+(S('instPaid')?' · received '+ewN_(S('instPaid')):''),'#1f6b52'],
+    ['Return',ewN_(S('ret')),'EGP · paid back to Return buyers','#b0832c'],
+    ['Total '+pa+'%',ewN_(S('eden')),'EDEN · after commission','#23777e'],
+    ['Total '+pb+'%',ewN_(S('afroa')),'AFROA · after commission','#c0533b'],
+    ['Commissions',ewN_(S('comm')),'taken before the split','#6b3f6e']];
+  return `<div class="ewK ewK15">${cards.map(c=>`<div class="ewC" style="--a:${c[3]}"><span>${c[0]}</span><b>${c[1]}</b><small>${c[2]}</small></div>`).join('')}</div>`;
+}
 function ewKpis_(list){
-  const S=k=>ewSum_(list,k),share=EW_.data.share||0.64,yrs=EW_.data.years||[];
-  return `<div class="ewK">
-    <div class="ewC" style="--a:#1f6b52"><span>Net sales</span><b>${ewM_(S('net'))}</b><small>${list.length} units · contract ${ewM_(S('contract'))}${S('ret')?' · returns '+ewM_(S('ret')):''}</small></div>
-    <div class="ewC" style="--a:#b0832c"><span>Down payment collected</span><b>${ewM_(S('dpPaid'))}</b><small>of ${ewM_(S('dp'))} · remaining ${ewM_(S('dpRem'))}</small></div>
-    <div class="ewC" style="--a:#23777e"><span>Installments</span><b>${ewM_(S('inst'))}</b><small>${yrs.length?yrs[0]+' → '+yrs[yrs.length-1]:''}${S('instPaid')?' · received '+ewM_(S('instPaid')):''}</small></div>
-    <div class="ewC" style="--a:#c0533b"><span>Commissions</span><b>${ewM_(S('comm'))}</b><small>taken before the split</small></div></div>
+  const S=k=>ewSum_(list,k),share=EW_.data.share||0.64;
+  return ewKpiGrid_(list)+`
   <div class="ewSplit">
     <div class="ewSp"><div class="pc">${Math.round(share*100)}%</div><div><small>EDEN share</small><b>${ewN_(S('eden'))} EGP</b><small>DP ${ewM_(S('dpEden'))} · installments − returns ${ewM_(S('eden')-S('dpEden'))}</small></div></div>
     <div class="ewSp b"><div class="pc">${Math.round((1-share)*100)}%</div><div><small>AFROA share</small><b>${ewN_(S('afroa'))} EGP</b><small>DP ${ewM_(S('dpAfroa'))} · installments − returns ${ewM_(S('afroa')-S('dpAfroa'))}</small></div></div></div>`;
