@@ -173,6 +173,7 @@ function warmDashboardCache() {
     // 1) What every visitor needs first.
     dashCacheWrite_('ALL', buildDashboardData_({ role: 'Admin' }));
     if (typeof tgDiscWatch_ === 'function') tgDiscWatch_();
+    if (typeof planFilesExport_ === 'function') planFilesExport_();
     if (dashCacheAge_('EGV') > 12 * 60 * 1000) {
       try { dashCacheWrite_('EGV', buildDashboardData_({ role: 'Egypt Viewer' })); } catch (err) { console.warn('Egypt viewer warm-up: ' + err); }
     }
