@@ -21,6 +21,21 @@ function edenNtLabel_(b){
   const c=b.cloneNode(true);c.querySelectorAll('.ntIco').forEach(x=>x.remove());
   return String(c.textContent||'').replace(/\s+/g,' ').replace(/\d+$/,'').trim();
 }
+/* Tab title = the open section, e.g. "Deals Details — EDEN". */
+const EDEN_NT_BASE_=document.title||'EDEN DASHBOARD';
+let EDEN_NT_LAST_='',EDEN_NT_WAIT_='';   // WAIT_: section a new tab is still loading
+function edenNtSetTitle_(label){
+  const t=label?label+' — EDEN':EDEN_NT_BASE_;
+  if(document.title!==t)document.title=t;
+}
+function edenNtSyncTitle_(){
+  if(typeof AUTH_TOKEN!=='undefined'&&!AUTH_TOKEN){EDEN_NT_LAST_='';edenNtSetTitle_('');return;}
+  const act=[...document.querySelectorAll('.moduleMenu button.active')];
+  const pop=act.find(b=>!/setView\(/.test(b.getAttribute('onclick')||''));   // a pop-up page (EDEN WALK Partners…)
+  const b=pop||act[0],l=b?edenNtLabel_(b):EDEN_NT_LAST_;
+  if(EDEN_NT_WAIT_){if(l!==EDEN_NT_WAIT_){edenNtSetTitle_(EDEN_NT_WAIT_);return;}EDEN_NT_WAIT_='';}
+  edenNtSetTitle_(l);
+}
 function edenNtOpen_(btn){
   const module=btn.closest('.module')?.id||'';
   const m=String(btn.getAttribute('onclick')||'').match(/setView\('([^']+)'/);
@@ -50,6 +65,7 @@ function edenNtDecorate_(){
       if(view==='dashboard')sessionStorage.removeItem('EDEN_LAST_VIEW');
       else sessionStorage.setItem('EDEN_LAST_VIEW',JSON.stringify({view,label,module,y:0}));
     }catch(e){}
+    if(label){EDEN_NT_LAST_=EDEN_NT_WAIT_=label;edenNtSetTitle_(label);}
     try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}
   }
   // 2) Icon click, Ctrl/⌘ + click, middle click on a sidebar page.
@@ -57,6 +73,10 @@ function edenNtDecorate_(){
     const b=e.target.closest&&e.target.closest('.moduleMenu button');if(!b)return;
     if(e.target.closest('.ntIco')||e.ctrlKey||e.metaKey){e.preventDefault();e.stopImmediatePropagation();edenNtOpen_(b);}
   },true);
+  document.addEventListener('click',e=>{
+    const b=e.target.closest&&e.target.closest('.moduleMenu button');if(!b)return;
+    EDEN_NT_WAIT_='';EDEN_NT_LAST_=edenNtLabel_(b);edenNtSetTitle_(EDEN_NT_LAST_);setTimeout(edenNtSyncTitle_,300);
+  });
   document.addEventListener('mousedown',e=>{if(e.button===1&&e.target.closest&&e.target.closest('.moduleMenu button'))e.preventDefault();},true);
   document.addEventListener('auxclick',e=>{
     if(e.button!==1)return;
@@ -64,7 +84,7 @@ function edenNtDecorate_(){
     e.preventDefault();e.stopImmediatePropagation();edenNtOpen_(b);
   },true);
   // 3) Menu items are added later by other pages: decorate as they appear.
-  let q=0;const later=()=>{if(q)return;q=requestAnimationFrame(()=>{q=0;edenNtDecorate_();});};
+  let q=0;const later=()=>{if(q)return;q=requestAnimationFrame(()=>{q=0;edenNtDecorate_();edenNtSyncTitle_();});};
   const run=()=>{edenNtDecorate_();new MutationObserver(later).observe(document.body,{childList:true,subtree:true});};
   if(document.body)run();else document.addEventListener('DOMContentLoaded',run);
 })();
