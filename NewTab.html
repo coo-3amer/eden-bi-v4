@@ -1,0 +1,71 @@
+<style>
+/* Open a sidebar page in a new tab: small icon on hover, Ctrl/⌘ + click, middle click. */
+#appRoot .moduleMenu button.ntHas,.moduleMenu button.ntHas{position:relative}
+.moduleMenu button.ntHas:hover{padding-inline-end:34px!important}
+.ntIco{position:absolute;inset-inline-end:6px;top:50%;transform:translateY(-50%);width:24px;height:24px;border-radius:7px;display:none;align-items:center;justify-content:center;color:var(--ds-muted,#8a8173);cursor:pointer}
+.moduleMenu button.ntHas:hover .ntIco{display:flex}
+.ntIco:hover{background:var(--ds-gold-soft,#f4ead6);color:var(--ds-heading,#2b2620)}
+.ntIco svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+@media (hover:none){.ntIco{display:none!important}.moduleMenu button.ntHas:hover{padding-inline-end:12px!important}}
+</style>
+<script>
+/* =====================================================================
+   EDEN BI — Open any sidebar page in a new browser tab.
+   The new tab gets #open=<module>~<label>; on load that is turned into
+   the "last view" that ViewRestore reopens once the data is loaded.
+   Only on the web / desktop app (the Apps Script page runs inside a
+   Google iframe whose address cannot be reopened).
+   ===================================================================== */
+const EDEN_NT_ON_=!!window.EDEN_API_URL;
+function edenNtLabel_(b){
+  const c=b.cloneNode(true);c.querySelectorAll('.ntIco').forEach(x=>x.remove());
+  return String(c.textContent||'').replace(/\s+/g,' ').replace(/\d+$/,'').trim();
+}
+function edenNtOpen_(btn){
+  const module=btn.closest('.module')?.id||'';
+  const m=String(btn.getAttribute('onclick')||'').match(/setView\('([^']+)'/);
+  const url=location.pathname+location.search+'#open='+encodeURIComponent((m?m[1]:'')+'~'+module+'~'+edenNtLabel_(btn));
+  // window.open (not a link) so the browser copies the login of this tab.
+  const w=window.open(url,'_blank');
+  if(!w)alert('The browser blocked the new tab. Allow pop-ups for this site and try again.');
+}
+function edenNtDecorate_(){
+  if(!EDEN_NT_ON_)return;
+  document.querySelectorAll('.moduleMenu button:not(.ntHas)').forEach(b=>{
+    b.classList.add('ntHas');
+    const s=document.createElement('span');s.className='ntIco';s.title='فتح في تابة جديدة (Ctrl + Click)';s.setAttribute('aria-hidden','true');
+    s.innerHTML='<svg viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
+    b.appendChild(s);
+  });
+}
+(function initEdenNewTab_(){
+  if(!EDEN_NT_ON_)return;
+  // 1) Arriving in a new tab: turn #open=… into the page to reopen.
+  const h=/^#open=(.*)$/.exec(location.hash||'');
+  if(h){
+    let p=[];try{p=decodeURIComponent(h[1]).split('~');}catch(e){}
+    const view=p[0]||'_nt',module=p[1]||'',label=p.slice(2).join('~');
+    try{
+      sessionStorage.removeItem('EDEN_LAST_OVERLAY');
+      if(view==='dashboard')sessionStorage.removeItem('EDEN_LAST_VIEW');
+      else sessionStorage.setItem('EDEN_LAST_VIEW',JSON.stringify({view,label,module,y:0}));
+    }catch(e){}
+    try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}
+  }
+  // 2) Icon click, Ctrl/⌘ + click, middle click on a sidebar page.
+  document.addEventListener('click',e=>{
+    const b=e.target.closest&&e.target.closest('.moduleMenu button');if(!b)return;
+    if(e.target.closest('.ntIco')||e.ctrlKey||e.metaKey){e.preventDefault();e.stopImmediatePropagation();edenNtOpen_(b);}
+  },true);
+  document.addEventListener('mousedown',e=>{if(e.button===1&&e.target.closest&&e.target.closest('.moduleMenu button'))e.preventDefault();},true);
+  document.addEventListener('auxclick',e=>{
+    if(e.button!==1)return;
+    const b=e.target.closest&&e.target.closest('.moduleMenu button');if(!b)return;
+    e.preventDefault();e.stopImmediatePropagation();edenNtOpen_(b);
+  },true);
+  // 3) Menu items are added later by other pages: decorate as they appear.
+  let q=0;const later=()=>{if(q)return;q=requestAnimationFrame(()=>{q=0;edenNtDecorate_();});};
+  const run=()=>{edenNtDecorate_();new MutationObserver(later).observe(document.body,{childList:true,subtree:true});};
+  if(document.body)run();else document.addEventListener('DOMContentLoaded',run);
+})();
+</script>
