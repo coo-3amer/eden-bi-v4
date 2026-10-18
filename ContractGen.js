@@ -8,7 +8,7 @@
  * The template is a .docx in the owner's Google Drive (not in GitHub):
  *   "EDEN WALK contract template.docx"  — found by name, or set the Script
  *   Property CONTRACT_TEMPLATE_EDEN_WALK = its file id.
- * Markers in the template: {{CLIENT_NAME}} {{PRICE}} … {{SCHEDULE}}.
+ * Markers in the template: {{CLIENT_NAME}} {{PRICE}} …; Annex 1 / Annex 2 images go under their titles.
  * The filled contract is saved in Drive › "EDEN BI Contracts" and also
  * returned to the page for download.
  ************************************************/
@@ -25,12 +25,15 @@ function contractTemplate_(project) {
   const t = CONTRACT_TEMPLATES_[key];
   if (!t) throw new Error('There is no contract template for ' + project + ' yet.');
   // Drive advanced service + UrlFetch only (already authorised — no new permissions)
+  // the newest file with this name wins (so uploading a new version of the template just works);
+  // the Script Property is only a fallback / manual override
   const props = PropertiesService.getScriptProperties();
-  let id = props.getProperty(t.prop);
+  let id = props.getProperty(t.prop + '_PIN') || '';
   if (!id) {
     const found = (Drive.Files.list({ q: "name='" + t.name.replace(/'/g, "\\'") + "' and trashed=false", fields: 'files(id,name,modifiedTime)', orderBy: 'modifiedTime desc', pageSize: 5 }).files || [])[0];
-    if (!found) throw new Error('Contract template not found. Upload "' + t.name + '" to the Google Drive of the account that runs EDEN BI.');
-    id = found.id; props.setProperty(t.prop, id);
+    id = found ? found.id : props.getProperty(t.prop);
+    if (!id) throw new Error('Contract template not found. Upload "' + t.name + '" to the Google Drive of the account that runs EDEN BI.');
+    if (found) props.setProperty(t.prop, id);
   }
   return { id: id, name: t.name };
 }
@@ -82,6 +85,14 @@ function arWords_(num) {
   }
   return groups.join(' و');
 }
+/* areas can have decimals: 25.5 -> "خمسة وعشرون فاصل خمسة" */
+function arArea_(v) {
+  const n = Math.round((Number(v) || 0) * 100) / 100, i = Math.floor(n), f = Math.round((n - i) * 100);
+  if (!f) return arWords_(i);
+  const fs = String(f).padStart(2, '0').replace(/0$/, '');
+  return arWords_(i) + ' فاصل ' + arWords_(Number(fs));
+}
+function areaNum_(v) { const n = Math.round((Number(v) || 0) * 100) / 100; return n.toLocaleString('en-US', { maximumFractionDigits: 2 }); }
 function arMoney_(v) { const n = Math.round(Number(v) || 0); return arWords_(n) + ' جنيه مصري فقط لا غير'; }
 function enNum_(v) { return Math.round(Number(v) || 0).toLocaleString('en-US'); }
 function arDay_(d) { return ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'][d.getDay()]; }
@@ -211,40 +222,48 @@ function contractParas_(xml) {
   while ((m = re.exec(xml))) out.push({ s: m.index, e: m.index + m[0].length, x: m[0], t: (m[0].match(/<w:t[^>]*>[^<]*<\/w:t>/g) || []).map(z => z.replace(/<[^>]+>/g, '')).join('') });
   return out;
 }
-/* vals: {MARKER: text}; opts: {passport, rows, total, image: {rid, cx, cy}} */
+/* Puts `inner` under the title "ملحق رقم (n)", replacing the blank lines the template keeps there. */
+function contractAnnexPut_(xml, n, inner) {
+  const ps = contractParas_(xml);
+  let i = -1;
+  const re = new RegExp('^\\s*ملحق\\s*رقم\\s*\\(\\s*' + n + '\\s*\\)');
+  ps.forEach((q, k) => { if (re.test(q.t)) i = k; });   // the annex title itself, not a clause that mentions it
+  if (i < 0) return xml;
+  let j = i + 1;
+  while (j < ps.length && !ps[j].t.trim() && !/sectPr|w:drawing|w:type="page"|\{\{/.test(ps[j].x)) j++;
+  const s = ps[i].e, e = j > i + 1 ? ps[j - 1].e : ps[i].e;
+  return xml.slice(0, s) + inner + '<w:p><w:r><w:br w:type="page"/></w:r></w:p>' + xml.slice(e);
+}
+function contractImageXml_(im, id) {
+  return '<w:p><w:pPr><w:bidi/><w:spacing w:before="240" w:after="0"/><w:jc w:val="center"/></w:pPr><w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="' + im.cx + '" cy="' + im.cy + '"/><wp:docPr id="' + id + '" name="EDEN annex ' + id + '"/>' +
+    '<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">' +
+    '<pic:nvPicPr><pic:cNvPr id="' + id + '" name="annex' + id + '"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="' + im.rid + '"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>' +
+    '<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="' + im.cx + '" cy="' + im.cy + '"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>';
+}
+/* vals: {MARKER: text}; opts: {passport, images: {1: {rid,cx,cy}, 2: {…}}, table: {rows, total}} */
 function contractFillXml_(xml, vals, opts) {
   opts = opts || {};
   if (opts.passport) {   // "بطاقة رقم:" -> "جواز سفر رقم:" in the buyer's ID line
     const p = contractParas_(xml).find(q => q.x.indexOf('{{ID_NUMBER}}') >= 0);
-    if (p) xml = xml.slice(0, p.s) + p.x.replace('>بطاقة<', '>جواز سفر<') + xml.slice(p.e);
+    if (p) xml = xml.slice(0, p.s) + p.x.replace('>بطاقة<', '>جواز سفر<').replace('>بطاقة رقم', '>جواز سفر رقم') + xml.slice(p.e);
   }
-  if (opts.image) {      // Annex 1: the drawing replaces the blank lines under its title
-    const ps = contractParas_(xml);
-    let i = -1;
-      ps.forEach((q, k) => { if (/^\s*ملحق\s*رقم\s*\(\s*1\s*\)/.test(q.t) && /الهندس/.test(q.t)) i = k; });   // the Annex 1 title, not the clause that mentions it
-    if (i >= 0) {
-      let j = i + 1;
-      while (j < ps.length && !ps[j].t.trim() && !/sectPr|w:drawing|w:type="page"/.test(ps[j].x)) j++;
-      const img = '<w:p><w:pPr><w:bidi/><w:spacing w:before="240" w:after="0"/><w:jc w:val="center"/></w:pPr><w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="' + opts.image.cx + '" cy="' + opts.image.cy + '"/><wp:docPr id="9101" name="EDEN drawing"/>' +
-        '<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">' +
-        '<pic:nvPicPr><pic:cNvPr id="9101" name="drawing"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="' + opts.image.rid + '"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>' +
-        '<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="' + opts.image.cx + '" cy="' + opts.image.cy + '"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>' +
-        '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
-      const s = ps[i].e, e = j > i + 1 ? ps[j - 1].e : ps[i].e;
-      xml = xml.slice(0, s) + img + xml.slice(e);
-    }
-  }
+  const im = opts.images || {};
+  if (im[1]) xml = contractAnnexPut_(xml, 1, contractImageXml_(im[1], 9101));
+  const hasMarker = xml.indexOf('{{SCHEDULE}}') >= 0;
+  if (im[2]) xml = contractAnnexPut_(xml, 2, contractImageXml_(im[2], 9102));
+  else if (opts.table && !hasMarker) xml = contractAnnexPut_(xml, 2, contractScheduleXml_(opts.table.rows, opts.table.total) + '<w:p/>');
   Object.keys(vals).forEach(k => { xml = xml.split('{{' + k + '}}').join(xmlEsc_(vals[k])); });
-  const i = xml.indexOf('{{SCHEDULE}}');
+  const i = xml.indexOf('{{SCHEDULE}}');   // older template: a marker paragraph under Annex 2
   if (i >= 0) {
     const s = Math.max(xml.lastIndexOf('<w:p ', i), xml.lastIndexOf('<w:p>', i));
     const e = xml.indexOf('</w:p>', i) + 6;
-    xml = xml.slice(0, s) + contractScheduleXml_(opts.rows || [], opts.total || 0) + '<w:p/>' + xml.slice(e);
+    const inner = im[2] ? contractImageXml_(im[2], 9102) : (opts.table ? contractScheduleXml_(opts.table.rows, opts.table.total) : '');
+    xml = xml.slice(0, s) + inner + '<w:p/>' + xml.slice(e);
   }
   return xml;
 }
-function contractImageFit_(w, h) {   // EMU, max 16 cm x 21 cm, keep the aspect ratio
-  const MW = 5760000, MH = 7560000;
+function contractImageFit_(w, h) {   // EMU, keep the aspect ratio
+  const MW = 5760000, MH = 6300000;   // 16 x 17.5 cm: leaves room for the annex title, header and footer
   w = Number(w) || 1600; h = Number(h) || 1200;
   const k = Math.min(MW / w, MH / h);
   return { cx: Math.round(w * k), cy: Math.round(h * k) };
@@ -267,13 +286,15 @@ function generateDealContract(authToken, req) {
   const sched = (draft.schedule || []).filter(r => String(r.label || '').trim() || Number(r.amount));
   const rows = sched.map((r, i) => [String(i + 1), String(r.label || '').trim() || '..........', fmtDue(r), enNum_(r.amount)]);
   const schedTotal = sched.reduce((a, r) => a + (Number(r.amount) || 0), 0);
+  const w = draft.words || {};
+  const pick = (k, auto) => String(w[k] || '').trim() || auto;
   const vals = {
-    DAY_NAME: arDay_(date), DD: Utilities.formatDate(date, tz, 'dd'), MM: Utilities.formatDate(date, tz, 'MM'), YYYY: Utilities.formatDate(date, tz, 'yyyy'),
+    DAY_NAME: pick('DAY_NAME', arDay_(date)), DD: Utilities.formatDate(date, tz, 'dd'), MM: Utilities.formatDate(date, tz, 'MM'), YYYY: Utilities.formatDate(date, tz, 'yyyy'),
     CLIENT_NAME: String(c.name || '').trim(), NATIONALITY: String(c.nationality || '').trim(), ID_NUMBER: String(c.idNumber || '').trim(),
     ADDRESS: String(c.address || '').trim(), EMAIL: String(c.email || '').trim(), MOBILE: String(c.mobile || '').trim(),
-    UNIT_CODE: String(u.code || d.unit).trim(), AREA: area ? enNum_(area) : '', AREA_WORDS: area ? arWords_(area) : '', FLOOR: String(u.floor || '').trim(),
-    OUT_AREA: outArea ? enNum_(outArea) + ' متراً مربعاً' : 'لا يوجد', OUT_AREA_WORDS: outArea ? arWords_(outArea) + ' متراً مربعاً' : '—',
-    PRICE: enNum_(price), PRICE_WORDS: arMoney_(price), DP: enNum_(dp), DP_WORDS: arMoney_(dp), REST: enNum_(rest), REST_WORDS: arMoney_(rest)
+    UNIT_CODE: String(u.code || d.unit).trim(), AREA: area ? areaNum_(area) : '', AREA_WORDS: area ? pick('AREA_WORDS', arArea_(area)) : '', FLOOR: String(u.floor || '').trim(),
+    OUT_AREA: outArea ? areaNum_(outArea) + ' متراً مربعاً' : 'لا يوجد', OUT_AREA_WORDS: outArea ? pick('OUT_AREA_WORDS', arArea_(outArea) + ' متراً مربعاً') : '—',
+    PRICE: enNum_(price), PRICE_WORDS: pick('PRICE_WORDS', arMoney_(price)), DP: enNum_(dp), DP_WORDS: pick('DP_WORDS', arMoney_(dp)), REST: enNum_(rest), REST_WORDS: pick('REST_WORDS', arMoney_(rest))
   };
   const missing = ['CLIENT_NAME', 'ID_NUMBER', 'ADDRESS', 'MOBILE', 'AREA', 'FLOOR'].filter(k => !vals[k]);
   Object.keys(vals).forEach(k => { if (vals[k] === '' || vals[k] == null) vals[k] = '..........'; });
@@ -284,28 +305,30 @@ function generateDealContract(authToken, req) {
     PropertiesService.getScriptProperties().deleteProperty(CONTRACT_TEMPLATES_[String(d.project).toUpperCase().replace(/[^A-Z0-9]/g, '')].prop);
     throw new Error('Could not read the contract template from Drive (' + res.getResponseCode() + '). Try again.');
   }
-  let image = null, imgBlob = null;
-  const dr = draft.drawing;
-  if (dr && dr.b64) {
-    const ext = /jpe?g/i.test(dr.mime || '') ? 'jpeg' : 'png';
-    imgBlob = Utilities.newBlob(Utilities.base64Decode(String(dr.b64).replace(/^data:[^,]*,/, '')), 'image/' + ext, 'word/media/eden_drawing.' + ext);
-    image = Object.assign({ rid: 'rIdEdenDrawing', ext: ext }, contractImageFit_(dr.w, dr.h));
-  }
+  // Annex 1 (drawing) and Annex 2 (payment plan) are images the user uploads
+  const images = {}, blobs = [];
+  [[1, draft.drawing], [2, draft.planImage]].forEach(([n, dr]) => {
+    if (!dr || !dr.b64) return;
+    const ext = /jpe?g/i.test(dr.mime || '') ? 'jpeg' : 'png', file = 'eden_annex' + n + '.' + ext;
+    blobs.push(Utilities.newBlob(Utilities.base64Decode(String(dr.b64).replace(/^data:[^,]*,/, '')), 'image/' + ext, 'word/media/' + file));
+    images[n] = Object.assign({ rid: 'rIdEdenAnnex' + n, ext: ext, file: file }, contractImageFit_(dr.w, dr.h));
+  });
+  const useTable = !images[2] && draft.useTable && rows.length;
   const parts = Utilities.unzip(res.getBlob().setContentType('application/zip'));
   const out = parts.map(p => {
     const name = p.getName();
     if (name === 'word/document.xml')
-      return Utilities.newBlob(contractFillXml_(p.getDataAsString('UTF-8'), vals, { passport: c.idType === 'passport', rows: rows, total: schedTotal, image: image }), 'application/xml', name);
-    if (image && name === 'word/_rels/document.xml.rels')
-      return Utilities.newBlob(p.getDataAsString('UTF-8').replace('</Relationships>', '<Relationship Id="' + image.rid + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/eden_drawing.' + image.ext + '"/></Relationships>'), 'application/xml', name);
-    if (image && name === '[Content_Types].xml') {
+      return Utilities.newBlob(contractFillXml_(p.getDataAsString('UTF-8'), vals, { passport: c.idType === 'passport', images: images, table: useTable ? { rows: rows, total: schedTotal } : null }), 'application/xml', name);
+    if (blobs.length && name === 'word/_rels/document.xml.rels')
+      return Utilities.newBlob(p.getDataAsString('UTF-8').replace('</Relationships>', Object.keys(images).map(n => '<Relationship Id="' + images[n].rid + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/' + images[n].file + '"/>').join('') + '</Relationships>'), 'application/xml', name);
+    if (blobs.length && name === '[Content_Types].xml') {
       let t = p.getDataAsString('UTF-8');
-      if (t.indexOf('Extension="' + image.ext + '"') < 0) t = t.replace('<Default ', '<Default Extension="' + image.ext + '" ContentType="image/' + image.ext + '"/><Default ');
+      Object.keys(images).forEach(n => { const ext = images[n].ext; if (t.indexOf('Extension="' + ext + '"') < 0) t = t.replace('<Default ', '<Default Extension="' + ext + '" ContentType="image/' + ext + '"/><Default '); });
       return Utilities.newBlob(t, 'application/xml', name);
     }
     return p;
   });
-  if (imgBlob) out.push(imgBlob);
+  blobs.forEach(b => out.push(b));
   const fname = 'عقد ' + vals.UNIT_CODE + ' - ' + vals.CLIENT_NAME + ' - ' + Utilities.formatDate(date, tz, 'yyyy-MM-dd') + '.docx';
   const docx = Utilities.zip(out, fname).setContentType('application/vnd.openxmlformats-officedocument.wordprocessingml.document');
 
@@ -315,6 +338,6 @@ function generateDealContract(authToken, req) {
     const f = Drive.Files.create({ name: fname, parents: [folder], mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }, docx, { fields: 'id,webViewLink' });
     url = f.webViewLink || ('https://drive.google.com/file/d/' + f.id + '/view');
   } catch (e) { console.warn('Contract save: ' + e); }
-  auditLog_(user, 'Contract generated', { project: d.project, unit: vals.UNIT_CODE, client: vals.CLIENT_NAME, details: 'Price ' + enNum_(price) + ' · DP ' + enNum_(dp) + ' · Annex 2 ' + rows.length + ' rows' + (image ? ' · drawing' : '') + (missing.length ? ' · missing: ' + missing.join(', ') : ''), ref: 'Deals row ' + req.row });
+  auditLog_(user, 'Contract generated', { project: d.project, unit: vals.UNIT_CODE, client: vals.CLIENT_NAME, details: 'Price ' + enNum_(price) + ' · DP ' + enNum_(dp) + (images[1] ? ' · Annex 1 image' : '') + (images[2] ? ' · Annex 2 image' : useTable ? ' · Annex 2 table ' + rows.length + ' rows' : '') + (missing.length ? ' · missing: ' + missing.join(', ') : ''), ref: 'Deals row ' + req.row });
   return { name: fname, url: url, b64: Utilities.base64Encode(docx.getBytes()), missing: missing };
 }

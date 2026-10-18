@@ -14,6 +14,7 @@
 .ct input,.ct select{height:36px;border:1px solid var(--ds-line,#e3d9c7);border-radius:10px;padding:0 10px;font:inherit;font-size:13.5px;background:var(--ds-surface,#fff);color:var(--ds-text)}
 .ct .full{grid-column:1/-1}.ct .ro{background:var(--ds-soft,#f6f0e4);font-weight:700}
 .ct .miss{border-color:#d9876f;background:#fff4f0}
+.ctSub{font-size:10.5px;font-weight:700;color:var(--ds-muted,#8a7f6c);margin-top:2px}.ctWordIn{background:var(--ds-soft,#faf5ea)!important;font-weight:600;color:#5b4a2b!important}
 .ctHint{font-size:10.5px;font-weight:600;color:#3f7d4a}.ctHint.m{color:#c0533b}
 .ctSeg{display:flex;border:1px solid var(--ds-line,#e3d9c7);border-radius:10px;overflow:hidden;height:36px}
 .ctSeg button{flex:1;border:0;background:transparent;font:700 13px Tahoma,Arial,sans-serif;color:var(--ds-text);cursor:pointer}.ctSeg .on{background:var(--ds-gold,#b08a42);color:#fff}
@@ -61,10 +62,25 @@ function ctWords_(num){
   while(n>0){const v=n%1000;if(v){if(i<0)g.unshift(small(v));else{const s=sc[i],r=v%100;g.unshift(v===1?s[0]:v===2?s[1]:(r>=3&&r<=10)?small(v)+' '+s[2]:r>=11?small(v)+' '+s[3]:small(v)+' '+s[0]);}}n=Math.floor(n/1000);i++;}
   return g.join(' و');
 }
-const CT_STEPS_=[['1','العميل'],['2','الوحدة'],['3','الثمن'],['4','ملحق 1<br>الرسم الهندسي'],['5','ملحق 2<br>الأقساط'],['6','مراجعة<br>وإصدار']];
+const CT_STEPS_=[['1','العميل'],['2','الوحدة'],['3','الثمن'],['4','ملحق 1<br>الرسم الهندسي'],['5','ملحق 2<br>نظام السداد'],['6','مراجعة<br>وإصدار']];
+const CT_DAYS_=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+/* auto text of each "in words" field; the user can overwrite it (kept in CT_.d.words) */
+function ctAuto_(k){
+  const d=CT_.d,u=d.unit,rest=Math.max(0,ctNum_(d.price)-ctNum_(d.dp)),money=v=>ctWords_(v)+' جنيه مصري فقط لا غير';
+  if(k==='AREA_WORDS')return ctDec_(u.area)?ctAreaW_(u.area):'';
+  if(k==='OUT_AREA_WORDS')return ctDec_(u.outArea)?ctAreaW_(u.outArea)+' متراً مربعاً':'—';
+  if(k==='PRICE_WORDS')return money(d.price);
+  if(k==='DP_WORDS')return money(d.dp);
+  if(k==='REST_WORDS')return money(rest);
+  if(k==='DAY_NAME'){const m=String(d.date||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?CT_DAYS_[new Date(+m[1],+m[2]-1,+m[3]).getDay()]:'';}
+  return '';
+}
+function ctWordVal_(k){const v=CT_.d.words[k];return v!=null&&String(v).trim()!==''?v:ctAuto_(k);}
 let CT_=null;
 function ctClose_(){document.getElementById('ct')?.remove();document.getElementById('ctBack')?.remove();CT_=null;}
 function ctEsc_(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function ctDec_(v){return Math.round((Number(String(v??'').replace(/[^\d.]/g,''))||0)*100)/100;}
+function ctAreaW_(v){const n=ctDec_(v),i=Math.floor(n),f=Math.round((n-i)*100);if(!f)return ctWords_(i);return ctWords_(i)+' فاصل '+ctWords_(Number(String(f).padStart(2,'0').replace(/0$/,'')));}
 function ctNum_(v){return Math.round(Number(String(v??'').replace(/[^\d.\-]/g,''))||0);}
 function ctFmt_(v){return ctNum_(v).toLocaleString('en-US');}
 function ctOpen_(row,unit){
@@ -78,7 +94,7 @@ function ctOpen_(row,unit){
   google.script.run.withSuccessHandler(d=>{
     d.client=d.client||{};d.unit=d.unit||{};
     d.schedule=(d.schedule||[]).map(r=>({label:r.label||'',due:r.due||'',dueText:r.dueText||'',amount:Number(r.amount)||0}));
-    d.drawing=null;
+    d.drawing=null;d.planImage=null;d.useTable=false;d.words={};
     CT_={row:row,unitCode:unit,step:1,d:d};ctRender_();
   }).withFailureHandler(err=>{el.querySelector('.ctBd').innerHTML=`<div class="ctWarn">${ctEsc_(err&&err.message||err)}</div>`;})
     .contractDraft(AUTH_TOKEN,{row:row,unitCode:unit});
@@ -93,7 +109,8 @@ function ctMissing_(){
   if(!String(c.idNumber||'').trim())m.push(c.idType==='passport'?'رقم الجواز':'رقم البطاقة');
   if(!String(c.address||'').trim())m.push('العنوان');
   if(!String(c.mobile||'').trim())m.push('الموبايل');
-  if(!ctNum_(u.area))m.push('المساحة');
+  if(!ctDec_(u.area))m.push('المساحة');
+  if(!String(u.code||'').trim())m.push('كود الوحدة');
   if(!String(u.floor||'').trim())m.push('الدور');
   if(!ctNum_(d.price))m.push('ثمن الوحدة');
   return m;
@@ -103,6 +120,7 @@ function ctRender_(){
   const d=CT_.d,c=d.client,u=d.unit,s=CT_.step,E=ctEsc_;
   const inp=(path,val,opt)=>{opt=opt||{};const miss=opt.req&&!String(val??'').trim();
     return `<input data-k="${path}" value="${E(val??'')}"${opt.ltr?' dir="ltr"':''}${opt.ph?` placeholder="${E(opt.ph)}"`:''} class="${miss?'miss':''}${opt.ro?' ro':''}"${opt.ro?' readonly':''}${opt.num?' inputmode="numeric"':''}>`;};
+  const wd=(k,lbl)=>`<input data-word="${k}" value="${E(ctWordVal_(k))}" title="${lbl||'بالحروف'}" class="ctWordIn">`;
   const hint=(val,req)=>req&&!String(val??'').trim()?'<span class="ctHint m">ناقص — اكتبه</span>':'';
   let body='';
   if(s===1)body=`<div class="ctG">
@@ -114,31 +132,33 @@ function ctRender_(){
     <label class="full">العنوان${inp('client.address',c.address,{req:1})}${hint(c.address,1)}</label>
     <label class="full">البريد الإلكتروني${inp('client.email',c.email,{ltr:1})}</label></div>`;
   if(s===2)body=`<div class="ctG">
-    <label>كود الوحدة${inp('unit.code',u.code,{ro:1,ltr:1})}</label>
-    <label>الدور<select data-k="unit.floor">${['','الأرضي','الأول','الثاني','الثالث','الرابع','البدروم','الميزانين'].map(f=>`<option${f===u.floor?' selected':''} value="${f}">${f||'— اختار —'}</option>`).join('')}</select></label>
-    <label>المساحة الداخلية (م²)${inp('unit.area',u.area||'',{req:1,num:1,ltr:1})}<div class="ctWords" data-w="unit.area">${ctNum_(u.area)?ctWords_(u.area)+' متراً مربعاً':'—'}</div></label>
-    <label>المساحة الخارجية — حق انتفاع (م²)${inp('unit.outArea',u.outArea||'',{num:1,ltr:1,ph:'0 = لا يوجد'})}<div class="ctWords" data-w="unit.outArea">${ctNum_(u.outArea)?ctWords_(u.outArea)+' متراً مربعاً':'لا يوجد'}</div></label></div>`;
+    <label>كود الوحدة (رقم الوحدة في العقد وملحق 4)${inp('unit.code',u.code,{req:1,ltr:1})}</label>
+    <label>الدور${inp('unit.floor',u.floor,{req:1})}<datalist id="ctFloors">${['الأرضي','الأول','الثاني','الثالث','الرابع','البدروم','الميزانين'].map(f=>`<option value="${f}">`).join('')}</datalist></label>
+    <label>المساحة الداخلية (م²)${inp('unit.area',u.area||'',{req:1,num:1,ltr:1})}<span class="ctSub">بالحروف</span>${wd('AREA_WORDS')}</label>
+    <label>المساحة الخارجية — حق انتفاع (م²)${inp('unit.outArea',u.outArea||'',{num:1,ltr:1,ph:'0 = لا يوجد'})}<span class="ctSub">بالحروف</span>${wd('OUT_AREA_WORDS')}</label></div>`;
   if(s===3){const rest=Math.max(0,ctNum_(d.price)-ctNum_(d.dp));body=`<div class="ctG">
-    <label class="full">إجمالي ثمن الوحدة (جنيه)${inp('price',ctFmt_(d.price),{req:1,num:1,ltr:1})}<div class="ctWords" data-w="price">${ctWords_(d.price)} جنيه مصري فقط لا غير</div></label>
-    <label class="full">المقدم (جنيه)${inp('dp',ctFmt_(d.dp),{num:1,ltr:1})}${d.scheduleSource==='schedule'?'<span class="ctHint">من جدول الأقساط: مجموع سطور المقدم</span>':''}<div class="ctWords" data-w="dp">${ctWords_(d.dp)} جنيه مصري فقط لا غير</div></label>
-    <label class="full">المتبقي بعد المقدم (بيتحسب لوحده)<input class="ro" readonly data-rest value="${ctFmt_(rest)}" dir="ltr"><div class="ctWords" data-w="rest">${ctWords_(rest)} جنيه مصري فقط لا غير</div></label></div>`;}
-  if(s===4)body=`<label class="ctDrop" data-drop>⬆️ اسحب صورة الرسم الهندسي للوحدة هنا أو دوس للاختيار<br><small>PNG / JPG — بتتحط في صفحة «ملحق رقم (1)» في العقد</small><input type="file" accept="image/png,image/jpeg" hidden data-file></label>
-    ${d.drawing?`<div class="ctPrev"><img src="data:${d.drawing.mime};base64,${d.drawing.b64}" alt=""><div style="margin-top:6px;font-size:12px">${E(d.drawing.name)} · <button type="button" class="ctLink" data-rmimg>شيل الصورة</button></div></div>`
-      :'<div style="margin-top:10px;font-size:12.5px;color:#8a7f6c">لو مفيش صورة، صفحة الملحق هتفضل فاضية زي القالب.</div>'}`;
-  if(s===5){const t=ctTotals_();body=`<table class="ctTbl"><tr><th style="width:34px">م</th><th>البيان</th><th style="width:150px">تاريخ الاستحقاق</th><th style="width:130px">المبلغ</th><th style="width:28px"></th></tr>
+    <label class="full">إجمالي ثمن الوحدة (جنيه)${inp('price',ctFmt_(d.price),{req:1,num:1,ltr:1})}<span class="ctSub">بالحروف</span>${wd('PRICE_WORDS')}</label>
+    <label class="full">المقدم — دفعة الحجز والتعاقد (جنيه)${inp('dp',ctFmt_(d.dp),{num:1,ltr:1})}${d.scheduleSource==='schedule'?'<span class="ctHint">من جدول الأقساط: مجموع سطور المقدم</span>':''}<span class="ctSub">بالحروف</span>${wd('DP_WORDS')}</label>
+    <label class="full">المتبقي بعد المقدم (بيتحسب لوحده)<input class="ro" readonly data-rest value="${ctFmt_(rest)}" dir="ltr"><span class="ctSub">بالحروف</span>${wd('REST_WORDS')}</label></div>`;}
+  const drop=(key,title,annex)=>{const im=d[key];return `<label class="ctDrop" data-drop="${key}">⬆️ ${title}<br><small>PNG / JPG — بتتحط في صفحة «ملحق رقم (${annex})» في العقد</small><input type="file" accept="image/png,image/jpeg" hidden data-file></label>
+    ${im?`<div class="ctPrev"><img src="data:${im.mime};base64,${im.b64}" alt=""><div style="margin-top:6px;font-size:12px">${E(im.name)} · <button type="button" class="ctLink" data-rmimg="${key}">شيل الصورة</button></div></div>`:''}`;};
+  if(s===4)body=drop('drawing','اسحب صورة الرسم الهندسي للوحدة هنا أو دوس للاختيار',1)+(d.drawing?'':'<div style="margin-top:10px;font-size:12.5px;color:#8a7f6c">لو مفيش صورة، صفحة الملحق هتفضل فاضية زي القالب.</div>');
+  if(s===5){const t=ctTotals_();body=drop('planImage','اسحب صورة نظام السداد (Payment Plan) هنا أو دوس للاختيار',2)+(d.planImage?'':`
+    <label style="flex-direction:row;align-items:center;gap:8px;margin-top:12px;font-weight:700;color:var(--ds-text)"><input type="checkbox" data-usetable ${d.useTable?'checked':''} style="height:auto"> مفيش صورة؟ اعمل جدول من الأقساط المتسجلة في السيستم</label>`+
+    (!d.useTable?'<div style="margin-top:8px;font-size:12.5px;color:#8a7f6c">لو مفيش صورة ولا جدول، صفحة الملحق هتفضل فاضية زي القالب.</div>':`<table class="ctTbl" style="margin-top:10px"><tr><th style="width:34px">م</th><th>البيان</th><th style="width:150px">تاريخ الاستحقاق</th><th style="width:130px">المبلغ</th><th style="width:28px"></th></tr>
     ${d.schedule.map((r,i)=>`<tr><td>${i+1}</td><td><input data-s="${i}" data-f="label" value="${E(r.label)}"></td>
       <td>${r.due||!r.dueText?`<input type="date" data-s="${i}" data-f="due" value="${E(r.due)}">`:`<input data-s="${i}" data-f="dueText" value="${E(r.dueText)}">`}</td>
       <td><input data-s="${i}" data-f="amount" value="${ctFmt_(r.amount)}" dir="ltr" inputmode="numeric"></td><td><button type="button" class="x" data-del="${i}" title="مسح">✕</button></td></tr>`).join('')}</table>
     <div style="margin-top:8px;display:flex;gap:14px;flex-wrap:wrap;align-items:center"><button type="button" class="ctLink" data-add>＋ إضافة قسط</button>
       <span class="ctHint">${d.scheduleSource==='schedule'?'متحمل من جدول السداد المتسجل للوحدة':d.scheduleSource==='partners'?'متحمل من EDEN WALK Partners (أقساط كل سنة في سطر)':'مفيش جدول متسجل — اكتب الأقساط'} · الصيانة مش بتظهر في الجدول</span></div>
     <div class="ctTot"><div>إجمالي الجدول<b data-tsum>${t.sum.toLocaleString('en-US')}</b></div><div>ثمن الوحدة<b>${t.price.toLocaleString('en-US')}</b></div>
-      <div>الفرق<b data-tdiff class="${Math.abs(t.diff)<=5?'ctGood':'ctBad'}">${Math.abs(t.diff)<=5?(t.diff?Math.abs(t.diff)+' ✓ تقريب':'✓ مطابق'):t.diff.toLocaleString('en-US')}</b></div></div>`;}
-  if(s===6){const t=ctTotals_(),m=ctMissing_(),rest=Math.max(0,ctNum_(d.price)-ctNum_(d.dp));body=`<label style="max-width:230px">تاريخ العقد<input type="date" data-k="date" value="${E(d.date)}"></label>
+      <div>الفرق<b data-tdiff class="${Math.abs(t.diff)<=5?'ctGood':'ctBad'}">${Math.abs(t.diff)<=5?(t.diff?Math.abs(t.diff)+' ✓ تقريب':'✓ مطابق'):t.diff.toLocaleString('en-US')}</b></div></div>`));}
+  if(s===6){const t=ctTotals_(),m=ctMissing_(),rest=Math.max(0,ctNum_(d.price)-ctNum_(d.dp));body=`<div class="ctG" style="max-width:480px"><label>تاريخ العقد<input type="date" data-k="date" value="${E(d.date)}"></label><label>اليوم${wd('DAY_NAME','اليوم')}</label></div>
     <div class="ctRv">
       <section><h4>العميل <button type="button" class="ctLink" data-go="1">تعديل</button></h4>${E(c.name||'—')}<br>${c.idType==='passport'?'جواز سفر':'بطاقة'}: ${c.idNumber?E(c.idNumber):'<b class="ctBad">ناقص</b>'} · ${E(c.nationality||'')}<br><span dir="ltr">${E(c.mobile||'—')}</span>${c.email?' · '+E(c.email):''}<br>${E(c.address||'—')}</section>
-      <section><h4>الوحدة <button type="button" class="ctLink" data-go="2">تعديل</button></h4>${E(u.code)} · الدور ${E(u.floor||'—')}<br>${ctNum_(u.area)||'—'} م² · خارجي: ${ctNum_(u.outArea)?ctNum_(u.outArea)+' م²':'لا يوجد'}</section>
-      <section><h4>الثمن <button type="button" class="ctLink" data-go="3">تعديل</button></h4>الإجمالي ${ctFmt_(d.price)}<br>المقدم ${ctFmt_(d.dp)}<br>المتبقي ${rest.toLocaleString('en-US')}</section>
-      <section><h4>الملاحق <button type="button" class="ctLink" data-go="5">تعديل</button></h4>ملحق 1: ${d.drawing?'صورة الرسم ✓':'<span class="ctBad">من غير صورة</span>'}<br>ملحق 2: ${d.schedule.length} سطر · ${Math.abs(t.diff)<=5?'<span class="ctGood">الإجمالي مطابق ✓</span>':`<span class="ctBad">الفرق عن الثمن ${t.diff.toLocaleString('en-US')}</span>`}</section></div>
+      <section><h4>الوحدة <button type="button" class="ctLink" data-go="2">تعديل</button></h4>${E(u.code)} · الدور ${E(u.floor||'—')}<br>${ctDec_(u.area)||'—'} م² (${E(ctWordVal_('AREA_WORDS'))}) · خارجي: ${ctDec_(u.outArea)?ctDec_(u.outArea)+' م²':'لا يوجد'}</section>
+      <section><h4>الثمن <button type="button" class="ctLink" data-go="3">تعديل</button></h4>الإجمالي ${ctFmt_(d.price)} — <small>${E(ctWordVal_('PRICE_WORDS'))}</small><br>المقدم ${ctFmt_(d.dp)} — <small>${E(ctWordVal_('DP_WORDS'))}</small><br>المتبقي ${rest.toLocaleString('en-US')} — <small>${E(ctWordVal_('REST_WORDS'))}</small></section>
+      <section><h4>الملاحق <button type="button" class="ctLink" data-go="4">تعديل</button></h4>ملحق 1: ${d.drawing?'صورة الرسم ✓':'<span class="ctBad">من غير صورة</span>'}<br>ملحق 2: ${d.planImage?'صورة نظام السداد ✓':d.useTable?`جدول ${d.schedule.length} سطر · ${Math.abs(t.diff)<=5?'<span class="ctGood">مطابق ✓</span>':`<span class="ctBad">الفرق ${t.diff.toLocaleString('en-US')}</span>`}`:'<span class="ctBad">من غير صورة</span>'}</section></div>
     ${m.length?`<div class="ctWarn">⚠️ ناقص: ${m.join('، ')} — تقدر تصدر العقد ومكانهم هيبقى نقط تكملها بإيدك.</div>`:''}
     ${d.template===false?'<div class="ctWarn">⚠️ قالب العقد «EDEN WALK contract template.docx» مش موجود على Google Drive — ارفعه الأول.</div>':''}`;}
   el.innerHTML=`<div class="ctHd"><h3>عقد بيع — EDEN WALK</h3><small>${E(u.code)} · ${E(c.name||'')} · صف ${CT_.row} في Deals</small></div>
@@ -156,17 +176,19 @@ function ctWire_(el){
   el.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{CT_.step=Number(b.dataset.go);ctRender_();});
   const pv=el.querySelector('[data-prev]');if(pv)pv.onclick=()=>{CT_.step--;ctRender_();};
   const nx=el.querySelector('[data-next]');if(nx)nx.onclick=()=>{CT_.step++;ctRender_();};
+  const fl=el.querySelector('[data-k="unit.floor"]');if(fl)fl.setAttribute('list','ctFloors');
+  el.querySelectorAll('[data-word]').forEach(w=>w.addEventListener('input',()=>{d.words[w.dataset.word]=w.value;}));
+  const ut=el.querySelector('[data-usetable]');if(ut)ut.onchange=()=>{d.useTable=ut.checked;ctRender_();};
   el.querySelectorAll('[data-idt]').forEach(b=>b.onclick=()=>{d.client.idType=b.dataset.idt;ctRender_();});
   el.querySelectorAll('[data-k]').forEach(i=>{
-    const k=i.dataset.k,num=/^(price|dp|unit\.area|unit\.outArea)$/.test(k);
+    const k=i.dataset.k,num=/^(price|dp)$/.test(k),dec=/^unit\.(area|outArea)$/.test(k);
     i.addEventListener(i.tagName==='SELECT'?'change':'input',()=>{
-      ctSet_(k,num?ctNum_(i.value):i.value);
+      ctSet_(k,num?ctNum_(i.value):dec?ctDec_(i.value):i.value);
       if(i.classList.contains('miss')&&i.value.trim())i.classList.remove('miss');
-      const w=el.querySelector(`[data-w="${k}"]`);
-      if(w)w.textContent=/area/i.test(k)?(ctNum_(i.value)?ctWords_(i.value)+' متراً مربعاً':(k==='unit.outArea'?'لا يوجد':'—')):ctWords_(i.value)+' جنيه مصري فقط لا غير';
-      if(k==='price'||k==='dp'){const rest=Math.max(0,ctNum_(d.price)-ctNum_(d.dp)),r=el.querySelector('[data-rest]');if(r){r.value=rest.toLocaleString('en-US');el.querySelector('[data-w="rest"]').textContent=ctWords_(rest)+' جنيه مصري فقط لا غير';}}
+      if(k==='price'||k==='dp'){const rest=Math.max(0,ctNum_(d.price)-ctNum_(d.dp)),r=el.querySelector('[data-rest]');if(r)r.value=rest.toLocaleString('en-US');}
+      el.querySelectorAll('[data-word]').forEach(w=>{const wk=w.dataset.word;if(!(d.words[wk]!=null&&String(d.words[wk]).trim()))w.value=ctAuto_(wk);});
     });
-    if(num&&!/area/i.test(k))i.addEventListener('blur',()=>{i.value=ctFmt_(i.value);});
+    if(num)i.addEventListener('blur',()=>{i.value=ctFmt_(i.value);});
   });
   el.querySelectorAll('[data-s]').forEach(i=>i.addEventListener('input',()=>{
     const r=d.schedule[Number(i.dataset.s)],f=i.dataset.f;r[f]=f==='amount'?ctNum_(i.value):i.value;
@@ -176,7 +198,7 @@ function ctWire_(el){
   el.querySelectorAll('[data-s][data-f="amount"]').forEach(i=>i.addEventListener('blur',()=>{i.value=ctFmt_(i.value);}));
   el.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{d.schedule.splice(Number(b.dataset.del),1);ctRender_();});
   const add=el.querySelector('[data-add]');if(add)add.onclick=()=>{d.schedule.push({label:'',due:'',dueText:'',amount:0});ctRender_();};
-  const drop=el.querySelector('[data-drop]'),file=el.querySelector('[data-file]');
+  const drop=el.querySelector('[data-drop]'),file=el.querySelector('[data-file]'),dkey=drop&&drop.dataset.drop;
   if(drop){
     const take=f=>{
       if(!f)return;const m=el.querySelector('[data-m]');
@@ -190,7 +212,7 @@ function ctWire_(el){
           cv.width=Math.round(img.naturalWidth*k);cv.height=Math.round(img.naturalHeight*k);
           const g=cv.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,cv.width,cv.height);g.drawImage(img,0,0,cv.width,cv.height);
           const png=cv.toDataURL('image/png'),jpg=cv.toDataURL('image/jpeg',0.82),best=png.length<=jpg.length*1.15?png:jpg;
-          d.drawing={b64:best.split(',')[1],mime:best.startsWith('data:image/png')?'image/png':'image/jpeg',name:f.name,w:cv.width,h:cv.height};ctRender_();
+          d[dkey]={b64:best.split(',')[1],mime:best.startsWith('data:image/png')?'image/png':'image/jpeg',name:f.name,w:cv.width,h:cv.height};ctRender_();
         };img.src=url;};
       rd.readAsDataURL(f);
     };
@@ -199,11 +221,12 @@ function ctWire_(el){
     drop.addEventListener('dragleave',()=>drop.classList.remove('over'));
     drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('over');take(e.dataTransfer.files[0]);});
   }
-  const rm=el.querySelector('[data-rmimg]');if(rm)rm.onclick=e=>{e.preventDefault();d.drawing=null;ctRender_();};
+  const rm=el.querySelector('[data-rmimg]');if(rm)rm.onclick=e=>{e.preventDefault();d[rm.dataset.rmimg]=null;ctRender_();};
   const gen=el.querySelector('[data-gen]');
   if(gen)gen.onclick=()=>{
     const m=el.querySelector('[data-m]');gen.disabled=true;m.className='ctMsg';m.textContent='جاري تجهيز العقد…';
-    const data={client:d.client,unit:d.unit,price:ctNum_(d.price),dp:ctNum_(d.dp),schedule:d.schedule,drawing:d.drawing};
+    const words={};['AREA_WORDS','OUT_AREA_WORDS','PRICE_WORDS','DP_WORDS','REST_WORDS','DAY_NAME'].forEach(k=>{words[k]=ctWordVal_(k);});
+    const data={client:d.client,unit:d.unit,price:ctNum_(d.price),dp:ctNum_(d.dp),schedule:d.schedule,useTable:!!d.useTable,drawing:d.drawing,planImage:d.planImage,words:words};
     google.script.run.withSuccessHandler(res=>{
       gen.disabled=false;
       try{const bin=atob(res.b64),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
