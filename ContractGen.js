@@ -125,8 +125,8 @@ function contractDeal_(row, unitCode) {
   const num = names => { const c = mainDealsCol_(cols, names); if (!c) return 0; const v = vals[c - 1]; return typeof v === 'number' ? v : Number(String(v || '').replace(/[^\d.\-]/g, '')) || 0; };
   const dateOf = names => { const c = mainDealsCol_(cols, names); const v = c ? vals[c - 1] : ''; return v instanceof Date && !isNaN(v) ? v : (dealDate_(String(disp[c - 1] || '')) || null); };
   const d = {
-    unit: at(['Unit Code']), project: at(['Project']), client: at(['Final Client Name', 'Client Name']),
-    nationality: at(['client info|nationality', 'Nationality']), idNumber: at(['ID Number']),
+    unit: at(['Unit Code']), project: at(['Project']), client: at(['Final Client Name', 'Client Name']).replace(/\s*-?\s*EW-[A-Z0-9/.\- ]+$/i, '').trim(),
+    nationality: at(['client info|nationality', 'Nationality']), idType: at(['ID Type']), idNumber: at(['ID Number']),
     address: at(['Residence Address']) || at(['ID Address']), mobile: at(['client info|contact', 'Contact']), email: at(['Email']),
     floor: at(['unit info|floor', 'Floor']), area: num(['unit info|area', 'Area']), outArea: num(['OutArea', 'Out Area']),
     price: num(['price details|final price', 'Final Price']), dp: num(['Actual DP', 'Acctual DP']),
@@ -136,46 +136,146 @@ function contractDeal_(row, unitCode) {
   return d;
 }
 
-/* Installments for Annex 2: the unit's schedule if one was entered, else the EDEN WALK yearly plan. */
+/* English schedule names -> Arabic for Annex 2 (the wizard lets you edit them). */
+function contractArLabel_(name) {
+  const t = String(name || '').trim();
+  const tail = (t.match(/\s*\(.*\)\s*$/) || [''])[0];
+  const b = t.replace(/\s*\(.*\)\s*$/, '');
+  let m;
+  if (/^down payment$/i.test(b)) return 'مقدم حجز وتعاقد' + tail;
+  if (/^part of dp$/i.test(b)) return 'جزء من المقدم' + tail;
+  if ((m = b.match(/^remain of dp\s*(\d*)$/i))) return 'باقي المقدم' + (m[1] ? ' ' + m[1] : '') + tail;
+  if ((m = b.match(/^bulk(?: payment)?\s*(\d*)$/i))) return 'دفعة إضافية' + (m[1] ? ' ' + m[1] : '') + tail;
+  if ((m = b.match(/^marketing expenses$/i))) return 'مصاريف تسويق' + tail;
+  if ((m = b.match(/^SA\s*(\d+)$/i))) return 'القسط نصف السنوي ' + m[1] + tail;
+  if ((m = b.match(/^Q\s*(\d+)$/i))) return 'القسط الربع سنوي ' + m[1] + tail;
+  if ((m = b.match(/^A\s*(\d+)$/i))) return 'القسط السنوي ' + m[1] + tail;
+  return t;
+}
+function contractIsDp_(name) { return /^(down payment|part of dp|remain of dp)/i.test(String(name || '').trim()); }
+
+/* Annex 2 rows (maintenance left out): the unit's schedule if one was entered, else DP + the EDEN WALK yearly plan.
+   -> {rows: [{label, due:'yyyy-mm-dd'|'', dueText, amount}], dp, source} */
 function contractSchedule_(d) {
   const tz = Session.getScriptTimeZone() || 'Africa/Cairo', out = [];
+  let dp = 0, source = '';
   try {
     const key = instKey_(d.project, d.unit);
-    const rows = instRows_(instSheet_(INST_SHEET_, INST_HEAD_, false)).filter(r => String(r[0]) === key)
-      .sort((a, b) => (a[7] instanceof Date ? a[7].getTime() : 0) - (b[7] instanceof Date ? b[7].getTime() : 0));
-    rows.forEach(r => out.push([String(r[6] || ('القسط ' + r[5])), r[7] instanceof Date ? Utilities.formatDate(r[7], tz, 'dd/MM/yyyy') : String(r[7] || ''), Number(r[8]) || 0]));
+    const rows = instRows_(instSheet_(INST_SHEET_, INST_HEAD_, false)).filter(r => String(r[0]) === key && !/^M/i.test(String(r[5])))
+      .sort((a, b) => (a[7] instanceof Date ? a[7].getTime() : 0) - (b[7] instanceof Date ? b[7].getTime() : 0) || (String(a[5]) === '0' ? -1 : String(b[5]) === '0' ? 1 : 0));
+    rows.forEach(r => {
+      const amt = Number(r[8]) || 0;
+      if (contractIsDp_(r[6])) dp += amt;
+      out.push({ label: contractArLabel_(r[6]), due: r[7] instanceof Date ? Utilities.formatDate(r[7], tz, 'yyyy-MM-dd') : '', dueText: '', amount: amt });
+    });
+    if (out.length) source = 'schedule';
   } catch (e) {}
-  if (!out.length && typeof ewRead_ === 'function') {
-    try {
-      const u = ewRead_().units.find(x => ewKey_(x.unit) === ewKey_(d.unit));
-      if (u) Object.keys(u.plan).sort().forEach(y => { const v = Number(u.plan[y][0]) || 0; if (v) out.push(['أقساط عام ' + y, 'خلال عام ' + y, v]); });
-    } catch (e) {}
+  if (!out.length) {
+    dp = d.dp;
+    out.push({ label: 'مقدم حجز وتعاقد', due: d.contractDate ? Utilities.formatDate(d.contractDate, tz, 'yyyy-MM-dd') : '', dueText: '', amount: d.dp });
+    if (typeof ewRead_ === 'function') {
+      try {
+        const u = ewRead_().units.find(x => ewKey_(x.unit) === ewKey_(d.unit));
+        if (u) Object.keys(u.plan).sort().forEach(y => { const v = Number(u.plan[y][0]) || 0; if (v) out.push({ label: 'أقساط عام ' + y, due: '', dueText: 'خلال عام ' + y, amount: v }); });
+        if (out.length > 1) source = 'partners';
+      } catch (e) {}
+    }
   }
-  return out;
+  return { rows: out, dp: dp, source: source };
 }
 
-/* Builds the contract. req = {row, unitCode, date: 'yyyy-mm-dd' (optional)} */
+/* Wizard step 0: everything the wizard pre-fills. req = {row, unitCode} */
+function contractDraft(authToken, req) {
+  const user = validateAuthToken_(authToken);
+  if (!contractCanMake_(user)) throw new Error('Only admins can generate contracts.');
+  req = req || {};
+  const d = contractDeal_(Number(req.row), req.unitCode);
+  const s = contractSchedule_(d);
+  let template = true;
+  try { contractTemplate_(d.project); } catch (e) { template = false; }
+  const tz = Session.getScriptTimeZone() || 'Africa/Cairo';
+  return {
+    template: template, project: d.project, row: Number(req.row),
+    client: { name: d.client, idType: /pass/i.test(d.idType) ? 'passport' : 'id', idNumber: d.idNumber, nationality: arNationality_(d.nationality) || 'مصري',
+      address: d.address, mobile: d.mobile, email: d.email },
+    unit: { code: d.unit, area: d.area, outArea: d.outArea, floor: arFloor_(d.floor) === '..........' ? '' : arFloor_(d.floor) },
+    price: d.price, dp: s.dp || d.dp, schedule: s.rows, scheduleSource: s.source,
+    date: Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd')
+  };
+}
+
+/* ---------- Word XML helpers (pure: tested outside Apps Script) ---------- */
+function contractParas_(xml) {
+  const out = [], re = /<w:p[ >][\s\S]*?<\/w:p>/g;
+  let m;
+  while ((m = re.exec(xml))) out.push({ s: m.index, e: m.index + m[0].length, x: m[0], t: (m[0].match(/<w:t[^>]*>[^<]*<\/w:t>/g) || []).map(z => z.replace(/<[^>]+>/g, '')).join('') });
+  return out;
+}
+/* vals: {MARKER: text}; opts: {passport, rows, total, image: {rid, cx, cy}} */
+function contractFillXml_(xml, vals, opts) {
+  opts = opts || {};
+  if (opts.passport) {   // "بطاقة رقم:" -> "جواز سفر رقم:" in the buyer's ID line
+    const p = contractParas_(xml).find(q => q.x.indexOf('{{ID_NUMBER}}') >= 0);
+    if (p) xml = xml.slice(0, p.s) + p.x.replace('>بطاقة<', '>جواز سفر<') + xml.slice(p.e);
+  }
+  if (opts.image) {      // Annex 1: the drawing replaces the blank lines under its title
+    const ps = contractParas_(xml);
+    let i = -1;
+      ps.forEach((q, k) => { if (/^\s*ملحق\s*رقم\s*\(\s*1\s*\)/.test(q.t) && /الهندس/.test(q.t)) i = k; });   // the Annex 1 title, not the clause that mentions it
+    if (i >= 0) {
+      let j = i + 1;
+      while (j < ps.length && !ps[j].t.trim() && !/sectPr|w:drawing|w:type="page"/.test(ps[j].x)) j++;
+      const img = '<w:p><w:pPr><w:bidi/><w:spacing w:before="240" w:after="0"/><w:jc w:val="center"/></w:pPr><w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="' + opts.image.cx + '" cy="' + opts.image.cy + '"/><wp:docPr id="9101" name="EDEN drawing"/>' +
+        '<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">' +
+        '<pic:nvPicPr><pic:cNvPr id="9101" name="drawing"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="' + opts.image.rid + '"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>' +
+        '<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="' + opts.image.cx + '" cy="' + opts.image.cy + '"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>' +
+        '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
+      const s = ps[i].e, e = j > i + 1 ? ps[j - 1].e : ps[i].e;
+      xml = xml.slice(0, s) + img + xml.slice(e);
+    }
+  }
+  Object.keys(vals).forEach(k => { xml = xml.split('{{' + k + '}}').join(xmlEsc_(vals[k])); });
+  const i = xml.indexOf('{{SCHEDULE}}');
+  if (i >= 0) {
+    const s = Math.max(xml.lastIndexOf('<w:p ', i), xml.lastIndexOf('<w:p>', i));
+    const e = xml.indexOf('</w:p>', i) + 6;
+    xml = xml.slice(0, s) + contractScheduleXml_(opts.rows || [], opts.total || 0) + '<w:p/>' + xml.slice(e);
+  }
+  return xml;
+}
+function contractImageFit_(w, h) {   // EMU, max 16 cm x 21 cm, keep the aspect ratio
+  const MW = 5760000, MH = 7560000;
+  w = Number(w) || 1600; h = Number(h) || 1200;
+  const k = Math.min(MW / w, MH / h);
+  return { cx: Math.round(w * k), cy: Math.round(h * k) };
+}
+
+/* Builds the contract from the wizard. req = {row, unitCode, date, data: {client, unit, price, dp, schedule, drawing}} */
 function generateDealContract(authToken, req) {
   const user = validateAuthToken_(authToken);
   if (!contractCanMake_(user)) throw new Error('Only admins can generate contracts.');
   req = req || {};
   const d = contractDeal_(Number(req.row), req.unitCode);
+  const draft = req.data || contractDraft(authToken, { row: req.row, unitCode: req.unitCode });
+  const c = draft.client || {}, u = draft.unit || {};
   const file = contractTemplate_(d.project);
   const date = (req.date && instDateIn_(req.date)) || d.contractDate || new Date();
   const tz = Session.getScriptTimeZone() || 'Africa/Cairo';
-  const rest = Math.max(0, d.price - d.dp);
-  const sched = contractSchedule_(d);
-  const rows = [['1', 'مقدم حجز وتعاقد (عند التوقيع)', Utilities.formatDate(date, tz, 'dd/MM/yyyy'), enNum_(d.dp)]]
-    .concat(sched.map((s, i) => [String(i + 2), s[0], s[1], enNum_(s[2])]));
-  const schedTotal = d.dp + sched.reduce((a, s) => a + s[2], 0);
+  const price = Math.round(Number(draft.price) || 0), dp = Math.round(Number(draft.dp) || 0), rest = Math.max(0, price - dp);
+  const area = Number(u.area) || 0, outArea = Number(u.outArea) || 0;
+  const fmtDue = r => { const t = String(r.due || '').trim(); const m = t.match(/^(\d{4})-(\d{2})-(\d{2})$/); return m ? m[3] + '/' + m[2] + '/' + m[1] : (r.dueText || t || '..........'); };
+  const sched = (draft.schedule || []).filter(r => String(r.label || '').trim() || Number(r.amount));
+  const rows = sched.map((r, i) => [String(i + 1), String(r.label || '').trim() || '..........', fmtDue(r), enNum_(r.amount)]);
+  const schedTotal = sched.reduce((a, r) => a + (Number(r.amount) || 0), 0);
   const vals = {
     DAY_NAME: arDay_(date), DD: Utilities.formatDate(date, tz, 'dd'), MM: Utilities.formatDate(date, tz, 'MM'), YYYY: Utilities.formatDate(date, tz, 'yyyy'),
-    CLIENT_NAME: d.client, NATIONALITY: arNationality_(d.nationality), ID_NUMBER: d.idNumber, ADDRESS: d.address, EMAIL: d.email, MOBILE: d.mobile,
-    UNIT_CODE: d.unit, AREA: enNum_(d.area), AREA_WORDS: arWords_(d.area), FLOOR: arFloor_(d.floor),
-    OUT_AREA: d.outArea ? enNum_(d.outArea) + ' متراً مربعاً' : 'لا يوجد', OUT_AREA_WORDS: d.outArea ? arWords_(d.outArea) + ' متراً مربعاً' : '—',
-    PRICE: enNum_(d.price), PRICE_WORDS: arMoney_(d.price), DP: enNum_(d.dp), DP_WORDS: arMoney_(d.dp), REST: enNum_(rest), REST_WORDS: arMoney_(rest)
+    CLIENT_NAME: String(c.name || '').trim(), NATIONALITY: String(c.nationality || '').trim(), ID_NUMBER: String(c.idNumber || '').trim(),
+    ADDRESS: String(c.address || '').trim(), EMAIL: String(c.email || '').trim(), MOBILE: String(c.mobile || '').trim(),
+    UNIT_CODE: String(u.code || d.unit).trim(), AREA: area ? enNum_(area) : '', AREA_WORDS: area ? arWords_(area) : '', FLOOR: String(u.floor || '').trim(),
+    OUT_AREA: outArea ? enNum_(outArea) + ' متراً مربعاً' : 'لا يوجد', OUT_AREA_WORDS: outArea ? arWords_(outArea) + ' متراً مربعاً' : '—',
+    PRICE: enNum_(price), PRICE_WORDS: arMoney_(price), DP: enNum_(dp), DP_WORDS: arMoney_(dp), REST: enNum_(rest), REST_WORDS: arMoney_(rest)
   };
-  const missing = ['CLIENT_NAME', 'ID_NUMBER', 'ADDRESS', 'MOBILE'].filter(k => !vals[k]);
+  const missing = ['CLIENT_NAME', 'ID_NUMBER', 'ADDRESS', 'MOBILE', 'AREA', 'FLOOR'].filter(k => !vals[k]);
   Object.keys(vals).forEach(k => { if (vals[k] === '' || vals[k] == null) vals[k] = '..........'; });
 
   const res = UrlFetchApp.fetch('https://www.googleapis.com/drive/v3/files/' + file.id + '?alt=media&supportsAllDrives=true',
@@ -184,22 +284,29 @@ function generateDealContract(authToken, req) {
     PropertiesService.getScriptProperties().deleteProperty(CONTRACT_TEMPLATES_[String(d.project).toUpperCase().replace(/[^A-Z0-9]/g, '')].prop);
     throw new Error('Could not read the contract template from Drive (' + res.getResponseCode() + '). Try again.');
   }
+  let image = null, imgBlob = null;
+  const dr = draft.drawing;
+  if (dr && dr.b64) {
+    const ext = /jpe?g/i.test(dr.mime || '') ? 'jpeg' : 'png';
+    imgBlob = Utilities.newBlob(Utilities.base64Decode(String(dr.b64).replace(/^data:[^,]*,/, '')), 'image/' + ext, 'word/media/eden_drawing.' + ext);
+    image = Object.assign({ rid: 'rIdEdenDrawing', ext: ext }, contractImageFit_(dr.w, dr.h));
+  }
   const parts = Utilities.unzip(res.getBlob().setContentType('application/zip'));
   const out = parts.map(p => {
     const name = p.getName();
-    if (name !== 'word/document.xml') return p;
-    let xml = p.getDataAsString('UTF-8');
-    Object.keys(vals).forEach(k => { xml = xml.split('{{' + k + '}}').join(xmlEsc_(vals[k])); });
-    // replace the whole paragraph that holds {{SCHEDULE}} with the table
-    const i = xml.indexOf('{{SCHEDULE}}');
-    if (i >= 0) {
-      const s = xml.lastIndexOf('<w:p ', i) > xml.lastIndexOf('<w:p>', i) ? xml.lastIndexOf('<w:p ', i) : xml.lastIndexOf('<w:p>', i);
-      const e = xml.indexOf('</w:p>', i) + 6;
-      xml = xml.slice(0, s) + contractScheduleXml_(rows, schedTotal) + '<w:p/>' + xml.slice(e);
+    if (name === 'word/document.xml')
+      return Utilities.newBlob(contractFillXml_(p.getDataAsString('UTF-8'), vals, { passport: c.idType === 'passport', rows: rows, total: schedTotal, image: image }), 'application/xml', name);
+    if (image && name === 'word/_rels/document.xml.rels')
+      return Utilities.newBlob(p.getDataAsString('UTF-8').replace('</Relationships>', '<Relationship Id="' + image.rid + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/eden_drawing.' + image.ext + '"/></Relationships>'), 'application/xml', name);
+    if (image && name === '[Content_Types].xml') {
+      let t = p.getDataAsString('UTF-8');
+      if (t.indexOf('Extension="' + image.ext + '"') < 0) t = t.replace('<Default ', '<Default Extension="' + image.ext + '" ContentType="image/' + image.ext + '"/><Default ');
+      return Utilities.newBlob(t, 'application/xml', name);
     }
-    return Utilities.newBlob(xml, 'application/xml', name);
+    return p;
   });
-  const fname = 'عقد ' + d.unit + ' - ' + d.client + ' - ' + Utilities.formatDate(date, tz, 'yyyy-MM-dd') + '.docx';
+  if (imgBlob) out.push(imgBlob);
+  const fname = 'عقد ' + vals.UNIT_CODE + ' - ' + vals.CLIENT_NAME + ' - ' + Utilities.formatDate(date, tz, 'yyyy-MM-dd') + '.docx';
   const docx = Utilities.zip(out, fname).setContentType('application/vnd.openxmlformats-officedocument.wordprocessingml.document');
 
   let url = '';
@@ -208,6 +315,6 @@ function generateDealContract(authToken, req) {
     const f = Drive.Files.create({ name: fname, parents: [folder], mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }, docx, { fields: 'id,webViewLink' });
     url = f.webViewLink || ('https://drive.google.com/file/d/' + f.id + '/view');
   } catch (e) { console.warn('Contract save: ' + e); }
-  auditLog_(user, 'Contract generated', { project: d.project, unit: d.unit, client: d.client, details: 'Price ' + enNum_(d.price) + ' · DP ' + enNum_(d.dp) + (missing.length ? ' · missing: ' + missing.join(', ') : ''), ref: 'Deals row ' + req.row });
+  auditLog_(user, 'Contract generated', { project: d.project, unit: vals.UNIT_CODE, client: vals.CLIENT_NAME, details: 'Price ' + enNum_(price) + ' · DP ' + enNum_(dp) + ' · Annex 2 ' + rows.length + ' rows' + (image ? ' · drawing' : '') + (missing.length ? ' · missing: ' + missing.join(', ') : ''), ref: 'Deals row ' + req.row });
   return { name: fname, url: url, b64: Utilities.base64Encode(docx.getBytes()), missing: missing };
 }

@@ -108,7 +108,7 @@
     } else {
       var id = 'q' + Date.now().toString(36) + Math.random().toString(36).slice(2, 12), parts = [];
       for (var i = 0; i < q.length; i += 5000) parts.push(q.slice(i, i + 5000));
-      await pool(parts, 4, function (d, n) { return get({ api: 'put', id: id, i: n, d: d }); });
+      await pool(parts, parts.length > 20 ? 8 : 4, function (d, n) { return get({ api: 'put', id: id, i: n, d: d }); });
       res = await get({ api: 'call', ref: id, n: parts.length, z: z });
     }
     var text = res.data;

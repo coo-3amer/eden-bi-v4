@@ -1,17 +1,43 @@
 <style id="eden-contracts">
 .ctBack{position:fixed;inset:0;z-index:470;background:rgba(10,8,6,.5)}
-.ct{position:fixed;z-index:471;left:50%;top:50%;transform:translate(-50%,-50%);width:440px;max-width:calc(100vw - 24px);background:var(--ds-surface,#fffdf9);color:var(--ds-text,#2a2621);border-radius:16px;box-shadow:0 28px 70px rgba(0,0,0,.35);padding:18px 20px;font-family:Inter,'Segoe UI',Tahoma,Arial,sans-serif}
-.ct h3{margin:0 0 2px;font:600 22px 'Cormorant Garamond',Georgia,serif;color:var(--ds-heading,#16130f)}
-.ct p{margin:0 0 12px;font-size:12.5px;color:var(--ds-muted,#8a7f6c);line-height:1.55}
-.ct label{display:flex;flex-direction:column;gap:4px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ds-muted)}
-.ct input{height:36px;border:1px solid var(--ds-line,#e3d9c7);border-radius:10px;padding:0 10px;font:inherit;font-size:13.5px;background:var(--ds-surface,#fff);color:var(--ds-text)}
-.ctRow{display:flex;gap:8px;align-items:center;margin-top:14px;flex-wrap:wrap}
-.ctBtn{height:36px;padding:0 14px;border-radius:10px;border:1px solid var(--ds-line,#e3d9c7);background:transparent;color:var(--ds-text);font-weight:700;cursor:pointer}
-.ctBtn.p{background:var(--ds-gold,#b08a42);border-color:transparent;color:#fff}
-.ctMsg{font-size:12.5px;margin-top:10px;line-height:1.6}.ctMsg.err{color:#c0533b;font-weight:700}.ctMsg a{color:var(--ds-gold-strong,#8f6d2c);font-weight:700}
+.ct{position:fixed;z-index:471;left:50%;top:50%;transform:translate(-50%,-50%);width:780px;max-width:calc(100vw - 20px);max-height:calc(100vh - 24px);display:flex;flex-direction:column;background:var(--ds-surface,#fffdf9);color:var(--ds-text,#2a2621);border-radius:16px;box-shadow:0 28px 70px rgba(0,0,0,.35);font-family:Tahoma,Inter,'Segoe UI',Arial,sans-serif;overflow:hidden}
+.ctHd{padding:14px 20px 10px;border-bottom:1px solid var(--ds-line,#eee3cf)}
+.ctHd h3{margin:0;font:600 23px 'Cormorant Garamond',Georgia,serif;color:var(--ds-heading,#16130f)}
+.ctHd small{font-size:12px;color:var(--ds-muted,#8a7f6c)}
+.ctSteps{display:flex;gap:6px;padding:10px 20px;background:var(--ds-soft,#faf5ea);border-bottom:1px solid var(--ds-line,#eee3cf)}
+.ctSteps button{flex:1;min-width:0;text-align:center;font:700 11px Tahoma,Arial,sans-serif;color:#a99c84;padding:6px 2px;border-radius:9px;border:1px solid #eadfc9;background:var(--ds-surface,#fff);cursor:pointer;line-height:1.35}
+.ctSteps button b{display:block;font-size:14px}
+.ctSteps .on{background:var(--ds-gold,#b08a42);color:#fff;border-color:transparent}.ctSteps .ok{color:#3f7d4a;border-color:#bfd9c3;background:#f1f8f2}
+.ctBd{padding:16px 20px;overflow:auto;flex:1;min-height:260px}
+.ctG{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}
+.ct label{display:flex;flex-direction:column;gap:5px;font-size:11.5px;font-weight:800;color:var(--ds-muted,#8a7f6c)}
+.ct input,.ct select{height:36px;border:1px solid var(--ds-line,#e3d9c7);border-radius:10px;padding:0 10px;font:inherit;font-size:13.5px;background:var(--ds-surface,#fff);color:var(--ds-text)}
+.ct .full{grid-column:1/-1}.ct .ro{background:var(--ds-soft,#f6f0e4);font-weight:700}
+.ct .miss{border-color:#d9876f;background:#fff4f0}
+.ctHint{font-size:10.5px;font-weight:600;color:#3f7d4a}.ctHint.m{color:#c0533b}
+.ctSeg{display:flex;border:1px solid var(--ds-line,#e3d9c7);border-radius:10px;overflow:hidden;height:36px}
+.ctSeg button{flex:1;border:0;background:transparent;font:700 13px Tahoma,Arial,sans-serif;color:var(--ds-text);cursor:pointer}.ctSeg .on{background:var(--ds-gold,#b08a42);color:#fff}
+.ctWords{font-size:12.5px;color:#6b5f4b;background:var(--ds-soft,#faf5ea);border-radius:8px;padding:6px 10px;font-weight:600;line-height:1.6}
+.ctTbl{width:100%;border-collapse:collapse;font-size:13px}.ctTbl th{background:#efe4cc;padding:6px;font-size:12px;color:#5b4a2b}.ctTbl td{border-bottom:1px solid #eee3cf;padding:3px 4px;text-align:center}
+.ctTbl input{height:30px;width:100%;box-sizing:border-box;text-align:center;padding:0 6px}.ctTbl .x{border:0;background:none;color:#c0533b;font-size:15px;cursor:pointer}
+.ctTot{display:flex;gap:10px;margin-top:10px;font-size:12.5px}.ctTot div{flex:1;background:var(--ds-soft,#faf5ea);border-radius:10px;padding:7px 10px}.ctTot b{display:block;font-size:15px}
+.ctGood{color:#3f7d4a}.ctBad{color:#c0533b}
+.ctLink{border:0;background:none;color:var(--ds-gold-strong,#8f6d2c);font-weight:800;cursor:pointer;font-size:12.5px;padding:0}
+.ctDrop{border:2px dashed #d8c7a4;border-radius:14px;padding:20px;text-align:center;color:var(--ds-muted,#8a7f6c);font-size:13px;cursor:pointer;display:block}
+.ctDrop.over{background:#faf5ea;border-color:var(--ds-gold,#b08a42)}
+.ctPrev{margin-top:12px;border:1px solid var(--ds-line,#e3d9c7);border-radius:12px;padding:8px;text-align:center}.ctPrev img{max-width:100%;max-height:300px}
+.ctRv{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.ctRv section{border:1px solid var(--ds-line,#eee3cf);border-radius:12px;padding:9px 12px;font-size:13px;line-height:1.85}
+.ctRv h4{margin:0 0 3px;font-size:13px;color:var(--ds-gold-strong,#8f6d2c);display:flex;justify-content:space-between}
+.ctWarn{background:#fff4f0;border:1px solid #f0c4b6;color:#a2432c;border-radius:10px;padding:8px 12px;font-size:12.5px;margin-top:10px;line-height:1.7}
+.ctFt{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:11px 20px;border-top:1px solid var(--ds-line,#eee3cf);background:var(--ds-soft,#fdfaf3)}
+.ctBtn{height:38px;padding:0 16px;border-radius:10px;border:1px solid var(--ds-line,#e3d9c7);background:var(--ds-surface,#fff);color:var(--ds-text);font:700 13.5px Tahoma,Arial,sans-serif;cursor:pointer}
+.ctBtn.p{background:var(--ds-gold,#b08a42);border-color:transparent;color:#fff}.ctBtn:disabled{opacity:.6;cursor:default}
+.ctMsg{font-size:12.5px;line-height:1.6;flex:1;text-align:center}.ctMsg.err{color:#c0533b;font-weight:700}.ctMsg a{color:var(--ds-gold-strong,#8f6d2c);font-weight:700}
+@media(max-width:640px){.ctG,.ctRv{grid-template-columns:1fr}.ctSteps button{font-size:9.5px}.ctSteps button b{font-size:12px}.ctTot{flex-direction:column}}
 </style>
 <script>
-/* EDEN BI — Sale contract (Word) for a deal: ContractGen.js fills the template. Admins, EDEN WALK. */
+/* EDEN BI — Sale contract wizard (Word). You fill / check each part, ContractGen.js fills the template.
+   Admins, EDEN WALK deals that are not cancelled. Nothing typed here is written back to the Deals sheet. */
 function ctCan_(r){
   const role=String((typeof AUTH_USER!=='undefined'&&AUTH_USER&&AUTH_USER.role)||'').trim().toLowerCase();
   if(role!=='admin'&&role!=='super admin')return false;
@@ -24,33 +50,168 @@ function ctButton_(r,cls){
   const u=String(r.unitCode).replace(/['"\\<>]/g,'');
   return `<button type="button" class="${cls||'c360Files'}" onclick="ctOpen_(${Number(r.row)},'${u}')">📄 Contract</button>`;
 }
-function ctClose_(){document.getElementById('ct')?.remove();document.getElementById('ctBack')?.remove();}
+/* Arabic number words — same rules as arWords_ in ContractGen.js (live preview only) */
+function ctWords_(num){
+  num=Math.floor(Math.abs(Number(num)||0));if(!num)return 'صفر';
+  const ones=['','واحد','اثنان','ثلاثة','أربعة','خمسة','ستة','سبعة','ثمانية','تسعة'],teens=['عشرة','أحد عشر','اثنا عشر','ثلاثة عشر','أربعة عشر','خمسة عشر','ستة عشر','سبعة عشر','ثمانية عشر','تسعة عشر'],
+    tens=['','','عشرون','ثلاثون','أربعون','خمسون','ستون','سبعون','ثمانون','تسعون'],hund=['','مائة','مائتان','ثلاثمائة','أربعمائة','خمسمائة','ستمائة','سبعمائة','ثمانمائة','تسعمائة'];
+  const small=n=>{const h=Math.floor(n/100),r=n%100,p=[];if(h)p.push(hund[h]);if(r){if(r<10)p.push(ones[r]);else if(r<20)p.push(teens[r-10]);else{const o=r%10,t=Math.floor(r/10);p.push(o?ones[o]+' و'+tens[t]:tens[t]);}}return p.join(' و');};
+  const sc=[['ألف','ألفان','آلاف','ألفاً'],['مليون','مليونان','ملايين','مليوناً'],['مليار','ملياران','مليارات','ملياراً']];
+  const g=[];let n=num,i=-1;
+  while(n>0){const v=n%1000;if(v){if(i<0)g.unshift(small(v));else{const s=sc[i],r=v%100;g.unshift(v===1?s[0]:v===2?s[1]:(r>=3&&r<=10)?small(v)+' '+s[2]:r>=11?small(v)+' '+s[3]:small(v)+' '+s[0]);}}n=Math.floor(n/1000);i++;}
+  return g.join(' و');
+}
+const CT_STEPS_=[['1','العميل'],['2','الوحدة'],['3','الثمن'],['4','ملحق 1<br>الرسم الهندسي'],['5','ملحق 2<br>الأقساط'],['6','مراجعة<br>وإصدار']];
+let CT_=null;
+function ctClose_(){document.getElementById('ct')?.remove();document.getElementById('ctBack')?.remove();CT_=null;}
+function ctEsc_(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function ctNum_(v){return Math.round(Number(String(v??'').replace(/[^\d.\-]/g,''))||0);}
+function ctFmt_(v){return ctNum_(v).toLocaleString('en-US');}
 function ctOpen_(row,unit){
   ctClose_();
-  const r=((typeof rawRows!=='undefined'&&rawRows)||[]).find(x=>Number(x.row)===Number(row))||{};
-  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const back=document.createElement('div');back.className='ctBack';back.id='ctBack';back.addEventListener('click',ctClose_);
-  const el=document.createElement('div');el.className='ct';el.id='ct';el.setAttribute('role','dialog');
-  el.innerHTML=`<h3>Sale contract</h3><p>${esc(r.project||'')} · <b>${esc(unit)}</b> · ${esc(r.clientName||'')}<br>
-    Fills the EDEN WALK contract (Word) from the Deals sheet: client, ID, address, unit, area, floor, price, down payment and the payment schedule (Annex 2). A copy is saved in Google Drive › “EDEN BI Contracts”.</p>
-    <label>Contract date<input type="date" data-d value="${new Date().toISOString().slice(0,10)}"></label>
-    <div class="ctRow"><button type="button" class="ctBtn p" data-go>Generate contract</button><button type="button" class="ctBtn" data-x>Close</button></div>
-    <div class="ctMsg" data-m></div>`;
+  const back=document.createElement('div');back.className='ctBack';back.id='ctBack';
+  const el=document.createElement('div');el.className='ct';el.id='ct';el.setAttribute('role','dialog');el.dir='rtl';
+  el.innerHTML=`<div class="ctHd"><h3>عقد بيع — EDEN WALK</h3><small>${ctEsc_(unit)} · جاري تحميل بيانات الديل…</small></div><div class="ctBd"></div>
+    <div class="ctFt"><button type="button" class="ctBtn" data-x>إغلاق</button></div>`;
   document.body.append(back,el);
-  el.querySelector('[data-x]').addEventListener('click',ctClose_);
-  el.querySelector('[data-go]').addEventListener('click',e=>{
-    const b=e.target,m=el.querySelector('[data-m]');b.disabled=true;m.className='ctMsg';m.textContent='Preparing the contract…';
-    google.script.run.withSuccessHandler(res=>{
-      b.disabled=false;
-      try{
-        const bin=atob(res.b64),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
-        const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([u8],{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}));
-        a.download=res.name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},800);
-      }catch(x){}
-      m.innerHTML=`✅ Downloaded: <b>${esc(res.name)}</b>${res.url?`<br><a href="${esc(res.url)}" target="_blank" rel="noopener">Open the copy in Google Drive</a>`:''}`+
-        (res.missing&&res.missing.length?`<br><span style="color:#b4452f">Missing in the Deals sheet: ${esc(res.missing.join(', ').replace(/_/g,' ').toLowerCase())} — left as “..........” to fill by hand.</span>`:'');
-    }).withFailureHandler(err=>{b.disabled=false;m.className='ctMsg err';m.textContent=err&&err.message||String(err);})
-      .generateDealContract(AUTH_TOKEN,{row:row,unitCode:unit,date:el.querySelector('[data-d]').value});
+  el.querySelector('[data-x]').onclick=ctClose_;
+  google.script.run.withSuccessHandler(d=>{
+    d.client=d.client||{};d.unit=d.unit||{};
+    d.schedule=(d.schedule||[]).map(r=>({label:r.label||'',due:r.due||'',dueText:r.dueText||'',amount:Number(r.amount)||0}));
+    d.drawing=null;
+    CT_={row:row,unitCode:unit,step:1,d:d};ctRender_();
+  }).withFailureHandler(err=>{el.querySelector('.ctBd').innerHTML=`<div class="ctWarn">${ctEsc_(err&&err.message||err)}</div>`;})
+    .contractDraft(AUTH_TOKEN,{row:row,unitCode:unit});
+}
+function ctTotals_(){
+  const d=CT_.d,sum=d.schedule.reduce((a,r)=>a+(Number(r.amount)||0),0),price=ctNum_(d.price);
+  return {sum:sum,price:price,diff:sum-price};
+}
+function ctMissing_(){
+  const d=CT_.d,c=d.client,u=d.unit,m=[];
+  if(!String(c.name||'').trim())m.push('اسم العميل');
+  if(!String(c.idNumber||'').trim())m.push(c.idType==='passport'?'رقم الجواز':'رقم البطاقة');
+  if(!String(c.address||'').trim())m.push('العنوان');
+  if(!String(c.mobile||'').trim())m.push('الموبايل');
+  if(!ctNum_(u.area))m.push('المساحة');
+  if(!String(u.floor||'').trim())m.push('الدور');
+  if(!ctNum_(d.price))m.push('ثمن الوحدة');
+  return m;
+}
+function ctRender_(){
+  const el=document.getElementById('ct');if(!el||!CT_)return;
+  const d=CT_.d,c=d.client,u=d.unit,s=CT_.step,E=ctEsc_;
+  const inp=(path,val,opt)=>{opt=opt||{};const miss=opt.req&&!String(val??'').trim();
+    return `<input data-k="${path}" value="${E(val??'')}"${opt.ltr?' dir="ltr"':''}${opt.ph?` placeholder="${E(opt.ph)}"`:''} class="${miss?'miss':''}${opt.ro?' ro':''}"${opt.ro?' readonly':''}${opt.num?' inputmode="numeric"':''}>`;};
+  const hint=(val,req)=>req&&!String(val??'').trim()?'<span class="ctHint m">ناقص — اكتبه</span>':'';
+  let body='';
+  if(s===1)body=`<div class="ctG">
+    <label class="full">اسم العميل (زي البطاقة / الجواز)${inp('client.name',c.name,{req:1})}${hint(c.name,1)}</label>
+    <label>نوع إثبات الشخصية<div class="ctSeg"><button type="button" data-idt="id" class="${c.idType!=='passport'?'on':''}">بطاقة رقم قومي</button><button type="button" data-idt="passport" class="${c.idType==='passport'?'on':''}">جواز سفر</button></div></label>
+    <label>${c.idType==='passport'?'رقم جواز السفر':'رقم البطاقة'}${inp('client.idNumber',c.idNumber,{req:1,ltr:1,ph:c.idType==='passport'?'رقم الجواز':'14 رقم'})}${hint(c.idNumber,1)}</label>
+    <label>الجنسية${inp('client.nationality',c.nationality)}</label>
+    <label>رقم الهاتف${inp('client.mobile',c.mobile,{req:1,ltr:1})}${hint(c.mobile,1)}</label>
+    <label class="full">العنوان${inp('client.address',c.address,{req:1})}${hint(c.address,1)}</label>
+    <label class="full">البريد الإلكتروني${inp('client.email',c.email,{ltr:1})}</label></div>`;
+  if(s===2)body=`<div class="ctG">
+    <label>كود الوحدة${inp('unit.code',u.code,{ro:1,ltr:1})}</label>
+    <label>الدور<select data-k="unit.floor">${['','الأرضي','الأول','الثاني','الثالث','الرابع','البدروم','الميزانين'].map(f=>`<option${f===u.floor?' selected':''} value="${f}">${f||'— اختار —'}</option>`).join('')}</select></label>
+    <label>المساحة الداخلية (م²)${inp('unit.area',u.area||'',{req:1,num:1,ltr:1})}<div class="ctWords" data-w="unit.area">${ctNum_(u.area)?ctWords_(u.area)+' متراً مربعاً':'—'}</div></label>
+    <label>المساحة الخارجية — حق انتفاع (م²)${inp('unit.outArea',u.outArea||'',{num:1,ltr:1,ph:'0 = لا يوجد'})}<div class="ctWords" data-w="unit.outArea">${ctNum_(u.outArea)?ctWords_(u.outArea)+' متراً مربعاً':'لا يوجد'}</div></label></div>`;
+  if(s===3){const rest=Math.max(0,ctNum_(d.price)-ctNum_(d.dp));body=`<div class="ctG">
+    <label class="full">إجمالي ثمن الوحدة (جنيه)${inp('price',ctFmt_(d.price),{req:1,num:1,ltr:1})}<div class="ctWords" data-w="price">${ctWords_(d.price)} جنيه مصري فقط لا غير</div></label>
+    <label class="full">المقدم (جنيه)${inp('dp',ctFmt_(d.dp),{num:1,ltr:1})}${d.scheduleSource==='schedule'?'<span class="ctHint">من جدول الأقساط: مجموع سطور المقدم</span>':''}<div class="ctWords" data-w="dp">${ctWords_(d.dp)} جنيه مصري فقط لا غير</div></label>
+    <label class="full">المتبقي بعد المقدم (بيتحسب لوحده)<input class="ro" readonly data-rest value="${ctFmt_(rest)}" dir="ltr"><div class="ctWords" data-w="rest">${ctWords_(rest)} جنيه مصري فقط لا غير</div></label></div>`;}
+  if(s===4)body=`<label class="ctDrop" data-drop>⬆️ اسحب صورة الرسم الهندسي للوحدة هنا أو دوس للاختيار<br><small>PNG / JPG — بتتحط في صفحة «ملحق رقم (1)» في العقد</small><input type="file" accept="image/png,image/jpeg" hidden data-file></label>
+    ${d.drawing?`<div class="ctPrev"><img src="data:${d.drawing.mime};base64,${d.drawing.b64}" alt=""><div style="margin-top:6px;font-size:12px">${E(d.drawing.name)} · <button type="button" class="ctLink" data-rmimg>شيل الصورة</button></div></div>`
+      :'<div style="margin-top:10px;font-size:12.5px;color:#8a7f6c">لو مفيش صورة، صفحة الملحق هتفضل فاضية زي القالب.</div>'}`;
+  if(s===5){const t=ctTotals_();body=`<table class="ctTbl"><tr><th style="width:34px">م</th><th>البيان</th><th style="width:150px">تاريخ الاستحقاق</th><th style="width:130px">المبلغ</th><th style="width:28px"></th></tr>
+    ${d.schedule.map((r,i)=>`<tr><td>${i+1}</td><td><input data-s="${i}" data-f="label" value="${E(r.label)}"></td>
+      <td>${r.due||!r.dueText?`<input type="date" data-s="${i}" data-f="due" value="${E(r.due)}">`:`<input data-s="${i}" data-f="dueText" value="${E(r.dueText)}">`}</td>
+      <td><input data-s="${i}" data-f="amount" value="${ctFmt_(r.amount)}" dir="ltr" inputmode="numeric"></td><td><button type="button" class="x" data-del="${i}" title="مسح">✕</button></td></tr>`).join('')}</table>
+    <div style="margin-top:8px;display:flex;gap:14px;flex-wrap:wrap;align-items:center"><button type="button" class="ctLink" data-add>＋ إضافة قسط</button>
+      <span class="ctHint">${d.scheduleSource==='schedule'?'متحمل من جدول السداد المتسجل للوحدة':d.scheduleSource==='partners'?'متحمل من EDEN WALK Partners (أقساط كل سنة في سطر)':'مفيش جدول متسجل — اكتب الأقساط'} · الصيانة مش بتظهر في الجدول</span></div>
+    <div class="ctTot"><div>إجمالي الجدول<b data-tsum>${t.sum.toLocaleString('en-US')}</b></div><div>ثمن الوحدة<b>${t.price.toLocaleString('en-US')}</b></div>
+      <div>الفرق<b data-tdiff class="${Math.abs(t.diff)<=5?'ctGood':'ctBad'}">${Math.abs(t.diff)<=5?(t.diff?Math.abs(t.diff)+' ✓ تقريب':'✓ مطابق'):t.diff.toLocaleString('en-US')}</b></div></div>`;}
+  if(s===6){const t=ctTotals_(),m=ctMissing_(),rest=Math.max(0,ctNum_(d.price)-ctNum_(d.dp));body=`<label style="max-width:230px">تاريخ العقد<input type="date" data-k="date" value="${E(d.date)}"></label>
+    <div class="ctRv">
+      <section><h4>العميل <button type="button" class="ctLink" data-go="1">تعديل</button></h4>${E(c.name||'—')}<br>${c.idType==='passport'?'جواز سفر':'بطاقة'}: ${c.idNumber?E(c.idNumber):'<b class="ctBad">ناقص</b>'} · ${E(c.nationality||'')}<br><span dir="ltr">${E(c.mobile||'—')}</span>${c.email?' · '+E(c.email):''}<br>${E(c.address||'—')}</section>
+      <section><h4>الوحدة <button type="button" class="ctLink" data-go="2">تعديل</button></h4>${E(u.code)} · الدور ${E(u.floor||'—')}<br>${ctNum_(u.area)||'—'} م² · خارجي: ${ctNum_(u.outArea)?ctNum_(u.outArea)+' م²':'لا يوجد'}</section>
+      <section><h4>الثمن <button type="button" class="ctLink" data-go="3">تعديل</button></h4>الإجمالي ${ctFmt_(d.price)}<br>المقدم ${ctFmt_(d.dp)}<br>المتبقي ${rest.toLocaleString('en-US')}</section>
+      <section><h4>الملاحق <button type="button" class="ctLink" data-go="5">تعديل</button></h4>ملحق 1: ${d.drawing?'صورة الرسم ✓':'<span class="ctBad">من غير صورة</span>'}<br>ملحق 2: ${d.schedule.length} سطر · ${Math.abs(t.diff)<=5?'<span class="ctGood">الإجمالي مطابق ✓</span>':`<span class="ctBad">الفرق عن الثمن ${t.diff.toLocaleString('en-US')}</span>`}</section></div>
+    ${m.length?`<div class="ctWarn">⚠️ ناقص: ${m.join('، ')} — تقدر تصدر العقد ومكانهم هيبقى نقط تكملها بإيدك.</div>`:''}
+    ${d.template===false?'<div class="ctWarn">⚠️ قالب العقد «EDEN WALK contract template.docx» مش موجود على Google Drive — ارفعه الأول.</div>':''}`;}
+  el.innerHTML=`<div class="ctHd"><h3>عقد بيع — EDEN WALK</h3><small>${E(u.code)} · ${E(c.name||'')} · صف ${CT_.row} في Deals</small></div>
+    <div class="ctSteps">${CT_STEPS_.map((x,i)=>`<button type="button" data-go="${i+1}" class="${i+1<s?'ok':i+1===s?'on':''}"><b>${i+1<s?'✓':x[0]}</b>${x[1]}</button>`).join('')}</div>
+    <div class="ctBd">${body}</div>
+    <div class="ctFt"><button type="button" class="ctBtn" data-prev ${s===1?'style="visibility:hidden"':''}>→ السابق</button><div class="ctMsg" data-m></div>
+      ${s<6?'<button type="button" class="ctBtn p" data-next>التالي ←</button>':'<button type="button" class="ctBtn p" data-gen>📄 إصدار العقد (Word)</button>'}
+      <button type="button" class="ctBtn" data-x>إغلاق</button></div>`;
+  ctWire_(el);
+}
+function ctSet_(path,v){const p=path.split('.');let o=CT_.d;for(let i=0;i<p.length-1;i++)o=o[p[i]];o[p[p.length-1]]=v;}
+function ctWire_(el){
+  const d=CT_.d;
+  el.querySelector('[data-x]').onclick=ctClose_;
+  el.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{CT_.step=Number(b.dataset.go);ctRender_();});
+  const pv=el.querySelector('[data-prev]');if(pv)pv.onclick=()=>{CT_.step--;ctRender_();};
+  const nx=el.querySelector('[data-next]');if(nx)nx.onclick=()=>{CT_.step++;ctRender_();};
+  el.querySelectorAll('[data-idt]').forEach(b=>b.onclick=()=>{d.client.idType=b.dataset.idt;ctRender_();});
+  el.querySelectorAll('[data-k]').forEach(i=>{
+    const k=i.dataset.k,num=/^(price|dp|unit\.area|unit\.outArea)$/.test(k);
+    i.addEventListener(i.tagName==='SELECT'?'change':'input',()=>{
+      ctSet_(k,num?ctNum_(i.value):i.value);
+      if(i.classList.contains('miss')&&i.value.trim())i.classList.remove('miss');
+      const w=el.querySelector(`[data-w="${k}"]`);
+      if(w)w.textContent=/area/i.test(k)?(ctNum_(i.value)?ctWords_(i.value)+' متراً مربعاً':(k==='unit.outArea'?'لا يوجد':'—')):ctWords_(i.value)+' جنيه مصري فقط لا غير';
+      if(k==='price'||k==='dp'){const rest=Math.max(0,ctNum_(d.price)-ctNum_(d.dp)),r=el.querySelector('[data-rest]');if(r){r.value=rest.toLocaleString('en-US');el.querySelector('[data-w="rest"]').textContent=ctWords_(rest)+' جنيه مصري فقط لا غير';}}
+    });
+    if(num&&!/area/i.test(k))i.addEventListener('blur',()=>{i.value=ctFmt_(i.value);});
   });
+  el.querySelectorAll('[data-s]').forEach(i=>i.addEventListener('input',()=>{
+    const r=d.schedule[Number(i.dataset.s)],f=i.dataset.f;r[f]=f==='amount'?ctNum_(i.value):i.value;
+    if(f==='amount'){const t=ctTotals_(),ok=Math.abs(t.diff)<=5,sm=el.querySelector('[data-tsum]'),df=el.querySelector('[data-tdiff]');
+      sm.textContent=t.sum.toLocaleString('en-US');df.className=ok?'ctGood':'ctBad';df.textContent=ok?(t.diff?Math.abs(t.diff)+' ✓ تقريب':'✓ مطابق'):t.diff.toLocaleString('en-US');}
+  }));
+  el.querySelectorAll('[data-s][data-f="amount"]').forEach(i=>i.addEventListener('blur',()=>{i.value=ctFmt_(i.value);}));
+  el.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{d.schedule.splice(Number(b.dataset.del),1);ctRender_();});
+  const add=el.querySelector('[data-add]');if(add)add.onclick=()=>{d.schedule.push({label:'',due:'',dueText:'',amount:0});ctRender_();};
+  const drop=el.querySelector('[data-drop]'),file=el.querySelector('[data-file]');
+  if(drop){
+    const take=f=>{
+      if(!f)return;const m=el.querySelector('[data-m]');
+      if(!/^image\/(png|jpeg)$/.test(f.type)){m.className='ctMsg err';m.textContent='الصورة لازم تكون PNG أو JPG';return;}
+      if(f.size>15*1024*1024){m.className='ctMsg err';m.textContent='الصورة أكبر من 15 ميجا';return;}
+      m.className='ctMsg';m.textContent='جاري تجهيز الصورة…';
+      const rd=new FileReader();rd.onload=()=>{const url=String(rd.result),img=new Image();
+        img.onload=()=>{
+          // shrink to 1800 px on the long side (enough for an A4 page) so the upload stays small; keep PNG or JPG, whichever is smaller
+          const k=Math.min(1,1800/Math.max(img.naturalWidth,img.naturalHeight)),cv=document.createElement('canvas');
+          cv.width=Math.round(img.naturalWidth*k);cv.height=Math.round(img.naturalHeight*k);
+          const g=cv.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,cv.width,cv.height);g.drawImage(img,0,0,cv.width,cv.height);
+          const png=cv.toDataURL('image/png'),jpg=cv.toDataURL('image/jpeg',0.82),best=png.length<=jpg.length*1.15?png:jpg;
+          d.drawing={b64:best.split(',')[1],mime:best.startsWith('data:image/png')?'image/png':'image/jpeg',name:f.name,w:cv.width,h:cv.height};ctRender_();
+        };img.src=url;};
+      rd.readAsDataURL(f);
+    };
+    file.onchange=()=>take(file.files[0]);
+    drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('over');});
+    drop.addEventListener('dragleave',()=>drop.classList.remove('over'));
+    drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('over');take(e.dataTransfer.files[0]);});
+  }
+  const rm=el.querySelector('[data-rmimg]');if(rm)rm.onclick=e=>{e.preventDefault();d.drawing=null;ctRender_();};
+  const gen=el.querySelector('[data-gen]');
+  if(gen)gen.onclick=()=>{
+    const m=el.querySelector('[data-m]');gen.disabled=true;m.className='ctMsg';m.textContent='جاري تجهيز العقد…';
+    const data={client:d.client,unit:d.unit,price:ctNum_(d.price),dp:ctNum_(d.dp),schedule:d.schedule,drawing:d.drawing};
+    google.script.run.withSuccessHandler(res=>{
+      gen.disabled=false;
+      try{const bin=atob(res.b64),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
+        const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([u8],{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}));
+        a.download=res.name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},800);}catch(x){}
+      m.innerHTML=`✅ نزل: <b>${ctEsc_(res.name)}</b>${res.url?` · <a href="${ctEsc_(res.url)}" target="_blank" rel="noopener">النسخة في Drive</a>`:''}`;
+    }).withFailureHandler(err=>{gen.disabled=false;m.className='ctMsg err';m.textContent=err&&err.message||String(err);})
+      .generateDealContract(AUTH_TOKEN,{row:CT_.row,unitCode:CT_.unitCode,date:d.date,data:data});
+  };
 }
 </script>
