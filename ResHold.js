@@ -5,9 +5,9 @@
  * "Reservation" 7 days after its Reservation Date, the deal is cancelled in
  * the Deals sheet (Cancel Details: Check ✓, Reason, Date — the Status formula
  * turns it to Cancel) and the unit goes back to Available in the Inventory.
- *   - "New" = not a reservation already open when this feature started: the
- *     first run remembers every open reservation (Script Property
- *     RES_HOLD_OLD) and those keep the old rules.
+ *   - "New" = Reservation Date on/after the day this feature started
+ *     (RES_HOLD_SINCE) and not one of the reservations already open then
+ *     (the first run remembers them in RES_HOLD_OLD). Old ones keep the old rules.
  *   - One day before the end, a "Reservation expiring" alert is sent.
  *   - Runs from the 5-minute warm-up, at most every 10 minutes.
  *   - Script Property RES_HOLD_MINUTES (optional) overrides the 7 days, for tests.
@@ -18,6 +18,14 @@ const RES_HOLD_REASON_ = 'انتهت مدة الحجز (7 أيام) بدون س�
 
 function resHoldKey_(code, unit) {
   return (String(code || '').trim() + '|' + String(unit || '').trim()).toLowerCase();
+}
+
+/* Reserved before the day the 7-day rule started (Script Property RES_HOLD_SINCE). */
+function resHoldIsOldDate_(d) {
+  const since = PropertiesService.getScriptProperties().getProperty('RES_HOLD_SINCE');
+  if (!since || !(d instanceof Date)) return false;
+  const s = new Date(since);
+  return d.getTime() < new Date(s.getFullYear(), s.getMonth(), s.getDate()).getTime();
 }
 
 function resHoldMs_() {
@@ -99,6 +107,7 @@ function resHoldRun_() {
     if (oldSet[key]) continue;
     const d = D[i] instanceof Date ? D[i] : null;
     if (!d) continue;                                                 // no Reservation Date: days can't be counted
+    if (resHoldIsOldDate_(d)) continue;                               // reserved before the 7-day rule started
     out.tracked++;
     const start = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();   // reservation day, 00:00
     const end = start + hold;
@@ -159,7 +168,7 @@ function getReservationHolds(authToken) {
   for (let i = 0; i < n; i++) {
     if (S[i].toLowerCase() !== 'reservation' || !U[i]) continue;
     const d = D[i] instanceof Date ? D[i] : null;
-    const isOld = !!oldSet[resHoldKey_(K[i], U[i])];
+    const isOld = !!oldSet[resHoldKey_(K[i], U[i])] || resHoldIsOldDate_(d);
     const end = d ? new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() + hold : 0;
     rows.push({ row: DATA_START_ROW + i, project: P[i], unit: U[i], client: CL[i], resDate: d ? d.toISOString() : '',
       old: isOld, endsAt: (!isOld && end) ? new Date(end).toISOString() : '' });
