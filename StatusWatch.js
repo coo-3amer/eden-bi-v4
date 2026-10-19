@@ -8,8 +8,9 @@
  * and compares it with the last Status seen (kept in the hidden tab
  * "_Status Seen"). When it differs:
  *   - Activity Log + Telegram: "Deal status changed (sheet)"
- *   (The Inventory is not touched by hand edits in the sheet — only deals
- *    added / updated from the system move the unit's status.)
+ *   - Status turned to Cancel: the unit goes back to Available in the
+ *     Inventory (if no other active deal holds it). Other hand edits don't
+ *     move the Inventory.
  * Called by LiveSync.onDataSheetEdit for edits in the Deals tab.
  ************************************************/
 
@@ -78,7 +79,12 @@ function watchDealStatus_(e) {
           auditLog_(who || 'Sheet user', 'Deal status changed (sheet)', { project: project, unit: unit, client: client,
             details: 'Status: ' + old[i] + ' → ' + (S[i] || '—'), ref: 'Deals row ' + row });
         }
-        // Inventory is NOT changed from hand edits in the Deals sheet (owner's decision).
+        // A deal cancelled in the sheet frees its unit in the Inventory (only Cancel —
+        // other hand edits still don't move the Inventory).
+        if (dealCancelledStatus_(S[i]) && project && unit) {
+          const inv = syncInventoryForDeal_(project, unit, S[i], { by: who ? 'sheet cancel by ' + who : 'sheet cancel' });
+          if (inv && inv.message && !inv.changed) console.log('Cancel in sheet, row ' + row + ': ' + inv.message);
+        }
       });
     } finally { lock.releaseLock(); }
   } catch (err) {

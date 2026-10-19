@@ -170,6 +170,8 @@ function warmDashboardCache() {
   if (typeof ensureDailyBackupTrigger_ === 'function') ensureDailyBackupTrigger_();
   if (typeof ensureTelegramPollTrigger_ === 'function') ensureTelegramPollTrigger_();
   try {
+    // 0) Reservations past 7 days -> cancelled + unit opened (before the rebuild, so it shows at once).
+    if (typeof reservationHoldJob_ === 'function') reservationHoldJob_();
     // 1) What every visitor needs first.
     dashCacheWrite_('ALL', buildDashboardData_({ role: 'Admin' }));
     if (typeof tgDiscWatch_ === 'function') tgDiscWatch_();
