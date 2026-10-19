@@ -36,7 +36,7 @@ function syncInventoryForDeal_(project, unitCode, dealStatus, opts) {
     if (!code || !target) return skip('');
 
     // Cancel: the unit is freed only if no other active deal holds it.
-    if (target === 'Available') {
+    if (target === 'Available' && !opts.skipActiveCheck) {
       const ds = getMainDealsSheet_();
       if (findExistingActiveMainDeal_(ds, mainDealsColumns_(ds), project, unitCode)) {
         return skip('Inventory not changed: another active deal holds ' + unitCode + '.');

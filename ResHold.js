@@ -151,7 +151,7 @@ function resHoldRun_() {
     SpreadsheetApp.flush();
     const ns = String(sh.getRange(row, c.s).getDisplayValue() || '').trim() || 'Cancel';
     if (typeof statusSeenRemember_ === 'function') statusSeenRemember_(row, ns);
-    const inv = syncInventoryForDeal_(P[i], U[i], ns, { by: 'reservation expired' });
+    const inv = resHoldSyncInventory_(P[i], U[i], ns, { by: 'reservation expired' });
     delete warned[key]; delete warned['seen:' + key];
     auditLog_('System', 'Reservation expired', Object.assign({}, info, {
       details: 'Reserved ' + (d ? fmt(d) : '—') + ' — ' + (custom[key] ? 'the cancel time set by hand (' + Utilities.formatDate(new Date(end), tz, 'dd-MMM HH:mm') + ') passed' : (/TEST/i.test(U[i]) ? '10 minutes (test unit)' : Math.round(hold / 86400000 * 10) / 10 + ' days') + ' passed without a down payment') + '. Deal → ' + ns +
@@ -206,6 +206,34 @@ function getReservationHolds(authToken) {
   return out;
 }
 
+/* Row of another active (not cancelled, not renovation) deal on the same unit, or 0. */
+function resHoldOtherActive_(sh, c, row, project, unit) {
+  const last = mainDealsLastRow_(sh, c.cols);
+  if (last < DATA_START_ROW) return 0;
+  const n = last - DATA_START_ROW + 1;
+  const ac = mainDealsCol_(c.cols, ['Additional Status']);
+  const read = k => k ? sh.getRange(DATA_START_ROW, k, n, 1).getDisplayValues().map(r => String(r[0] || '').trim()) : new Array(n).fill('');
+  const P = read(c.p), U = read(c.u), S = read(c.s), A = read(ac);
+  const pk = dealProjectKey_(project), uk = unit.toLowerCase();
+  for (let i = 0; i < n; i++) {
+    if (DATA_START_ROW + i === row) continue;
+    if (U[i].toLowerCase() !== uk || dealProjectKey_(P[i]) !== pk) continue;
+    if (!S[i] || dealCancelledStatus_(S[i]) || A[i].toLowerCase().includes('renovation')) continue;
+    return DATA_START_ROW + i;
+  }
+  return 0;
+}
+
+/* Inventory sync with one retry (Google sometimes answers "service error" once). */
+function resHoldSyncInventory_(project, unit, status, opts) {
+  let r = syncInventoryForDeal_(project, unit, status, opts);
+  if (r && !r.changed && /error|خطأ|timed out|service/i.test(String(r.message || ''))) {
+    Utilities.sleep(1500);
+    r = syncInventoryForDeal_(project, unit, status, opts);
+  }
+  return r;
+}
+
 /* Admins: cancel one reservation now — Deals (Check ✓, Reason, Date → Status Cancel) + unit back to Available. */
 function cancelReservation(authToken, req) {
   const user = resHoldAdmin_(authToken);
@@ -224,15 +252,18 @@ function cancelReservation(authToken, req) {
     if (liveUnit !== unit) throw new Error('The Deals sheet changed (row ' + row + ' is now ' + (liveUnit || 'empty') + '). Reload the list and try again.');
     if (status.toLowerCase() !== 'reservation') throw new Error(unit + ' is not a reservation any more (status: ' + (status || '—') + ').');
     const name = (user && (user.name || user.username)) || 'Admin';
+    const project = String(live[c.p - 1] || '').trim(), client = c.cl ? String(live[c.cl - 1] || '').trim() : '';
+    // Another active deal on the same unit? (read BEFORE writing — no recalculation to wait for)
+    const other = resHoldOtherActive_(sh, c, row, project, unit);
     const today = new Date();
     sh.getRange(row, c.chk).setValue(true);
     sh.getRange(row, c.rsn).setValue(reason);
     sh.getRange(row, c.cdt).setValue(new Date(today.getFullYear(), today.getMonth(), today.getDate())).setNumberFormat('d-mmm-yyyy');
-    SpreadsheetApp.flush();
-    const ns = String(sh.getRange(row, c.s).getDisplayValue() || '').trim() || 'Cancel';
+    const ns = 'Cancel';                                            // the Status formula turns to Cancel once the cancel date is set
     if (typeof statusSeenRemember_ === 'function') statusSeenRemember_(row, ns);
-    const project = String(live[c.p - 1] || '').trim(), client = c.cl ? String(live[c.cl - 1] || '').trim() : '';
-    const inv = syncInventoryForDeal_(project, unit, ns, { by: name });
+    const inv = other
+      ? { changed: false, message: 'Inventory not changed: another active deal holds ' + unit + ' (Deals row ' + other + ').' }
+      : resHoldSyncInventory_(project, unit, ns, { by: name, skipActiveCheck: true });
     auditLog_(user, 'Reservation cancelled', { project: project, unit: unit, client: client,
       details: 'Reason: ' + reason + ' · Deal → ' + ns + (inv && inv.message ? ' · ' + inv.message : ''), ref: 'Deals row ' + row });
     try { clearDashboardCache_(); } catch (e) {}
