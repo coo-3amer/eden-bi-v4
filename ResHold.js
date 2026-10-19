@@ -28,12 +28,20 @@ function resHoldMs_() {
 function resHoldColumns_(sh) {
   const cols = mainDealsColumns_(sh);
   const at = names => mainDealsCol_(cols, names);
+  const rsn = at(['cancel details|reason']), cdt = at(['cancel details|date']);
+  // The cancel "Check" box sits just before the Cancel Details group (under the
+  // previous group title), so take the nearest "Check" header left of Reason.
+  let chk = at(['cancel details|check']);
+  if (!chk && rsn) {
+    const heads = sh.getRange(HEADER_ROW, 1, 1, rsn).getDisplayValues()[0];
+    for (let k = rsn - 1; k >= Math.max(1, rsn - 4); k--) if (normalizeHeader_(heads[k - 1]) === normalizeHeader_('Check')) { chk = k; break; }
+  }
   return {
     cols: cols,
     p: at(['Project']), u: at(['Unit Code']), s: at(['deal status|status', 'Status']),
     code: at(['reservation details|res code', 'Res Code']), date: at(['reservation details|date']),
     cl: at(['Final Client Name', 'Client Name']),
-    chk: at(['cancel details|check']), rsn: at(['cancel details|reason']), cdt: at(['cancel details|date'])
+    chk: chk, rsn: rsn, cdt: cdt
   };
 }
 
