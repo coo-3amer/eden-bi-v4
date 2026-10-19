@@ -10,7 +10,8 @@
  *     (the first run remembers them in RES_HOLD_OLD). Old ones keep the old rules.
  *   - One day before the end, a "Reservation expiring" alert is sent.
  *   - Runs from the 5-minute warm-up, at most every 10 minutes.
- *   - Script Property RES_HOLD_MINUTES (optional) overrides the 7 days, for tests.
+ *   - Script Property RES_HOLD_MINUTES (optional) overrides the 7 days.
+ *   - Test: a deal whose Unit Code contains "TEST" is held 10 minutes only.
  ************************************************/
 
 const RES_HOLD_DAYS_ = 7;
@@ -109,8 +110,11 @@ function resHoldRun_() {
     if (!d) continue;                                                 // no Reservation Date: days can't be counted
     if (resHoldIsOldDate_(d)) continue;                               // reserved before the 7-day rule started
     out.tracked++;
-    const start = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();   // reservation day, 00:00
-    const end = start + hold;
+    // Test units (code with "TEST") are held 10 minutes from when the system first sees them.
+    const test = /TEST/i.test(U[i]);
+    if (test && !warned['seen:' + key]) warned['seen:' + key] = now;
+    const start = test ? warned['seen:' + key] : new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();   // reservation day, 00:00
+    const end = start + (test ? 10 * 60000 : hold);
     const row = DATA_START_ROW + i;
     const info = { project: P[i], unit: U[i], client: CL[i], ref: 'Deals row ' + row };
 
@@ -136,9 +140,9 @@ function resHoldRun_() {
     const ns = String(sh.getRange(row, c.s).getDisplayValue() || '').trim() || 'Cancel';
     if (typeof statusSeenRemember_ === 'function') statusSeenRemember_(row, ns);
     const inv = syncInventoryForDeal_(P[i], U[i], ns, { by: 'reservation expired' });
-    delete warned[key];
+    delete warned[key]; delete warned['seen:' + key];
     auditLog_('System', 'Reservation expired', Object.assign({}, info, {
-      details: 'Reserved ' + fmt(d) + ' — ' + Math.round(hold / 86400000 * 10) / 10 + ' days passed without a down payment. Deal → ' + ns +
+      details: 'Reserved ' + fmt(d) + ' — ' + (test ? '10 minutes (test unit)' : Math.round(hold / 86400000 * 10) / 10 + ' days') + ' passed without a down payment. Deal → ' + ns +
         (inv && inv.message ? ' · ' + inv.message : '') }));
     out.expired.push(U[i]);
   }
