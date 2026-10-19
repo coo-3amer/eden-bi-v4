@@ -135,7 +135,7 @@ function resHoldRun_() {
     const today = new Date();
     sh.getRange(row, c.chk).setValue(true);
     if (c.rsn && !String(live[c.rsn - 1] || '').trim()) sh.getRange(row, c.rsn).setValue(RES_HOLD_REASON_);
-    sh.getRange(row, c.cdt).setValue(new Date(today.getFullYear(), today.getMonth(), today.getDate()));
+    sh.getRange(row, c.cdt).setValue(new Date(today.getFullYear(), today.getMonth(), today.getDate())).setNumberFormat('d-mmm-yyyy');
     SpreadsheetApp.flush();
     const ns = String(sh.getRange(row, c.s).getDisplayValue() || '').trim() || 'Cancel';
     if (typeof statusSeenRemember_ === 'function') statusSeenRemember_(row, ns);
