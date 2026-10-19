@@ -152,30 +152,74 @@ function resHoldRun_() {
   return out;
 }
 
-/* Admins: open NEW reservations and when each one ends (for the dashboard / tests). */
-function getReservationHolds(authToken) {
+function resHoldAdmin_(authToken) {
   const user = validateAuthToken_(authToken);
   const role = String(user && user.role || '').trim().toLowerCase();
-  if (role !== 'admin' && role !== 'super admin') throw new Error('Admins only.');
+  if (role !== 'admin' && role !== 'super admin') throw new Error('Only admins can see and cancel reservations.');
+  return user;
+}
+
+/* Admins: every open reservation (Transactions › Reservations page). */
+function getReservationHolds(authToken) {
+  resHoldAdmin_(authToken);
   const props = PropertiesService.getScriptProperties();
   const sh = getMainDealsSheet_();
   const c = resHoldColumns_(sh);
+  const at = names => mainDealsCol_(c.cols, names);
+  const sc = at(['Sales Name']), am = at(['reservation details|amount']), cu = at(['reservation details|currency']);
   const last = mainDealsLastRow_(sh, c.cols);
   const oldSet = {};
   JSON.parse(props.getProperty('RES_HOLD_OLD') || '[]').forEach(k => oldSet[k] = 1);
-  if (last < DATA_START_ROW || !c.date) return { since: props.getProperty('RES_HOLD_SINCE') || '', rows: [] };
+  const hold = resHoldMs_();
+  const out = { since: props.getProperty('RES_HOLD_SINCE') || '', holdDays: Math.round(hold / 86400000 * 100) / 100, rows: [] };
+  if (last < DATA_START_ROW || !c.s || !c.u) return out;
   const n = last - DATA_START_ROW + 1;
   const disp = k => k ? sh.getRange(DATA_START_ROW, k, n, 1).getDisplayValues().map(r => String(r[0] || '').trim()) : new Array(n).fill('');
-  const P = disp(c.p), U = disp(c.u), S = disp(c.s), K = disp(c.code), CL = disp(c.cl);
-  const D = sh.getRange(DATA_START_ROW, c.date, n, 1).getValues().map(r => r[0]);
-  const hold = resHoldMs_(), rows = [];
+  const P = disp(c.p), U = disp(c.u), S = disp(c.s), K = disp(c.code), CL = disp(c.cl), SA = disp(sc), AM = disp(am), CU = disp(cu);
+  const D = c.date ? sh.getRange(DATA_START_ROW, c.date, n, 1).getValues().map(r => r[0]) : new Array(n).fill('');
   for (let i = 0; i < n; i++) {
     if (S[i].toLowerCase() !== 'reservation' || !U[i]) continue;
     const d = D[i] instanceof Date ? D[i] : null;
     const isOld = !!oldSet[resHoldKey_(K[i], U[i])] || resHoldIsOldDate_(d);
     const end = d ? new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() + hold : 0;
-    rows.push({ row: DATA_START_ROW + i, project: P[i], unit: U[i], client: CL[i], resDate: d ? d.toISOString() : '',
-      old: isOld, endsAt: (!isOld && end) ? new Date(end).toISOString() : '' });
+    out.rows.push({ row: DATA_START_ROW + i, project: P[i], unit: U[i], client: CL[i], resCode: K[i], sales: SA[i],
+      amount: AM[i], currency: CU[i], resDate: d ? d.toISOString() : '', old: isOld, endsAt: (!isOld && end) ? new Date(end).toISOString() : '' });
   }
-  return { since: props.getProperty('RES_HOLD_SINCE') || '', holdDays: hold / 86400000, rows: rows };
+  return out;
+}
+
+/* Admins: cancel one reservation now — Deals (Check ✓, Reason, Date → Status Cancel) + unit back to Available. */
+function cancelReservation(authToken, req) {
+  const user = resHoldAdmin_(authToken);
+  req = req || {};
+  const row = Number(req.row), unit = String(req.unit || '').trim(), reason = String(req.reason || '').trim();
+  if (!row || row < DATA_START_ROW || !unit) throw new Error('Choose a reservation.');
+  if (!reason) throw new Error('Write the reason for cancelling.');
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(20000)) throw new Error('The system is busy, try again in a few seconds.');
+  try {
+    const sh = getMainDealsSheet_();
+    const c = resHoldColumns_(sh);
+    if (!c.s || !c.u || !c.chk || !c.rsn || !c.cdt) throw new Error('Cancel columns not found in the Deals sheet.');
+    const live = sh.getRange(row, 1, 1, c.cols.lastCol).getDisplayValues()[0];
+    const liveUnit = String(live[c.u - 1] || '').trim(), status = String(live[c.s - 1] || '').trim();
+    if (liveUnit !== unit) throw new Error('The Deals sheet changed (row ' + row + ' is now ' + (liveUnit || 'empty') + '). Reload the list and try again.');
+    if (status.toLowerCase() !== 'reservation') throw new Error(unit + ' is not a reservation any more (status: ' + (status || '—') + ').');
+    const name = (user && (user.name || user.username)) || 'Admin';
+    const today = new Date();
+    sh.getRange(row, c.chk).setValue(true);
+    sh.getRange(row, c.rsn).setValue(reason);
+    sh.getRange(row, c.cdt).setValue(new Date(today.getFullYear(), today.getMonth(), today.getDate())).setNumberFormat('d-mmm-yyyy');
+    SpreadsheetApp.flush();
+    const ns = String(sh.getRange(row, c.s).getDisplayValue() || '').trim() || 'Cancel';
+    if (typeof statusSeenRemember_ === 'function') statusSeenRemember_(row, ns);
+    const project = String(live[c.p - 1] || '').trim(), client = c.cl ? String(live[c.cl - 1] || '').trim() : '';
+    const inv = syncInventoryForDeal_(project, unit, ns, { by: name });
+    auditLog_(user, 'Reservation cancelled', { project: project, unit: unit, client: client,
+      details: 'Reason: ' + reason + ' · Deal → ' + ns + (inv && inv.message ? ' · ' + inv.message : ''), ref: 'Deals row ' + row });
+    try { clearDashboardCache_(); } catch (e) {}
+    return { ok: true, status: ns, inventory: inv || {}, message: unit + ' cancelled' + (inv && inv.message ? ' · ' + inv.message : '') };
+  } finally {
+    lock.releaseLock();
+  }
 }

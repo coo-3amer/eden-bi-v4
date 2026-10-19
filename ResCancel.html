@@ -1,0 +1,108 @@
+<style id="eden-res-cancel">
+.rcDays{display:inline-block;min-width:44px;text-align:center;padding:3px 8px;border-radius:99px;font-weight:800;font-size:12px;background:rgba(176,138,66,.14);color:#8f6d2c}
+.rcDays.late{background:rgba(214,69,69,.1);color:#b03a3a}
+.rcDays.ok{background:rgba(47,158,98,.12);color:#2f7d52}
+.rcRow.busy{opacity:.5}
+.rcDone{display:flex;gap:8px;align-items:center;padding:10px 12px;margin-bottom:12px;border-radius:10px;background:rgba(47,158,98,.1);color:#2f7d52;font-weight:700;font-size:12.5px}
+</style>
+<script>
+/* =====================================================================
+   EDEN BI — Reservations (Transactions → Reservations, admins)
+   Every deal that is still "Reservation", with a Cancel button.
+   Cancel → asks for the reason → Deals: Check ✓ + Reason + Date (Status
+   turns to Cancel) → the unit goes back to Available in the Inventory.
+   ===================================================================== */
+const RC_={data:null,q:'',cancelFor:null,busy:false,done:''};
+function rcEsc_(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function rcIsAdmin_(){const r=String((typeof AUTH_USER!=='undefined'&&AUTH_USER&&AUTH_USER.role)||'').trim().toLowerCase();return r==='admin'||r==='super admin';}
+function rcFmt_(iso,time){if(!iso)return '—';const d=new Date(iso);return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+(time?' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'');}
+function rcDays_(iso){if(!iso)return null;const d=new Date(iso),t=new Date();return Math.floor((new Date(t.getFullYear(),t.getMonth(),t.getDate())-new Date(d.getFullYear(),d.getMonth(),d.getDate()))/864e5);}
+function rcMount_(){
+  const menu=document.querySelector('#transactionsModule .moduleMenu');if(!menu)return;
+  let b=menu.querySelector('[data-rc]');
+  if(!b){
+    b=document.createElement('button');b.type='button';b.dataset.rc='1';b.textContent='Reservations';b.addEventListener('click',rcOpen_);
+    const after=menu.querySelector('[data-da]')||[...menu.querySelectorAll('button')].find(x=>/deals details/i.test(x.textContent));
+    if(after)after.insertAdjacentElement('afterend',b);else menu.appendChild(b);
+  }
+  b.style.display=rcIsAdmin_()?'':'none';
+}
+function rcOpen_(){
+  if(!rcIsAdmin_()){alert('Reservations are for admins only.');return;}
+  rcClose_();RC_.done='';RC_.cancelFor=null;
+  const back=document.createElement('div');back.className='daBack';back.id='rcBack';back.addEventListener('click',rcClose_);
+  const el=document.createElement('section');el.className='da';el.id='rc';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');
+  el.innerHTML=`<div class="daHead"><div><small>Transactions</small><h2>Reservations</h2></div>
+    <div class="daTools"><input type="search" data-q placeholder="Search client, unit, sales…" value="${rcEsc_(RC_.q)}">
+      <button type="button" class="daBtn" data-reload>↻ Refresh</button><button type="button" class="daX" aria-label="Close">×</button></div></div>
+    <div class="daBody"><div class="daNote" style="text-align:center;padding:40px">Loading…</div></div>`;
+  document.body.append(back,el);
+  el.querySelector('.daX').addEventListener('click',rcClose_);
+  el.querySelector('[data-reload]').addEventListener('click',rcLoad_);
+  el.querySelector('[data-q]').addEventListener('input',e=>{RC_.q=e.target.value;RC_.cancelFor=null;rcRender_();});
+  document.addEventListener('keydown',rcOnKey_);
+  rcLoad_();
+}
+function rcLoad_(){
+  const el=document.getElementById('rc');if(!el)return;
+  google.script.run.withSuccessHandler(d=>{RC_.data=d;rcRender_();})
+    .withFailureHandler(err=>{const b=el.querySelector('.daBody');if(b)b.innerHTML=`<div class="daNote daMsg err" style="text-align:center;padding:40px">Could not load.<br>${rcEsc_(err&&err.message||err)}</div>`;})
+    .getReservationHolds(AUTH_TOKEN);
+}
+function rcClose_(){document.getElementById('rc')?.remove();document.getElementById('rcBack')?.remove();document.removeEventListener('keydown',rcOnKey_);RC_.cancelFor=null;}
+function rcOnKey_(e){if(e.key!=='Escape')return;if(RC_.cancelFor!=null){RC_.cancelFor=null;rcRender_();return;}rcClose_();}
+function rcList_(){
+  const q=String(RC_.q||'').trim().toLowerCase();
+  return ((RC_.data&&RC_.data.rows)||[]).filter(x=>!q||[x.client,x.unit,x.project,x.sales,x.resCode].join(' ').toLowerCase().includes(q))
+    .sort((a,b)=>String(a.resDate).localeCompare(String(b.resDate)));
+}
+function rcRender_(){
+  const el=document.getElementById('rc');if(!el||!RC_.data)return;
+  const list=rcList_(),hold=Number(RC_.data.holdDays)||7;
+  let html=RC_.done?`<div class="rcDone">✓ ${rcEsc_(RC_.done)}</div>`:'';
+  if(!list.length)html+=`<div class="daNote" style="text-align:center;padding:36px">No open reservations${RC_.q?' for this search':''}. ✓</div>`;
+  else{
+    html+=`<table class="daTable"><thead><tr><th>Reserved</th><th>Client</th><th>Project · Unit</th><th class="daHide">Sales</th><th class="num daHide">Amount</th><th class="num">Days</th><th>Auto-cancel</th><th></th></tr></thead><tbody>`;
+    list.forEach((x,i)=>{
+      const days=rcDays_(x.resDate),late=days!=null&&days>=hold;
+      html+=`<tr class="rcRow" data-i="${i}"><td>${rcFmt_(x.resDate)}${x.resCode?`<br><small class="daMuted">${rcEsc_(x.resCode)}</small>`:''}</td>
+        <td><b>${rcEsc_(x.client||'')}</b></td><td>${rcEsc_(x.project)} · <b>${rcEsc_(x.unit)}</b></td>
+        <td class="daHide">${rcEsc_(x.sales||'')}</td>
+        <td class="num daHide">${rcEsc_(x.amount||'—')} <small class="daMuted">${rcEsc_(x.currency||'')}</small></td>
+        <td class="num">${days==null?'—':`<span class="rcDays${late?' late':days<=2?' ok':''}">${days}d</span>`}</td>
+        <td>${x.old?'<small class="daMuted">Before the 7-day rule</small>':x.endsAt?rcFmt_(x.endsAt):'<small class="daMuted">No reservation date</small>'}</td>
+        <td style="white-space:nowrap;text-align:right"><button type="button" class="daBtn no" data-cancel="${i}">Cancel reservation</button></td></tr>`;
+      if(RC_.cancelFor===i)html+=`<tr><td colspan="8"><div class="daReason"><b style="font-size:12px">Reason:</b><input data-reason placeholder="e.g. Client did not pay the down payment">
+        <button type="button" class="daBtn no" data-send="${i}">Cancel ${rcEsc_(x.unit)} &amp; open the unit</button><button type="button" class="daBtn" data-back>Back</button><span class="daMsg"></span></div></td></tr>`;
+    });
+    html+='</tbody></table>';
+  }
+  html+=`<div class="daNote"><b>Cancel reservation</b> writes the cancel in the Deals sheet (Check ✓, your reason, today’s date — the Status turns to Cancel) and puts the unit back to <b>Available</b> in the Inventory (unless another active deal holds it). Recorded in the Activity Log and sent to Telegram.<br>
+    New reservations are cancelled automatically after ${hold} days without a down payment; reservations made before the rule started are only cancelled from here.</div>`;
+  const body=el.querySelector('.daBody');body.innerHTML=html;
+  body.querySelectorAll('[data-cancel]').forEach(b=>b.addEventListener('click',()=>{RC_.cancelFor=+b.dataset.cancel;RC_.done='';rcRender_();document.querySelector('#rc [data-reason]')?.focus();}));
+  body.querySelector('[data-back]')?.addEventListener('click',()=>{RC_.cancelFor=null;rcRender_();});
+  const sn=body.querySelector('[data-send]');
+  if(sn){
+    const inp=body.querySelector('[data-reason]'),msg=sn.parentElement.querySelector('.daMsg');
+    const go=()=>{
+      const why=inp.value.trim();if(!why){msg.className='daMsg err';msg.textContent='Write the reason.';inp.focus();return;}
+      const x=list[+sn.dataset.send];if(RC_.busy)return;
+      if(!confirm(`Cancel the reservation of ${x.unit} (${x.client||''})?\nThe deal becomes Cancel and the unit is opened in the Inventory.`))return;
+      RC_.busy=true;sn.disabled=true;msg.className='daMsg';msg.textContent='Cancelling…';
+      google.script.run.withSuccessHandler(r=>{
+        RC_.busy=false;RC_.cancelFor=null;RC_.done=r&&r.message||'Cancelled.';
+        RC_.data.rows=RC_.data.rows.filter(y=>!(y.row===x.row&&y.unit===x.unit));
+        const rr=(typeof rawRows!=='undefined'&&rawRows)||[];rr.forEach(d=>{if(Number(d.row)===x.row&&String(d.unitCode||'').trim()===x.unit)d.status='Cancel';});
+        rcRender_();
+      }).withFailureHandler(err=>{RC_.busy=false;sn.disabled=false;msg.className='daMsg err';msg.textContent=err&&err.message||String(err);})
+        .cancelReservation(AUTH_TOKEN,{row:x.row,unit:x.unit,reason:why});
+    };
+    sn.addEventListener('click',go);inp.addEventListener('keydown',e=>{if(e.key==='Enter')go();});
+  }
+}
+(function(){
+  const go=()=>{rcMount_();setInterval(rcMount_,5000);};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();
+})();
+</script>

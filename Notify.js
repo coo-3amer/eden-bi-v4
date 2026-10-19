@@ -20,6 +20,7 @@ const TG_EVENTS_ = {
   'Inventory edit (sheet)': '🏢',
   'Reservation expiring': '⏳',
   'Reservation expired': '⌛',
+  'Reservation cancelled': '❌',
   'Reservation 7-day limit on': '⏱',
   'Payment recorded': '💰',
   'Payment deleted': '🗑',
