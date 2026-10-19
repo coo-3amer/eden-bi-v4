@@ -82,7 +82,7 @@ function rcRender_(){
     html+='</tbody></table>';
   }
   html+=`<div class="daNote"><b>Cancel reservation</b> writes the cancel in the Deals sheet (Check ✓, your reason, today’s date — the Status turns to Cancel) and puts the unit back to <b>Available</b> in the Inventory (unless another active deal holds it). Recorded in the Activity Log and sent to Telegram.<br>
-    New reservations are cancelled automatically after ${hold} days without a down payment; reservations made before the rule started are only cancelled from here. <b>🗓 Set time</b> chooses your own date and time for any reservation (old or new) — at that time it is cancelled automatically and the unit is opened (checked every ~10 minutes; a Telegram reminder goes out the day before).</div>`;
+    New reservations are cancelled automatically after ${hold} days without a down payment; reservations made before the rule started are only cancelled from here. <b>🗓 Set time</b> chooses your own date and time for any reservation (old or new) — at that time it is cancelled automatically and the unit is opened (within a minute of the time you choose; a Telegram reminder goes out the day before).</div>`;
   const body=el.querySelector('.daBody');body.innerHTML=html;
   body.querySelectorAll('[data-cancel]').forEach(b=>b.addEventListener('click',()=>{RC_.cancelFor=+b.dataset.cancel;RC_.timeFor=null;RC_.done='';rcRender_();document.querySelector('#rc [data-reason]')?.focus();}));
   body.querySelectorAll('[data-time]').forEach(b=>b.addEventListener('click',()=>{RC_.timeFor=+b.dataset.time;RC_.cancelFor=null;RC_.done='';rcRender_();}));

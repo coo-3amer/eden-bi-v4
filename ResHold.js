@@ -64,7 +64,7 @@ function reservationHoldJob_(force) {
   try {
     const cache = CacheService.getScriptCache();
     if (!force && cache.get('RES_HOLD_AT')) return;
-    cache.put('RES_HOLD_AT', '1', 590);
+    cache.put('RES_HOLD_AT', '1', 240);
     const lock = LockService.getScriptLock();
     if (!lock.tryLock(20000)) return;
     try { return resHoldRun_(); } finally { lock.releaseLock(); }
@@ -300,6 +300,7 @@ function setReservationCancelTime(authToken, req) {
       if (isNaN(t.getTime())) throw new Error('Choose a valid date and time.');
       if (t.getTime() < Date.now() + 60000) throw new Error('Choose a time in the future (or use Cancel reservation to cancel now).');
       custom[key] = t.toISOString();
+      resHoldScheduleTick_(t);
       details = 'Will be cancelled automatically on ' + Utilities.formatDate(t, tz, 'dd-MMM-yyyy HH:mm');
     } else {
       delete custom[key];
@@ -312,4 +313,22 @@ function setReservationCancelTime(authToken, req) {
   } finally {
     lock.releaseLock();
   }
+}
+
+/* One-off trigger at a hand-set cancel time, so it happens on time (not up to 5 min later). */
+function resHoldScheduleTick_(when) {
+  try {
+    const mine = ScriptApp.getProjectTriggers().filter(t => t.getHandlerFunction() === 'reservationHoldTick');
+    if (mine.length >= 8) return;                                 // the 5-minute check still covers it
+    ScriptApp.newTrigger('reservationHoldTick').timeBased().at(new Date(when.getTime() + 20000)).create();
+  } catch (e) { console.warn('resHoldScheduleTick_: ' + e); }
+}
+
+/* Runs at a hand-set cancel time. */
+function reservationHoldTick(e) {
+  try {
+    if (e && e.triggerUid) ScriptApp.getProjectTriggers().filter(t => t.getUniqueId() === e.triggerUid).forEach(t => ScriptApp.deleteTrigger(t));
+  } catch (err) {}
+  reservationHoldJob_(true);
+  try { clearDashboardCache_(); } catch (err) {}
 }
