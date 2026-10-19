@@ -21,6 +21,7 @@ const TG_EVENTS_ = {
   'Reservation expiring': '⏳',
   'Reservation expired': '⌛',
   'Reservation cancelled': '❌',
+  'Reservation cancel time set': '🗓',
   'Reservation 7-day limit on': '⏱',
   'Payment recorded': '💰',
   'Payment deleted': '🗑',

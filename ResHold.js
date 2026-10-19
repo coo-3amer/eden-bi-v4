@@ -29,6 +29,11 @@ function resHoldIsOldDate_(d) {
   return d.getTime() < new Date(s.getFullYear(), s.getMonth(), s.getDate()).getTime();
 }
 
+/* Cancel times set by hand: { "<res code>|<unit>": ISO time }. */
+function resHoldCustom_() {
+  try { return JSON.parse(PropertiesService.getScriptProperties().getProperty('RES_HOLD_CUSTOM') || '{}') || {}; } catch (e) { return {}; }
+}
+
 function resHoldMs_() {
   const m = Number(PropertiesService.getScriptProperties().getProperty('RES_HOLD_MINUTES'));
   return (m > 0 ? m : RES_HOLD_DAYS_ * 1440) * 60000;
@@ -101,28 +106,35 @@ function resHoldRun_() {
   const hold = resHoldMs_(), now = Date.now();
   const warned = JSON.parse(props.getProperty('RES_HOLD_WARNED') || '{}');
   const out = { expired: [], warned: [], tracked: 0 };
+  const custom = resHoldCustom_(), seenKeys = {};
 
   for (let i = 0; i < n; i++) {
     if (!isRes(i) || !U[i]) continue;
     const key = resHoldKey_(K[i], U[i]);
-    if (oldSet[key]) continue;
     const d = D[i] instanceof Date ? D[i] : null;
-    if (!d) continue;                                                 // no Reservation Date: days can't be counted
-    if (resHoldIsOldDate_(d)) continue;                               // reserved before the 7-day rule started
+    let end;
+    if (custom[key]) {
+      end = new Date(custom[key]).getTime();                          // cancel time set by hand (Reservations page)
+    } else {
+      if (oldSet[key]) continue;
+      if (!d) continue;                                               // no Reservation Date: days can't be counted
+      if (resHoldIsOldDate_(d)) continue;                             // reserved before the 7-day rule started
+      // Test units (code with "TEST") are held 10 minutes from when the system first sees them.
+      const test = /TEST/i.test(U[i]);
+      if (test && !warned['seen:' + key]) warned['seen:' + key] = now;
+      const start = test ? warned['seen:' + key] : new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();   // reservation day, 00:00
+      end = start + (test ? 10 * 60000 : hold);
+    }
     out.tracked++;
-    // Test units (code with "TEST") are held 10 minutes from when the system first sees them.
-    const test = /TEST/i.test(U[i]);
-    if (test && !warned['seen:' + key]) warned['seen:' + key] = now;
-    const start = test ? warned['seen:' + key] : new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();   // reservation day, 00:00
-    const end = start + (test ? 10 * 60000 : hold);
+    seenKeys[key] = 1;
     const row = DATA_START_ROW + i;
     const info = { project: P[i], unit: U[i], client: CL[i], ref: 'Deals row ' + row };
 
     if (now < end) {
-      if (end - now <= Math.min(24 * 3600000, hold / 2) && !warned[key]) {
+      if (end - now <= (custom[key] ? 24 * 3600000 : Math.min(24 * 3600000, hold / 2)) && !warned[key]) {
         warned[key] = now;
         auditLog_('System', 'Reservation expiring', Object.assign({}, info, {
-          details: 'Reserved ' + fmt(d) + ' — the reservation ends ' + Utilities.formatDate(new Date(end), tz, 'dd-MMM HH:mm') +
+          details: 'Reserved ' + (d ? fmt(d) : '—') + ' — the reservation ends ' + Utilities.formatDate(new Date(end), tz, 'dd-MMM HH:mm') +
             '. Without a down payment by then the deal is cancelled and the unit is opened.' }));
         out.warned.push(U[i]);
       }
@@ -134,7 +146,7 @@ function resHoldRun_() {
     if (String(live[c.s - 1] || '').trim().toLowerCase() !== 'reservation' || String(live[c.u - 1] || '').trim() !== U[i]) continue;
     const today = new Date();
     sh.getRange(row, c.chk).setValue(true);
-    if (c.rsn && !String(live[c.rsn - 1] || '').trim()) sh.getRange(row, c.rsn).setValue(RES_HOLD_REASON_);
+    if (c.rsn && !String(live[c.rsn - 1] || '').trim()) sh.getRange(row, c.rsn).setValue(custom[key] ? 'انتهى وقت الحجز المحدد بدون سداد المقدم — إلغاء تلقائي' : RES_HOLD_REASON_);
     sh.getRange(row, c.cdt).setValue(new Date(today.getFullYear(), today.getMonth(), today.getDate())).setNumberFormat('d-mmm-yyyy');
     SpreadsheetApp.flush();
     const ns = String(sh.getRange(row, c.s).getDisplayValue() || '').trim() || 'Cancel';
@@ -142,13 +154,17 @@ function resHoldRun_() {
     const inv = syncInventoryForDeal_(P[i], U[i], ns, { by: 'reservation expired' });
     delete warned[key]; delete warned['seen:' + key];
     auditLog_('System', 'Reservation expired', Object.assign({}, info, {
-      details: 'Reserved ' + fmt(d) + ' — ' + (test ? '10 minutes (test unit)' : Math.round(hold / 86400000 * 10) / 10 + ' days') + ' passed without a down payment. Deal → ' + ns +
+      details: 'Reserved ' + (d ? fmt(d) : '—') + ' — ' + (custom[key] ? 'the cancel time set by hand (' + Utilities.formatDate(new Date(end), tz, 'dd-MMM HH:mm') + ') passed' : (/TEST/i.test(U[i]) ? '10 minutes (test unit)' : Math.round(hold / 86400000 * 10) / 10 + ' days') + ' passed without a down payment') + '. Deal → ' + ns +
         (inv && inv.message ? ' · ' + inv.message : '') }));
     out.expired.push(U[i]);
+    delete custom[key]; delete seenKeys[key];
   }
   // forget warnings of deals that are no longer reservations
   Object.keys(warned).forEach(k => { if (now - warned[k] > 30 * 86400000) delete warned[k]; });
   props.setProperty('RES_HOLD_WARNED', JSON.stringify(warned));
+  // hand-set times of deals that are no longer reservations are dropped
+  const cleaned = {}; Object.keys(custom).forEach(k => { if (seenKeys[k]) cleaned[k] = custom[k]; });
+  props.setProperty('RES_HOLD_CUSTOM', JSON.stringify(cleaned));
   return out;
 }
 
@@ -170,7 +186,7 @@ function getReservationHolds(authToken) {
   const last = mainDealsLastRow_(sh, c.cols);
   const oldSet = {};
   JSON.parse(props.getProperty('RES_HOLD_OLD') || '[]').forEach(k => oldSet[k] = 1);
-  const hold = resHoldMs_();
+  const hold = resHoldMs_(), custom = resHoldCustom_();
   const out = { since: props.getProperty('RES_HOLD_SINCE') || '', holdDays: Math.round(hold / 86400000 * 100) / 100, rows: [] };
   if (last < DATA_START_ROW || !c.s || !c.u) return out;
   const n = last - DATA_START_ROW + 1;
@@ -182,8 +198,10 @@ function getReservationHolds(authToken) {
     const d = D[i] instanceof Date ? D[i] : null;
     const isOld = !!oldSet[resHoldKey_(K[i], U[i])] || resHoldIsOldDate_(d);
     const end = d ? new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() + hold : 0;
+    const own = custom[resHoldKey_(K[i], U[i])] || '';
     out.rows.push({ row: DATA_START_ROW + i, project: P[i], unit: U[i], client: CL[i], resCode: K[i], sales: SA[i],
-      amount: AM[i], currency: CU[i], resDate: d ? d.toISOString() : '', old: isOld, endsAt: (!isOld && end) ? new Date(end).toISOString() : '' });
+      amount: AM[i], currency: CU[i], resDate: d ? d.toISOString() : '', old: isOld, custom: !!own,
+      endsAt: own || ((!isOld && end) ? new Date(end).toISOString() : '') });
   }
   return out;
 }
@@ -219,6 +237,47 @@ function cancelReservation(authToken, req) {
       details: 'Reason: ' + reason + ' · Deal → ' + ns + (inv && inv.message ? ' · ' + inv.message : ''), ref: 'Deals row ' + row });
     try { clearDashboardCache_(); } catch (e) {}
     return { ok: true, status: ns, inventory: inv || {}, message: unit + ' cancelled' + (inv && inv.message ? ' · ' + inv.message : '') };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/* Admins: set (or clear) the time a reservation is cancelled automatically. req: {row, unit, endsAt: ISO | ''} */
+function setReservationCancelTime(authToken, req) {
+  const user = resHoldAdmin_(authToken);
+  req = req || {};
+  const row = Number(req.row), unit = String(req.unit || '').trim();
+  if (!row || row < DATA_START_ROW || !unit) throw new Error('Choose a reservation.');
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(20000)) throw new Error('The system is busy, try again in a few seconds.');
+  try {
+    const sh = getMainDealsSheet_();
+    const c = resHoldColumns_(sh);
+    const live = sh.getRange(row, 1, 1, c.cols.lastCol).getDisplayValues()[0];
+    const liveUnit = String(live[c.u - 1] || '').trim(), status = String(live[c.s - 1] || '').trim();
+    if (liveUnit !== unit) throw new Error('The Deals sheet changed (row ' + row + ' is now ' + (liveUnit || 'empty') + '). Reload the list and try again.');
+    if (status.toLowerCase() !== 'reservation') throw new Error(unit + ' is not a reservation any more (status: ' + (status || '—') + ').');
+    const key = resHoldKey_(c.code ? live[c.code - 1] : '', unit);
+    const custom = resHoldCustom_();
+    const props = PropertiesService.getScriptProperties();
+    const warned = JSON.parse(props.getProperty('RES_HOLD_WARNED') || '{}');
+    delete warned[key];                                             // a new time gets its own reminder
+    const tz = Session.getScriptTimeZone() || 'Africa/Cairo';
+    let details;
+    if (req.endsAt) {
+      const t = new Date(req.endsAt);
+      if (isNaN(t.getTime())) throw new Error('Choose a valid date and time.');
+      if (t.getTime() < Date.now() + 60000) throw new Error('Choose a time in the future (or use Cancel reservation to cancel now).');
+      custom[key] = t.toISOString();
+      details = 'Will be cancelled automatically on ' + Utilities.formatDate(t, tz, 'dd-MMM-yyyy HH:mm');
+    } else {
+      delete custom[key];
+      details = 'Hand-set cancel time removed (back to the normal rule)';
+    }
+    props.setProperties({ RES_HOLD_CUSTOM: JSON.stringify(custom), RES_HOLD_WARNED: JSON.stringify(warned) });
+    auditLog_(user, 'Reservation cancel time set', { project: String(live[c.p - 1] || '').trim(), unit: unit,
+      client: c.cl ? String(live[c.cl - 1] || '').trim() : '', details: details, ref: 'Deals row ' + row });
+    return getReservationHolds(authToken);
   } finally {
     lock.releaseLock();
   }

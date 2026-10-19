@@ -12,10 +12,11 @@
    Cancel → asks for the reason → Deals: Check ✓ + Reason + Date (Status
    turns to Cancel) → the unit goes back to Available in the Inventory.
    ===================================================================== */
-const RC_={data:null,q:'',cancelFor:null,busy:false,done:''};
+const RC_={data:null,q:'',cancelFor:null,timeFor:null,busy:false,done:''};
 function rcEsc_(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function rcIsAdmin_(){const r=String((typeof AUTH_USER!=='undefined'&&AUTH_USER&&AUTH_USER.role)||'').trim().toLowerCase();return r==='admin'||r==='super admin';}
 function rcFmt_(iso,time){if(!iso)return '—';const d=new Date(iso);return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+(time?' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'');}
+function rcLocal_(iso){const d=iso?new Date(iso):new Date(Date.now()+864e5);if(!iso)d.setHours(18,0,0,0);const p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;}
 function rcDays_(iso){if(!iso)return null;const d=new Date(iso),t=new Date();return Math.floor((new Date(t.getFullYear(),t.getMonth(),t.getDate())-new Date(d.getFullYear(),d.getMonth(),d.getDate()))/864e5);}
 function rcMount_(){
   const menu=document.querySelector('#transactionsModule .moduleMenu');if(!menu)return;
@@ -39,7 +40,7 @@ function rcOpen_(){
   document.body.append(back,el);
   el.querySelector('.daX').addEventListener('click',rcClose_);
   el.querySelector('[data-reload]').addEventListener('click',rcLoad_);
-  el.querySelector('[data-q]').addEventListener('input',e=>{RC_.q=e.target.value;RC_.cancelFor=null;rcRender_();});
+  el.querySelector('[data-q]').addEventListener('input',e=>{RC_.q=e.target.value;RC_.cancelFor=null;RC_.timeFor=null;rcRender_();});
   document.addEventListener('keydown',rcOnKey_);
   rcLoad_();
 }
@@ -50,7 +51,7 @@ function rcLoad_(){
     .getReservationHolds(AUTH_TOKEN);
 }
 function rcClose_(){document.getElementById('rc')?.remove();document.getElementById('rcBack')?.remove();document.removeEventListener('keydown',rcOnKey_);RC_.cancelFor=null;}
-function rcOnKey_(e){if(e.key!=='Escape')return;if(RC_.cancelFor!=null){RC_.cancelFor=null;rcRender_();return;}rcClose_();}
+function rcOnKey_(e){if(e.key!=='Escape')return;if(RC_.cancelFor!=null||RC_.timeFor!=null){RC_.cancelFor=null;RC_.timeFor=null;rcRender_();return;}rcClose_();}
 function rcList_(){
   const q=String(RC_.q||'').trim().toLowerCase();
   return ((RC_.data&&RC_.data.rows)||[]).filter(x=>!q||[x.client,x.unit,x.project,x.sales,x.resCode].join(' ').toLowerCase().includes(q))
@@ -70,18 +71,36 @@ function rcRender_(){
         <td class="daHide">${rcEsc_(x.sales||'')}</td>
         <td class="num daHide">${rcEsc_(x.amount||'—')} <small class="daMuted">${rcEsc_(x.currency||'')}</small></td>
         <td class="num">${days==null?'—':`<span class="rcDays${late?' late':days<=2?' ok':''}">${days}d</span>`}</td>
-        <td>${x.old?'<small class="daMuted">Before the 7-day rule</small>':x.endsAt?rcFmt_(x.endsAt):'<small class="daMuted">No reservation date</small>'}</td>
+        <td>${x.custom?`<b>${rcFmt_(x.endsAt,true)}</b><br><small class="daMuted">set by hand</small>`:x.old?'<small class="daMuted">Before the 7-day rule</small>':x.endsAt?rcFmt_(x.endsAt):'<small class="daMuted">No reservation date</small>'}
+          <button type="button" class="daBtn" data-time="${i}" style="margin-top:4px;height:26px;font-size:11.5px">🗓 Set time</button></td>
         <td style="white-space:nowrap;text-align:right"><button type="button" class="daBtn no" data-cancel="${i}">Cancel reservation</button></td></tr>`;
+      if(RC_.timeFor===i)html+=`<tr><td colspan="8"><div class="daReason" style="border-color:var(--ds-gold-line,rgba(176,138,66,.4))"><b style="font-size:12px">Cancel ${rcEsc_(x.unit)} automatically on:</b><input type="datetime-local" data-when value="${rcLocal_(x.custom?x.endsAt:'')}" style="flex:0 0 auto;min-width:0">
+        <button type="button" class="daBtn ok" data-savetime="${i}">Save</button>${x.custom?`<button type="button" class="daBtn" data-cleartime="${i}">Remove (back to ${x.old?'no limit':'the 7-day rule'})</button>`:''}<button type="button" class="daBtn" data-back>Back</button><span class="daMsg"></span></div></td></tr>`;
       if(RC_.cancelFor===i)html+=`<tr><td colspan="8"><div class="daReason"><b style="font-size:12px">Reason:</b><input data-reason placeholder="e.g. Client did not pay the down payment">
         <button type="button" class="daBtn no" data-send="${i}">Cancel ${rcEsc_(x.unit)} &amp; open the unit</button><button type="button" class="daBtn" data-back>Back</button><span class="daMsg"></span></div></td></tr>`;
     });
     html+='</tbody></table>';
   }
   html+=`<div class="daNote"><b>Cancel reservation</b> writes the cancel in the Deals sheet (Check ✓, your reason, today’s date — the Status turns to Cancel) and puts the unit back to <b>Available</b> in the Inventory (unless another active deal holds it). Recorded in the Activity Log and sent to Telegram.<br>
-    New reservations are cancelled automatically after ${hold} days without a down payment; reservations made before the rule started are only cancelled from here.</div>`;
+    New reservations are cancelled automatically after ${hold} days without a down payment; reservations made before the rule started are only cancelled from here. <b>🗓 Set time</b> chooses your own date and time for any reservation (old or new) — at that time it is cancelled automatically and the unit is opened (checked every ~10 minutes; a Telegram reminder goes out the day before).</div>`;
   const body=el.querySelector('.daBody');body.innerHTML=html;
-  body.querySelectorAll('[data-cancel]').forEach(b=>b.addEventListener('click',()=>{RC_.cancelFor=+b.dataset.cancel;RC_.done='';rcRender_();document.querySelector('#rc [data-reason]')?.focus();}));
-  body.querySelector('[data-back]')?.addEventListener('click',()=>{RC_.cancelFor=null;rcRender_();});
+  body.querySelectorAll('[data-cancel]').forEach(b=>b.addEventListener('click',()=>{RC_.cancelFor=+b.dataset.cancel;RC_.timeFor=null;RC_.done='';rcRender_();document.querySelector('#rc [data-reason]')?.focus();}));
+  body.querySelectorAll('[data-time]').forEach(b=>b.addEventListener('click',()=>{RC_.timeFor=+b.dataset.time;RC_.cancelFor=null;RC_.done='';rcRender_();}));
+  body.querySelector('[data-back]')?.addEventListener('click',()=>{RC_.cancelFor=null;RC_.timeFor=null;rcRender_();});
+  const setTime=(btn,x,endsAt)=>{
+    const msg=btn.parentElement.querySelector('.daMsg');if(RC_.busy)return;
+    RC_.busy=true;btn.disabled=true;msg.className='daMsg';msg.textContent='Saving…';
+    google.script.run.withSuccessHandler(d=>{RC_.busy=false;RC_.data=d;RC_.timeFor=null;
+      RC_.done=endsAt?`${x.unit} will be cancelled automatically on ${rcFmt_(endsAt,true)}.`:`${x.unit}: hand-set time removed.`;rcRender_();})
+      .withFailureHandler(err=>{RC_.busy=false;btn.disabled=false;msg.className='daMsg err';msg.textContent=err&&err.message||String(err);})
+      .setReservationCancelTime(AUTH_TOKEN,{row:x.row,unit:x.unit,endsAt});
+  };
+  const st=body.querySelector('[data-savetime]');
+  if(st)st.addEventListener('click',()=>{const v=body.querySelector('[data-when]').value;const x=list[+st.dataset.savetime];
+    if(!v){const m=st.parentElement.querySelector('.daMsg');m.className='daMsg err';m.textContent='Choose the date and time.';return;}
+    setTime(st,x,new Date(v).toISOString());});
+  const ct=body.querySelector('[data-cleartime]');
+  if(ct)ct.addEventListener('click',()=>setTime(ct,list[+ct.dataset.cleartime],''));
   const sn=body.querySelector('[data-send]');
   if(sn){
     const inp=body.querySelector('[data-reason]'),msg=sn.parentElement.querySelector('.daMsg');
