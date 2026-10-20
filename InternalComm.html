@@ -51,7 +51,7 @@ function icRangeLabel_(){const f=d=>d?new Date(d+'T00:00').toLocaleDateString('e
 /* How many calendar months the range touches (monthly targets are multiplied by it). */
 function icMonths_(){if(!IC_.from||!IC_.to)return 1;const A=new Date(IC_.from+'T00:00'),B=new Date(IC_.to+'T00:00');return Math.max(1,(B.getFullYear()-A.getFullYear())*12+B.getMonth()-A.getMonth()+1);}
 function icDealDay_(r){const y=Number(r.year),m=Number(r.month);if(!y||!m)return '';return y+'-'+String(m).padStart(2,'0')+'-'+String(Number(r.day)||1).padStart(2,'0');}
-function icDpPct_(r){const a=Number(r.amount)||0;return a>0?(Number(r.actualPaid)||0)/a*100:0;}
+function icDpPct_(r){const a=Number(r.amount)||0;return a>0?Math.round((Number(r.actualPaid)||0)/a*10000)/100:0;}   // 2 decimals (see edenDpPct_)
 function icType_(r){
   const t=[r.mainSource,r.sourceType,r.dealStatus].map(x=>String(x||'').toLowerCase()).join(' ');
   if(/private/.test(t))return 'Private';

@@ -13,7 +13,8 @@
    (from / to %, either side can be empty) or a preset.
    ===================================================================== */
 let EDEN_DP_RANGE_={min:null,max:null};
-function edenDpPct_(r){const a=Number(r&&r.amount)||0;return a>0?(Number(r.actualPaid)||0)/a*100:0;}
+/* Rounded to 2 decimals: a 10% DP rounded down to the pound (545,691 of 5,456,912 = 9.99998%) counts as 10%. */
+function edenDpPct_(r){const a=Number(r&&r.amount)||0;return a>0?Math.round((Number(r.actualPaid)||0)/a*10000)/100:0;}
 function edenDpMatch_(r){
   const R=EDEN_DP_RANGE_;if(R.min==null&&R.max==null)return true;
   const p=edenDpPct_(r);
