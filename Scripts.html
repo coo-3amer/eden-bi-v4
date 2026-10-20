@@ -4625,7 +4625,7 @@ function renderDownPaymentSummaryPanel_(rows){
 // Rows and columns of the table currently on screen (also used by the exports).
 function tableDataset_(){
   let rows=filtered;
-  let cols=['project','clientName','mobile','clientType','nationality','unitCode','status','renovationStatus','monthName','year','amount','currency','dpPercent','actualDP','dpPaid','actualPaid','remain','area','salesName','dealStatus','sharedWith','branch','date','unitCategory','unitType','mainSource','sourceType','campaignName','mediaBuyer','brokerageCompany','bcSales','bcManager'];
+  let cols=['project','clientName','mobile','clientType','nationality','unitCode','status','renovationStatus','monthName','year','contractDate','amount','currency','dpPercent','actualDP','dpPaid','actualPaid','remain','area','salesName','dealStatus','sharedWith','branch','date','unitCategory','unitType','mainSource','sourceType','campaignName','mediaBuyer','brokerageCompany','bcSales','bcManager'];
   let title='Deals Details';
   if(currentView==='projects'){
     rows=groupRows('project');cols=['name','deals','valueEGP','valueUSD','meters','units','uniqueClients','salesCount'];title='Projects Summary'
@@ -4664,7 +4664,7 @@ function renderTable(){
     const at=cols.indexOf('status');cols=at>=0?[...cols.slice(0,at+1),'resActions',...cols.slice(at+1)]:cols.concat('resActions');
   }
   const tagged=(c,html,r)=>html.replace(/^<td/,`<td data-col="${c}"${c==='clientName'&&r&&clientKeyOf(r)?` data-ck="${escapeAttr(clientKeyOf(r))}"`:''}`);
-  mainTable.innerHTML=`<thead><tr>${cols.map(c=>`<th data-col="${c}"${c==='docsUrl'?' class="docsHead"':''}>${label(c)}</th>`).join('')}</tr></thead><tbody>${rows.slice(0,1000).map(r=>`<tr>${cols.map(c=>tagged(c,c==='resActions'?rcCell_(r):cell(c,r[c]),r)).join('')}</tr>`).join('')}</tbody>`;
+  mainTable.innerHTML=`<thead><tr>${cols.map(c=>`<th data-col="${c}"${c==='docsUrl'?' class="docsHead"':''}>${label(c)}</th>`).join('')}</tr></thead><tbody>${rows.slice(0,1000).map(r=>{const ck=cols.includes('clientName')&&r&&clientKeyOf(r);return `<tr${ck?` data-ck="${escapeAttr(ck)}"`:''}>${cols.map(c=>tagged(c,c==='resActions'?rcCell_(r):cell(c,r[c]),r)).join('')}</tr>`;}).join('')}</tbody>`;
   if(currentView==='clients')renderNewClientsByYear();
 }
 function drawMoneyBar(id,data,label,currency){
@@ -5052,12 +5052,13 @@ function cell(c,v){
   if(c==='groupLink')return `<td>${v?`<a class="chip" href="${v}" target="_blank">Open Group</a>`:''}</td>`;
   if(c==='healthStatus'||c==='severity'){const cls=String(v||'').toLowerCase().replace(/\s+/g,'-');return `<td><span class="healthBadge health-${cls}">${escapeHtml(v||'')}</span></td>`;}
   if(c==='issues')return `<td class="healthIssuesCell">${escapeHtml(v||'')}</td>`;
+  if(c==='contractDate'){const t=typeof c360FmtDate_==='function'?c360FmtDate_(v):String(v||'');return `<td>${escapeHtml(t&&t!=='—'?t:'')}</td>`;}
   if(c==='dpPercent')return `<td>${Number(v||0).toLocaleString('en-US')}%</td>`;
   if(c==='mobile')return `<td class="mobileCell" title="${escapeHtml(v??'')}">${mobileCellHtml_(v)}</td>`;
   if(c==='status')return `<td><span class="chip status-${String(v).split(' ')[0]}">${v||''}</span></td>`;
   return `<td>${v??''}</td>`;
 }
-function label(c){return {name:'Name',deals:'Deals',valueEGP:'Total Value EGP',valueUSD:'Total Value USD',meters:'Sold Meters',units:'Sold Units',uniqueClients:'Unique Clients',salesCount:'Sales Count',projectsCount:'Projects Count',branchesCount:'Branches Count',reservationDays:'Reservation Days',resActions:'Reservation',docsUrl:'Documents',clientName:'Client Name',project:'Project',clientType:'Client Type',nationality:'Nationality',unitCode:'Unit Code',status:'Status',renovationStatus:'Renovation',amount:'Final Price',currency:'Currency',area:'Area',salesName:'Sales Name',dealStatus:'Deal Type',sharedWith:'Shared With',branch:'Branch',date:'Date',monthName:'Month',year:'Year',unitCategory:'Unit Type Category',unitType:'Unit Type',mainSource:'Main Source',sourceType:'Source Type',campaignName:'Campaign Name',mediaBuyer:'Media Buyer',brokerageCompany:'Brokerage Company',bcSales:'BC Sales',bcManager:'BC Manager',dpPercent:'DP %',actualDP:'Actual DP',dpPaid:'DP Paid',actualPaid:'Actual Paid',remain:'Remain',analysisType:'Analysis Type',projects:'Projects',customerValue:'Customer Value',customerJourney:'Customer Journey',sales:'Sales',branches:'Branches',statuses:'Statuses',unitCodes:'Unit Codes',company:'Company',creationDate:'Creation Date',lastSales:'Last Sales',createdBy:'Created By',edenSales:'Eden Sales',admin:'Admin',mobile:'Mobile',brokerSales:'Broker Sales',groupLink:'Group Link',companies:'Companies',withGroups:'WhatsApp Groups',withoutGroups:'Without Link',admins:'Admins',edenSalesCount:'Eden Sales Count',linkStatusLabel:'Link Status',healthStatus:'Health Status',severity:'Severity',issues:'Issues',row:'Sheet Row',orientationNo:'Orientation',orientationDate:'Orientation Date',sales:'Sales Who Made Orientation',orientations:'Orientations',firstOrientation:'First Orientation',lastOrientation:'Last Orientation'}[c]||c}
+function label(c){return {name:'Name',deals:'Deals',valueEGP:'Total Value EGP',valueUSD:'Total Value USD',meters:'Sold Meters',units:'Sold Units',uniqueClients:'Unique Clients',salesCount:'Sales Count',projectsCount:'Projects Count',branchesCount:'Branches Count',reservationDays:'Reservation Days',contractDate:'Contract Date',resActions:'Reservation',docsUrl:'Documents',clientName:'Client Name',project:'Project',clientType:'Client Type',nationality:'Nationality',unitCode:'Unit Code',status:'Status',renovationStatus:'Renovation',amount:'Final Price',currency:'Currency',area:'Area',salesName:'Sales Name',dealStatus:'Deal Type',sharedWith:'Shared With',branch:'Branch',date:'Date',monthName:'Month',year:'Year',unitCategory:'Unit Type Category',unitType:'Unit Type',mainSource:'Main Source',sourceType:'Source Type',campaignName:'Campaign Name',mediaBuyer:'Media Buyer',brokerageCompany:'Brokerage Company',bcSales:'BC Sales',bcManager:'BC Manager',dpPercent:'DP %',actualDP:'Actual DP',dpPaid:'DP Paid',actualPaid:'Actual Paid',remain:'Remain',analysisType:'Analysis Type',projects:'Projects',customerValue:'Customer Value',customerJourney:'Customer Journey',sales:'Sales',branches:'Branches',statuses:'Statuses',unitCodes:'Unit Codes',company:'Company',creationDate:'Creation Date',lastSales:'Last Sales',createdBy:'Created By',edenSales:'Eden Sales',admin:'Admin',mobile:'Mobile',brokerSales:'Broker Sales',groupLink:'Group Link',companies:'Companies',withGroups:'WhatsApp Groups',withoutGroups:'Without Link',admins:'Admins',edenSalesCount:'Eden Sales Count',linkStatusLabel:'Link Status',healthStatus:'Health Status',severity:'Severity',issues:'Issues',row:'Sheet Row',orientationNo:'Orientation',orientationDate:'Orientation Date',sales:'Sales Who Made Orientation',orientations:'Orientations',firstOrientation:'First Orientation',lastOrientation:'Last Orientation'}[c]||c}
 
 
 // ===== TRANSACTIONS DATA HEALTH =====
@@ -5251,14 +5252,14 @@ function renderBrokerCompanyDetails_(){
   empty?.classList.add('hidden');
   table.innerHTML=`
     <thead><tr>${cols.map(([,title])=>`<th>${title}</th>`).join('')}</tr></thead>
-    <tbody>${allDeals.map(r=>`
-      <tr>
+    <tbody>${allDeals.map(r=>{const ck=!(typeof isEgyptViewer_==='function'&&isEgyptViewer_())&&typeof clientKeyOf==='function'&&clientKeyOf(r);return `
+      <tr${ck?` data-ck="${escapeAttr(ck)}" title="Open this deal"`:''}>
         ${cols.map(([key])=>{
           if(key==='amount')return `<td class="brokerCompanyDealMoney">${money(r.amount||0)}</td>`;
           if(key==='status')return `<td><span class="chip status-${String(r.status||'').split(' ')[0]}">${escapeHtml(r.status||'')}</span></td>`;
           return `<td>${escapeHtml(r[key]??'')}</td>`;
         }).join('')}
-      </tr>`).join('')}
+      </tr>`;}).join('')}
     </tbody>`;
 }
 

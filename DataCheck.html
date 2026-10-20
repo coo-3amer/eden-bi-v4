@@ -23,8 +23,8 @@ html[data-theme] #appRoot #mainTable .dcIssue{display:inline-block;max-width:100
 html[data-theme] #appRoot #mainTable .dcIssue.c{background:rgba(220,38,38,.10);color:#b91c1c;font-weight:700}
 html[data-theme="dark"] #appRoot #mainTable .dcIssue.c,html[data-theme="dark"] #appRoot #mainTable .dcSev.c{color:#fca5a5}
 html[data-theme="dark"] #appRoot #mainTable .dcSev.w{color:#fcd34d}
-#dsDcToast{position:fixed;right:20px;bottom:20px;z-index:300;max-width:340px;padding:14px 16px;border-radius:14px;background:#1c1917;color:#fff;box-shadow:0 18px 40px rgba(0,0,0,.35);font:600 13px/1.45 Inter,system-ui,sans-serif;cursor:pointer;transform:translateY(20px);opacity:0;transition:.3s}
-#dsDcToast.show{transform:none;opacity:1}
+#dsDcToast{pointer-events:none;visibility:hidden;position:fixed;right:20px;bottom:20px;z-index:300;max-width:340px;padding:14px 16px;border-radius:14px;background:#1c1917;color:#fff;box-shadow:0 18px 40px rgba(0,0,0,.35);font:600 13px/1.45 Inter,system-ui,sans-serif;cursor:pointer;transform:translateY(20px);opacity:0;transition:.3s}
+#dsDcToast.show{transform:none;opacity:1;pointer-events:auto;visibility:visible}
 #dsDcToast b{color:#fdba74}
 #dsDcToast small{display:block;margin-top:4px;color:#d6d3d1;font-weight:500}
 </style>

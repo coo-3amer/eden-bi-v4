@@ -60,6 +60,25 @@ html[data-theme="dark"] .c360Comm .part{background:rgba(227,184,90,.12);color:#e
 @keyframes c360In{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}
 @keyframes c360Fade{from{opacity:0}to{opacity:1}}
 @media(max-width:560px){.c360Sum{grid-template-columns:repeat(2,minmax(0,1fr))}.c360Grid{grid-template-columns:repeat(2,minmax(0,1fr))}.c360Who h2{font-size:22px}}
+
+/* Deals table: whole row opens the client card; compact rows; column groups tinted */
+html[data-theme] #appRoot #mainTable tbody tr[data-ck],html[data-theme] #appRoot #brokerCompanyDealsTable tbody tr[data-ck]{cursor:pointer}
+html[data-theme] #appRoot #mainTable tbody tr[data-ck]:hover td,html[data-theme] #appRoot #brokerCompanyDealsTable tbody tr[data-ck]:hover td{box-shadow:inset 0 999px 0 rgba(176,138,66,.07)}
+html[data-theme] #appRoot #mainTable th,html[data-theme] #appRoot #mainTable td{padding:0 10px!important;height:36px}
+html[data-theme] #appRoot #mainTable thead th{height:36px;font-size:10px!important;letter-spacing:.06em}
+html[data-theme] #appRoot #mainTable th:first-child,html[data-theme] #appRoot #mainTable td:first-child{padding-left:14px!important}
+html[data-theme] #appRoot #mainTable tbody td:is([data-col="clientName"],[data-col="mobile"],[data-col="clientType"],[data-col="nationality"]){background-color:rgba(70,120,190,.09)!important}
+html[data-theme] #appRoot #mainTable thead th:is([data-col="clientName"],[data-col="mobile"],[data-col="clientType"],[data-col="nationality"]){box-shadow:inset 0 -3px 0 rgba(70,120,190,.75)!important;color:rgb(70,120,190)!important}
+html[data-theme] #appRoot #mainTable tbody td:is([data-col="unitCode"],[data-col="status"],[data-col="renovationStatus"],[data-col="unitCategory"],[data-col="unitType"],[data-col="area"],[data-col="resActions"],[data-col="reservationDays"]){background-color:rgba(176,138,66,.09)!important}
+html[data-theme] #appRoot #mainTable thead th:is([data-col="unitCode"],[data-col="status"],[data-col="renovationStatus"],[data-col="unitCategory"],[data-col="unitType"],[data-col="area"],[data-col="resActions"],[data-col="reservationDays"]){box-shadow:inset 0 -3px 0 rgba(176,138,66,.75)!important;color:rgb(176,138,66)!important}
+html[data-theme] #appRoot #mainTable tbody td:is([data-col="monthName"],[data-col="year"],[data-col="contractDate"],[data-col="date"]){background-color:rgba(120,120,120,.09)!important}
+html[data-theme] #appRoot #mainTable thead th:is([data-col="monthName"],[data-col="year"],[data-col="contractDate"],[data-col="date"]){box-shadow:inset 0 -3px 0 rgba(120,120,120,.75)!important;color:rgb(120,120,120)!important}
+html[data-theme] #appRoot #mainTable tbody td:is([data-col="amount"],[data-col="currency"],[data-col="dpPercent"],[data-col="actualDP"],[data-col="dpPaid"],[data-col="actualPaid"],[data-col="remain"]){background-color:rgba(47,158,98,.09)!important}
+html[data-theme] #appRoot #mainTable thead th:is([data-col="amount"],[data-col="currency"],[data-col="dpPercent"],[data-col="actualDP"],[data-col="dpPaid"],[data-col="actualPaid"],[data-col="remain"]){box-shadow:inset 0 -3px 0 rgba(47,158,98,.75)!important;color:rgb(47,158,98)!important}
+html[data-theme] #appRoot #mainTable tbody td:is([data-col="salesName"],[data-col="dealStatus"],[data-col="sharedWith"],[data-col="branch"]){background-color:rgba(130,90,190,.09)!important}
+html[data-theme] #appRoot #mainTable thead th:is([data-col="salesName"],[data-col="dealStatus"],[data-col="sharedWith"],[data-col="branch"]){box-shadow:inset 0 -3px 0 rgba(130,90,190,.75)!important;color:rgb(130,90,190)!important}
+html[data-theme] #appRoot #mainTable tbody td:is([data-col="mainSource"],[data-col="sourceType"],[data-col="campaignName"],[data-col="mediaBuyer"],[data-col="brokerageCompany"],[data-col="bcSales"],[data-col="bcManager"]){background-color:rgba(214,120,60,.09)!important}
+html[data-theme] #appRoot #mainTable thead th:is([data-col="mainSource"],[data-col="sourceType"],[data-col="campaignName"],[data-col="mediaBuyer"],[data-col="brokerageCompany"],[data-col="bcSales"],[data-col="bcManager"]){box-shadow:inset 0 -3px 0 rgba(214,120,60,.75)!important;color:rgb(214,120,60)!important}
 </style>
 
 <script>
@@ -200,7 +219,13 @@ function c360Close_(){
   document.getElementById('c360')?.remove();document.getElementById('c360Back')?.remove();
   document.removeEventListener('keydown',c360Key_);
 }
+/* A click anywhere on a deal row opens the client card — except on links,
+   buttons and other controls inside the row (Files, Reservation, …). */
 document.addEventListener('click',e=>{
+  if(e.target.closest('a,button,input,select,textarea,label,.rcCell,.docsCell,.mobileMore'))return;
+  if(window.getSelection&&String(window.getSelection()).length>2)return;          // selecting text to copy
+  const row=e.target.closest('#mainTable tr[data-ck],#brokerCompanyDealsTable tr[data-ck]');
+  if(row){c360Open_(row.dataset.ck);return;}
   const td=e.target.closest('#mainTable td[data-ck]');
   if(td){c360Open_(td.dataset.ck);}
 });
