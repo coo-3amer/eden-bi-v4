@@ -4625,7 +4625,7 @@ function renderDownPaymentSummaryPanel_(rows){
 // Rows and columns of the table currently on screen (also used by the exports).
 function tableDataset_(){
   let rows=filtered;
-  let cols=['project','clientName','unitCode','mobile','clientType','nationality','status','date','renovationStatus','monthName','year','contractDate','amount','currency','dpPercent','actualDP','dpPaid','actualPaid','remain','area','salesName','dealStatus','sharedWith','branch','unitCategory','unitType','mainSource','sourceType','campaignName','mediaBuyer','brokerageCompany','bcSales','bcManager'];
+  let cols=['project','clientName','unitCode','status','date','mobile','clientType','nationality','renovationStatus','monthName','year','contractDate','amount','currency','dpPercent','actualDP','dpPaid','actualPaid','remain','area','salesName','dealStatus','sharedWith','branch','unitCategory','unitType','mainSource','sourceType','campaignName','mediaBuyer','brokerageCompany','bcSales','bcManager'];
   let title='Deals Details';
   if(currentView==='projects'){
     rows=groupRows('project');cols=['name','deals','valueEGP','valueUSD','meters','units','uniqueClients','salesCount'];title='Projects Summary'
