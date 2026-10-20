@@ -8,6 +8,7 @@ const EDEN_REBUILD_KPI_CHARTS = false;
 
 let STATUS_BASE_ROWS=[];
 let STAGE_BASE_ROWS=[];
+let FLOOR_BASE_ROWS=[];   // rows matching every filter except Floor (floor button counts)
 let PROJECT_BASE_ROWS=[];
 let rawRows=[], filtered=[], brokerRows=[], brokerFiltered=[], currentView='dashboard', charts=[];
 let SALES_CURVE_CHART=null;
@@ -1627,7 +1628,7 @@ function applyFilters(){
         q=document.getElementById('search').value.toLowerCase();
 
   // Every filter except Project and Status; reused for the chip counts.
-  const restMatch=r=>
+  const restMatchNoFloor=r=>
     (!unitCategories.length||unitCategories.includes(String(r.unitType))) &&
     (!sales.length||salesMatchesDeal_(r,sales)) &&
     (!salesManagers.length||salesManagers.includes(String(r.salesManager))) &&
@@ -1650,6 +1651,8 @@ function applyFilters(){
     (!years.length||years.includes(String(r.year))) &&
     (typeof edenDateRangeMatch_!=='function'||edenDateRangeMatch_(r)) &&
     (!q||Object.values(r).join(' ').toLowerCase().includes(q));
+  const floorMatch=r=>typeof edenFloorMatch_!=='function'||edenFloorMatch_(r);
+  const restMatch=r=>restMatchNoFloor(r)&&floorMatch(r);
   const projectMatch=r=>!projects.length||projects.includes(String(r.project));
   const statusMatch=r=>!statuses.length||statuses.includes(String(r.status));
   const rest0=rawRows.filter(restMatch);
@@ -1661,6 +1664,7 @@ function applyFilters(){
   // Rows matching every filter except Status (Sales Status chip counts).
   STATUS_BASE_ROWS=rest.filter(projectMatch);
   filtered=STATUS_BASE_ROWS.filter(statusMatch);
+  FLOOR_BASE_ROWS=rawRows.filter(r=>restMatchNoFloor(r)&&contractFilterMatch_(r)&&projectMatch(r)&&statusMatch(r));
 
   const bEden=getMulti('brokerEden'),bCreatedBy=getMulti('brokerCreatedBy'),bLastSales=getMulti('brokerLastSales'),bLink=getMulti('brokerLink'),bStatus=getMulti('brokerStatus'),bDays=getMulti('brokerDay'),bMonths=getMulti('brokerMonth'),bYears=getMulti('brokerYear'),bq=document.getElementById('brokerSearch').value.toLowerCase();
   brokerFiltered=brokerRows.filter(r=>(!bEden.length||bEden.includes(String(r.edenSales))||(r.sharedList||[]).some(n=>bEden.includes(String(n))))&&(!bCreatedBy.length||bCreatedBy.includes(String(r.createdBy)))&&(!bLastSales.length||bLastSales.includes(String(r.lastSales)))&&(!bLink.length||bLink.includes(String(r.linkStatus)))&&(!bStatus.length||bStatus.includes(String(r.status)))&&(!bDays.length||bDays.includes(String(r.day)))&&(!bMonths.length||bMonths.includes(String(r.month)))&&(!bYears.length||bYears.includes(String(r.year)))&&(!bq||Object.values(r).join(' ').toLowerCase().includes(bq)));
@@ -1881,6 +1885,7 @@ function teamComparisonBaseRows_(){
     (!clientTypes.length||clientTypes.some(v=>String(v).trim().toLowerCase()===String(r.clientType||'').trim().toLowerCase())) &&
     commissionFilterMatch_(r) &&
     contractFilterMatch_(r) &&
+    (typeof edenFloorMatch_!=='function'||edenFloorMatch_(r)) &&
     (!branches.length||branches.includes(String(r.branch))) &&
     (!statuses.length||statuses.includes(String(r.status))) &&
     (!renovations.length||renovations.includes(String(r.renovationStatus))) &&
@@ -3548,6 +3553,7 @@ function edenNonDateScopeRows_(){
     (!clientTypes.length||clientTypes.some(v=>String(v).trim().toLowerCase()===String(r.clientType||'').trim().toLowerCase())) &&
     commissionFilterMatch_(r) &&
     contractFilterMatch_(r) &&
+    (typeof edenFloorMatch_!=='function'||edenFloorMatch_(r)) &&
     (!branches.length||branches.includes(String(r.branch))) &&
     (!statuses.length||statuses.includes(String(r.status))) &&
     (!renovations.length||renovations.includes(String(r.renovationStatus))) &&

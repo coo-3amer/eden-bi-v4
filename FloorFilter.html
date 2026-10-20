@@ -1,0 +1,108 @@
+<style id="eden-floor-filter">
+html[data-theme] #appRoot .dsFloorRow{display:flex;align-items:center;gap:18px;flex-wrap:wrap;width:100%;padding-top:10px;margin-top:2px;border-top:1px dashed var(--ds-line)}
+html[data-theme] #appRoot .dsFloorRow[hidden]{display:none}
+html[data-theme] #appRoot .dsFloorBtns{display:flex;flex-wrap:wrap;gap:8px;flex:1}
+html[data-theme] #appRoot .dsFloorBtn{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 6px 0 13px;border-radius:999px;border:1px solid var(--ds-line);background:var(--ds-surface-2);color:var(--ds-text);font-size:12.5px;font-weight:600}
+html[data-theme] #appRoot .dsFloorBtn:hover{border-color:var(--ds-gold-line);background:var(--ds-hover)}
+html[data-theme] #appRoot .dsFloorBtn:focus-visible{box-shadow:0 0 0 3px var(--ds-gold-soft)}
+html[data-theme] #appRoot .dsFloorBtn b{min-width:24px;height:22px;padding:0 7px;border-radius:999px;display:inline-grid;place-items:center;font-size:11px;font-weight:700;background:var(--ds-surface);color:var(--ds-muted);border:1px solid var(--ds-line)}
+html[data-theme] #appRoot .dsFloorBtn.on{background:var(--ds-gold-grad);border-color:transparent;color:var(--ds-on-gold)}
+html[data-theme] #appRoot .dsFloorBtn.on b{background:rgba(255,255,255,.22);border-color:transparent;color:var(--ds-on-gold)}
+html[data-theme] #appRoot .dsFloorBtn.empty{opacity:.5}
+#dsFloorChecks{display:none}
+</style>
+<script>
+/* =====================================================================
+   EDEN BI — Floor filter.
+   Shown under the project buttons once one or more projects are chosen:
+   one button per floor of those projects (multi-select). The Deals sheet
+   writes floors many ways ("Ground floor", "G Floor", "GROUND FLOOR",
+   "3rd Floor", "THIRD FLOOR", "4TH+ 5TH"…) — they are grouped as one floor.
+   Hidden checkboxes name="floor" keep it in step with getMulti / Clear all.
+   ===================================================================== */
+const EDEN_FLOOR_WORDS_={GROUND:0,G:0,GF:0,FIRST:1,SECOND:2,THIRD:3,FOURTH:4,FIFTH:5,SIXTH:6,SEVENTH:7,EIGHTH:8,NINTH:9,TENTH:10,ELEVENTH:11,TWELFTH:12,
+  THIRTEENTH:13,FOURTEENTH:14,FIFTEENTH:15,SIXTEENTH:16,SEVENTEENTH:17,EIGHTEENTH:18,NINETEENTH:19,TWENTIETH:20,BASEMENT:-1,ROOF:100,
+  'الأرضي':0,'الارضي':0,'الأول':1,'الاول':1,'الثاني':2,'الثالث':3,'الرابع':4,'الخامس':5,'السادس':6,'السابع':7,'الثامن':8,'التاسع':9,'العاشر':10};
+function edenFloorPart_(p){
+  const s=String(p||'').toUpperCase().replace(/FLOOR|FLR|الدور/g,'').replace(/[^A-Z0-9؀-ۿ-]+/g,' ').trim();
+  if(!s)return null;
+  const m=s.match(/^(-?\d+)\s*(ST|ND|RD|TH)?$/);if(m)return Number(m[1]);
+  const w=s.split(' ')[0];if(w in EDEN_FLOOR_WORDS_)return EDEN_FLOOR_WORDS_[w];
+  const a=String(p||'').replace(/الدور/g,'').trim();if(a in EDEN_FLOOR_WORDS_)return EDEN_FLOOR_WORDS_[a];
+  return null;
+}
+function edenFloorName_(n){
+  if(n===0)return 'Ground';if(n===100)return 'Roof';if(n<0)return 'B'+(-n);
+  const t=n%100>=11&&n%100<=13?'th':({1:'st',2:'nd',3:'rd'}[n%10]||'th');return n+t;
+}
+/* Deal → floor key used by the filter ('' = no floor). */
+function edenFloorKey_(v){
+  const raw=String(v??'').trim();if(!raw)return '';
+  const parts=raw.split(/\s*(?:\+|&|,|\/|\bAND\b|و)\s*/i).filter(x=>x.trim());
+  const nums=parts.map(edenFloorPart_);
+  if(nums.length&&nums.every(n=>n!=null))return nums.map(edenFloorName_).join(' + ');
+  return raw.replace(/\s+/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+}
+function edenFloorOrder_(k){const n=edenFloorPart_(String(k).split(' + ')[0].replace(/^B(\d+)$/,'-$1').replace(/^Ground$/,'0').replace(/^Roof$/,'100'));return n==null?999:n+(k.includes('+')?0.5:0);}
+function edenFloorMatch_(r){
+  const sel=typeof getMulti==='function'?getMulti('floor'):[];
+  return !sel.length||sel.includes(edenFloorKey_(r.floor));
+}
+function edenFloorEsc_(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function edenFloorBox_(){let c=document.getElementById('dsFloorChecks');if(!c){c=document.createElement('div');c.id='dsFloorChecks';document.body.appendChild(c);}return c;}
+/* Rows the floor counts are based on: every filter except Floor. */
+function edenFloorBaseRows_(){
+  if(typeof FLOOR_BASE_ROWS!=='undefined'&&Array.isArray(FLOOR_BASE_ROWS))return FLOOR_BASE_ROWS;
+  return (typeof filtered!=='undefined'&&filtered)||[];
+}
+function edenFloorRender_(){
+  const bar=document.getElementById('dsProjBar');if(!bar)return;
+  let row=document.getElementById('dsFloorRow');
+  if(!row){
+    row=document.createElement('div');row.id='dsFloorRow';row.className='dsFloorRow';row.hidden=true;
+    row.innerHTML='<div class="dsProjBarHead"><b>Floors</b><span>Of the selected project</span></div><div class="dsFloorBtns" id="dsFloorBtns" role="group"></div>';
+    bar.appendChild(row);
+    row.addEventListener('click',e=>{
+      const btn=e.target.closest('.dsFloorBtn');if(!btn)return;
+      const boxes=[...document.querySelectorAll('input[name="floor"]')];
+      if(btn.dataset.floor==='__all__')boxes.forEach(b=>b.checked=false);
+      else{const b=boxes.find(x=>x.value===btn.dataset.floor);if(b)b.checked=!b.checked;}
+      if(typeof applyFilters==='function')applyFilters();
+    });
+  }
+  const projects=typeof getMulti==='function'?getMulti('project'):[];
+  const all=(typeof rawRows!=='undefined'&&rawRows)||[];
+  const inProj=all.filter(r=>projects.includes(String(r.project)));
+  const keys=[...new Set(inProj.map(r=>edenFloorKey_(r.floor)).filter(Boolean))].sort((a,b)=>edenFloorOrder_(a)-edenFloorOrder_(b)||a.localeCompare(b));
+  // hidden checkboxes: one per floor of the selected project(s); a floor no longer offered is unticked
+  const box=edenFloorBox_(),prev=new Set([...box.querySelectorAll('input:checked')].map(x=>x.value));
+  const sig=keys.join('|');
+  if(box.dataset.sig!==sig){
+    box.dataset.sig=sig;
+    box.innerHTML=keys.map(k=>`<input type="checkbox" name="floor" value="${edenFloorEsc_(k)}"${prev.has(k)?' checked':''}>`).join('');
+    if([...prev].some(k=>!keys.includes(k))&&typeof applyFilters==='function'){setTimeout(()=>applyFilters(),0);}
+  }
+  row.hidden=!projects.length||!keys.length;
+  if(row.hidden)return;
+  const sel=new Set(getMulti('floor')),cancelled=v=>typeof isCancelledStatus_==='function'&&isCancelledStatus_(v);
+  const noStatus=!getMulti('status').length,counts={};let total=0;
+  edenFloorBaseRows_().forEach(r=>{if(noStatus&&cancelled(r.status))return;const k=edenFloorKey_(r.floor);if(!k)return;counts[k]=(counts[k]||0)+1;total++;});
+  const fmt=n=>Number(n||0).toLocaleString('en-US');
+  document.getElementById('dsFloorBtns').innerHTML=
+    `<button type="button" class="dsFloorBtn${sel.size?'':' on'}" data-floor="__all__" aria-pressed="${!sel.size}">All floors<b>${fmt(total)}</b></button>`+
+    keys.map(k=>{const on=sel.has(k),n=counts[k]||0;return `<button type="button" class="dsFloorBtn${on?' on':''}${!n&&!on?' empty':''}" data-floor="${edenFloorEsc_(k)}" aria-pressed="${on}">${edenFloorEsc_(k)}<b>${fmt(n)}</b></button>`;}).join('');
+}
+(function initEdenFloorFilter_(){
+  if(typeof render==='function'&&!render.__dsFloor){
+    const original=render;
+    render=function(){const r=original.apply(this,arguments);try{edenFloorRender_();}catch(e){console.error('Floor filter',e);}return r;};
+    render.__dsFloor=true;
+  }
+  // "Clear all" / Reset: untick the floors too.
+  if(typeof resetFilters==='function'&&!resetFilters.__dsFloor){
+    const original=resetFilters;
+    resetFilters=function(){document.querySelectorAll('input[name="floor"]').forEach(b=>b.checked=false);return original.apply(this,arguments);};
+    resetFilters.__dsFloor=true;
+  }
+})();
+</script>
