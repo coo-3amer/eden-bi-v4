@@ -61,24 +61,38 @@ html[data-theme="dark"] .c360Comm .part{background:rgba(227,184,90,.12);color:#e
 @keyframes c360Fade{from{opacity:0}to{opacity:1}}
 @media(max-width:560px){.c360Sum{grid-template-columns:repeat(2,minmax(0,1fr))}.c360Grid{grid-template-columns:repeat(2,minmax(0,1fr))}.c360Who h2{font-size:22px}}
 
-/* Deals table: whole row opens the client card; compact rows; column groups tinted */
+/* Deals table: whole row opens the client card; compact rows; column groups tinted; first 3 columns frozen */
 html[data-theme] #appRoot #mainTable tbody tr[data-ck],html[data-theme] #appRoot #brokerCompanyDealsTable tbody tr[data-ck]{cursor:pointer}
-html[data-theme] #appRoot #mainTable tbody tr[data-ck]:hover td,html[data-theme] #appRoot #brokerCompanyDealsTable tbody tr[data-ck]:hover td{box-shadow:inset 0 999px 0 rgba(176,138,66,.07)}
-html[data-theme] #appRoot #mainTable th,html[data-theme] #appRoot #mainTable td{padding:0 10px!important;height:36px}
-html[data-theme] #appRoot #mainTable thead th{height:36px;font-size:10px!important;letter-spacing:.06em}
-html[data-theme] #appRoot #mainTable th:first-child,html[data-theme] #appRoot #mainTable td:first-child{padding-left:14px!important}
-html[data-theme] #appRoot #mainTable tbody td:is([data-col="clientName"],[data-col="mobile"],[data-col="clientType"],[data-col="nationality"]){background-color:rgba(70,120,190,.09)!important}
+html[data-theme] #appRoot #brokerCompanyDealsTable tbody tr[data-ck]:hover td{box-shadow:inset 0 999px 0 rgba(176,138,66,.07)}
+html[data-theme] #appRoot #mainTable th,html[data-theme] #appRoot #mainTable td{padding:0 7px!important;height:30px;font-size:12px!important}
+html[data-theme] #appRoot #mainTable thead th{height:32px;font-size:9.5px!important;letter-spacing:.05em}
+html[data-theme] #appRoot #mainTable th:first-child,html[data-theme] #appRoot #mainTable td:first-child{padding-left:10px!important}
+html[data-theme] #appRoot #mainTable td.mobileCell{padding-top:3px!important;padding-bottom:3px!important}
+html[data-theme] #appRoot #mainTable td.mobileCell .mobileNum{display:block!important;line-height:1.25}
+html[data-theme] #appRoot #mainTable td.mobileCell .mobileNum+.mobileNum{font-size:11px!important;color:var(--ds-muted)!important;margin-top:1px}
+html[data-theme] #appRoot #mainTable tbody td{--grpA:0;background-color:rgba(var(--grp,0,0,0),var(--grpA))!important}
+html[data-theme] #appRoot #mainTable tbody tr[data-ck]:hover td{--hov:.07}
+html[data-theme] #appRoot #mainTable tbody tr[data-ck]:hover td:not(.edenStick){box-shadow:inset 0 999px 0 rgba(176,138,66,.07)}
+html[data-theme] #appRoot #mainTable tbody td:is([data-col="clientName"],[data-col="mobile"],[data-col="clientType"],[data-col="nationality"]){--grp:70,120,190;--grpA:.09}
 html[data-theme] #appRoot #mainTable thead th:is([data-col="clientName"],[data-col="mobile"],[data-col="clientType"],[data-col="nationality"]){box-shadow:inset 0 -3px 0 rgba(70,120,190,.75)!important;color:rgb(70,120,190)!important}
-html[data-theme] #appRoot #mainTable tbody td:is([data-col="unitCode"],[data-col="status"],[data-col="renovationStatus"],[data-col="unitCategory"],[data-col="unitType"],[data-col="area"],[data-col="resActions"],[data-col="reservationDays"],[data-col="date"]){background-color:rgba(176,138,66,.09)!important}
-html[data-theme] #appRoot #mainTable thead th:is([data-col="unitCode"],[data-col="status"],[data-col="renovationStatus"],[data-col="unitCategory"],[data-col="unitType"],[data-col="area"],[data-col="resActions"],[data-col="reservationDays"],[data-col="date"]){box-shadow:inset 0 -3px 0 rgba(176,138,66,.75)!important;color:rgb(176,138,66)!important}
-html[data-theme] #appRoot #mainTable tbody td:is([data-col="monthName"],[data-col="year"],[data-col="contractDate"]){background-color:rgba(120,120,120,.09)!important}
+html[data-theme] #appRoot #mainTable tbody td:is([data-col="unitCode"],[data-col="status"],[data-col="date"],[data-col="renovationStatus"],[data-col="unitCategory"],[data-col="unitType"],[data-col="area"],[data-col="resActions"],[data-col="reservationDays"]){--grp:176,138,66;--grpA:.09}
+html[data-theme] #appRoot #mainTable thead th:is([data-col="unitCode"],[data-col="status"],[data-col="date"],[data-col="renovationStatus"],[data-col="unitCategory"],[data-col="unitType"],[data-col="area"],[data-col="resActions"],[data-col="reservationDays"]){box-shadow:inset 0 -3px 0 rgba(176,138,66,.75)!important;color:rgb(176,138,66)!important}
+html[data-theme] #appRoot #mainTable tbody td:is([data-col="monthName"],[data-col="year"],[data-col="contractDate"]){--grp:120,120,120;--grpA:.09}
 html[data-theme] #appRoot #mainTable thead th:is([data-col="monthName"],[data-col="year"],[data-col="contractDate"]){box-shadow:inset 0 -3px 0 rgba(120,120,120,.75)!important;color:rgb(120,120,120)!important}
-html[data-theme] #appRoot #mainTable tbody td:is([data-col="amount"],[data-col="currency"],[data-col="dpPercent"],[data-col="actualDP"],[data-col="dpPaid"],[data-col="actualPaid"],[data-col="remain"]){background-color:rgba(47,158,98,.09)!important}
+html[data-theme] #appRoot #mainTable tbody td:is([data-col="amount"],[data-col="currency"],[data-col="dpPercent"],[data-col="actualDP"],[data-col="dpPaid"],[data-col="actualPaid"],[data-col="remain"]){--grp:47,158,98;--grpA:.09}
 html[data-theme] #appRoot #mainTable thead th:is([data-col="amount"],[data-col="currency"],[data-col="dpPercent"],[data-col="actualDP"],[data-col="dpPaid"],[data-col="actualPaid"],[data-col="remain"]){box-shadow:inset 0 -3px 0 rgba(47,158,98,.75)!important;color:rgb(47,158,98)!important}
-html[data-theme] #appRoot #mainTable tbody td:is([data-col="salesName"],[data-col="dealStatus"],[data-col="sharedWith"],[data-col="branch"]){background-color:rgba(130,90,190,.09)!important}
+html[data-theme] #appRoot #mainTable tbody td:is([data-col="salesName"],[data-col="dealStatus"],[data-col="sharedWith"],[data-col="branch"]){--grp:130,90,190;--grpA:.09}
 html[data-theme] #appRoot #mainTable thead th:is([data-col="salesName"],[data-col="dealStatus"],[data-col="sharedWith"],[data-col="branch"]){box-shadow:inset 0 -3px 0 rgba(130,90,190,.75)!important;color:rgb(130,90,190)!important}
-html[data-theme] #appRoot #mainTable tbody td:is([data-col="mainSource"],[data-col="sourceType"],[data-col="campaignName"],[data-col="mediaBuyer"],[data-col="brokerageCompany"],[data-col="bcSales"],[data-col="bcManager"]){background-color:rgba(214,120,60,.09)!important}
+html[data-theme] #appRoot #mainTable tbody td:is([data-col="mainSource"],[data-col="sourceType"],[data-col="campaignName"],[data-col="mediaBuyer"],[data-col="brokerageCompany"],[data-col="bcSales"],[data-col="bcManager"]){--grp:214,120,60;--grpA:.09}
 html[data-theme] #appRoot #mainTable thead th:is([data-col="mainSource"],[data-col="sourceType"],[data-col="campaignName"],[data-col="mediaBuyer"],[data-col="brokerageCompany"],[data-col="bcSales"],[data-col="bcManager"]){box-shadow:inset 0 -3px 0 rgba(214,120,60,.75)!important;color:rgb(214,120,60)!important}
+html[data-theme] #appRoot #mainTable tbody td.docsCell.docsCell{background:var(--ds-surface)!important}
+/* frozen columns: solid background (the tint is painted on top of the page colour) */
+html[data-theme] #appRoot #mainTable .edenStick{position:sticky!important;z-index:2}
+html[data-theme] #appRoot #mainTable tbody td.edenStick{background:linear-gradient(rgba(var(--grp,0,0,0),var(--grpA)),rgba(var(--grp,0,0,0),var(--grpA))),var(--ds-surface)!important}
+html[data-theme] #appRoot #mainTable tbody tr[data-ck]:hover td.edenStick{background:linear-gradient(rgba(176,138,66,.07),rgba(176,138,66,.07)),linear-gradient(rgba(var(--grp,0,0,0),var(--grpA)),rgba(var(--grp,0,0,0),var(--grpA))),var(--ds-surface)!important}
+html[data-theme] #appRoot #mainTable thead th.edenStick{z-index:4}
+html[data-theme] #appRoot #mainTable .edenStickLast{border-right:1px solid var(--ds-line-strong,var(--ds-line))}
+html[data-theme] #appRoot #mainTable tbody td.edenStickLast{box-shadow:6px 0 10px -8px rgba(0,0,0,.25)}
 </style>
 
 <script>
@@ -229,4 +243,22 @@ document.addEventListener('click',e=>{
   const td=e.target.closest('#mainTable td[data-ck]');
   if(td){c360Open_(td.dataset.ck);}
 });
+
+/* Freeze the first 3 columns (Project · Client · Unit code) of the deals table. */
+function edenStickCols_(){
+  const t=document.getElementById('mainTable');if(!t)return;
+  t.querySelectorAll('.edenStick').forEach(c=>{c.classList.remove('edenStick','edenStickLast');c.style.left='';});
+  const head=t.querySelector('thead tr');if(!head||head.children[0]?.dataset.col!=='project')return;
+  const n=3;let left=0;const lefts=[];
+  for(let i=0;i<n&&i<head.children.length;i++){lefts.push(left);left+=head.children[i].getBoundingClientRect().width;}
+  t.querySelectorAll('tr').forEach(tr=>{for(let i=0;i<lefts.length;i++){const c=tr.children[i];if(!c)break;c.classList.add('edenStick');if(i===lefts.length-1)c.classList.add('edenStickLast');c.style.left=lefts[i]+'px';}});
+}
+(function(){
+  if(typeof renderTable==='function'&&!renderTable.__stick){
+    const o=renderTable;renderTable=function(){const r=o.apply(this,arguments);try{requestAnimationFrame(edenStickCols_);}catch(e){}return r;};renderTable.__stick=true;
+  }
+  let q=0;window.addEventListener('resize',()=>{cancelAnimationFrame(q);q=requestAnimationFrame(edenStickCols_);});
+  // sorting a column re-orders rows only; widths can change → re-measure
+  document.addEventListener('click',e=>{if(e.target.closest('#mainTable thead th'))setTimeout(edenStickCols_,50);});
+})();
 </script>

@@ -4625,7 +4625,7 @@ function renderDownPaymentSummaryPanel_(rows){
 // Rows and columns of the table currently on screen (also used by the exports).
 function tableDataset_(){
   let rows=filtered;
-  let cols=['project','clientName','mobile','clientType','nationality','unitCode','status','date','renovationStatus','monthName','year','contractDate','amount','currency','dpPercent','actualDP','dpPaid','actualPaid','remain','area','salesName','dealStatus','sharedWith','branch','unitCategory','unitType','mainSource','sourceType','campaignName','mediaBuyer','brokerageCompany','bcSales','bcManager'];
+  let cols=['project','clientName','unitCode','mobile','clientType','nationality','status','date','renovationStatus','monthName','year','contractDate','amount','currency','dpPercent','actualDP','dpPaid','actualPaid','remain','area','salesName','dealStatus','sharedWith','branch','unitCategory','unitType','mainSource','sourceType','campaignName','mediaBuyer','brokerageCompany','bcSales','bcManager'];
   let title='Deals Details';
   if(currentView==='projects'){
     rows=groupRows('project');cols=['name','deals','valueEGP','valueUSD','meters','units','uniqueClients','salesCount'];title='Projects Summary'
@@ -5019,15 +5019,14 @@ function clientRows(){
 function splitPhoneNumbers_(v){
   const raw=String(v??'').trim();
   if(!raw)return [];
-  const parts=raw.split(/\s*(?:\s-\s|[\/,;|\n]|\s+و\s+|\s{2,})\s*/).map(x=>x.trim()).filter(Boolean);
+  const parts=raw.split(/\s*(?:\s-|-\s|\s–\s|[\/,;|\n]|\s+و\s+|\s{2,})\s*/).map(x=>x.trim()).filter(Boolean);
   const digits=x=>x.replace(/\D/g,'').length;
   return parts.length>1&&parts.every(x=>digits(x)>=7)?parts:[raw];
 }
 function mobileCellHtml_(v){
   const nums=splitPhoneNumbers_(v);
   if(!nums.length)return '';
-  const more=nums.length>1?`<span class="mobileMore" title="${escapeAttr(nums.slice(1).join(' • '))}">+${nums.length-1}</span>`:'';
-  return `<span class="mobileNum">${escapeHtml(nums[0])}</span>${more}`;
+  return nums.map(n=>`<span class="mobileNum">${escapeHtml(n)}</span>`).join('');
 }
 // Days since the reservation date, for rows whose status is a reservation.
 function reservationDays_(r){
