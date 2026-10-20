@@ -33,6 +33,39 @@ function backupFolder_(name, parentId) {
   return f.id;
 }
 
+function backupExists_(folder, name) {
+  try {
+    const q = "'" + folder + "' in parents and trashed=false and name='" + name.replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "'";
+    return (Drive.Files.list({ q: q, fields: 'files(id)', pageSize: 1 }).files || []).length > 0;
+  } catch (e) { return false; }
+}
+
+function backupScheduleRetry_(minutes) {
+  try {
+    const has = ScriptApp.getProjectTriggers().some(t => t.getHandlerFunction() === 'runBackupRetry');
+    if (!has) ScriptApp.newTrigger('runBackupRetry').timeBased().after(minutes * 60000).create();
+  } catch (e) { console.warn('backupScheduleRetry_: ' + e); }
+}
+
+/* From the warm-up: today's backup has failures and no retry is waiting → schedule one. */
+function backupCatchUp_() {
+  try {
+    const last = JSON.parse(PropertiesService.getScriptProperties().getProperty('BACKUP_LAST') || '{}') || {};
+    const day = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Africa/Cairo', 'yyyy-MM-dd');
+    if (last.day !== day || !(last.failed || []).length || (Number(last.tries) || 1) >= 4) return;
+    if (Date.now() - new Date(last.at).getTime() < 25 * 60000) return;
+    backupScheduleRetry_(1);
+  } catch (e) { console.warn('backupCatchUp_: ' + e); }
+}
+
+/* One-off retry after a failed backup: copies only what is missing today. */
+function runBackupRetry(e) {
+  try {
+    ScriptApp.getProjectTriggers().filter(t => t.getHandlerFunction() === 'runBackupRetry').forEach(t => ScriptApp.deleteTrigger(t));
+  } catch (err) {}
+  return runDailyBackup();
+}
+
 /* Copies every source into today's folder. Safe to run more than once a day. */
 function runDailyBackup() {
   const tz = Session.getScriptTimeZone() || 'Africa/Cairo';
@@ -44,12 +77,21 @@ function runDailyBackup() {
   backupSources_().forEach(src => {
     const name = src.name + ' — ' + day;
     if (existing.indexOf(name) >= 0) { done.push(src.name + ' (already there)'); return; }
-    try {
-      Drive.Files.copy({ name: name, parents: [folder] }, src.id, { fields: 'id', supportsAllDrives: true });
-      done.push(src.name);
-    } catch (e) {
-      failed.push(src.name + ': ' + (e && e.message ? e.message : e));
+    // Google's Drive API sometimes answers "Internal Error" once: try up to 3 times.
+    let err = null;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        if (attempt > 1 && backupExists_(folder, name)) { err = null; break; }   // the failed call did copy it
+        Drive.Files.copy({ name: name, parents: [folder] }, src.id, { fields: 'id', supportsAllDrives: true });
+        err = null;
+        break;
+      } catch (e) {
+        err = e;
+        if (attempt < 3) Utilities.sleep(attempt * 8000);
+      }
     }
+    if (err) failed.push(src.name + ': ' + (err && err.message ? err.message : err));
+    else done.push(src.name);
   });
 
   // Keep the last BACKUP_KEEP_DAYS_ days.
@@ -60,8 +102,17 @@ function runDailyBackup() {
       .forEach(f => { try { Drive.Files.update({ trashed: true }, f.id); } catch (e) {} });
   } catch (e) { console.warn('Backup cleanup: ' + e); }
 
-  PropertiesService.getScriptProperties().setProperty('BACKUP_LAST', JSON.stringify({ day: day, at: new Date().toISOString(), done: done.length, failed: failed }));
-  if (typeof auditLog_ === 'function') auditLog_('System', 'Daily backup', { details: done.length + ' files copied to Drive › ' + BACKUP_ROOT_NAME_ + ' › ' + day + (failed.length ? ' · Failed: ' + failed.join(' | ') : '') });
+  const props = PropertiesService.getScriptProperties();
+  let prev = {};
+  try { prev = JSON.parse(props.getProperty('BACKUP_LAST') || '{}') || {}; } catch (e) {}
+  const tries = prev.day === day ? (Number(prev.tries) || 1) + 1 : 1;
+  props.setProperty('BACKUP_LAST', JSON.stringify({ day: day, at: new Date().toISOString(), done: done.length, failed: failed, tries: tries }));
+  // Something failed: try again by itself in 30 minutes (up to 4 runs a day).
+  if (failed.length && tries < 4) backupScheduleRetry_(30);
+  const retryNote = failed.length ? (tries < 4 ? ' · will retry automatically in 30 min' : ' · gave up for today') : '';
+  if (typeof auditLog_ === 'function' && (failed.length || prev.day !== day || (prev.failed || []).length))
+    auditLog_('System', 'Daily backup', { details: done.length + ' files copied to Drive › ' + BACKUP_ROOT_NAME_ + ' › ' + day +
+      (failed.length ? ' · Failed: ' + failed.join(' | ') + retryNote : (tries > 1 ? ' · retry succeeded, all files backed up' : '')) });
   console.log('Backup ' + day + ': ' + done.join(', ') + (failed.length ? ' | FAILED: ' + failed.join(' | ') : ''));
   return { day: day, done: done, failed: failed };
 }

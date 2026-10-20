@@ -63,7 +63,7 @@ function notifyFromAudit_(who, action, info) {
     const icon = TG_EVENTS_[action];
     if (!icon) return;
     const details = String(info.details || '');
-    if (action === 'Daily backup' && details.indexOf('Failed') < 0) return;
+    if (action === 'Daily backup' && details.indexOf('Failed') < 0 && details.indexOf('retry succeeded') < 0) return;
     const head = [info.project, info.unit].filter(Boolean).join(' · ');
     const lines = ['<b>' + icon + ' ' + tgEsc_(action) + '</b>' + (head ? ' — ' + tgEsc_(head) : '')];
     if (info.client) lines.push('Client: ' + tgEsc_(info.client));

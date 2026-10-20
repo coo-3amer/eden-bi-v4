@@ -168,6 +168,7 @@ function warmDashboardCache() {
   cache.put('WARM_RUNNING', '1', 330);
   const t0 = Date.now(), elapsed = () => Date.now() - t0;
   if (typeof ensureDailyBackupTrigger_ === 'function') ensureDailyBackupTrigger_();
+  if (typeof backupCatchUp_ === 'function') backupCatchUp_();
   if (typeof ensureTelegramPollTrigger_ === 'function') ensureTelegramPollTrigger_();
   try {
     // 0) Reservations past 7 days -> cancelled + unit opened (before the rebuild, so it shows at once).
