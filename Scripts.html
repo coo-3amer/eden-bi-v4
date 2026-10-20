@@ -698,52 +698,12 @@ function exportBrokerExcel_(){
     alert('No broker data to export for the current filters.');
     return;
   }
-
-  const summaryTable=exportSummaryTable_(data.kpis);
-  const dataTable=`
-    <table class="dataTable" border="1">
-      <thead><tr>${data.headers.map(h=>`<th>${exportSafeText_(h)}</th>`).join('')}</tr></thead>
-      <tbody>
-        ${data.rows.map(r=>`<tr>${data.keys.map(k=>`<td>${exportSafeText_(r[k])}</td>`).join('')}</tr>`).join('')}
-      </tbody>
-    </table>`;
-
-  const html=`<!doctype html>
-  <html>
-  <head>
-    <meta charset="UTF-8">
-    <style>
-      body{font-family:Arial,sans-serif;color:#111}
-      h1{font-size:18px;margin:0 0 5px}
-      .meta{font-size:10px;color:#666;margin-bottom:10px}
-      .summaryTable{border-collapse:separate;border-spacing:6px;width:100%;margin:0 0 12px}
-      .summaryTable td{border:1px solid #bbb;padding:6px 8px}
-      .kpiLabels td{font-size:9px;font-weight:700;text-transform:uppercase;background:#f3f3f3;color:#555}
-      .kpiValues td{font-size:12px;font-weight:700;background:#fff}
-      .dataTable{border-collapse:collapse;width:100%;font-size:10px}
-      .dataTable th,.dataTable td{border:1px solid #bbb;padding:4px;vertical-align:top}
-      .dataTable th{background:#e9eef5;font-weight:700}
-    </style>
-  </head>
-  <body>
-    <h1>${exportSafeText_(data.title)}</h1>
-    <div class="meta">Generated: ${exportSafeText_(new Date().toLocaleString())}</div>
-    ${summaryTable}
-    ${dataTable}
-  </body>
-  </html>`;
-
-  const blob=new Blob(['\ufeff',html],{type:'application/vnd.ms-excel;charset=utf-8'});
-  const a=document.createElement('a');
-  const href=URL.createObjectURL(blob);
-  a.href=href;
-  a.download=`${data.filename}_${new Date().toISOString().slice(0,10)}.xls`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(()=>URL.revokeObjectURL(href),1000);
+  // A real .xlsx (the old HTML-as-.xls file is refused by new Excel versions).
+  edenXlsxDownload_(`${data.filename}_${new Date().toISOString().slice(0,10)}`,{
+    title:data.title,sheetName:'Brokers',kpis:data.kpis||[],headers:data.headers,
+    rows:data.rows.map(r=>data.keys.map(k=>r[k]??''))
+  });
 }
-
 function exportBrokerPDF_(){
   const data=brokerExportDataset_();
   if(!data.rows.length){
@@ -849,67 +809,11 @@ function exportExcel(picked){
     ['Branches', uniqN(dealRows,'branch').toLocaleString('en-US')]
   ];
 
-  const summaryRows=[];
-  for(let i=0;i<exportKpis.length;i+=4){
-    const group=exportKpis.slice(i,i+4);
-    summaryRows.push(`
-      <tr class="kpiLabels">
-        ${group.map(([label])=>`<td>${exportSafeText_(label)}</td>`).join('')}
-        ${Array(Math.max(0,4-group.length)).fill('<td></td>').join('')}
-      </tr>
-      <tr class="kpiValues">
-        ${group.map(([,value])=>`<td>${exportSafeText_(value)}</td>`).join('')}
-        ${Array(Math.max(0,4-group.length)).fill('<td></td>').join('')}
-      </tr>
-    `);
-  }
-
-  const summaryTable=`
-    <table class="summaryTable">
-      <tbody>${summaryRows.join('')}</tbody>
-    </table>`;
-
-  const dataTable=`
-    <table class="dataTable" border="1">
-      <thead><tr>${headers.map(h=>`<th>${exportSafeText_(h)}</th>`).join('')}</tr></thead>
-      <tbody>
-        ${rows.map(r=>`<tr>${keys.map(k=>`<td>${exportSafeText_(r[k])}</td>`).join('')}</tr>`).join('')}
-      </tbody>
-    </table>`;
-
-  const html=`<!doctype html>
-  <html>
-  <head>
-    <meta charset="UTF-8">
-    <style>
-      body{font-family:Arial,sans-serif;color:#111}
-      h1{font-size:18px;margin:0 0 5px}
-      .meta{font-size:10px;color:#666;margin-bottom:10px}
-      .summaryTable{border-collapse:separate;border-spacing:6px;width:100%;margin:0 0 12px}
-      .summaryTable td{border:1px solid #bbb;padding:6px 8px}
-      .kpiLabels td{font-size:9px;font-weight:700;text-transform:uppercase;background:#f3f3f3;color:#555}
-      .kpiValues td{font-size:12px;font-weight:700;background:#fff}
-      .dataTable{border-collapse:collapse;width:100%;font-size:10px}
-      .dataTable th,.dataTable td{border:1px solid #bbb;padding:4px;vertical-align:top}
-      .dataTable th{background:#e9eef5;font-weight:700}
-    </style>
-  </head>
-  <body>
-    <h1>EDEN — ${exportSafeText_(title||"Transactions")}</h1>
-    <div class="meta">Generated: ${exportSafeText_(new Date().toLocaleString())}</div>
-    ${summaryTable}
-    ${dataTable}
-  </body>
-  </html>`;
-
-  const blob=new Blob(['\ufeff',html],{type:'application/vnd.ms-excel;charset=utf-8'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download=`EDEN_Transactions_${new Date().toISOString().slice(0,10)}.xls`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  // A real .xlsx (the old HTML-as-.xls file is refused by new Excel versions).
+  edenXlsxDownload_(`EDEN_Transactions_${new Date().toISOString().slice(0,10)}`,{
+    title:`EDEN — ${title||'Transactions'}`,sheetName:title||'Transactions',kpis:exportKpis,headers,
+    rows:rows.map(r=>keys.map(k=>{const v=r[k];return v==null||typeof v==='object'?'':v;}))
+  });
 }
 function exportPDF(picked){
   if(picked!==true&&edenExportPicker_('PDF',()=>exportPDF(true)))return;

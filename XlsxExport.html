@@ -1,0 +1,114 @@
+<script>
+/* =====================================================================
+   EDEN BI — real .xlsx files (no library).
+   The old "Excel" export was an HTML page saved as .xls; new Excel versions
+   refuse it ("file format and extension don't match" / won't open).
+   edenXlsxDownload_(fileName, {title, sheetName, kpis:[[label,value]], headers:[…], rows:[[…]]})
+   writes a genuine Office Open XML workbook: title, generated time, KPI
+   rows, then the table (bold header, filter, frozen header row).
+   ===================================================================== */
+// The XML declaration is built at run time: "<"+"?" in this file would be read as an Apps Script scriptlet.
+const EDEN_XML_HEAD_='<'+'?xml version="1.0" encoding="UTF-8" standalone="yes"?'+'>';
+const EDEN_XLSX_CRC_=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
+function edenCrc32_(b){let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=EDEN_XLSX_CRC_[(c^b[i])&0xFF]^(c>>>8);return (c^0xFFFFFFFF)>>>0;}
+/* ZIP (stored, no compression): [{name, data:Uint8Array}] → Uint8Array */
+function edenZip_(files){
+  const enc=new TextEncoder(),parts=[],central=[];let off=0;
+  const u16=v=>[v&255,(v>>>8)&255],u32=v=>[v&255,(v>>>8)&255,(v>>>16)&255,(v>>>24)&255];
+  const d=new Date(),dosT=(d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()>>1),dosD=((d.getFullYear()-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate();
+  files.forEach(f=>{
+    const name=enc.encode(f.name),data=f.data,crc=edenCrc32_(data);
+    const head=new Uint8Array([0x50,0x4B,0x03,0x04,...u16(20),...u16(0x0800),...u16(0),...u16(dosT),...u16(dosD),...u32(crc),...u32(data.length),...u32(data.length),...u16(name.length),...u16(0)]);
+    parts.push(head,name,data);
+    central.push(new Uint8Array([0x50,0x4B,0x01,0x02,...u16(20),...u16(20),...u16(0x0800),...u16(0),...u16(dosT),...u16(dosD),...u32(crc),...u32(data.length),...u32(data.length),...u16(name.length),...u16(0),...u16(0),...u16(0),...u16(0),...u32(0),...u32(off)]),name);
+    off+=head.length+name.length+data.length;
+  });
+  const cdSize=central.reduce((a,p)=>a+p.length,0);
+  const end=new Uint8Array([0x50,0x4B,0x05,0x06,...u16(0),...u16(0),...u16(files.length),...u16(files.length),...u32(cdSize),...u32(off),...u16(0)]);
+  const all=[...parts,...central,end],out=new Uint8Array(all.reduce((a,p)=>a+p.length,0));let p=0;all.forEach(x=>{out.set(x,p);p+=x.length;});
+  return out;
+}
+function edenXmlEsc_(v){return String(v).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function edenXlsxCol_(n){let s='';n++;while(n){const r=(n-1)%26;s=String.fromCharCode(65+r)+s;n=Math.floor((n-1)/26);}return s;}
+/* A value that should be a number in Excel (money, %, counts) — never IDs / phones / codes. */
+function edenXlsxNum_(v){
+  if(typeof v==='number')return isFinite(v)?v:null;
+  const s=String(v??'').trim();if(!s)return null;
+  const m=s.match(/^(-?)([\d,]+(?:\.\d+)?)(%?)$/);if(!m)return null;
+  const digits=m[2].replace(/[,.]/g,'');
+  if(/^0\d/.test(m[2])&&!m[2].includes('.'))return null;          // 0100… phones, codes
+  if(!m[2].includes(',')&&!m[2].includes('.')&&digits.length>9)return null; // IDs, long numbers
+  const n=Number(m[1]+m[2].replace(/,/g,''));if(!isFinite(n))return null;
+  return m[3]?n/100:n;
+}
+/* styles: 0 normal · 1 title · 2 muted · 3 kpi label · 4 kpi value · 5 header · 6 number · 7 percent · 8 text */
+const EDEN_XLSX_STYLES_=`${EDEN_XML_HEAD_}
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<numFmts count="1"><numFmt numFmtId="164" formatCode="#,##0.##"/></numFmts>
+<fonts count="5"><font><sz val="10"/><name val="Arial"/></font><font><b/><sz val="14"/><name val="Arial"/></font><font><sz val="9"/><color rgb="FF777777"/><name val="Arial"/></font><font><b/><sz val="9"/><color rgb="FF555555"/><name val="Arial"/></font><font><b/><sz val="10"/><name val="Arial"/></font></fonts>
+<fills count="4"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF3F3F3"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFE9EEF5"/><bgColor indexed="64"/></patternFill></fill></fills>
+<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFBBBBBB"/></left><right style="thin"><color rgb="FFBBBBBB"/></right><top style="thin"><color rgb="FFBBBBBB"/></top><bottom style="thin"><color rgb="FFBBBBBB"/></bottom><diagonal/></border></borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="9">
+<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+<xf numFmtId="0" fontId="3" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>
+<xf numFmtId="0" fontId="4" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1"/>
+<xf numFmtId="0" fontId="4" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>
+<xf numFmtId="164" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"/>
+<xf numFmtId="10" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"/>
+<xf numFmtId="49" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"/>
+</cellXfs>
+<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
+</styleSheet>`;
+function edenXlsxBlob_(o){
+  o=o||{};
+  const headers=o.headers||[],rows=o.rows||[],kpis=o.kpis||[],ncol=Math.max(headers.length,Math.min(kpis.length,8),1);
+  const xr=[];let r=0;const widths=new Array(ncol).fill(8);
+  const cell=(c,v,style,forceText)=>{
+    const ref=edenXlsxCol_(c)+(r+1);if(v==null||v==='')return style?`<c r="${ref}" s="${style}"/>`:'';
+    const n=forceText?null:edenXlsxNum_(v);
+    if(c<ncol)widths[c]=Math.min(60,Math.max(widths[c],String(v).length+2));
+    if(n!=null){const pct=/%\s*$/.test(String(v));return `<c r="${ref}" s="${style===5||style===4||style===3?style:(pct?7:6)}"><v>${n}</v></c>`;}
+    return `<c r="${ref}" s="${style}" t="inlineStr"><is><t xml:space="preserve">${edenXmlEsc_(v)}</t></is></c>`;
+  };
+  const row=(cells,ht)=>{xr.push(`<row r="${r+1}"${ht?` ht="${ht}" customHeight="1"`:''}>${cells.join('')}</row>`);r++;};
+  if(o.title)row([`<c r="A${r+1}" s="1" t="inlineStr"><is><t>${edenXmlEsc_(o.title)}</t></is></c>`],22);
+  row([`<c r="A${r+1}" s="2" t="inlineStr"><is><t>${edenXmlEsc_('Generated: '+new Date().toLocaleString('en-GB'))}</t></is></c>`]);
+  if(kpis.length){
+    r++;
+    kpis.forEach(([l,v])=>row([cell(0,l,3,true),cell(1,v,4,true)]));
+  }
+  r++;
+  const headRow=r+1;
+  row(headers.map((h,c)=>cell(c,h,5,true)),30);
+  rows.forEach(vals=>row(vals.map((v,c)=>cell(c,v,8,false))));
+  const last=Math.max(headRow,r);
+  const cols=widths.map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${Math.max(9,w)}" customWidth="1"/>`).join('');
+  const sheet=`${EDEN_XML_HEAD_}
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheetViews><sheetView workbookViewId="0"${o.rtl?' rightToLeft="1"':''}><pane ySplit="${headRow}" topLeftCell="A${headRow+1}" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>
+<sheetFormatPr defaultRowHeight="15"/><cols>${cols}</cols><sheetData>${xr.join('')}</sheetData>
+${headers.length&&rows.length?`<autoFilter ref="A${headRow}:${edenXlsxCol_(headers.length-1)}${last}"/>`:''}
+</worksheet>`;
+  const name=String(o.sheetName||'Data').replace(/[\\\/\?\*\[\]:]/g,' ').slice(0,31)||'Data';
+  const enc=new TextEncoder(),f=(n,s)=>({name:n,data:enc.encode(s)});
+  const zip=edenZip_([
+    f('[Content_Types].xml',`${EDEN_XML_HEAD_}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`),
+    f('_rels/.rels',`${EDEN_XML_HEAD_}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`),
+    f('xl/workbook.xml',`${EDEN_XML_HEAD_}<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="${edenXmlEsc_(name)}" sheetId="1" r:id="rId1"/></sheets>${headers.length&&rows.length?`<definedNames><definedName name="_xlnm._FilterDatabase" localSheetId="0" hidden="1">'${edenXmlEsc_(name.replace(/'/g,"''"))}'!$A$${headRow}:$${edenXlsxCol_(headers.length-1)}$${last}</definedName></definedNames>`:''}</workbook>`),
+    f('xl/_rels/workbook.xml.rels',`${EDEN_XML_HEAD_}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`),
+    f('xl/styles.xml',EDEN_XLSX_STYLES_),
+    f('xl/worksheets/sheet1.xml',sheet)
+  ]);
+  return new Blob([zip],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+function edenXlsxDownload_(fileName,o){
+  const blob=edenXlsxBlob_(o);
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=String(fileName||'EDEN').replace(/\.xlsx?$/i,'')+'.xlsx';
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+</script>
