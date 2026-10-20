@@ -12,6 +12,9 @@
 .icTag{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;background:rgba(176,138,66,.12);color:#8f6d2c}
 .icTag.dir{background:rgba(70,120,190,.12);color:#2f5fa0}.icTag.prv{background:rgba(130,90,190,.12);color:#6a45a8}
 .icWarn{color:#b03a3a;font-size:11px;font-weight:700}
+.icFilters{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;padding:10px 18px 0}
+.icFilters label{display:flex;flex-direction:column;gap:3px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ds-muted,#83796b)}
+.icFilters input,.icFilters select{height:32px!important}
 .icSet h4{margin:18px 0 8px;font-size:13px}
 .icSet table input,.icSet table select{height:30px!important;font-size:12.5px!important;width:100%}
 .icSet table td{padding:4px 6px!important}
@@ -32,15 +35,23 @@ html.edenEgv [data-eden-commissions],html.edenEgv [data-ic],html.edenEgv [data-b
    on all the month's deals or only their team's (Sales Manager / Head of Sales).
    Settings: getCommSetup / saveCommSetup (CommissionSetup.js).
    ===================================================================== */
-const IC_={setup:null,tab:'sales',month:'',project:null,open:{},busy:false,draft:null};
+const IC_={setup:null,tab:'sales',from:'',to:'',project:null,branch:'',manager:'',dealType:'',dpMin:9,dpMax:null,open:{},busy:false,draft:null};
 const IC_SCHEMES_={tiers:'Sales tiers (target)',pct:'% of sales',perDeal:'EGP per contract',perMillion:'EGP per 1M'};
 function icEsc_(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function icN_(n,d=0){return Number(n||0).toLocaleString('en-US',{maximumFractionDigits:d});}
 function icPct_(x,d=1){return (Number(x||0)*100).toFixed(d).replace(/\.0$/,'')+'%';}
 function icIsAdmin_(){const r=String((typeof AUTH_USER!=='undefined'&&AUTH_USER&&AUTH_USER.role)||'').trim().toLowerCase();return r==='admin'||r==='super admin';}
 const icNorm_=v=>String(v||'').trim().toLowerCase().replace(/\s+/g,' ');
-function icMonthNow_(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
-function icMonthLabel_(ym){const [y,m]=String(ym).split('-');return new Date(+y,+m-1,1).toLocaleDateString('en-GB',{month:'long',year:'numeric'});}
+const icIso_=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+function icMonthRange_(back){const d=new Date();const a=new Date(d.getFullYear(),d.getMonth()-(back||0),1),b=new Date(a.getFullYear(),a.getMonth()+1,0);return [icIso_(a),icIso_(b)];}
+function icRangeLabel_(){const f=d=>d?new Date(d+'T00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'…';
+  const [a,b]=[IC_.from,IC_.to];if(a&&b){const A=new Date(a+'T00:00'),B=new Date(b+'T00:00');
+    if(A.getDate()===1&&B.getMonth()===A.getMonth()&&B.getFullYear()===A.getFullYear()&&new Date(B.getFullYear(),B.getMonth()+1,0).getDate()===B.getDate())return A.toLocaleDateString('en-GB',{month:'long',year:'numeric'});}
+  return f(a)+' → '+f(b);}
+/* How many calendar months the range touches (monthly targets are multiplied by it). */
+function icMonths_(){if(!IC_.from||!IC_.to)return 1;const A=new Date(IC_.from+'T00:00'),B=new Date(IC_.to+'T00:00');return Math.max(1,(B.getFullYear()-A.getFullYear())*12+B.getMonth()-A.getMonth()+1);}
+function icDealDay_(r){const y=Number(r.year),m=Number(r.month);if(!y||!m)return '';return y+'-'+String(m).padStart(2,'0')+'-'+String(Number(r.day)||1).padStart(2,'0');}
+function icDpPct_(r){const a=Number(r.amount)||0;return a>0?(Number(r.actualPaid)||0)/a*100:0;}
 function icType_(r){
   const t=[r.mainSource,r.sourceType,r.dealStatus].map(x=>String(x||'').toLowerCase()).join(' ');
   if(/private/.test(t))return 'Private';
@@ -50,8 +61,17 @@ function icType_(r){
 function icRate_(tiers,ach){let r=0;(tiers||[]).forEach(([min,rate])=>{if(ach>=min-1e-9)r=rate;});return r;}
 function icDeals_(){
   const rows=(typeof rawRows!=='undefined'&&rawRows)||[],proj=IC_.project;
-  return rows.filter(r=>r.yearMonth===IC_.month&&!(typeof isCancelledStatus_==='function'?isCancelledStatus_(r.status):/^cancel/i.test(String(r.status||'')))
-    &&(!proj||String(r.project||'').trim().toUpperCase()===proj.toUpperCase())&&Number(r.amount)>0);
+  return rows.filter(r=>{
+    const d=icDealDay_(r);if(!d||(IC_.from&&d<IC_.from)||(IC_.to&&d>IC_.to))return false;
+    if(typeof isCancelledStatus_==='function'?isCancelledStatus_(r.status):/^cancel/i.test(String(r.status||'')))return false;
+    if(proj&&String(r.project||'').trim().toUpperCase()!==proj.toUpperCase())return false;
+    if(!(Number(r.amount)>0))return false;
+    if(IC_.branch&&String(r.branch||'').trim()!==IC_.branch)return false;
+    if(IC_.manager&&![r.salesManager,r.headOfSales].some(x=>String(x||'').trim()===IC_.manager))return false;
+    if(IC_.dealType&&String(r.dealStatus||'').trim().toLowerCase()!==IC_.dealType.toLowerCase())return false;
+    const p=icDpPct_(r);if(IC_.dpMin!=null&&p<IC_.dpMin-1e-9)return false;if(IC_.dpMax!=null&&p>IC_.dpMax+1e-9)return false;
+    return true;
+  });
 }
 function icStaff_(){return ((IC_.setup&&IC_.setup.staff)||[]).filter(p=>p.active!==false);}
 /* Sales team */
@@ -68,7 +88,7 @@ function icSales_(){
   icStaff_().filter(p=>p.dept==='Sales').forEach(p=>{const k=icNorm_(p.name);if(!people[k])people[k]={name:p.name,deals:[],credited:0,by:{Direct:0,'In-direct':0,Private:0}};});
   return Object.values(people).map(P=>{
     const role=roleOf(P.name),R=(S.roles||[]).find(x=>x.role===role)||(S.roles||[])[0]||{role:'',target:0};
-    const target=Number(R.target)||0,ach=target?P.credited/target:0;
+    const target=(Number(R.target)||0)*icMonths_(),ach=target?P.credited/target:0;
     let comm=0;P.deals.forEach(d=>{d.rate=d.type==='Private'?S.privateRate:icRate_(d.type==='Direct'?S.direct:S.indirect,ach);d.comm=d.credit*d.rate;comm+=d.comm;});
     return Object.assign(P,{role:R.role,roleSet:!!role,target,ach,comm});
   }).sort((a,b)=>b.credited-a.credited||a.name.localeCompare(b.name));
@@ -93,17 +113,23 @@ function icMount_(){
 }
 function icOpen_(){
   if(!icIsAdmin_()){alert('Internal commissions are for admins only.');return;}
-  icClose_();if(!IC_.month)IC_.month=icMonthNow_();
+  icClose_();if(!IC_.from){[IC_.from,IC_.to]=icMonthRange_(0);}
   const back=document.createElement('div');back.className='daBack';back.id='icBack';back.addEventListener('click',icClose_);
   const el=document.createElement('section');el.className='da';el.id='ic';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');
   el.innerHTML=`<div class="daHead"><div><small>Transactions</small><h2>Internal Commissions</h2></div>
-    <div class="daTools"><label class="daMuted" style="font-size:12.5px;display:flex;gap:6px;align-items:center">Month <input type="month" data-f="month" value="${icEsc_(IC_.month)}"></label>
-      <select data-f="project"></select><button type="button" class="daBtn" data-xl>⬇ Excel</button><button type="button" class="daX" aria-label="Close">×</button></div></div>
+    <div class="daTools"><select data-f="project"></select><button type="button" class="daBtn" data-xl>⬇ Excel</button><button type="button" class="daX" aria-label="Close">×</button></div></div>
+    <div class="icFilters"><label>From<input type="date" data-f="from" value="${icEsc_(IC_.from)}"></label><label>To<input type="date" data-f="to" value="${icEsc_(IC_.to)}"></label>
+      <button type="button" class="daBtn" data-range="0">This month</button><button type="button" class="daBtn" data-range="1">Last month</button>
+      <label>Branch<select data-f="branch"></select></label><label>Manager<select data-f="manager"></select></label>
+      <label>Deal type<select data-f="dealType"><option value="">All</option><option>Solo</option><option>Share</option></select></label>
+      <label title="Actual Paid ÷ Final Price">DP paid % from<input type="number" step="0.1" data-f="dpMin" value="${IC_.dpMin??''}" style="width:72px"></label><label>to<input type="number" step="0.1" data-f="dpMax" value="${IC_.dpMax??''}" placeholder="any" style="width:72px"></label></div>
     <div class="daTabs"></div><div class="daBody"><div class="daNote" style="text-align:center;padding:40px">Loading…</div></div>`;
   document.body.append(back,el);
   el.querySelector('.daX').addEventListener('click',icClose_);
   el.querySelector('[data-xl]').addEventListener('click',icExcel_);
-  el.querySelector('[data-f="month"]').addEventListener('change',e=>{IC_.month=e.target.value||icMonthNow_();icRender_();});
+  el.querySelectorAll('.icFilters [data-f]').forEach(i=>i.addEventListener('change',()=>{const k=i.dataset.f;
+    IC_[k]=(k==='dpMin'||k==='dpMax')?(i.value===''?null:Number(i.value)):i.value;icRender_();}));
+  el.querySelectorAll('[data-range]').forEach(b=>b.addEventListener('click',()=>{[IC_.from,IC_.to]=icMonthRange_(+b.dataset.range);el.querySelector('[data-f="from"]').value=IC_.from;el.querySelector('[data-f="to"]').value=IC_.to;icRender_();}));
   el.querySelector('[data-f="project"]').addEventListener('change',e=>{IC_.project=e.target.value;icRender_();});
   document.addEventListener('keydown',icKey_);
   google.script.run.withSuccessHandler(s=>{IC_.setup=s;if(IC_.project==null)IC_.project=s.project||'';icRender_();})
@@ -115,6 +141,13 @@ function icKey_(e){if(e.key==='Escape')icClose_();}
 function icRender_(){
   const el=document.getElementById('ic');if(!el||!IC_.setup)return;
   const projects=[...new Set(((typeof rawRows!=='undefined'&&rawRows)||[]).map(r=>String(r.project||'').trim()).filter(Boolean))].sort();
+  const allRows=(typeof rawRows!=='undefined'&&rawRows)||[],uniq=a=>[...new Set(a.map(x=>String(x||'').trim()).filter(Boolean))].sort();
+  const opts=(list,v)=>`<option value="">All</option>`+list.map(x=>`<option${x===v?' selected':''}>${icEsc_(x)}</option>`).join('');
+  const bs=el.querySelector('[data-f="branch"]'),ms=el.querySelector('[data-f="manager"]'),ds=el.querySelector('[data-f="dealType"]');
+  if(bs)bs.innerHTML=opts(uniq(allRows.map(r=>r.branch)),IC_.branch);
+  if(ms)ms.innerHTML=opts(uniq(allRows.flatMap(r=>[r.salesManager,r.headOfSales])),IC_.manager);
+  if(ds)ds.value=IC_.dealType;
+  const ff=el.querySelector('.icFilters');if(ff)ff.style.display=IC_.tab==='setup'?'none':'';
   el.querySelector('[data-f="project"]').innerHTML=`<option value="">All projects</option>`+projects.map(p=>`<option${p===IC_.project?' selected':''}>${icEsc_(p)}</option>`).join('');
   const sales=icSales_(),others=icOthers_();
   el.querySelector('.daTabs').innerHTML=[['sales','Sales team',sales.length],['others','Other departments',others.length],['setup','Setup','']].map(([k,l,n])=>`<button type="button" class="daTab${IC_.tab===k?' on':''}" data-tab="${k}">${l}${n!==''?`<b>${n}</b>`:''}</button>`).join('');
@@ -123,10 +156,10 @@ function icRender_(){
   if(IC_.tab==='setup'){icSetup_(body);return;}
   const deals=icDeals_(),total=deals.reduce((a,r)=>a+(Number(r.amount)||0),0);
   const sc=sales.reduce((a,p)=>a+p.comm,0),oc=others.reduce((a,p)=>a+p.comm,0);
-  let html=`<div class="icKpis"><div class="icKpi"><span>${icEsc_(icMonthLabel_(IC_.month))} · sales</span><b>${icN_(total)}</b></div><div class="icKpi"><span>Deals</span><b>${deals.length}</b></div>
+  let html=`<div class="icKpis"><div class="icKpi"><span>${icEsc_(icRangeLabel_())} · sales</span><b>${icN_(total)}</b></div><div class="icKpi"><span>Deals</span><b>${deals.length}</b></div>
     <div class="icKpi"><span>Sales team commission</span><b>${icN_(sc)}</b></div><div class="icKpi gold"><span>All commissions</span><b>${icN_(sc+oc)}</b></div></div>`;
   if(IC_.tab==='sales'){
-    if(!sales.length)html+=`<div class="daNote" style="text-align:center;padding:30px">No deals reserved in ${icEsc_(icMonthLabel_(IC_.month))}${IC_.project?' for '+icEsc_(IC_.project):''}.</div>`;
+    if(!sales.length)html+=`<div class="daNote" style="text-align:center;padding:30px">No deals for ${icEsc_(icRangeLabel_())}${IC_.project?' in '+icEsc_(IC_.project):''} with these filters.</div>`;
     else{
       html+=`<table class="daTable"><thead><tr><th>Sales</th><th>Role</th><th class="num">Target</th><th class="num">Credited sales</th><th>Achievement</th><th class="num daHide">Direct</th><th class="num daHide">In-direct</th><th class="num daHide">Private</th><th class="num">Commission</th></tr></thead><tbody>`;
       sales.forEach((p,i)=>{
@@ -140,7 +173,7 @@ function icRender_(){
       });
       html+=`</tbody></table>`;
     }
-    html+=`<div class="daNote">Deals counted by their <b>reservation month</b>; cancelled deals are left out. Credited sales = own deals in full + ${icPct_(IC_.setup.shareSplit,0)} of each share deal. The month's achievement (credited ÷ target) sets the rate for <b>all</b> that person's deals. Direct = Main Source “Direct”; Private = “Private” in the source; everything else In-direct. Click a row to see its deals. Roles and rates are in <b>Setup</b>.</div>`;
+    html+=`<div class="daNote">Deals counted by their <b>reservation date</b> inside the chosen dates; cancelled deals are left out; only deals whose <b>DP paid %</b> (Actual Paid ÷ Final Price) is in the chosen range count (default from 9%). Targets are monthly — for a longer range the target is multiplied by the number of months (${icMonths_()}). Credited sales = own deals in full + ${icPct_(IC_.setup.shareSplit,0)} of each share deal. The month's achievement (credited ÷ target) sets the rate for <b>all</b> that person's deals. Direct = Main Source “Direct”; Private = “Private” in the source; everything else In-direct. Click a row to see its deals. Roles and rates are in <b>Setup</b>.</div>`;
   }else{
     if(!others.length)html+=`<div class="daNote" style="text-align:center;padding:30px">No staff from other departments yet — add them in <b>Setup</b>.</div>`;
     else{
@@ -212,17 +245,17 @@ function icSetup_(body){
 }
 function icExcel_(){
   if(!IC_.setup||typeof edenXlsxDownload_!=='function')return;
-  const label=icMonthLabel_(IC_.month)+(IC_.project?' · '+IC_.project:'');
+  const label=icRangeLabel_()+(IC_.project?' · '+IC_.project:'')+(IC_.dpMin!=null||IC_.dpMax!=null?' · DP paid '+(IC_.dpMin??0)+'%'+(IC_.dpMax!=null?'–'+IC_.dpMax+'%':'+'):'');
   if(IC_.tab==='others'){
     const o=icOthers_();
-    edenXlsxDownload_('EDEN internal commissions (other departments) '+IC_.month,{title:'Internal commissions — other departments · '+label,sheetName:'Other departments',
+    edenXlsxDownload_('EDEN internal commissions (other departments) '+IC_.from+' to '+IC_.to,{title:'Internal commissions — other departments · '+label,sheetName:'Other departments',
       headers:['Name','Department','Role','How paid','Value','Based on','Deals','Sales value','Commission'],
       rows:o.map(p=>[p.name,p.dept,p.role,IC_SCHEMES_[p.scheme]||p.scheme,Number(p.value)||0,p.scope==='team'?'His team':'All deals',p.n,Math.round(p.sales),Math.round(p.comm)])});
     return;
   }
   const s=icSales_(),rows=[];
   s.forEach(p=>p.deals.forEach(d=>rows.push([p.name,p.role,p.target,icPct_(p.ach),d.r.unitCode,d.r.clientName||'',d.r.date||'',d.r.amount,d.share?'Share':'Solo',d.credit,d.type,icPct_(d.rate,2),Math.round(d.comm*100)/100])));
-  edenXlsxDownload_('EDEN internal commissions (sales) '+IC_.month,{title:'Internal commissions — sales team · '+label,sheetName:'Sales team',
+  edenXlsxDownload_('EDEN internal commissions (sales) '+IC_.from+' to '+IC_.to,{title:'Internal commissions — sales team · '+label,sheetName:'Sales team',
     kpis:s.map(p=>[p.name+' ('+icPct_(p.ach)+')',icN_(p.comm)]),
     headers:['Sales','Role','Target','Achievement','Unit','Client','Reservation date','Contract value','Solo / Share','Credited','Type','Rate','Commission'],rows});
 }

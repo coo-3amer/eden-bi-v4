@@ -1,0 +1,61 @@
+<style id="eden-dp-filter">
+.fbDp{position:relative;flex:0 0 auto}
+.fbDp .fbPop{width:280px}
+.fbDp .dpRow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.fbDp .dpRow label{font-size:11px;font-weight:700;color:var(--ds-muted,#8a7f70)}
+.fbDp .dpRow input{display:block;width:100%;height:34px;margin-top:3px;border:1px solid var(--ds-line,#e3d9c7);border-radius:9px;padding:0 8px;background:var(--ds-surface,#fff);color:var(--ds-text);font:inherit;font-size:13px}
+.fbDp .dpHint{font-size:11px;color:var(--ds-muted,#8a7f70);margin-top:8px;line-height:1.45}
+</style>
+<script>
+/* =====================================================================
+   EDEN BI — "DP paid %" filter (Transactions filters bar).
+   DP paid % = Actual Paid ÷ Final Price of the deal. Pick a range
+   (from / to %, either side can be empty) or a preset.
+   ===================================================================== */
+let EDEN_DP_RANGE_={min:null,max:null};
+function edenDpPct_(r){const a=Number(r&&r.amount)||0;return a>0?(Number(r.actualPaid)||0)/a*100:0;}
+function edenDpMatch_(r){
+  const R=EDEN_DP_RANGE_;if(R.min==null&&R.max==null)return true;
+  const p=edenDpPct_(r);
+  return (R.min==null||p>=R.min-1e-9)&&(R.max==null||p<=R.max+1e-9);
+}
+function edenDpLabel_(){const R=EDEN_DP_RANGE_;if(R.min==null&&R.max==null)return '';
+  if(R.max==null)return '≥ '+R.min+'%';if(R.min==null)return '≤ '+R.max+'%';return R.min+'% – '+R.max+'%';}
+function edenDpSet_(min,max){
+  const n=v=>v===''||v==null||!isFinite(Number(v))?null:Number(v);
+  EDEN_DP_RANGE_={min:n(min),max:n(max)};
+  edenDpPaint_();
+  if(typeof applyFilters==='function')applyFilters();
+}
+function edenDpPaint_(){
+  const w=document.getElementById('fbDp');if(!w)return;
+  const l=edenDpLabel_(),b=w.querySelector('[data-dp="btn"]');
+  b.classList.toggle('on',!!l);b.querySelector('span').textContent=l?'DP paid '+l:'Any DP paid';
+  const R=EDEN_DP_RANGE_;w.querySelector('[data-dp="min"]').value=R.min??'';w.querySelector('[data-dp="max"]').value=R.max??'';
+}
+function edenDpMount_(){
+  const bar=document.querySelector('#appRoot section.filters .fbBar');if(!bar||document.getElementById('fbDp'))return;
+  const w=document.createElement('div');w.className='fbDp';w.id='fbDp';
+  w.innerHTML=`<div class="dashboardFilterName">DP paid</div><button type="button" class="fbBtn" data-dp="btn">💰 <span>Any DP paid</span> ▾</button>
+    <div class="fbPop"><div class="grid"><button type="button" class="fbP" data-pre="9,">≥ 9%</button><button type="button" class="fbP" data-pre=",8.99">Below 9%</button>
+      <button type="button" class="fbP" data-pre="10,">≥ 10%</button><button type="button" class="fbP" data-pre="25,">≥ 25%</button>
+      <button type="button" class="fbP" data-pre="0,0">Nothing paid</button><button type="button" class="fbP" data-pre="100,">Fully paid</button>
+      <button type="button" class="fbP any" data-pre=",">Any</button></div>
+      <div class="dpRow"><label>From %<input type="number" step="0.1" data-dp="min" placeholder="0"></label><label>To %<input type="number" step="0.1" data-dp="max" placeholder="100"></label></div>
+      <button type="button" class="fbP" data-dp="apply" style="width:100%;margin-top:8px">Apply</button>
+      <div class="dpHint">DP paid % = Actual Paid ÷ Final Price of the deal.</div></div>`;
+  const date=bar.querySelector('.fbDate');if(date)date.after(w);else bar.appendChild(w);
+  const pop=w.querySelector('.fbPop');
+  w.querySelector('[data-dp="btn"]').addEventListener('click',e=>{e.stopPropagation();pop.classList.toggle('open');});
+  document.addEventListener('click',e=>{if(!w.contains(e.target))pop.classList.remove('open');});
+  pop.addEventListener('click',e=>{
+    const p=e.target.closest('[data-pre]');if(p){const [a,b]=p.dataset.pre.split(',');edenDpSet_(a,b);pop.classList.remove('open');return;}
+    if(e.target.closest('[data-dp="apply"]')){edenDpSet_(w.querySelector('[data-dp="min"]').value,w.querySelector('[data-dp="max"]').value);pop.classList.remove('open');}
+  });
+  pop.querySelectorAll('input').forEach(i=>i.addEventListener('keydown',e=>{if(e.key==='Enter')pop.querySelector('[data-dp="apply"]').click();}));
+  // "Clear all" also clears this filter
+  document.querySelector('#appRoot section.filters .dashboardClearAll')?.addEventListener('click',()=>{if(EDEN_DP_RANGE_.min!=null||EDEN_DP_RANGE_.max!=null){EDEN_DP_RANGE_={min:null,max:null};edenDpPaint_();setTimeout(()=>typeof applyFilters==='function'&&applyFilters(),0);}});
+  edenDpPaint_();
+}
+(function(){const go=()=>{edenDpMount_();setInterval(edenDpMount_,1500);};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();})();
+</script>
