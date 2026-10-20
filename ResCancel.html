@@ -19,6 +19,9 @@
 .rcDlg button.save{background:var(--ds-gold,#b08a42);border-color:transparent;color:#fff}
 .rcDlg button:disabled{opacity:.55;cursor:default}
 .rcDlg .rcMsg{font-size:12px;margin-top:8px;color:var(--ds-muted)}.rcDlg .rcMsg.err{color:#b03a3a;font-weight:700}
+.c360Files.rcC360X{border-color:rgba(214,69,69,.45)!important;color:#b03a3a!important;background:transparent!important}
+.c360Files.rcC360When.rcSet{color:#2f5fa0!important}.c360Files.rcC360When.rcLate{color:#b03a3a!important}
+.c360Foot>span[style*="inline-flex"]{flex-wrap:wrap;justify-content:flex-end;row-gap:6px}
 .rcToast{position:fixed;z-index:450;left:50%;bottom:22px;transform:translateX(-50%);max-width:min(640px,calc(100vw - 32px));padding:11px 16px;border-radius:12px;background:#24392d;color:#fff;font-size:13px;font-weight:700;box-shadow:0 12px 30px rgba(0,0,0,.3)}
 </style>
 <script>
@@ -37,7 +40,30 @@ function rcIsAdmin_(){const r=String((typeof AUTH_USER!=='undefined'&&AUTH_USER&
 function rcFmt_(iso,time){if(!iso)return '—';const d=new Date(iso);return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'})+(time?' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'');}
 function rcLocal_(iso){const d=iso?new Date(iso):new Date(Date.now()+864e5);if(!iso)d.setHours(18,0,0,0);const p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;}
 function rcFind_(row,unit){return ((RC_.data&&RC_.data.rows)||[]).find(x=>x.row===Number(row)&&x.unit===String(unit||'').trim())||null;}
-function rcRerender_(){try{if(typeof renderTable==='function'&&document.getElementById('mainTable'))renderTable();}catch(e){}}
+function rcRerender_(){try{if(typeof renderTable==='function'&&document.getElementById('mainTable'))renderTable();}catch(e){}rcPaintWhen_();}
+/* Client card (Client360): reopen it so the unit shows its new state. */
+function rcRefreshCard_(row,unit){
+  try{if(!document.getElementById('c360')||typeof c360Open_!=='function'||typeof clientKeyOf!=='function')return;
+    const d=rcDeal_(row,unit),k=d&&clientKeyOf(d);if(k)c360Open_(k);}catch(e){}
+}
+/* Auto-cancel chip for the client card (filled in when the reservation times have loaded). */
+function rcWhenText_(row,unit){
+  if(!RC_.data)return '🗓 Auto-cancel';
+  const x=rcFind_(row,unit);
+  if(x&&x.endsAt)return '⏱ Auto-cancel '+rcFmt_(x.endsAt,x.custom);
+  return '🗓 Set auto-cancel';
+}
+function rcPaintWhen_(){
+  document.querySelectorAll('[data-rcwhen]').forEach(b=>{const [row,...u]=b.dataset.rcwhen.split('|');b.textContent=rcWhenText_(row,u.join('|'));
+    const x=rcFind_(row,u.join('|'));b.classList.toggle('rcSet',!!(x&&x.custom));b.classList.toggle('rcLate',!!(x&&x.endsAt&&new Date(x.endsAt)<new Date()));});
+}
+function rcC360Btns_(r){
+  if(!rcIsAdmin_()||!/^reserv/i.test(String(r&&r.status||'').trim())||!Number(r.row))return '';
+  if(!RC_.loading&&(!RC_.data||Date.now()-(RC_.at||0)>5*60000))setTimeout(()=>rcLoad_(),0);
+  const unit=String(r.unitCode||'').trim(),arg=`${Number(r.row)},'${rcEsc_(unit).replace(/'/g,"\\'")}'`;
+  return `<button type="button" class="c360Files rcC360When" data-rcwhen="${Number(r.row)}|${rcEsc_(unit)}" onclick="rcTime_(${arg})">${rcEsc_(rcWhenText_(r.row,unit))}</button>`+
+    `<button type="button" class="c360Files rcC360X" onclick="rcCancel_(${arg})">✕ Cancel reservation</button>`;
+}
 function rcLoad_(then){
   if(RC_.loading||!rcIsAdmin_())return;RC_.loading=true;
   google.script.run.withSuccessHandler(d=>{RC_.loading=false;RC_.data=d;RC_.at=Date.now();rcRerender_();then&&then();})
@@ -85,6 +111,7 @@ function rcCancel_(row,unit){
       const rr=(typeof rawRows!=='undefined'&&rawRows)||[];rr.forEach(x=>{if(Number(x.row)===Number(row)&&String(x.unitCode||'').trim()===unit)x.status='Cancel';});
       if(RC_.data)RC_.data.rows=RC_.data.rows.filter(y=>!(y.row===Number(row)&&y.unit===unit));
       try{typeof applyFilters==='function'?applyFilters():rcRerender_();}catch(e){rcRerender_();}
+      rcRefreshCard_(row,unit);
     }).withFailureHandler(err=>{RC_.busy=false;go.disabled=false;msg.className='rcMsg err';msg.textContent=err&&err.message||String(err);})
       .cancelReservation(AUTH_TOKEN,{row:Number(row),unit,reason:why});
   };
