@@ -1,0 +1,228 @@
+<style id="eden-internal-comm">
+.icKpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.icKpi{border:1px solid var(--ds-line,#e8e0d1);border-radius:12px;padding:10px 12px;background:var(--ds-surface-2,#faf6ef)}
+.icKpi span{display:block;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ds-muted,#83796b)}
+.icKpi b{display:block;margin-top:4px;font-size:18px;font-variant-numeric:tabular-nums;color:var(--ds-heading,#16130f)}
+.icKpi.gold{background:var(--ds-gold-soft,rgba(176,138,66,.12))}.icKpi.gold b{color:var(--ds-gold-strong,#8f6d2c)}
+.icBar{position:relative;height:7px;border-radius:99px;background:var(--ds-line,#e8e0d1);overflow:hidden;min-width:70px}
+.icBar i{position:absolute;inset:0 auto 0 0;border-radius:99px;background:#c9a24a}.icBar i.ok{background:#2f9e62}
+.icAch{display:flex;align-items:center;gap:8px}.icAch b{min-width:46px;text-align:right;font-variant-numeric:tabular-nums}
+.icRow{cursor:pointer}.icRow:hover td{background:rgba(176,138,66,.06)}
+.icSub td{background:var(--ds-surface-2,#faf6ef);font-size:12px}
+.icTag{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;background:rgba(176,138,66,.12);color:#8f6d2c}
+.icTag.dir{background:rgba(70,120,190,.12);color:#2f5fa0}.icTag.prv{background:rgba(130,90,190,.12);color:#6a45a8}
+.icWarn{color:#b03a3a;font-size:11px;font-weight:700}
+.icSet h4{margin:18px 0 8px;font-size:13px}
+.icSet table input,.icSet table select{height:30px!important;font-size:12.5px!important;width:100%}
+.icSet table td{padding:4px 6px!important}
+.icSet .icGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.icSet .icBox{border:1px solid var(--ds-line,#e8e0d1);border-radius:12px;padding:10px 12px}
+@media(max-width:760px){.icKpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+<script>
+/* =====================================================================
+   EDEN BI — Internal commissions (Transactions › Internal Commissions, admins)
+   Month = the reservation month of the deal (cancelled deals excluded).
+   Sales team: monthly target by role; credited sales = own deals in full
+   + share deals split (50/50 by default); the month's achievement picks the
+   rate tier for every deal of that person (In-direct / Direct / Private).
+   Other departments (no target): % of sales, EGP per contract or EGP per 1M,
+   on all the month's deals or only their team's (Sales Manager / Head of Sales).
+   Settings: getCommSetup / saveCommSetup (CommissionSetup.js).
+   ===================================================================== */
+const IC_={setup:null,tab:'sales',month:'',project:null,open:{},busy:false,draft:null};
+const IC_SCHEMES_={tiers:'Sales tiers (target)',pct:'% of sales',perDeal:'EGP per contract',perMillion:'EGP per 1M'};
+function icEsc_(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function icN_(n,d=0){return Number(n||0).toLocaleString('en-US',{maximumFractionDigits:d});}
+function icPct_(x,d=1){return (Number(x||0)*100).toFixed(d).replace(/\.0$/,'')+'%';}
+function icIsAdmin_(){const r=String((typeof AUTH_USER!=='undefined'&&AUTH_USER&&AUTH_USER.role)||'').trim().toLowerCase();return r==='admin'||r==='super admin';}
+const icNorm_=v=>String(v||'').trim().toLowerCase().replace(/\s+/g,' ');
+function icMonthNow_(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+function icMonthLabel_(ym){const [y,m]=String(ym).split('-');return new Date(+y,+m-1,1).toLocaleDateString('en-GB',{month:'long',year:'numeric'});}
+function icType_(r){
+  const t=[r.mainSource,r.sourceType,r.dealStatus].map(x=>String(x||'').toLowerCase()).join(' ');
+  if(/private/.test(t))return 'Private';
+  if(/^\s*direct/.test(String(r.mainSource||'').toLowerCase()))return 'Direct';
+  return 'In-direct';
+}
+function icRate_(tiers,ach){let r=0;(tiers||[]).forEach(([min,rate])=>{if(ach>=min-1e-9)r=rate;});return r;}
+function icDeals_(){
+  const rows=(typeof rawRows!=='undefined'&&rawRows)||[],proj=IC_.project;
+  return rows.filter(r=>r.yearMonth===IC_.month&&!(typeof isCancelledStatus_==='function'?isCancelledStatus_(r.status):/^cancel/i.test(String(r.status||'')))
+    &&(!proj||String(r.project||'').trim().toUpperCase()===proj.toUpperCase())&&Number(r.amount)>0);
+}
+function icStaff_(){return ((IC_.setup&&IC_.setup.staff)||[]).filter(p=>p.active!==false);}
+/* Sales team */
+function icSales_(){
+  const S=IC_.setup,deals=icDeals_(),split=Number(S.shareSplit)||0.5,people={};
+  const roleOf=n=>{const p=icStaff_().find(x=>icNorm_(x.name)===icNorm_(n)&&x.dept==='Sales');return p&&p.role||'';};
+  const add=(name,r,credit,share)=>{const k=icNorm_(name);if(!k)return;
+    const P=people[k]||(people[k]={name:String(name).trim(),deals:[],credited:0,by:{Direct:0,'In-direct':0,Private:0}});
+    const type=icType_(r);P.deals.push({r,credit,share,type});P.credited+=credit;P.by[type]+=credit;};
+  deals.forEach(r=>{
+    const share=typeof isShareDeal_==='function'&&isShareDeal_(r),amt=Number(r.amount)||0;
+    if(share){add(r.salesName,r,amt*split,true);add(r.sharedWith,r,amt*(1-split),true);}else add(r.salesName,r,amt,false);
+  });
+  icStaff_().filter(p=>p.dept==='Sales').forEach(p=>{const k=icNorm_(p.name);if(!people[k])people[k]={name:p.name,deals:[],credited:0,by:{Direct:0,'In-direct':0,Private:0}};});
+  return Object.values(people).map(P=>{
+    const role=roleOf(P.name),R=(S.roles||[]).find(x=>x.role===role)||(S.roles||[])[0]||{role:'',target:0};
+    const target=Number(R.target)||0,ach=target?P.credited/target:0;
+    let comm=0;P.deals.forEach(d=>{d.rate=d.type==='Private'?S.privateRate:icRate_(d.type==='Direct'?S.direct:S.indirect,ach);d.comm=d.credit*d.rate;comm+=d.comm;});
+    return Object.assign(P,{role:R.role,roleSet:!!role,target,ach,comm});
+  }).sort((a,b)=>b.credited-a.credited||a.name.localeCompare(b.name));
+}
+/* Other departments */
+function icOthers_(){
+  const deals=icDeals_();
+  return icStaff_().filter(p=>p.dept!=='Sales').map(p=>{
+    const mine=p.scope==='team'?deals.filter(r=>[r.salesManager,r.headOfSales,r.cco].some(x=>icNorm_(x)===icNorm_(p.name))):deals;
+    const sales=mine.reduce((a,r)=>a+(Number(r.amount)||0),0),n=mine.length,v=Number(p.value)||0;
+    const comm=p.scheme==='pct'?sales*v/100:p.scheme==='perDeal'?n*v:p.scheme==='perMillion'?sales/1e6*v:0;
+    return Object.assign({},p,{n,sales,comm});
+  }).sort((a,b)=>a.dept.localeCompare(b.dept)||b.comm-a.comm);
+}
+function icMount_(){
+  const menu=document.querySelector('#transactionsModule .moduleMenu');if(!menu)return;
+  let b=menu.querySelector('[data-ic]');
+  if(!b){b=document.createElement('button');b.type='button';b.dataset.ic='1';b.textContent='Internal Commissions';b.addEventListener('click',icOpen_);
+    const after=menu.querySelector('[data-eden-commissions]')||[...menu.querySelectorAll('button')].find(x=>/deals details/i.test(x.textContent));
+    if(after)after.insertAdjacentElement('afterend',b);else menu.appendChild(b);}
+  b.style.display=icIsAdmin_()?'':'none';
+}
+function icOpen_(){
+  if(!icIsAdmin_()){alert('Internal commissions are for admins only.');return;}
+  icClose_();if(!IC_.month)IC_.month=icMonthNow_();
+  const back=document.createElement('div');back.className='daBack';back.id='icBack';back.addEventListener('click',icClose_);
+  const el=document.createElement('section');el.className='da';el.id='ic';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');
+  el.innerHTML=`<div class="daHead"><div><small>Transactions</small><h2>Internal Commissions</h2></div>
+    <div class="daTools"><label class="daMuted" style="font-size:12.5px;display:flex;gap:6px;align-items:center">Month <input type="month" data-f="month" value="${icEsc_(IC_.month)}"></label>
+      <select data-f="project"></select><button type="button" class="daBtn" data-xl>⬇ Excel</button><button type="button" class="daX" aria-label="Close">×</button></div></div>
+    <div class="daTabs"></div><div class="daBody"><div class="daNote" style="text-align:center;padding:40px">Loading…</div></div>`;
+  document.body.append(back,el);
+  el.querySelector('.daX').addEventListener('click',icClose_);
+  el.querySelector('[data-xl]').addEventListener('click',icExcel_);
+  el.querySelector('[data-f="month"]').addEventListener('change',e=>{IC_.month=e.target.value||icMonthNow_();icRender_();});
+  el.querySelector('[data-f="project"]').addEventListener('change',e=>{IC_.project=e.target.value;icRender_();});
+  document.addEventListener('keydown',icKey_);
+  google.script.run.withSuccessHandler(s=>{IC_.setup=s;if(IC_.project==null)IC_.project=s.project||'';icRender_();})
+    .withFailureHandler(err=>{const b=el.querySelector('.daBody');if(b)b.innerHTML=`<div class="daNote daMsg err" style="text-align:center;padding:40px">Could not load.<br>${icEsc_(err&&err.message||err)}</div>`;})
+    .getCommSetup(AUTH_TOKEN);
+}
+function icClose_(){document.getElementById('ic')?.remove();document.getElementById('icBack')?.remove();document.removeEventListener('keydown',icKey_);}
+function icKey_(e){if(e.key==='Escape')icClose_();}
+function icRender_(){
+  const el=document.getElementById('ic');if(!el||!IC_.setup)return;
+  const projects=[...new Set(((typeof rawRows!=='undefined'&&rawRows)||[]).map(r=>String(r.project||'').trim()).filter(Boolean))].sort();
+  el.querySelector('[data-f="project"]').innerHTML=`<option value="">All projects</option>`+projects.map(p=>`<option${p===IC_.project?' selected':''}>${icEsc_(p)}</option>`).join('');
+  const sales=icSales_(),others=icOthers_();
+  el.querySelector('.daTabs').innerHTML=[['sales','Sales team',sales.length],['others','Other departments',others.length],['setup','Setup','']].map(([k,l,n])=>`<button type="button" class="daTab${IC_.tab===k?' on':''}" data-tab="${k}">${l}${n!==''?`<b>${n}</b>`:''}</button>`).join('');
+  el.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{IC_.tab=b.dataset.tab;IC_.draft=null;icRender_();}));
+  const body=el.querySelector('.daBody');
+  if(IC_.tab==='setup'){icSetup_(body);return;}
+  const deals=icDeals_(),total=deals.reduce((a,r)=>a+(Number(r.amount)||0),0);
+  const sc=sales.reduce((a,p)=>a+p.comm,0),oc=others.reduce((a,p)=>a+p.comm,0);
+  let html=`<div class="icKpis"><div class="icKpi"><span>${icEsc_(icMonthLabel_(IC_.month))} · sales</span><b>${icN_(total)}</b></div><div class="icKpi"><span>Deals</span><b>${deals.length}</b></div>
+    <div class="icKpi"><span>Sales team commission</span><b>${icN_(sc)}</b></div><div class="icKpi gold"><span>All commissions</span><b>${icN_(sc+oc)}</b></div></div>`;
+  if(IC_.tab==='sales'){
+    if(!sales.length)html+=`<div class="daNote" style="text-align:center;padding:30px">No deals reserved in ${icEsc_(icMonthLabel_(IC_.month))}${IC_.project?' for '+icEsc_(IC_.project):''}.</div>`;
+    else{
+      html+=`<table class="daTable"><thead><tr><th>Sales</th><th>Role</th><th class="num">Target</th><th class="num">Credited sales</th><th>Achievement</th><th class="num daHide">Direct</th><th class="num daHide">In-direct</th><th class="num daHide">Private</th><th class="num">Commission</th></tr></thead><tbody>`;
+      sales.forEach((p,i)=>{
+        const ok=p.ach>=1;
+        html+=`<tr class="icRow" data-open="${i}"><td><b>${icEsc_(p.name)}</b> <small class="daMuted">${p.deals.length} deal${p.deals.length===1?'':'s'}</small></td>
+          <td>${icEsc_(p.role)}${p.roleSet?'':'<br><span class="icWarn">role not set</span>'}</td><td class="num">${icN_(p.target)}</td><td class="num"><b>${icN_(p.credited)}</b></td>
+          <td><div class="icAch"><div class="icBar"><i class="${ok?'ok':''}" style="width:${Math.min(100,p.ach*100)}%"></i></div><b>${icPct_(p.ach)}</b>${ok?' ✅':''}</div></td>
+          <td class="num daHide">${icN_(p.by.Direct)}</td><td class="num daHide">${icN_(p.by['In-direct'])}</td><td class="num daHide">${icN_(p.by.Private)}</td><td class="num"><b>${icN_(p.comm)}</b></td></tr>`;
+        if(IC_.open[p.name])p.deals.forEach(d=>{html+=`<tr class="icSub"><td colspan="2">${icEsc_(d.r.unitCode)} · ${icEsc_(d.r.clientName||'')}</td><td class="num daMuted">${icN_(d.r.amount)}</td><td class="num">${icN_(d.credit)}${d.share?' <small class="daMuted">(share)</small>':''}</td>
+          <td><span class="icTag ${d.type==='Direct'?'dir':d.type==='Private'?'prv':''}">${d.type}</span> ${icPct_(d.rate,2)}</td><td colspan="3" class="daHide daMuted">${icEsc_(d.r.status||'')} · ${icEsc_(d.r.date||'')}</td><td class="num">${icN_(d.comm)}</td></tr>`;});
+      });
+      html+=`</tbody></table>`;
+    }
+    html+=`<div class="daNote">Deals counted by their <b>reservation month</b>; cancelled deals are left out. Credited sales = own deals in full + ${icPct_(IC_.setup.shareSplit,0)} of each share deal. The month's achievement (credited ÷ target) sets the rate for <b>all</b> that person's deals. Direct = Main Source “Direct”; Private = “Private” in the source; everything else In-direct. Click a row to see its deals. Roles and rates are in <b>Setup</b>.</div>`;
+  }else{
+    if(!others.length)html+=`<div class="daNote" style="text-align:center;padding:30px">No staff from other departments yet — add them in <b>Setup</b>.</div>`;
+    else{
+      html+=`<table class="daTable"><thead><tr><th>Name</th><th>Department</th><th>How paid</th><th>Based on</th><th class="num">Deals</th><th class="num">Sales value</th><th class="num">Commission</th></tr></thead><tbody>`;
+      let dept='';
+      others.forEach(p=>{
+        if(p.dept!==dept){dept=p.dept;const t=others.filter(x=>x.dept===dept).reduce((a,x)=>a+x.comm,0);html+=`<tr class="icSub"><td colspan="6"><b>${icEsc_(dept)}</b></td><td class="num"><b>${icN_(t)}</b></td></tr>`;}
+        const how=p.scheme==='pct'?icN_(p.value,3)+'% of sales':p.scheme==='perDeal'?icN_(p.value)+' EGP / contract':p.scheme==='perMillion'?icN_(p.value)+' EGP / 1M':'—';
+        html+=`<tr><td><b>${icEsc_(p.name)}</b>${p.role?` <small class="daMuted">${icEsc_(p.role)}</small>`:''}</td><td>${icEsc_(p.dept)}</td><td>${how}</td><td>${p.scope==='team'?'His team’s deals':'All deals'}</td><td class="num">${p.n}</td><td class="num">${icN_(p.sales)}</td><td class="num"><b>${icN_(p.comm)}</b></td></tr>`;
+      });
+      html+=`</tbody></table><div class="daNote">No target for these departments. “His team’s deals” = deals where the person is the Sales Manager, Head of Sales or CCO.</div>`;
+    }
+  }
+  body.innerHTML=html;
+  body.querySelectorAll('[data-open]').forEach(tr=>tr.addEventListener('click',()=>{const p=sales[+tr.dataset.open];IC_.open[p.name]=!IC_.open[p.name];icRender_();}));
+}
+/* ---------- Setup ---------- */
+function icSetup_(body){
+  const S=IC_.draft||(IC_.draft=JSON.parse(JSON.stringify(IC_.setup)));
+  const names=[...new Set(((typeof rawRows!=='undefined'&&rawRows)||[]).flatMap(r=>[r.salesName,r.sharedWith,r.salesManager,r.headOfSales,r.cco]).map(x=>String(x||'').trim()).filter(Boolean))].sort();
+  const tierRows=(k)=>S[k].map((t,i)=>`<tr><td><input type="number" step="0.01" data-tier="${k}" data-i="${i}" data-j="0" value="${+(t[0]*100).toFixed(2)}"></td><td><input type="number" step="0.001" data-tier="${k}" data-i="${i}" data-j="1" value="${+(t[1]*100).toFixed(3)}"></td><td><button type="button" class="daBtn no" data-deltier="${k}" data-i="${i}">×</button></td></tr>`).join('');
+  const deptOpts=v=>S.depts.map(d=>`<option${d===v?' selected':''}>${icEsc_(d)}</option>`).join('');
+  const roleOpts=v=>`<option value="">—</option>`+S.roles.map(r=>`<option${r.role===v?' selected':''}>${icEsc_(r.role)}</option>`).join('');
+  const schemeOpts=(v,dept)=>Object.entries(IC_SCHEMES_).filter(([k])=>dept==='Sales'?k==='tiers':k!=='tiers').map(([k,l])=>`<option value="${k}"${k===v?' selected':''}>${l}</option>`).join('');
+  body.innerHTML=`<div class="icSet">
+    <div class="icGrid">
+      <div class="icBox"><h4>Sales roles · monthly target (EGP)</h4><table class="daTable"><tbody>${S.roles.map((r,i)=>`<tr><td><input data-role="${i}" data-k="role" value="${icEsc_(r.role)}"></td><td><input type="number" data-role="${i}" data-k="target" value="${r.target}"></td><td><button type="button" class="daBtn no" data-delrole="${i}">×</button></td></tr>`).join('')}</tbody></table><button type="button" class="daBtn" data-addrole>+ Role</button></div>
+      <div class="icBox"><h4>In-direct (brokers) · from achievement % → rate %</h4><table class="daTable"><tbody>${tierRows('indirect')}</tbody></table><button type="button" class="daBtn" data-addtier="indirect">+ Tier</button></div>
+      <div class="icBox"><h4>Direct (company data) · from achievement % → rate %</h4><table class="daTable"><tbody>${tierRows('direct')}</tbody></table><button type="button" class="daBtn" data-addtier="direct">+ Tier</button></div>
+      <div class="icBox"><h4>Other</h4><table class="daTable"><tbody>
+        <tr><td>Private rate %</td><td><input type="number" step="0.01" data-top="privateRate" value="${+(S.privateRate*100).toFixed(2)}"></td></tr>
+        <tr><td>Share: first sales gets %</td><td><input type="number" step="1" data-top="shareSplit" value="${+(S.shareSplit*100).toFixed(0)}"></td></tr>
+        <tr><td>Default project</td><td><input data-top="project" value="${icEsc_(S.project)}" placeholder="empty = all projects"></td></tr></tbody></table></div>
+    </div>
+    <h4>Staff · every department (${S.staff.length})</h4>
+    <datalist id="icNames">${names.map(n=>`<option value="${icEsc_(n)}">`).join('')}</datalist>
+    <table class="daTable"><thead><tr><th>Name</th><th>Department</th><th>Role / title</th><th>How paid</th><th>Value</th><th>Based on</th><th>Active</th><th></th></tr></thead><tbody>
+    ${S.staff.map((p,i)=>`<tr><td><input list="icNames" data-st="${i}" data-k="name" value="${icEsc_(p.name)}"></td><td><select data-st="${i}" data-k="dept">${deptOpts(p.dept)}</select></td>
+      <td>${p.dept==='Sales'?`<select data-st="${i}" data-k="role">${roleOpts(p.role)}</select>`:`<input data-st="${i}" data-k="role" value="${icEsc_(p.role)}" placeholder="e.g. Contracts officer">`}</td>
+      <td><select data-st="${i}" data-k="scheme">${schemeOpts(p.scheme,p.dept)}</select></td>
+      <td>${p.dept==='Sales'?'<small class="daMuted">by target</small>':`<input type="number" step="any" data-st="${i}" data-k="value" value="${p.value}">`}</td>
+      <td>${p.dept==='Sales'?'<small class="daMuted">own deals</small>':`<select data-st="${i}" data-k="scope"><option value="all"${p.scope!=='team'?' selected':''}>All deals</option><option value="team"${p.scope==='team'?' selected':''}>His team’s deals</option></select>`}</td>
+      <td><input type="checkbox" data-st="${i}" data-k="active"${p.active!==false?' checked':''} style="width:auto"></td><td><button type="button" class="daBtn no" data-delst="${i}">×</button></td></tr>`).join('')}
+    </tbody></table>
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center"><button type="button" class="daBtn" data-addst>+ Person</button><button type="button" class="daBtn" data-addsales>+ All sales from this month</button>
+      <span style="flex:1"></span><span class="daMsg" data-msg></span><button type="button" class="daBtn ok" data-save>Save setup</button></div>
+    <div class="daNote">Value: for “% of sales” write the % (e.g. 0.05); for “EGP per contract” the amount per contract (e.g. 250); for “EGP per 1M” the amount per million of contract value (e.g. 1000).</div></div>`;
+  const upd=()=>{icSetup_(body);};
+  body.querySelectorAll('[data-role]').forEach(i=>i.addEventListener('change',()=>{const r=S.roles[+i.dataset.role];r[i.dataset.k]=i.dataset.k==='target'?Number(i.value)||0:i.value;}));
+  body.querySelectorAll('[data-tier]').forEach(i=>i.addEventListener('change',()=>{S[i.dataset.tier][+i.dataset.i][+i.dataset.j]=(Number(i.value)||0)/100;}));
+  body.querySelectorAll('[data-top]').forEach(i=>i.addEventListener('change',()=>{const k=i.dataset.top;S[k]=k==='project'?i.value.trim():(Number(i.value)||0)/100;}));
+  body.querySelectorAll('[data-st]').forEach(i=>i.addEventListener('change',()=>{const p=S.staff[+i.dataset.st],k=i.dataset.k;
+    p[k]=k==='active'?i.checked:k==='value'?Number(i.value)||0:i.value;
+    if(k==='dept'){p.scheme=p.dept==='Sales'?'tiers':(p.scheme==='tiers'?'perDeal':p.scheme);if(p.dept!=='Sales'&&S.roles.some(r=>r.role===p.role))p.role='';upd();}}));
+  body.querySelectorAll('[data-delrole]').forEach(b=>b.addEventListener('click',()=>{S.roles.splice(+b.dataset.delrole,1);upd();}));
+  body.querySelectorAll('[data-deltier]').forEach(b=>b.addEventListener('click',()=>{S[b.dataset.deltier].splice(+b.dataset.i,1);upd();}));
+  body.querySelectorAll('[data-delst]').forEach(b=>b.addEventListener('click',()=>{S.staff.splice(+b.dataset.delst,1);upd();}));
+  body.querySelector('[data-addrole]').addEventListener('click',()=>{S.roles.push({role:'',target:0});upd();});
+  body.querySelectorAll('[data-addtier]').forEach(b=>b.addEventListener('click',()=>{const t=S[b.dataset.addtier],last=t[t.length-1]||[0,0];t.push([last[0]+0.25,last[1]]);upd();}));
+  body.querySelector('[data-addst]').addEventListener('click',()=>{S.staff.push({name:'',dept:'Customer Service / Contracts',role:'',scheme:'perDeal',value:0,scope:'all',active:true});upd();});
+  body.querySelector('[data-addsales]').addEventListener('click',()=>{const have=new Set(S.staff.map(p=>icNorm_(p.name)));
+    icSales_().forEach(p=>{if(!have.has(icNorm_(p.name)))S.staff.push({name:p.name,dept:'Sales',role:'Senior',scheme:'tiers',value:0,scope:'all',active:true});});upd();});
+  body.querySelector('[data-save]').addEventListener('click',e=>{
+    const m=body.querySelector('[data-msg]');if(IC_.busy)return;IC_.busy=true;e.target.disabled=true;m.className='daMsg';m.textContent='Saving…';
+    google.script.run.withSuccessHandler(s=>{IC_.busy=false;IC_.setup=s;IC_.draft=null;icRender_();const mm=document.querySelector('#ic [data-msg]');if(mm){mm.textContent='Saved ✓';}})
+      .withFailureHandler(err=>{IC_.busy=false;e.target.disabled=false;m.className='daMsg err';m.textContent=err&&err.message||String(err);})
+      .saveCommSetup(AUTH_TOKEN,S);
+  });
+}
+function icExcel_(){
+  if(!IC_.setup||typeof edenXlsxDownload_!=='function')return;
+  const label=icMonthLabel_(IC_.month)+(IC_.project?' · '+IC_.project:'');
+  if(IC_.tab==='others'){
+    const o=icOthers_();
+    edenXlsxDownload_('EDEN internal commissions (other departments) '+IC_.month,{title:'Internal commissions — other departments · '+label,sheetName:'Other departments',
+      headers:['Name','Department','Role','How paid','Value','Based on','Deals','Sales value','Commission'],
+      rows:o.map(p=>[p.name,p.dept,p.role,IC_SCHEMES_[p.scheme]||p.scheme,Number(p.value)||0,p.scope==='team'?'His team':'All deals',p.n,Math.round(p.sales),Math.round(p.comm)])});
+    return;
+  }
+  const s=icSales_(),rows=[];
+  s.forEach(p=>p.deals.forEach(d=>rows.push([p.name,p.role,p.target,icPct_(p.ach),d.r.unitCode,d.r.clientName||'',d.r.date||'',d.r.amount,d.share?'Share':'Solo',d.credit,d.type,icPct_(d.rate,2),Math.round(d.comm*100)/100])));
+  edenXlsxDownload_('EDEN internal commissions (sales) '+IC_.month,{title:'Internal commissions — sales team · '+label,sheetName:'Sales team',
+    kpis:s.map(p=>[p.name+' ('+icPct_(p.ach)+')',icN_(p.comm)]),
+    headers:['Sales','Role','Target','Achievement','Unit','Client','Reservation date','Contract value','Solo / Share','Credited','Type','Rate','Commission'],rows});
+}
+(function(){const go=()=>{icMount_();setInterval(icMount_,5000);};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();})();
+</script>
