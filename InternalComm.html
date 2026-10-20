@@ -17,6 +17,8 @@
 .icSet table td{padding:4px 6px!important}
 .icSet .icGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
 .icSet .icBox{border:1px solid var(--ds-line,#e8e0d1);border-radius:12px;padding:10px 12px}
+/* Egypt Viewer accounts never see commissions (menu items, filter, client-card section) */
+html.edenEgv [data-eden-commissions],html.edenEgv [data-ic],html.edenEgv [data-bc],html.edenEgv #commissionMulti,html.edenEgv .c360Comm{display:none!important}
 @media(max-width:760px){.icKpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 <script>
@@ -224,5 +226,18 @@ function icExcel_(){
     kpis:s.map(p=>[p.name+' ('+icPct_(p.ach)+')',icN_(p.comm)]),
     headers:['Sales','Role','Target','Achievement','Unit','Client','Reservation date','Contract value','Solo / Share','Credited','Type','Rate','Commission'],rows});
 }
-(function(){const go=()=>{icMount_();setInterval(icMount_,5000);};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();})();
+function icEgv_(){
+  const egv=typeof isEgyptViewer_==='function'&&isEgyptViewer_();
+  document.documentElement.classList.toggle('edenEgv',egv);
+  if(egv){
+    if(typeof currentView!=='undefined'&&currentView==='commissions'&&typeof setView==='function')setView('dashboard');
+    document.querySelectorAll('input[name="commission"]:checked').forEach(b=>b.checked=false);
+    icClose_();
+  }
+}
+(function(){
+  // client card: no commission lookups for Egypt Viewer
+  if(typeof c360CommLoad_==='function'&&!c360CommLoad_.__egv){const o=c360CommLoad_;c360CommLoad_=function(){if(typeof isEgyptViewer_==='function'&&isEgyptViewer_())return;return o.apply(this,arguments);};c360CommLoad_.__egv=true;}
+})();
+(function(){const go=()=>{icMount_();icEgv_();setInterval(()=>{icMount_();icEgv_();},2000);};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();})();
 </script>
