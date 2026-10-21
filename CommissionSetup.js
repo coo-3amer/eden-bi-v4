@@ -11,7 +11,7 @@
  ************************************************/
 
 const COMM_SETUP_KEY_ = 'COMM_SETUP_V1';
-const COMM_DEPTS_ = ['Sales', 'Sales Management', 'Customer Service / Contracts', 'Finance / Collection', 'Marketing', 'HR', 'Secretary', 'Buffet', 'Other'];
+const COMM_DEPTS_ = ['Sales', 'Sales Management', 'Operations', 'Customer Service / Contracts', 'Finance / Collection', 'Marketing', 'HR', 'Secretary', 'Buffet', 'Other'];
 
 function commDefaultSetup_() {
   return {
@@ -41,6 +41,7 @@ function commReadSetup_() {
   if (!s) return def;
   Object.keys(def).forEach(k => { if (s[k] === undefined) s[k] = def[k]; });
   COMM_DEPTS_.forEach(d => { if (s.depts.indexOf(d) < 0) s.depts.push(d); });
+  s.depts = s.depts.filter(d => d !== 'Other').concat(s.depts.indexOf('Other') >= 0 ? ['Other'] : []);   // "Other" always last
   return s;
 }
 
