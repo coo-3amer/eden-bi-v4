@@ -15,7 +15,11 @@
 .icFilters{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;padding:10px 18px 0}
 .icFilters label{display:flex;flex-direction:column;gap:3px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ds-muted,#83796b)}
 .icFilters input,.icFilters select{height:32px!important}
-.icMsWrap{display:contents}
+.icMsWrap{display:flex;flex-wrap:wrap;gap:8px;width:100%;order:9}
+.icGrp{display:flex;flex-direction:column;gap:4px;padding:6px 10px 8px;border:1px solid var(--ds-line,#e8e0d1);border-radius:12px;background:var(--ds-surface-2,#faf6ef)}
+.icGrp>em{font-style:normal;font-size:11px;font-weight:800;color:var(--ds-gold-strong,#8f6d2c)}.icGrp>div{display:flex;gap:8px;flex-wrap:wrap}
+.icGrp .icMsB{max-width:160px}
+.icFilters .icQ{flex:1 1 220px}.icFilters .icQ input{width:100%}
 .icMs{position:relative;display:flex;flex-direction:column;gap:3px}
 .icMsL{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ds-muted,#83796b)}
 .icMsB{height:32px;max-width:190px;padding:0 10px;border-radius:10px;border:1px solid var(--ds-line,#e8e0d1);background:var(--ds-surface,#fff);color:var(--ds-text);font:inherit;font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;text-align:left}
@@ -49,7 +53,7 @@ html.edenEgv [data-eden-commissions],html.edenEgv [data-ic],html.edenEgv [data-b
    on all the month's deals or only their team's (Sales Manager / Head of Sales).
    Settings: getCommSetup / saveCommSetup (CommissionSetup.js).
    ===================================================================== */
-const IC_={setup:null,tab:'sales',from:'',to:'',sel:null,dpMin:9,dpMax:null,open:{},busy:false,draft:null};
+const IC_={setup:null,tab:'sales',from:'',to:'',sel:null,q:'',dpMin:9,dpMax:null,open:{},busy:false,draft:null};
 const IC_SCHEMES_={tiers:'Sales tiers (target)',pct:'% of sales',perDeal:'EGP per contract',perMillion:'EGP per 1M'};
 function icEsc_(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function icN_(n,d=0){return Number(n||0).toLocaleString('en-US',{maximumFractionDigits:d});}
@@ -81,11 +85,18 @@ const IC_MF_=[
   ['manager','Sales manager',r=>[r.salesManager,r.headOfSales]],
   ['sales','Sales',r=>[r.salesName,typeof isShareDeal_==='function'&&isShareDeal_(r)?r.sharedWith:'']],
   ['dealType','Deal type',r=>r.dealStatus],
-  ['unitType','Unit type',r=>r.unitType],
+  ['sharedWith','Shared with',r=>r.sharedWith],
+  ['commission','Commission',r=>typeof commissionPaid_==='function'?(commissionPaid_(r)?'Paid':'Not paid'):''],
   ['mainSource','Main source',r=>r.mainSource],
   ['sourceType','Source type',r=>r.sourceType],
-  ['brokerage','Brokerage',r=>r.brokerageCompany]
+  ['campaign','Campaign name',r=>r.campaignName],
+  ['mediaBuyer','Media buyer',r=>r.mediaBuyer],
+  ['brokerage','Brokerage company',r=>r.brokerageCompany],
+  ['clientType','Client type',r=>r.clientType],
+  ['unitType','Unit type',r=>r.unitType]
 ];
+const IC_MF_GROUPS_=[['',['project','status']],['Sales team',['branch','manager','sales','dealType','sharedWith','commission']],['Source',['mainSource','sourceType','campaign','mediaBuyer','brokerage']],['Client',['clientType','unitType']]];
+function icMsGroupsHtml_(){return IC_MF_GROUPS_.map(([g,keys])=>`<div class="icGrp">${g?`<em>${g}</em>`:''}<div>${keys.map(k=>icMsHtml_(IC_MF_.find(f=>f[0]===k))).join('')}</div></div>`).join('');}
 const icVals_=(f,r)=>[].concat(f[2](r)).map(x=>String(x??'').trim()).filter(Boolean);
 function icDeals_(){
   const rows=(typeof rawRows!=='undefined'&&rawRows)||[],sel=IC_.sel||{};
@@ -95,6 +106,7 @@ function icDeals_(){
     if(!(Number(r.amount)>0))return false;
     // cancelled deals never count unless "Cancel" is picked in Status
     if(cancelled(r)&&!(sel.status||[]).some(v=>/^cancel/i.test(v)))return false;
+    if(IC_.q&&!Object.values(r).join(' ').toLowerCase().includes(IC_.q))return false;
     for(const f of IC_MF_){const want=sel[f[0]];if(want&&want.length&&!icVals_(f,r).some(v=>want.includes(v)))return false;}
     const p=icDpPct_(r);if(IC_.dpMin!=null&&p<IC_.dpMin-1e-9)return false;if(IC_.dpMax!=null&&p>IC_.dpMax+1e-9)return false;
     return true;
@@ -172,7 +184,7 @@ function icOpen_(){
   const el=document.createElement('section');el.className='da';el.id='ic';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');
   el.innerHTML=`<div class="daHead"><div><small>Transactions</small><h2>Internal Commissions</h2></div>
     <div class="daTools"><button type="button" class="daBtn" data-clearf>Clear filters</button><button type="button" class="daBtn" data-xl>⬇ Excel</button><button type="button" class="daX" aria-label="Close">×</button></div></div>
-    <div class="icFilters"><label>From<input type="date" data-f="from" value="${icEsc_(IC_.from)}"></label><label>To<input type="date" data-f="to" value="${icEsc_(IC_.to)}"></label>
+    <div class="icFilters"><label class="icQ">Search<input type="search" data-q placeholder="Client / unit / campaign…" value="${icEsc_(IC_.q)}"></label><label>From<input type="date" data-f="from" value="${icEsc_(IC_.from)}"></label><label>To<input type="date" data-f="to" value="${icEsc_(IC_.to)}"></label>
       <button type="button" class="daBtn" data-range="0">This month</button><button type="button" class="daBtn" data-range="1">Last month</button>
       <span class="icMsWrap"></span>
       <label title="Actual Paid ÷ Final Price">DP paid % from<input type="number" step="0.1" data-f="dpMin" value="${IC_.dpMin??''}" style="width:72px"></label><label>to<input type="number" step="0.1" data-f="dpMax" value="${IC_.dpMax??''}" placeholder="any" style="width:72px"></label></div>
@@ -184,7 +196,8 @@ function icOpen_(){
     IC_[k]=(k==='dpMin'||k==='dpMax')?(i.value===''?null:Number(i.value)):i.value;icRender_();}));
   el.querySelectorAll('[data-range]').forEach(b=>b.addEventListener('click',()=>{[IC_.from,IC_.to]=icMonthRange_(+b.dataset.range);el.querySelector('[data-f="from"]').value=IC_.from;el.querySelector('[data-f="to"]').value=IC_.to;icRender_();}));
   el.querySelector('.icFilters').addEventListener('click',e=>{const b=e.target.closest('.icMsB');if(b){e.stopPropagation();if(b.closest('.icMs').querySelector('.icMsPop'))document.querySelector('.icMsPop')?.remove();else icMsOpen_(b);}});
-  el.querySelector('[data-clearf]').addEventListener('click',()=>{IC_.sel={project:IC_.setup&&IC_.setup.project?[IC_.setup.project]:[]};IC_.dpMin=9;IC_.dpMax=null;el.querySelector('[data-f="dpMin"]').value=9;el.querySelector('[data-f="dpMax"]').value='';icRender_();});
+  el.querySelector('[data-q]').addEventListener('input',e=>{clearTimeout(IC_.qt);IC_.qt=setTimeout(()=>{IC_.q=e.target.value.trim().toLowerCase();icRender_(true);},250);});
+  el.querySelector('[data-clearf]').addEventListener('click',()=>{IC_.q='';el.querySelector('[data-q]').value='';IC_.sel={project:IC_.setup&&IC_.setup.project?[IC_.setup.project]:[]};IC_.dpMin=9;IC_.dpMax=null;el.querySelector('[data-f="dpMin"]').value=9;el.querySelector('[data-f="dpMax"]').value='';icRender_();});
   document.addEventListener('keydown',icKey_);
   google.script.run.withSuccessHandler(s=>{IC_.setup=s;if(!IC_.sel)IC_.sel={project:s.project?[s.project]:[]};icRender_();})
     .withFailureHandler(err=>{const b=el.querySelector('.daBody');if(b)b.innerHTML=`<div class="daNote daMsg err" style="text-align:center;padding:40px">Could not load.<br>${icEsc_(err&&err.message||err)}</div>`;})
@@ -195,7 +208,7 @@ function icKey_(e){if(e.key==='Escape')icClose_();}
 function icRender_(keepFilters){
   const el=document.getElementById('ic');if(!el||!IC_.setup)return;
   const ff=el.querySelector('.icFilters');if(ff)ff.style.display=IC_.tab==='setup'?'none':'';
-  const mw=el.querySelector('.icMsWrap');if(mw&&!keepFilters)mw.innerHTML=IC_MF_.map(icMsHtml_).join('');
+  const mw=el.querySelector('.icMsWrap');if(mw&&!keepFilters)mw.innerHTML=icMsGroupsHtml_();
   const sales=icSales_(),others=icOthers_();
   el.querySelector('.daTabs').innerHTML=[['sales','Sales team',sales.length],['others','Other departments',others.length],['setup','Setup','']].map(([k,l,n])=>`<button type="button" class="daTab${IC_.tab===k?' on':''}" data-tab="${k}">${l}${n!==''?`<b>${n}</b>`:''}</button>`).join('');
   el.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{IC_.tab=b.dataset.tab;IC_.draft=null;icRender_();}));
