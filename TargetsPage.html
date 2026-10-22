@@ -8,6 +8,15 @@ html[data-theme] #appRoot .dsTgSeg button.on{background:var(--ds-gold-grad);colo
 html[data-theme] #appRoot .dsTgBar select{height:36px;padding:0 12px;border-radius:10px;border:1px solid var(--ds-line);background:var(--ds-surface-2);color:var(--ds-text);font-weight:600;font-size:13px}
 html[data-theme] #appRoot .dsTgBar .grow{flex:1}
 html[data-theme] #appRoot .dsTgSt{position:relative}
+html[data-theme] #appRoot .dsTgFlt{font-size:12px;font-weight:700;color:var(--ds-gold-strong);padding:6px 10px;border-radius:999px;background:var(--ds-gold-soft)}
+html[data-theme] #appRoot .dsTgEx{position:relative}
+html[data-theme] #appRoot .dsTgExPop{position:absolute;right:0;top:calc(100% + 6px);z-index:60;width:230px;display:flex;flex-direction:column;gap:2px;padding:12px;border-radius:12px;background:var(--ds-surface);border:1px solid var(--ds-line);box-shadow:0 14px 34px rgba(0,0,0,.18)}
+html[data-theme] #appRoot .dsTgExPop>b{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ds-muted);margin-bottom:4px}
+html[data-theme] #appRoot .dsTgExPop label{display:flex;align-items:center;gap:8px;padding:6px 4px;border-radius:7px;font-size:13px;color:var(--ds-text);cursor:pointer}
+html[data-theme] #appRoot .dsTgExPop label:hover{background:var(--ds-hover)}
+html[data-theme] #appRoot .dsTgExPop hr{border:0;border-top:1px solid var(--ds-line);margin:6px 0}
+html[data-theme] #appRoot .dsTgExBtns{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+html[data-theme] #appRoot .dsTgExBtns button{height:34px;border-radius:9px;border:0;background:var(--ds-gold-grad);color:var(--ds-on-gold);font-weight:700;cursor:pointer}
 html[data-theme] #appRoot .dsTgSign{height:36px;padding:0 12px;border-radius:10px;border:1px solid var(--ds-line);background:var(--ds-surface-2);color:var(--ds-muted);font-weight:700;font-size:12.5px;cursor:pointer;white-space:nowrap}
 html[data-theme] #appRoot .dsTgSign.on{border-color:var(--ds-gold-line,#b08a42);background:var(--ds-gold-soft);color:var(--ds-gold-strong)}
 html[data-theme] #appRoot .dsTgTop{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin-top:10px;padding:12px 14px;border-radius:12px;background:var(--ds-gold-soft);border:1px solid var(--ds-gold-line,rgba(176,138,66,.35))}
@@ -101,9 +110,35 @@ function dsTgRowMonth_(r){
 }
 function dsTgRows_(){
   const months=new Set(dsTgMonthsOf_());
+  const f=dsTgFilter_();
   return (typeof rawRows!=='undefined'?rawRows:[]).filter(r=>
     Number(r.year)===Number(DS_TG.year)&&months.has(dsTgRowMonth_(r))&&
-    dsTgStatusOk_(r)&&dsTgSignedOk_(r)&&projectCurrency_(r)===DS_TG.cur);
+    dsTgStatusOk_(r)&&dsTgSignedOk_(r)&&projectCurrency_(r)===DS_TG.cur&&f.match(r));
+}
+/* The page filters (branch, manager, sales, source, client, project, floor, DP paid, commission, search…)
+   apply here too — except the date filters (this page has its own period) and Status (own Deal status). */
+function dsTgFilter_(){
+  const G=n=>typeof getMulti==='function'?getMulti(n):[];
+  const has=(list,v)=>!list.length||list.includes(String(v??''));
+  const F={project:G('project'),unitType:G('unitCategory'),sales:G('sales'),manager:G('salesManager'),dealType:G('dealType'),shared:G('sharedWith'),
+    nat:G('nationality'),clientType:G('clientType'),branch:G('branch'),ren:G('renovation'),ms:G('mainSource'),st:G('sourceType'),camp:G('campaignName'),
+    mb:G('mediaBuyer'),bc:G('brokerageCompany'),bcs:G('bcSales'),bcm:G('bcManager'),floor:G('floor'),commission:G('commission'),contract:G('contract')};
+  const q=String(document.getElementById('search')?.value||'').trim().toLowerCase();
+  const dp=typeof EDEN_DP_RANGE_!=='undefined'&&(EDEN_DP_RANGE_.min!=null||EDEN_DP_RANGE_.max!=null);
+  const active=Object.values(F).some(a=>a.length)||!!q||dp;
+  const match=r=>!active||(
+    has(F.project,r.project)&&has(F.unitType,r.unitType)&&
+    (!F.sales.length||(typeof salesMatchesDeal_==='function'?salesMatchesDeal_(r,F.sales):F.sales.includes(String(r.salesName))))&&
+    has(F.manager,r.salesManager)&&has(F.dealType,r.dealStatus)&&has(F.shared,r.sharedWith)&&has(F.nat,r.nationality)&&
+    (!F.clientType.length||F.clientType.some(v=>String(v).trim().toLowerCase()===String(r.clientType||'').trim().toLowerCase()))&&
+    has(F.branch,r.branch)&&has(F.ren,r.renovationStatus)&&has(F.ms,r.mainSource)&&has(F.st,r.sourceType)&&has(F.camp,r.campaignName)&&
+    has(F.mb,r.mediaBuyer)&&has(F.bc,r.brokerageCompany)&&has(F.bcs,r.bcSales)&&has(F.bcm,r.bcManager)&&
+    (typeof commissionFilterMatch_!=='function'||commissionFilterMatch_(r))&&
+    (typeof contractFilterMatch_!=='function'||contractFilterMatch_(r))&&
+    (typeof edenFloorMatch_!=='function'||edenFloorMatch_(r))&&
+    (typeof edenDpMatch_!=='function'||edenDpMatch_(r))&&
+    (!q||Object.values(r).join(' ').toLowerCase().includes(q)));
+  return {active,match};
 }
 /* Deal status filter: null = every status except Cancel (default); otherwise the picked statuses. */
 function dsTgIsCancel_(st){return typeof isCancelledStatus_==='function'?isCancelledStatus_(st):/^cancel/i.test(String(st||''));}
@@ -121,8 +156,8 @@ function dsTgStText0_(){
 }
 /* Counts per status in the chosen period / currency (before the status filter). */
 function dsTgStCounts_(){
-  const months=new Set(dsTgMonthsOf_()),c={};
-  (typeof rawRows!=='undefined'?rawRows:[]).forEach(r=>{const k=dsTgStLabel_(r);if(!(k in c))c[k]=0;
+  const months=new Set(dsTgMonthsOf_()),c={},f=dsTgFilter_();
+  (typeof rawRows!=='undefined'?rawRows:[]).filter(f.match).forEach(r=>{const k=dsTgStLabel_(r);if(!(k in c))c[k]=0;
     if(Number(r.year)===Number(DS_TG.year)&&months.has(dsTgRowMonth_(r))&&projectCurrency_(r)===DS_TG.cur)c[k]++;});
   return c;
 }
@@ -203,10 +238,20 @@ function dsTgGroups_(rows){
   }else{
     rows.forEach(r=>add(r.branch,Number(r.amount)||0,1));
   }
-  // names with a target but no sales yet
-  const scope=DS_TG.tab;
+  // names with a target but no sales yet — when page filters are on, only names that belong to them
+  // (e.g. a branch filter keeps only that branch's salespeople).
+  const scope=DS_TG.tab,flt=dsTgFilter_();
+  let belongs=null;
+  if(flt.active){
+    belongs=new Set();
+    (typeof rawRows!=='undefined'?rawRows:[]).filter(flt.match).forEach(r=>{
+      const names=scope==='Sales'?[r.salesName,typeof isShareDeal_==='function'&&isShareDeal_(r)?r.sharedWith:'']:scope==='Manager'?[r.salesManager]:[r.branch];
+      names.forEach(n=>{n=edenNormName_(n);if(n)belongs.add(n);});
+    });
+  }
   (typeof TARGETS_DATA!=='undefined'?TARGETS_DATA:[]).forEach(t=>{
     if(String(t.scope||'').toLowerCase()!==scope.toLowerCase()||Number(t.year)!==Number(DS_TG.year))return;
+    if(belongs&&!belongs.has(edenNormName_(t.name)))return;
     const exists=[...out.keys()].some(k=>edenNormName_(k)===edenNormName_(t.name));
     if(!exists&&String(t.name||'').trim())out.set(t.name,{name:t.name,v:0,n:0});
   });
@@ -248,6 +293,7 @@ function dsTgMount_(){
   el.id='dsTargets';el.className='dsTg hidden';
   anchor.insertAdjacentElement('afterend',el);
   el.addEventListener('click',e=>{
+    const ex=e.target.closest('[data-tg-ex]');if(ex){e.stopPropagation();if(ex.parentElement.querySelector('.dsTgExPop'))ex.parentElement.querySelector('.dsTgExPop').remove();else dsTgExPop_(ex);return;}
     const st=e.target.closest('[data-tg-st]');if(st){e.stopPropagation();if(st.parentElement.querySelector('.dsTgStPop'))st.parentElement.querySelector('.dsTgStPop').remove();else dsTgStPop_(st);return;}
     const b=e.target.closest('[data-tg]');if(!b)return;
     const [k,v]=b.dataset.tg.split(':');
@@ -289,8 +335,33 @@ function dsTgPrefill_(scope,name){
   document.getElementById(DS_TG.cur==='USD'?'targetUSD':'targetEGP')?.focus();
 }
 
+let DS_TG_EX={company:true,Salesperson:true,Manager:true,Branch:true,onlyTarget:false};
+try{Object.assign(DS_TG_EX,JSON.parse(localStorage.getItem('edenTgExport')||'{}'));}catch(e){}
+function dsTgExPop_(btn){
+  document.querySelector('.dsTgExPop')?.remove();
+  const o=DS_TG_EX,ck=(k,l)=>`<label><input type="checkbox" data-ex="${k}"${o[k]?' checked':''}> ${l}</label>`;
+  const pop=document.createElement('div');pop.className='dsTgExPop';
+  pop.innerHTML=`<b>What to export</b>${ck('company','Company total')}${ck('Salesperson','Salespeople')}${ck('Manager','Managers')}${ck('Branch','Branches')}
+    <hr>${ck('onlyTarget','Only names with a target')}
+    <div class="dsTgExBtns"><button type="button" data-exgo="xl">⬇ Excel</button><button type="button" data-exgo="pdf">⬇ PDF</button></div>`;
+  btn.parentElement.appendChild(pop);
+  if(btn.getBoundingClientRect().left<window.innerWidth/2){pop.style.right='auto';pop.style.left='0';}
+  pop.addEventListener('click',e=>{e.stopPropagation();const g=e.target.closest('[data-exgo]');if(!g)return;
+    pop.querySelectorAll('[data-ex]').forEach(i=>DS_TG_EX[i.dataset.ex]=i.checked);
+    try{localStorage.setItem('edenTgExport',JSON.stringify(DS_TG_EX));}catch(err){}
+    if(!['company','Salesperson','Manager','Branch'].some(k=>DS_TG_EX[k])){alert('Pick at least one section to export.');return;}
+    pop.remove();g.dataset.exgo==='xl'?dsTgExport_():dsTgPdf_();});
+}
+document.addEventListener('click',e=>{if(!e.target.closest('.dsTgEx'))document.querySelector('.dsTgExPop')?.remove();});
 /* Rows for the exports: company line + Salespeople, Managers and Branches (ranked by sales amount)
    for the chosen period, currency and deal statuses. */
+function dsTgFiltersText_(){
+  const L=[['branch','Branch'],['salesManager','Manager'],['sales','Sales'],['project','Project'],['dealType','Deal type'],['sharedWith','Shared with'],['mainSource','Main source'],['sourceType','Source type'],['campaignName','Campaign'],['mediaBuyer','Media buyer'],['brokerageCompany','Brokerage'],['clientType','Client type'],['unitCategory','Unit type'],['floor','Floor'],['commission','Commission']];
+  const parts=L.map(([k,l])=>{const v=typeof getMulti==='function'?getMulti(k):[];return v.length?l+': '+v.join(', '):'';}).filter(Boolean);
+  if(typeof edenDpLabel_==='function'&&edenDpLabel_())parts.push('DP paid '+edenDpLabel_());
+  const q=String(document.getElementById('search')?.value||'').trim();if(q)parts.push('Search: '+q);
+  return parts.join(' · ');
+}
 function dsTgExportData_(){
   const cur=DS_TG.cur,rows=dsTgRows_(),pace=dsTgPace_(),keep=DS_TG.tab,out=[];
   const self=typeof dsSalesSelf_==='function'?dsSalesSelf_():null;
@@ -306,7 +377,11 @@ function dsTgExportData_(){
         .forEach((g,i)=>out.push({rank:i+1,level:lab,name:g.name,n:g.n,v:g.v,t:g.t,est:g.est,p:g.p,st:dsTgStatus_(g.p,!!g.t,pace)}));
     });
   }finally{DS_TG.tab=keep;}
-  return {cur,per:dsTgPeriodLabel_(),status:dsTgStText_(),out};
+  const X=DS_TG_EX,kept=out.filter(x=>(x.level==='Company'?X.company:X[x.level])&&(!X.onlyTarget||x.level==='Company'||x.t));
+  // re-number ranks after "only with a target"
+  const seen={};kept.forEach(x=>{if(x.level!=='Company')x.rank=(seen[x.level]=(seen[x.level]||0)+1);});
+  const fl=dsTgFilter_().active?dsTgFiltersText_():'';
+  return {cur,per:dsTgPeriodLabel_(),status:dsTgStText_()+(fl?' · Filters: '+fl:''),out:kept};
 }
 function dsTgExport_(){
   if(typeof edenXlsxDownload_!=='function'){alert('Excel export is not available.');return;}
@@ -322,9 +397,11 @@ function dsTgExport_(){
 function dsTgPdf_(){
   const D=dsTgExportData_(),cur=D.cur,E=dsTgEsc_,F=v=>Math.round(Number(v)||0).toLocaleString('en-US');
   const w=window.open('','_blank');if(!w){alert('Please allow pop-ups to export PDF.');return;}
-  const co=D.out.find(x=>x.level==='Company');
+  const co=D.out.find(x=>x.level==='Company');const showCo=DS_TG_EX.company;
   const SP=D.out.filter(x=>x.level==='Salesperson');
   const top=SP.filter(x=>x.t&&x.p>=100).sort((a,b)=>b.v-a.v)[0],seller=SP.slice().sort((a,b)=>b.v-a.v)[0];
+  const topCards=!SP.length?'':`<div class="g"><span>🏆 Top achiever</span><b>${top?E(top.name):'No one yet'}</b><span style="text-transform:none;letter-spacing:0;margin-top:2px">${top?F(top.v)+' '+cur+' · '+top.p.toFixed(0)+'% of target':'Nobody reached the target'}</span></div>
+  ${seller&&seller.v&&(!top||seller.name!==top.name)?`<div><span>💰 Top seller</span><b>${E(seller.name)}</b><span style="text-transform:none;letter-spacing:0;margin-top:2px">${F(seller.v)} ${cur}${seller.t?' · '+seller.p.toFixed(0)+'% of target':''}</span></div>`:''}`;
   const col={ok:'#2e7d4f',track:'#8f6d2c',behind:'#b3261e',none:'#8a8174'};
   const section=(lab,title)=>{const L=D.out.filter(x=>x.level===lab);if(!L.length)return '';
     return `<h2>${title}</h2><table><thead><tr><th>#</th><th>Name</th><th class="n">Deals</th><th class="n">Achieved ${cur}</th><th class="n">Target ${cur}</th><th class="bar">Achievement</th><th>Status</th></tr></thead><tbody>
@@ -357,11 +434,10 @@ td.bar{width:150px}.trk{display:inline-block;width:95px;height:7px;border-radius
 <div class="noprint"><button onclick="window.print()">Print / Save as PDF</button></div>
 <div class="hd"><div class="brand">EDEN<small>DEVELOPMENT</small></div><div><h1>Targets · ${E(D.per)}</h1><p>${cur} · Deal status: ${E(D.status)} · ${E(new Date().toLocaleString('en-GB'))}</p></div></div>
 <div class="kp">
-  <div><span>Company achieved</span><b>${co?F(co.v)+' '+cur:'—'}</b></div>
+  ${showCo?`<div><span>Company achieved</span><b>${co?F(co.v)+' '+cur:'—'}</b></div>
   <div><span>Company target</span><b>${co&&co.t?F(co.t)+' '+cur:'Not set'}</b></div>
-  <div><span>Achievement</span><b>${co&&co.t?co.p.toFixed(1)+'%':'—'}</b></div>
-  <div class="g"><span>🏆 Top achiever</span><b>${top?E(top.name):'No one yet'}</b><span style="text-transform:none;letter-spacing:0;margin-top:2px">${top?F(top.v)+' '+cur+' · '+top.p.toFixed(0)+'% of target':'Nobody reached the target'}</span></div>
-  ${seller&&seller.v&&(!top||seller.name!==top.name)?`<div><span>💰 Top seller</span><b>${E(seller.name)}</b><span style="text-transform:none;letter-spacing:0;margin-top:2px">${F(seller.v)} ${cur}${seller.t?' · '+seller.p.toFixed(0)+'% of target':''}</span></div>`:''}
+  <div><span>Achievement</span><b>${co&&co.t?co.p.toFixed(1)+'%':'—'}</b></div>`:''}
+  ${topCards}
 </div>
 ${section('Salesperson','Salespeople')}${section('Manager','Managers')}${section('Branch','Branches')}
 <div class="ft">Target achievers first, then by total sales amount. Top achiever = highest sales among those who reached their target. Salespeople and managers get 100% of their own deals and 50% of shared deals. “est.” = taken from a quarterly or yearly target.</div>
@@ -417,8 +493,8 @@ function dsTargetsRender_(){
       <div class="dsTgSt"><button type="button" data-tg-st class="${Array.isArray(DS_TG_ST)?'on':''}" title="Which deal statuses count as achieved">Deal status: <b>${dsTgEsc_(dsTgStText0_())}</b> ▾</button></div>
       <button type="button" class="dsTgSign${DS_TG_SIGNED?' on':''}" data-tg="signed:1" aria-pressed="${DS_TG_SIGNED}" title="Count only deals where the Client Sigend box is ticked">${DS_TG_SIGNED?'☑':'☐'} Client signed only</button>
       <span class="grow"></span>
-      <button type="button" class="dsTgBtn dsTgXl" data-tg="xl:1" title="Download as Excel">⬇ Excel</button>
-      <button type="button" class="dsTgBtn dsTgXl" data-tg="pdf:1" title="Print or save as PDF">⬇ PDF</button>
+      ${dsTgFilter_().active?'<span class="dsTgFlt" title="The page filters (branch, manager, source…) apply here">⚲ Page filters on</span>':''}
+      <div class="dsTgEx"><button type="button" class="dsTgBtn dsTgXl" data-tg-ex>⬇ Export ▾</button></div>
       ${admin?'<button type="button" class="dsTgBtn" data-tg="manage:1">Manage targets</button>':''}
     </div>
     <div class="dsTgHero">
