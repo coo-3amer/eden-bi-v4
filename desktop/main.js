@@ -81,6 +81,8 @@ function createMain() {
     backgroundColor: '#f4f0e8', thickFrame: true,
     webPreferences: { preload: path.join(__dirname, 'ui', 'titlebar-preload.js'), contextIsolation: true, nodeIntegration: false }
   });
+  // Screenshots, screen recorders and screen sharing (Zoom / Teams) see a black window.
+  try { win.setContentProtection(true); } catch (e) {}
   win.loadFile(path.join(__dirname, 'ui', 'titlebar.html'));
   dash = new WebContentsView({ webPreferences: { preload: path.join(__dirname, 'ui', 'dash-preload.js'),
     contextIsolation: true, nodeIntegration: false, spellcheck: false, partition: PART } });

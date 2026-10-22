@@ -101,7 +101,13 @@ function getDashboardData(authToken, opts) {
   data.dataVersion = dashCacheVersion_(scope);   // lets the page notice newer data (LiveSync)
   if (isSalesScopedUser_(authUser)) return scopeDashboardForSales_(data, authUser);
   data.access = egyptViewerAccessProfile_(authUser);
+  // Viewer roles never receive clients' phone numbers.
+  if (phoneMaskedRole_(authUser)) data = Object.assign({}, data, { rows: (data.rows || []).map(r => Object.assign({}, r, { mobile: maskPhone_(r.mobile) })) });
   return data;
+}
+function phoneMaskedRole_(user) { return /viewer/i.test(String(user && user.role || '')); }
+function maskPhone_(v) {
+  return String(v == null ? '' : v).replace(/\+?\d[\d\s]{6,}\d/g, m => { const d = m.replace(/\D/g, ''); return d.slice(0, 3) + '•••••' + d.slice(-3); });
 }
 
 /* Fingerprint of a cached block's content ('' if missing). */

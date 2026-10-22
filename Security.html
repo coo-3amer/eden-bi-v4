@@ -1,0 +1,65 @@
+<style id="eden-security">
+#edenWm{position:fixed;inset:0;z-index:2147483000;pointer-events:none;background-repeat:repeat;opacity:1}
+#edenWm[hidden]{display:none}
+#edenIdle{position:fixed;inset:0;z-index:2147483100;display:grid;place-items:center;background:rgba(10,8,5,.45)}
+#edenIdle[hidden]{display:none}
+#edenIdle .b{width:min(360px,calc(100vw - 32px));padding:22px;border-radius:16px;background:var(--ds-surface,#fff);color:var(--ds-text,#1d1a16);box-shadow:0 20px 50px rgba(0,0,0,.3);text-align:center;font-family:inherit}
+#edenIdle h3{margin:0 0 6px;font-size:18px}#edenIdle p{margin:0 0 14px;color:var(--ds-muted,#83796b);font-size:13px}
+#edenIdle b.n{font-size:28px;display:block;margin:6px 0 14px;color:var(--ds-gold-strong,#8f6d2c);font-variant-numeric:tabular-nums}
+#edenIdle button{height:38px;padding:0 18px;border-radius:10px;border:0;background:var(--ds-gold-grad,linear-gradient(135deg,#c9a45c,#a07c3a));color:#fff;font-weight:700;cursor:pointer}
+@media print{html.edenNoPrint body>*{display:none!important}html.edenNoPrint body::after{content:"Printing is not allowed for your account.";display:block;padding:40px;font:16px Arial}}
+</style>
+<script>
+/* =====================================================================
+   EDEN BI — screen security (website).
+   • Watermark: the user's name, username and the time, faint and diagonal,
+     over every screen for non-admin accounts — a leaked screenshot or a
+     phone photo shows who took it.
+   • Idle sign-out: after 30 minutes without activity (warning 60 s before).
+   • Non-admins can't print the dashboard page itself.
+   Browsers can't block screenshots; the Android and Windows apps do.
+   ===================================================================== */
+const EDEN_IDLE_MS_=30*60*1000,EDEN_IDLE_WARN_MS_=60*1000;
+let EDEN_IDLE_LAST_=Date.now(),EDEN_IDLE_T_=null,EDEN_WM_SIG_='';
+function edenSecUser_(){return (typeof AUTH_USER!=='undefined'&&AUTH_USER)||null;}
+function edenSecAdmin_(){const r=String(edenSecUser_()?.role||'').trim().toLowerCase();return r==='admin'||r==='super admin';}
+function edenWmPaint_(){
+  const u=edenSecUser_(),on=!!(u&&typeof AUTH_TOKEN!=='undefined'&&AUTH_TOKEN)&&!edenSecAdmin_();
+  document.documentElement.classList.toggle('edenNoPrint',on);
+  let el=document.getElementById('edenWm');
+  if(!on){if(el)el.hidden=true;return;}
+  if(!el){el=document.createElement('div');el.id='edenWm';el.setAttribute('aria-hidden','true');document.body.appendChild(el);}
+  const now=new Date(),stamp=now.toLocaleDateString('en-GB')+' '+now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  const who=[u.name||'',u.username&&u.username!==u.name?u.username:''].filter(Boolean).join(' · ');
+  const sig=who+'|'+stamp+'|'+(document.documentElement.dataset.theme||'');
+  el.hidden=false;if(sig===EDEN_WM_SIG_)return;EDEN_WM_SIG_=sig;
+  const dark=document.documentElement.dataset.theme==='dark'||(!document.documentElement.dataset.theme&&matchMedia('(prefers-color-scheme: dark)').matches);
+  const col=dark?'rgba(255,255,255,0.07)':'rgba(40,30,15,0.075)';
+  const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="420" height="220"><g transform="rotate(-24 210 110)" fill="${col}" font-family="Arial,sans-serif" font-weight="700" text-anchor="middle"><text x="210" y="100" font-size="17">${esc(who)}</text><text x="210" y="124" font-size="12">${esc(stamp)} · EDEN BI · Confidential</text></g></svg>`;
+  el.style.backgroundImage=`url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}")`;
+}
+function edenIdleKick_(){EDEN_IDLE_LAST_=Date.now();const d=document.getElementById('edenIdle');if(d&&!d.hidden)d.hidden=true;}
+function edenIdleTick_(){
+  const signed=typeof AUTH_TOKEN!=='undefined'&&AUTH_TOKEN;
+  if(!signed){EDEN_IDLE_LAST_=Date.now();return;}
+  const idle=Date.now()-EDEN_IDLE_LAST_;
+  let d=document.getElementById('edenIdle');
+  if(idle>=EDEN_IDLE_MS_){if(d)d.hidden=true;if(typeof logout==='function')logout();EDEN_IDLE_LAST_=Date.now();return;}
+  if(idle>=EDEN_IDLE_MS_-EDEN_IDLE_WARN_MS_){
+    if(!d){d=document.createElement('div');d.id='edenIdle';d.innerHTML='<div class="b"><h3>Are you still there?</h3><p>You will be signed out for security.</p><b class="n"></b><button type="button">Stay signed in</button></div>';
+      document.body.appendChild(d);d.querySelector('button').addEventListener('click',edenIdleKick_);}
+    d.hidden=false;d.querySelector('.n').textContent=Math.max(0,Math.ceil((EDEN_IDLE_MS_-idle)/1000))+'s';
+  }
+}
+(function(){
+  ['mousemove','mousedown','keydown','touchstart','wheel','scroll'].forEach(ev=>document.addEventListener(ev,()=>{const d=document.getElementById('edenIdle');if(!d||d.hidden)EDEN_IDLE_LAST_=Date.now();},{passive:true,capture:true}));
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)edenIdleTick_();});
+  const go=()=>{edenWmPaint_();setInterval(edenWmPaint_,30000);setInterval(edenIdleTick_,1000);
+    new MutationObserver(()=>{EDEN_WM_SIG_='';edenWmPaint_();}).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();
+  // repaint right after sign-in / sign-out
+  const hook=()=>{['showAppAfterLogin','logout'].forEach(n=>{if(typeof window[n]==='function'&&!window[n].__sec){const o=window[n];window[n]=function(){const r=o.apply(this,arguments);setTimeout(()=>{EDEN_WM_SIG_='';edenWmPaint_();edenIdleKick_();},50);return r;};window[n].__sec=true;}});};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',hook);else hook();
+})();
+</script>

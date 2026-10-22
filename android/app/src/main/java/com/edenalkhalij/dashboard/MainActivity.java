@@ -19,6 +19,7 @@ import android.provider.MediaStore;
 import android.util.Base64;
 import android.view.Gravity;
 import android.view.View;
+import android.view.WindowManager;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.webkit.CookieManager;
@@ -73,6 +74,8 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
+        // No screenshots / screen recording, and a blank thumbnail in Recent apps.
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
         web = new WebView(this);
         web.setBackgroundColor(Color.parseColor("#07090F"));
         setContentView(web);
