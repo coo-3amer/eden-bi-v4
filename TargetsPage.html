@@ -247,6 +247,7 @@ function dsTgMount_(){
     else if(k==='cur')DS_TG.cur=v;
     else if(k==='tab')DS_TG.tab=v;
     else if(k==='xl'){dsTgExport_();return;}
+    else if(k==='pdf'){dsTgPdf_();return;}
     else if(k==='manage'){if(typeof openTargetsManager_==='function')openTargetsManager_();return;}
     else if(k==='set'){dsTgPrefill_(b.dataset.scope,b.dataset.name);return;}
     dsTargetsRender_();
@@ -279,31 +280,83 @@ function dsTgPrefill_(scope,name){
   document.getElementById(DS_TG.cur==='USD'?'targetUSD':'targetEGP')?.focus();
 }
 
-/* Excel: company line + Salespeople, Managers and Branches for the chosen period, currency and deal statuses. */
-function dsTgExport_(){
-  if(typeof edenXlsxDownload_!=='function'){alert('Excel export is not available.');return;}
+/* Rows for the exports: company line + Salespeople, Managers and Branches (ranked by sales amount)
+   for the chosen period, currency and deal statuses. */
+function dsTgExportData_(){
   const cur=DS_TG.cur,rows=dsTgRows_(),pace=dsTgPace_(),keep=DS_TG.tab,out=[];
-  const pct=(v,t)=>t?Math.round(v/t*1000)/10+'%':'';
   const self=typeof dsSalesSelf_==='function'?dsSalesSelf_():null;
   if(!self){
     const ach=rows.reduce((a,r)=>a+(Number(r.amount)||0),0),c=dsTgTarget_('Company','EDEN Development');
-    out.push(['','Company','EDEN Development',rows.length,Math.round(ach),c.v?Math.round(c.v):'',c.est?'Estimated':'',pct(ach,c.v),c.v?Math.round(Math.max(0,c.v-ach)):'',dsTgStatus_(c.v?ach/c.v*100:0,!!c.v,pace)[1]]);
+    out.push({rank:'',level:'Company',name:'EDEN Development',n:rows.length,v:ach,t:c.v,est:c.est,p:c.v?ach/c.v*100:0,st:dsTgStatus_(c.v?ach/c.v*100:0,!!c.v,pace)});
   }
   try{
     [['Sales','Salesperson'],['Manager','Manager'],['Branch','Branch']].forEach(([tab,lab])=>{
       DS_TG.tab=tab;
       dsTgGroups_(rows).map(g=>{const t=dsTgTarget_(tab,g.name);return {...g,t:t.v,est:t.est,p:t.v?g.v/t.v*100:0};})
         .sort((a,b)=>b.v-a.v||b.p-a.p)
-        .forEach((g,i)=>out.push([i+1,lab,g.name,Math.round(g.n*10)/10,Math.round(g.v),g.t?Math.round(g.t):'',g.est?'Estimated':'',pct(g.v,g.t),g.t?Math.round(Math.max(0,g.t-g.v)):'',dsTgStatus_(g.p,!!g.t,pace)[1]]));
+        .forEach((g,i)=>out.push({rank:i+1,level:lab,name:g.name,n:g.n,v:g.v,t:g.t,est:g.est,p:g.p,st:dsTgStatus_(g.p,!!g.t,pace)}));
     });
   }finally{DS_TG.tab=keep;}
-  const per=dsTgPeriodLabel_();
-  edenXlsxDownload_(`EDEN_Targets_${per.replace(/\s+/g,'_')}_${cur}`,{
-    title:`EDEN — Targets · ${per} · ${cur}`,sheetName:'Targets',
-    kpis:[['Period',per],['Currency',cur],['Deal status',dsTgStText_()]],
+  return {cur,per:dsTgPeriodLabel_(),status:dsTgStText_(),out};
+}
+function dsTgExport_(){
+  if(typeof edenXlsxDownload_!=='function'){alert('Excel export is not available.');return;}
+  const D=dsTgExportData_(),cur=D.cur;
+  edenXlsxDownload_(`EDEN_Targets_${D.per.replace(/\s+/g,'_')}_${cur}`,{
+    title:`EDEN — Targets · ${D.per} · ${cur}`,sheetName:'Targets',
+    kpis:[['Period',D.per],['Currency',cur],['Deal status',D.status]],
     headers:['Rank','Level','Name','Deals (credit)','Achieved '+cur,'Target '+cur,'Target note','Achievement %','Remaining '+cur,'Status'],
-    rows:out
+    rows:D.out.map(x=>[x.rank,x.level,x.name,Math.round(x.n*10)/10,Math.round(x.v),x.t?Math.round(x.t):'',x.est?'Estimated':'',x.t?Math.round(x.p*10)/10+'%':'',x.t?Math.round(Math.max(0,x.t-x.v)):'',x.st[1]])
   });
+}
+/* PDF: a printable report in a new tab (Print → Save as PDF). */
+function dsTgPdf_(){
+  const D=dsTgExportData_(),cur=D.cur,E=dsTgEsc_,F=v=>Math.round(Number(v)||0).toLocaleString('en-US');
+  const w=window.open('','_blank');if(!w){alert('Please allow pop-ups to export PDF.');return;}
+  const co=D.out.find(x=>x.level==='Company');
+  const top=D.out.find(x=>x.level==='Salesperson');
+  const col={ok:'#2e7d4f',track:'#8f6d2c',behind:'#b3261e',none:'#8a8174'};
+  const section=(lab,title)=>{const L=D.out.filter(x=>x.level===lab);if(!L.length)return '';
+    return `<h2>${title}</h2><table><thead><tr><th>#</th><th>Name</th><th class="n">Deals</th><th class="n">Achieved ${cur}</th><th class="n">Target ${cur}</th><th class="bar">Achievement</th><th>Status</th></tr></thead><tbody>
+      ${L.map(x=>`<tr${x.rank===1?' class="first"':''}><td>${x.rank}</td><td><b>${E(x.name)}</b></td><td class="n">${Math.round(x.n*10)/10}</td><td class="n"><b>${F(x.v)}</b></td>
+        <td class="n">${x.t?F(x.t)+(x.est?' <small>est.</small>':''):'—'}</td>
+        <td class="bar">${x.t?`<div class="trk"><i style="width:${Math.min(100,x.p)}%;background:${x.p>=100?'#4f9a6c':'#b08a42'}"></i></div><span>${x.p.toFixed(0)}%</span>`:''}</td>
+        <td><span class="chip" style="color:${col[x.st[0]]};border-color:${col[x.st[0]]}55">${E(x.st[1])}</span></td></tr>`).join('')}</tbody></table>`;};
+  w.document.open();
+  w.document.write(`<!doctype html><html><head><meta charset="UTF-8"><title>EDEN Targets · ${E(D.per)} · ${cur}</title>
+<style>
+@page{size:A4 portrait;margin:12mm}
+*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#1d1a16;margin:0;padding:18px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.noprint{text-align:right;margin-bottom:10px}.noprint button{padding:9px 16px;border-radius:9px;border:0;background:#a8843f;color:#fff;font-weight:700;cursor:pointer}
+@media print{.noprint{display:none}body{padding:0}}
+.hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #b08a42;padding-bottom:10px;margin-bottom:14px}
+.brand{font-family:Georgia,serif;font-size:26px;letter-spacing:.18em;font-weight:700}.brand small{display:block;font-family:Arial;font-size:9px;letter-spacing:.3em;color:#8a7f70}
+.hd h1{margin:0;font-size:18px;text-align:right}.hd p{margin:3px 0 0;font-size:11px;color:#6f675b;text-align:right}
+.kp{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.kp div{border:1px solid #e6dcc8;border-radius:10px;padding:9px 11px;background:#fbf8f2}.kp span{display:block;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#8a7f70}.kp b{display:block;font-size:15px;margin-top:3px}
+.kp .g{background:#f6eedc;border-color:#d9c08c}
+h2{font-family:Georgia,serif;font-size:15px;margin:16px 0 6px;color:#3a3227}
+table{width:100%;border-collapse:collapse;font-size:10.5px}thead{display:table-header-group}tr{page-break-inside:avoid}
+th{background:#f3ece0;text-align:left;padding:6px 7px;font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:#6f675b}
+td{padding:6px 7px;border-bottom:1px solid #eee6d8}td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr.first td{background:#fbf4e6}td small{color:#8a7f70}
+td.bar{width:150px}.trk{display:inline-block;width:95px;height:7px;border-radius:9px;background:#efe7d9;vertical-align:middle;margin-right:6px;overflow:hidden}.trk i{display:block;height:100%;border-radius:9px}
+.chip{display:inline-block;padding:2px 8px;border:1px solid;border-radius:99px;font-size:9.5px;font-weight:700}
+.ft{margin-top:14px;font-size:9.5px;color:#8a7f70}
+</style></head><body>
+<div class="noprint"><button onclick="window.print()">Print / Save as PDF</button></div>
+<div class="hd"><div class="brand">EDEN<small>DEVELOPMENT</small></div><div><h1>Targets · ${E(D.per)}</h1><p>${cur} · Deal status: ${E(D.status)} · ${E(new Date().toLocaleString('en-GB'))}</p></div></div>
+<div class="kp">
+  <div><span>Company achieved</span><b>${co?F(co.v)+' '+cur:'—'}</b></div>
+  <div><span>Company target</span><b>${co&&co.t?F(co.t)+' '+cur:'Not set'}</b></div>
+  <div><span>Achievement</span><b>${co&&co.t?co.p.toFixed(1)+'%':'—'}</b></div>
+  <div class="g"><span>🏆 Top achiever</span><b>${top?E(top.name):'—'}</b><span style="text-transform:none;letter-spacing:0;margin-top:2px">${top?F(top.v)+' '+cur:''}</span></div>
+</div>
+${section('Salesperson','Salespeople')}${section('Manager','Managers')}${section('Branch','Branches')}
+<div class="ft">Ranked by total sales amount. Salespeople and managers get 100% of their own deals and 50% of shared deals. “est.” = taken from a quarterly or yearly target.</div>
+<script>window.onload=function(){setTimeout(function(){window.print();},400);}<\/script>
+</body></html>`);
+  w.document.close();
 }
 function dsTargetsRender_(){
   const el=document.getElementById('dsTargets');if(!el)return;
@@ -353,6 +406,7 @@ function dsTargetsRender_(){
       <div class="dsTgSt"><button type="button" data-tg-st class="${Array.isArray(DS_TG_ST)?'on':''}" title="Which deal statuses count as achieved">Deal status: <b>${dsTgEsc_(dsTgStText_())}</b> ▾</button></div>
       <span class="grow"></span>
       <button type="button" class="dsTgBtn dsTgXl" data-tg="xl:1" title="Download as Excel">⬇ Excel</button>
+      <button type="button" class="dsTgBtn dsTgXl" data-tg="pdf:1" title="Print or save as PDF">⬇ PDF</button>
       ${admin?'<button type="button" class="dsTgBtn" data-tg="manage:1">Manage targets</button>':''}
     </div>
     <div class="dsTgHero">
