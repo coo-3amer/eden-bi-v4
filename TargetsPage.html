@@ -8,6 +8,10 @@ html[data-theme] #appRoot .dsTgSeg button.on{background:var(--ds-gold-grad);colo
 html[data-theme] #appRoot .dsTgBar select{height:36px;padding:0 12px;border-radius:10px;border:1px solid var(--ds-line);background:var(--ds-surface-2);color:var(--ds-text);font-weight:600;font-size:13px}
 html[data-theme] #appRoot .dsTgBar .grow{flex:1}
 html[data-theme] #appRoot .dsTgSt{position:relative}
+html[data-theme] #appRoot .dsTgTop{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin-top:10px;padding:12px 14px;border-radius:12px;background:var(--ds-gold-soft);border:1px solid var(--ds-gold-line,rgba(176,138,66,.35))}
+html[data-theme] #appRoot .dsTgTop span{width:100%;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ds-gold-strong)}
+html[data-theme] #appRoot .dsTgTop b{font-size:18px;color:var(--ds-heading)}
+html[data-theme] #appRoot .dsTgTop em{font-style:normal;font-size:13px;font-weight:700;color:var(--ds-gold-strong);font-variant-numeric:tabular-nums}
 html[data-theme] #appRoot .dsTgXl{background:var(--ds-surface-2);color:var(--ds-text);border:1px solid var(--ds-line)}
 html[data-theme] #appRoot .dsTgSt>button{height:36px;max-width:340px;padding:0 12px;border-radius:10px;border:1px solid var(--ds-line);background:var(--ds-surface-2);color:var(--ds-muted);font-weight:600;font-size:12.5px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 html[data-theme] #appRoot .dsTgSt>button b{color:var(--ds-text)}
@@ -289,7 +293,7 @@ function dsTgExport_(){
     [['Sales','Salesperson'],['Manager','Manager'],['Branch','Branch']].forEach(([tab,lab])=>{
       DS_TG.tab=tab;
       dsTgGroups_(rows).map(g=>{const t=dsTgTarget_(tab,g.name);return {...g,t:t.v,est:t.est,p:t.v?g.v/t.v*100:0};})
-        .sort((a,b)=>(b.t?1:0)-(a.t?1:0)||b.p-a.p||b.v-a.v)
+        .sort((a,b)=>b.v-a.v||b.p-a.p)
         .forEach((g,i)=>out.push([i+1,lab,g.name,Math.round(g.n*10)/10,Math.round(g.v),g.t?Math.round(g.t):'',g.est?'Estimated':'',pct(g.v,g.t),g.t?Math.round(Math.max(0,g.t-g.v)):'',dsTgStatus_(g.p,!!g.t,pace)[1]]));
     });
   }finally{DS_TG.tab=keep;}
@@ -332,7 +336,7 @@ function dsTargetsRender_(){
   const remain=Math.max(0,company.v-achieved),daysLeft=dsTgDaysLeft_();
 
   const groups=dsTgGroups_(rows).map(g=>{const t=dsTgTarget_(DS_TG.tab,g.name);return {...g,t:t.v,est:t.est,pct:t.v?g.v/t.v*100:0};})
-    .sort((a,b)=>(b.t?1:0)-(a.t?1:0)||b.pct-a.pct||b.v-a.v);
+    .sort((a,b)=>b.v-a.v||b.pct-a.pct);   // ranked by total sales amount
   const withT=groups.filter(g=>g.t);
   const hit=withT.filter(g=>g.pct>=100).length,behind=withT.filter(g=>g.pct<100&&dsTgStatus_(g.pct,true,pace)[0]==='behind').length;
   const sel=(k,opts,v)=>`<select data-tg-sel="${k}" aria-label="${k}">${opts.map(([val,lab])=>`<option value="${val}"${Number(val)===Number(v)?' selected':''}>${lab}</option>`).join('')}</select>`;
@@ -371,6 +375,7 @@ function dsTargetsRender_(){
           <div class="g"><b>${hit}</b><span>Achieved</span></div>
           <div class="r"><b>${behind}</b><span>${pace>=1?'Missed':'Behind pace'}</span></div>
         </div>
+        ${groups[0]&&groups[0].v?`<div class="dsTgTop"><span>🏆 Top achiever · ${dsTgEsc_(tabLabel)}</span><b>${dsTgEsc_(groups[0].name)}</b><em>${dsTgFmt_(groups[0].v)} ${cur}${groups[0].t?' · '+groups[0].pct.toFixed(0)+'% of target':''}</em></div>`:''}
         <p class="dsTgNote">${pace>=1?'This period has ended.':pace<=0?'This period has not started yet.':`“On track” = at least 90% of where they should be today (${Math.round(pace*100)}% of the period has passed).`}</p>
       </div>
     </div>

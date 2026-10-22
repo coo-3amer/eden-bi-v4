@@ -7619,7 +7619,7 @@ function aiAnswerSummary(ctx){
   const units=ctx.rows.filter(r=>String(r.unitCode||'').trim()).length;
   const projects=new Set(ctx.rows.map(r=>r.project).filter(Boolean)).size;
   const bestProject=aiGroupRows(ctx.rows,'project','count')[0];
-  const bestSales=aiGroupRows(ctx.rows,'salesName','count')[0];
+  const bestSales=aiGroupRows(ctx.rows,'salesName','amount')[0];
 
   return `<b>EDEN AI</b>
     <div class="aiResultTitle">Executive Summary</div>
@@ -7632,7 +7632,7 @@ function aiAnswerSummary(ctx){
       <div><span>Projects</span><b>${aiFormatNumber(projects)}</b></div>
     </div>
     ${bestProject?`<div style="margin-top:10px">Top project: <b>${safe(bestProject.name)}</b> (${aiFormatNumber(bestProject.value)} deals)</div>`:''}
-    ${bestSales?`<div>Top sales: <b>${safe(bestSales.name)}</b> (${aiFormatNumber(bestSales.value)} deals)</div>`:''}
+    ${bestSales?`<div>Top sales: <b>${safe(bestSales.name)}</b> (${aiFormatNumber(bestSales.value)} sales value)</div>`:''}
     <div class="small" style="margin-top:10px">${safe(aiContextLine(ctx))}</div>`;
 }
 
