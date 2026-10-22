@@ -205,6 +205,9 @@ function deleteInstallmentPayment(authToken, req) {
 /* Every installment with what is paid on it (for the Collections page). */
 function getInstallmentsOverview(authToken) {
   validateAuthToken_(authToken);
+  return instOverview_();
+}
+function instOverview_() {
   const paid = {};
   instRows_(instSheet_(INST_PAY_SHEET_, INST_PAY_HEAD_, false)).forEach(r => {
     const k = String(r[1]) + '#' + String(r[4]);

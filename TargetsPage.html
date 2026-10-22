@@ -301,6 +301,7 @@ function dsTgMount_(){
     else if(k==='cur')DS_TG.cur=v;
     else if(k==='tab')DS_TG.tab=v;
     else if(k==='signed'){DS_TG_SIGNED=!DS_TG_SIGNED;try{localStorage.setItem('edenTgSigned',DS_TG_SIGNED?'1':'0');}catch(e){}}
+    else if(k==='brief'){b.disabled=true;b.textContent='Sending…';google.script.run.withSuccessHandler(r=>{b.textContent=r&&r.ok?'Sent ✓':'Not sent — check Telegram setup';setTimeout(()=>{b.disabled=false;b.textContent='📨 Morning brief';},4000);}).withFailureHandler(err=>{b.disabled=false;b.textContent='📨 Morning brief';alert((err&&err.message)||err);}).sendMorningBriefNow(AUTH_TOKEN);return;}
     else if(k==='xl'){dsTgExport_();return;}
     else if(k==='pdf'){dsTgPdf_();return;}
     else if(k==='manage'){if(typeof openTargetsManager_==='function')openTargetsManager_();return;}
@@ -495,6 +496,7 @@ function dsTargetsRender_(){
       <span class="grow"></span>
       ${dsTgFilter_().active?'<span class="dsTgFlt" title="The page filters (branch, manager, source…) apply here">⚲ Page filters on</span>':''}
       <div class="dsTgEx"><button type="button" class="dsTgBtn dsTgXl" data-tg-ex>⬇ Export ▾</button></div>
+      ${admin?'<button type="button" class="dsTgBtn dsTgXl" data-tg="brief:1" title="Send the morning brief to Telegram now (it also goes out every day at 9:00)">📨 Morning brief</button>':''}
       ${admin?'<button type="button" class="dsTgBtn" data-tg="manage:1">Manage targets</button>':''}
     </div>
     <div class="dsTgHero">

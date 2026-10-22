@@ -285,6 +285,7 @@ function ipRenderGen_(){
 }
 
 /* ---------- Collections page: overdue + next 30 days ---------- */
+(function(){const st=document.createElement('style');st.textContent='.ipRemind{height:32px;padding:0 12px;border-radius:9px;border:1px solid var(--ds-line);background:var(--ds-surface-2);color:var(--ds-text);font-size:12px;font-weight:700;cursor:pointer}.ipRemind:hover{border-color:var(--ds-gold)}';document.head.appendChild(st);})();
 let IP_OVERVIEW_=null,IP_OVERVIEW_AT_=0,IP_OVERVIEW_BUSY_=false;
 function ipCollectionsBlock_(){
   const host=document.getElementById('dsCollections');if(!host||host.classList.contains('hidden'))return;
@@ -308,7 +309,8 @@ function ipCollectionsBlock_(){
     ${a.slice(0,200).map(x=>`<tr data-u="${ipEsc_(x.project+'|'+x.unitCode)}"><td>${ipEsc_(x.client)}</td><td>${ipEsc_(x.unitCode)}</td><td>${ipEsc_(x.name)}</td><td>${ipFmt_(x.due)}</td><td class="num">${ipNum_(x.rest)} ${ipEsc_(x.currency)}</td>${isLate?`<td class="num" style="color:var(--ds-red)">${Math.round((today-x.d)/864e5)}</td>`:''}</tr>`).join('')}
     </tbody></table></div>`:`<div class="ipMsg">${isLate?'No overdue installments.':'Nothing due in the next 30 days.'}</div>`;
   const units=new Set((IP_OVERVIEW_.rows||[]).map(x=>x.key)).size;
-  el.innerHTML=`<h3>Installments <small style="font-weight:600;color:var(--ds-muted)">· ${units} unit${units===1?'':'s'} with a schedule</small></h3>
+  const adm=typeof isCurrentAdmin==='function'&&isCurrentAdmin();
+  el.innerHTML=`<h3 style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">Installments <small style="font-weight:600;color:var(--ds-muted)">· ${units} unit${units===1?'':'s'} with a schedule</small>${adm?'<span style="flex:1"></span><button type="button" class="ipRemind" data-remind title="Send today\'s collection reminders to Telegram now (they also go out every day at 9:00)">📨 Send reminders to Telegram</button>':''}</h3>
     <div class="ipKpis" style="grid-template-columns:repeat(4,minmax(0,1fr))">
       <div class="ipKpi red"><span>Overdue EGP</span><b>${ipNum_(tot(late,'EGP'))}</b><small>${late.filter(x=>(x.currency||'EGP')==='EGP').length} installments</small></div>
       <div class="ipKpi red"><span>Overdue USD</span><b>${ipNum_(tot(late,'USD'))}</b><small>${late.filter(x=>x.currency==='USD').length} installments</small></div>
@@ -319,6 +321,9 @@ function ipCollectionsBlock_(){
     <div class="ipSec" style="margin-top:6px">Overdue</div>${list(late,true)}
     <div class="ipSec">Due in the next 30 days</div>${list(next,false)}
     ${units?'':'<div class="ipMsg">Open a client → Payments on a unit to create its schedule.</div>'}`;
+  el.querySelector('[data-remind]')?.addEventListener('click',e=>{const b=e.currentTarget;b.disabled=true;b.textContent='Sending…';
+    google.script.run.withSuccessHandler(r=>{b.textContent=r&&r.ok?'Sent ✓':'Nothing due today';setTimeout(()=>{b.disabled=false;b.textContent='📨 Send reminders to Telegram';},4000);})
+      .withFailureHandler(err=>{b.disabled=false;b.textContent='📨 Send reminders to Telegram';alert((err&&err.message)||err);}).sendCollectionRemindersNow(AUTH_TOKEN);});
   el.querySelectorAll('tr[data-u]').forEach(tr=>tr.addEventListener('click',()=>{
     const [p,u]=tr.dataset.u.split('|');
     const key=s=>String(s||'').trim().replace(/\.+$/,'').toUpperCase();

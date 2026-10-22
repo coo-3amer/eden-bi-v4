@@ -178,6 +178,9 @@ function resHoldAdmin_(authToken) {
 /* Admins: every open reservation (Transactions › Reservations page). */
 function getReservationHolds(authToken) {
   resHoldAdmin_(authToken);
+  return resHoldList_();
+}
+function resHoldList_() {
   const props = PropertiesService.getScriptProperties();
   const sh = getMainDealsSheet_();
   const c = resHoldColumns_(sh);
