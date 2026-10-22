@@ -8,6 +8,7 @@ html[data-theme] #appRoot .dsTgSeg button.on{background:var(--ds-gold-grad);colo
 html[data-theme] #appRoot .dsTgBar select{height:36px;padding:0 12px;border-radius:10px;border:1px solid var(--ds-line);background:var(--ds-surface-2);color:var(--ds-text);font-weight:600;font-size:13px}
 html[data-theme] #appRoot .dsTgBar .grow{flex:1}
 html[data-theme] #appRoot .dsTgSt{position:relative}
+html[data-theme] #appRoot .dsTgXl{background:var(--ds-surface-2);color:var(--ds-text);border:1px solid var(--ds-line)}
 html[data-theme] #appRoot .dsTgSt>button{height:36px;max-width:340px;padding:0 12px;border-radius:10px;border:1px solid var(--ds-line);background:var(--ds-surface-2);color:var(--ds-muted);font-weight:600;font-size:12.5px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 html[data-theme] #appRoot .dsTgSt>button b{color:var(--ds-text)}
 html[data-theme] #appRoot .dsTgSt>button.on{border-color:var(--ds-gold-line,#b08a42);background:var(--ds-gold-soft)}
@@ -241,6 +242,7 @@ function dsTgMount_(){
     if(k==='period')DS_TG.period=v;
     else if(k==='cur')DS_TG.cur=v;
     else if(k==='tab')DS_TG.tab=v;
+    else if(k==='xl'){dsTgExport_();return;}
     else if(k==='manage'){if(typeof openTargetsManager_==='function')openTargetsManager_();return;}
     else if(k==='set'){dsTgPrefill_(b.dataset.scope,b.dataset.name);return;}
     dsTargetsRender_();
@@ -273,6 +275,32 @@ function dsTgPrefill_(scope,name){
   document.getElementById(DS_TG.cur==='USD'?'targetUSD':'targetEGP')?.focus();
 }
 
+/* Excel: company line + Salespeople, Managers and Branches for the chosen period, currency and deal statuses. */
+function dsTgExport_(){
+  if(typeof edenXlsxDownload_!=='function'){alert('Excel export is not available.');return;}
+  const cur=DS_TG.cur,rows=dsTgRows_(),pace=dsTgPace_(),keep=DS_TG.tab,out=[];
+  const pct=(v,t)=>t?Math.round(v/t*1000)/10+'%':'';
+  const self=typeof dsSalesSelf_==='function'?dsSalesSelf_():null;
+  if(!self){
+    const ach=rows.reduce((a,r)=>a+(Number(r.amount)||0),0),c=dsTgTarget_('Company','EDEN Development');
+    out.push(['','Company','EDEN Development',rows.length,Math.round(ach),c.v?Math.round(c.v):'',c.est?'Estimated':'',pct(ach,c.v),c.v?Math.round(Math.max(0,c.v-ach)):'',dsTgStatus_(c.v?ach/c.v*100:0,!!c.v,pace)[1]]);
+  }
+  try{
+    [['Sales','Salesperson'],['Manager','Manager'],['Branch','Branch']].forEach(([tab,lab])=>{
+      DS_TG.tab=tab;
+      dsTgGroups_(rows).map(g=>{const t=dsTgTarget_(tab,g.name);return {...g,t:t.v,est:t.est,p:t.v?g.v/t.v*100:0};})
+        .sort((a,b)=>(b.t?1:0)-(a.t?1:0)||b.p-a.p||b.v-a.v)
+        .forEach((g,i)=>out.push([i+1,lab,g.name,Math.round(g.n*10)/10,Math.round(g.v),g.t?Math.round(g.t):'',g.est?'Estimated':'',pct(g.v,g.t),g.t?Math.round(Math.max(0,g.t-g.v)):'',dsTgStatus_(g.p,!!g.t,pace)[1]]));
+    });
+  }finally{DS_TG.tab=keep;}
+  const per=dsTgPeriodLabel_();
+  edenXlsxDownload_(`EDEN_Targets_${per.replace(/\s+/g,'_')}_${cur}`,{
+    title:`EDEN — Targets · ${per} · ${cur}`,sheetName:'Targets',
+    kpis:[['Period',per],['Currency',cur],['Deal status',dsTgStText_()]],
+    headers:['Rank','Level','Name','Deals (credit)','Achieved '+cur,'Target '+cur,'Target note','Achievement %','Remaining '+cur,'Status'],
+    rows:out
+  });
+}
 function dsTargetsRender_(){
   const el=document.getElementById('dsTargets');if(!el)return;
   const show=(typeof currentView!=='undefined'&&currentView==='targets');
@@ -320,6 +348,7 @@ function dsTargetsRender_(){
       ${seg('cur',[['EGP','EGP'],['USD','USD']],cur)}
       <div class="dsTgSt"><button type="button" data-tg-st class="${Array.isArray(DS_TG_ST)?'on':''}" title="Which deal statuses count as achieved">Deal status: <b>${dsTgEsc_(dsTgStText_())}</b> ▾</button></div>
       <span class="grow"></span>
+      <button type="button" class="dsTgBtn dsTgXl" data-tg="xl:1" title="Download as Excel">⬇ Excel</button>
       ${admin?'<button type="button" class="dsTgBtn" data-tg="manage:1">Manage targets</button>':''}
     </div>
     <div class="dsTgHero">
