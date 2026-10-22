@@ -1,0 +1,105 @@
+<style id="eden-mroi">
+.mrBar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:12px}
+.mrBar label{display:flex;flex-direction:column;gap:3px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ds-muted,#83796b)}
+.mrBar input,.mrBar select{height:32px;border:1px solid var(--ds-line,#e3d9c7);border-radius:8px;padding:0 8px;font:inherit;background:var(--ds-surface,#fff);color:var(--ds-text)}
+.mrRoi.good{color:#2f9e62;font-weight:800}.mrRoi.bad{color:#b3261e;font-weight:800}
+.mrFun{display:flex;align-items:center;gap:6px}.mrFun i{display:block;height:8px;border-radius:9px;background:#b08a42}
+.mrSp td input{width:140px;height:30px;border:1px solid var(--ds-line,#e3d9c7);border-radius:8px;padding:0 8px;text-align:right;font:inherit;background:var(--ds-surface,#fff);color:var(--ds-text)}
+.mrSp td input.src{text-align:left;width:200px}
+.mrLink{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:14px;padding:12px;border-radius:12px;border:1px dashed var(--ds-line,#e3d9c7)}
+.mrLink input{flex:1;min-width:260px;height:32px;border:1px solid var(--ds-line,#e3d9c7);border-radius:8px;padding:0 10px;font:inherit;background:var(--ds-surface,#fff);color:var(--ds-text)}
+</style>
+<script>
+/* =====================================================================
+   EDEN BI — Marketing ROI (admins): return on ad spend per source /
+   campaign (Deals + monthly spend), and the EDEN CRM funnel (leads →
+   contacted → site visit → deal in BI, matched by phone).
+   ===================================================================== */
+const MR_={tab:'roi',from:'',to:'',data:null,camp:false,spMonth:''};
+function mrEsc_(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function mrN_(n){return Number(n||0).toLocaleString('en-US',{maximumFractionDigits:0});}
+function mrIsAdmin_(){const r=String((typeof AUTH_USER!=='undefined'&&AUTH_USER&&AUTH_USER.role)||'').trim().toLowerCase();return r==='admin'||r==='super admin';}
+function mrYm_(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+function mrMount_(){
+  const menu=document.querySelector('#transactionsModule .moduleMenu');if(!menu)return;
+  let b=menu.querySelector('[data-mr]');
+  if(!b){b=document.createElement('button');b.type='button';b.dataset.mr='1';b.textContent='Marketing ROI';b.addEventListener('click',mrOpen_);
+    const after=menu.querySelector('[data-ca]')||menu.querySelector('[data-ic]')||menu.lastElementChild;if(after)after.insertAdjacentElement('afterend',b);else menu.appendChild(b);}
+  b.style.display=mrIsAdmin_()?'':'none';
+}
+function mrOpen_(){
+  mrClose_();const now=new Date();
+  if(!MR_.from){MR_.from=mrYm_(new Date(now.getFullYear(),now.getMonth()-2,1));MR_.to=mrYm_(now);MR_.spMonth=mrYm_(new Date(now.getFullYear(),now.getMonth(),1));}
+  const back=document.createElement('div');back.className='daBack';back.id='mrBack';back.addEventListener('click',mrClose_);
+  const el=document.createElement('section');el.className='da';el.id='mr';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');
+  el.innerHTML=`<div class="daHead"><div><small>Transactions</small><h2>Marketing ROI</h2></div><div class="daTools"><button type="button" class="daX" aria-label="Close">×</button></div></div>
+    <div class="daTabs"></div><div class="daBody"><div class="daNote" style="text-align:center;padding:40px">Loading…</div></div>`;
+  document.body.append(back,el);el.querySelector('.daX').addEventListener('click',mrClose_);document.addEventListener('keydown',mrKey_);
+  mrLoad_();
+}
+function mrClose_(){document.getElementById('mr')?.remove();document.getElementById('mrBack')?.remove();document.removeEventListener('keydown',mrKey_);}
+function mrKey_(e){if(e.key==='Escape')mrClose_();}
+function mrLoad_(){
+  const b=document.querySelector('#mr .daBody');if(b&&!MR_.data)b.innerHTML='<div class="daNote" style="text-align:center;padding:40px">Loading…</div>';
+  google.script.run.withSuccessHandler(d=>{MR_.data=d;mrRender_();}).withFailureHandler(err=>{const x=document.querySelector('#mr .daBody');if(x)x.innerHTML=`<div class="daNote daMsg err">${mrEsc_((err&&err.message)||err)}</div>`;})
+    .getMarketingRoi(AUTH_TOKEN,{from:MR_.from,to:MR_.to});
+}
+function mrRender_(){
+  const el=document.getElementById('mr');if(!el||!MR_.data)return;const D=MR_.data;
+  el.querySelector('.daTabs').innerHTML=[['roi','Return on spend'],['crm','CRM funnel'],['spend','Enter spend']].map(([k,l])=>`<button type="button" class="daTab${MR_.tab===k?' on':''}" data-tab="${k}">${l}</button>`).join('');
+  el.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{MR_.tab=b.dataset.tab;mrRender_();}));
+  const body=el.querySelector('.daBody');
+  const range=`<div class="mrBar"><label>From<input type="month" data-mr="from" value="${MR_.from}"></label><label>To<input type="month" data-mr="to" value="${MR_.to}"></label>
+    ${MR_.tab!=='spend'?`<label style="flex-direction:row;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:12.5px"><input type="checkbox" data-camp${MR_.camp?' checked':''} style="height:auto"> By campaign</label>`:''}</div>`;
+  if(MR_.tab==='roi'){
+    const L=D.roi.filter(x=>MR_.camp?!!x.campaign:!x.campaign).sort((a,b)=>(b.egp+b.spend)-(a.egp+a.spend));
+    const T=L.reduce((a,x)=>({deals:a.deals+x.deals,egp:a.egp+x.egp,spend:a.spend+x.spend}),{deals:0,egp:0,spend:0});
+    body.innerHTML=range+`<div class="icKpis"><div class="icKpi"><span>Deals</span><b>${mrN_(T.deals)}</b></div><div class="icKpi"><span>Sales EGP</span><b>${mrN_(T.egp)}</b></div>
+      <div class="icKpi"><span>Spend EGP</span><b>${mrN_(T.spend)}</b></div><div class="icKpi gold"><span>Cost per deal</span><b>${T.deals&&T.spend?mrN_(T.spend/T.deals):'—'}</b></div></div>
+      ${L.length?`<table class="daTable"><thead><tr><th>Main source</th>${MR_.camp?'<th>Campaign</th>':''}<th class="num">Leads (CRM)</th><th class="num">Deals</th><th class="num">Sales EGP</th><th class="num">Sales USD</th><th class="num">Spend EGP</th><th class="num">Cost / lead</th><th class="num">Cost / deal</th><th class="num">Sales ÷ spend</th></tr></thead><tbody>
+      ${L.map(x=>{const r=x.spend?x.egp/x.spend:null;return `<tr><td><b>${mrEsc_(x.source)}</b></td>${MR_.camp?`<td>${mrEsc_(x.campaign)}</td>`:''}<td class="num">${x.leads||'—'}</td><td class="num">${x.deals}</td><td class="num">${mrN_(x.egp)}</td><td class="num">${x.usd?mrN_(x.usd):'—'}</td><td class="num">${x.spend?mrN_(x.spend):'—'}</td>
+        <td class="num">${x.spend&&x.leads?mrN_(x.spend/x.leads):'—'}</td><td class="num">${x.spend&&x.deals?mrN_(x.spend/x.deals):'—'}</td><td class="num">${r==null?'—':`<span class="mrRoi ${r>=50?'good':r<10?'bad':''}">${r>=100?mrN_(r):r.toFixed(1)}×</span>`}</td></tr>`;}).join('')}</tbody></table>`
+      :'<div class="daNote" style="text-align:center;padding:30px">No deals or spend in this period.</div>'}
+      <div class="daNote">Deals by reservation date (not cancelled), grouped by Main Source${MR_.camp?' and Campaign Name':''} from the Deals sheet. Spend comes from <b>Enter spend</b> — write the source exactly as in Deals. “Sales ÷ spend” = how many pounds of sales each pound of marketing brought.</div>`;
+  }else if(MR_.tab==='crm'){
+    const C=D.crm||{};
+    let inner='';
+    if(!C.linked){
+      inner=`<div class="daNote" style="padding:16px">${C.error?`<span class="daMsg err">${mrEsc_(C.error)}</span><br><br>`:''}Link the EDEN CRM data sheet (“EDEN CRM — Data”) to see each lead source from first contact to a real deal. The account running EDEN BI needs at least <b>Viewer</b> access to that sheet.</div>`;
+    }else{
+      const L=C.rows.filter(x=>MR_.camp?!!x.campaign:!x.campaign).sort((a,b)=>b.leads-a.leads),mx=Math.max(1,...L.map(x=>x.leads));
+      const pc=(a,b)=>b?Math.round(a/b*100)+'%':'—';
+      inner=`<div class="icKpis"><div class="icKpi"><span>Leads in CRM</span><b>${mrN_(C.total)}</b></div><div class="icKpi"><span>Site visits</span><b>${mrN_(L.reduce((a,x)=>a+x.visit,0))}</b></div>
+        <div class="icKpi gold"><span>Became deals</span><b>${mrN_(L.reduce((a,x)=>a+x.deals,0))}</b></div><div class="icKpi"><span>Lead → deal</span><b>${pc(L.reduce((a,x)=>a+x.deals,0),C.total)}</b></div></div>
+        <table class="daTable"><thead><tr><th>CRM source</th>${MR_.camp?'<th>Campaign</th>':''}<th>Leads</th><th class="num">Contacted</th><th class="num">Site visit</th><th class="num">Won (CRM)</th><th class="num">Lost</th><th class="num">Deal in BI</th><th class="num">Lead → deal</th><th class="num">Sales EGP</th></tr></thead><tbody>
+        ${L.map(x=>`<tr><td><b>${mrEsc_(x.source)}</b></td>${MR_.camp?`<td>${mrEsc_(x.campaign)}</td>`:''}<td><span class="mrFun"><i style="width:${Math.round(x.leads/mx*120)}px"></i>${x.leads}</span></td><td class="num">${x.contacted} <small class="daMuted">${pc(x.contacted,x.leads)}</small></td><td class="num">${x.visit} <small class="daMuted">${pc(x.visit,x.leads)}</small></td>
+          <td class="num">${x.won}</td><td class="num">${x.lost}</td><td class="num"><b>${x.deals}</b></td><td class="num">${pc(x.deals,x.leads)}</td><td class="num">${mrN_(x.egp)}</td></tr>`).join('')}</tbody></table>`;
+    }
+    body.innerHTML=range+inner+`<div class="mrLink"><b style="font-size:12.5px">CRM data sheet</b><input type="text" data-crm placeholder="Paste the link of “EDEN CRM — Data”" value="${mrEsc_(D.crmId?'https://docs.google.com/spreadsheets/d/'+D.crmId:'')}"><button type="button" class="daBtn ok" data-savecrm>Link</button><span class="daMsg" data-crmmsg></span></div>
+      <div class="daNote">Leads by the date they entered the CRM. “Deal in BI” = the lead's phone number appears on a deal in the Deals sheet (not cancelled) — the real conversion, whatever stage the lead shows in the CRM.</div>`;
+    body.querySelector('[data-savecrm]').addEventListener('click',e=>{const m=body.querySelector('[data-crmmsg]');e.target.disabled=true;m.className='daMsg';m.textContent='Checking…';
+      google.script.run.withSuccessHandler(r=>{m.className='daMsg ok';m.textContent=r.cleared?'Unlinked':'Linked ✓ '+(r.name||'');MR_.data=null;mrLoad_();})
+        .withFailureHandler(err=>{e.target.disabled=false;m.className='daMsg err';m.textContent=(err&&err.message)||err;}).setCrmSheet(AUTH_TOKEN,body.querySelector('[data-crm]').value);});
+  }else{
+    const cur=(D.spend||[]).filter(x=>x.month===MR_.spMonth);
+    const lines=cur.length?cur.map(x=>({...x})):D.sources.slice(0,6).map(s=>({source:s,campaign:'',amount:''}));
+    body.innerHTML=`<div class="mrBar"><label>Month<input type="month" data-sp="month" value="${MR_.spMonth}"></label></div>
+      <datalist id="mrSrc">${D.sources.map(s=>`<option value="${mrEsc_(s)}">`).join('')}</datalist><datalist id="mrCamp">${D.campaigns.map(s=>`<option value="${mrEsc_(s)}">`).join('')}</datalist>
+      <table class="daTable mrSp"><thead><tr><th>Main source (as in Deals)</th><th>Campaign (optional)</th><th class="num">Spend EGP</th><th></th></tr></thead><tbody>
+      ${lines.map((x,i)=>`<tr><td><input class="src" list="mrSrc" data-l="${i}" data-k="source" value="${mrEsc_(x.source)}"></td><td><input class="src" list="mrCamp" data-l="${i}" data-k="campaign" value="${mrEsc_(x.campaign)}"></td><td class="num"><input inputmode="decimal" data-l="${i}" data-k="amount" value="${x.amount?mrN_(x.amount):''}"></td><td><button type="button" class="daBtn no" data-del="${i}">×</button></td></tr>`).join('')}</tbody></table>
+      <div style="display:flex;gap:8px;margin-top:10px;align-items:center"><button type="button" class="daBtn" data-add>+ Line</button><span style="flex:1"></span><span class="daMsg" data-spmsg></span><button type="button" class="daBtn ok" data-savesp>Save ${mrEsc_(MR_.spMonth)}</button></div>
+      <div class="daNote">Pick the month, write what was spent on each source (and campaign if you track it), then Save. Write the source exactly as it is in the Deals sheet — suggestions appear while typing.</div>`;
+    MR_.lines=lines;
+    const collect=()=>{body.querySelectorAll('[data-l]').forEach(i=>{const x=MR_.lines[+i.dataset.l];x[i.dataset.k]=i.dataset.k==='amount'?Number(String(i.value).replace(/[^\d.]/g,''))||0:i.value.trim();});};
+    body.querySelector('[data-sp="month"]').addEventListener('change',e=>{MR_.spMonth=e.target.value;if(MR_.spMonth<MR_.from||MR_.spMonth>MR_.to){MR_.from=MR_.spMonth<MR_.from?MR_.spMonth:MR_.from;MR_.to=MR_.spMonth>MR_.to?MR_.spMonth:MR_.to;MR_.data=null;mrLoad_();}else mrRender_();});
+    body.querySelector('[data-add]').addEventListener('click',()=>{collect();MR_.lines.push({source:'',campaign:'',amount:''});(D.spend=D.spend.filter(x=>x.month!==MR_.spMonth)).push(...MR_.lines.map(x=>({...x,month:MR_.spMonth})));mrRender_();});
+    body.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{collect();MR_.lines.splice(+b.dataset.del,1);D.spend=D.spend.filter(x=>x.month!==MR_.spMonth).concat(MR_.lines.map(x=>({...x,month:MR_.spMonth})));mrRender_();}));
+    body.querySelector('[data-savesp]').addEventListener('click',e=>{collect();const m=body.querySelector('[data-spmsg]');e.target.disabled=true;m.className='daMsg';m.textContent='Saving…';
+      google.script.run.withSuccessHandler(()=>{m.className='daMsg ok';m.textContent='Saved ✓';e.target.disabled=false;MR_.data=null;mrLoad_();})
+        .withFailureHandler(err=>{e.target.disabled=false;m.className='daMsg err';m.textContent=(err&&err.message)||err;}).saveMarketingSpend(AUTH_TOKEN,{month:MR_.spMonth,items:MR_.lines});});
+  }
+  body.querySelectorAll('[data-mr]').forEach(i=>i.addEventListener('change',()=>{MR_[i.dataset.mr]=i.value;MR_.data=null;mrLoad_();}));
+  body.querySelector('[data-camp]')?.addEventListener('change',e=>{MR_.camp=e.target.checked;mrRender_();});
+}
+(function(){const go=()=>{mrMount_();setInterval(mrMount_,2000);};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();})();
+</script>
