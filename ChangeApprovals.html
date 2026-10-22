@@ -1,0 +1,65 @@
+<style id="eden-change-approvals">
+.caSt{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:800}
+.caSt.p{background:rgba(224,165,38,.16);color:#9a6b00}.caSt.a{background:rgba(47,158,98,.12);color:#2f7d4f}.caSt.r{background:rgba(214,69,69,.12);color:#b3261e}
+.caChg{font-variant-numeric:tabular-nums}.caChg s{color:var(--ds-muted,#83796b)}.caChg b{color:var(--ds-heading,#16130f)}
+.caBar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.caSet{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px;padding:12px;border-radius:12px;border:1px dashed var(--ds-line,#e3d9c7)}
+.caSet input[type=text]{flex:1;min-width:240px;height:32px;border:1px solid var(--ds-line,#e3d9c7);border-radius:8px;padding:0 10px;font:inherit;background:var(--ds-surface,#fff);color:var(--ds-text)}
+</style>
+<script>
+/* =====================================================================
+   EDEN BI — Change Approvals (admins). Sensitive hand edits in the Deals
+   sheet (cancellation, refund, price / sales after the contract) wait here
+   and on Telegram. Approve keeps the edit; Reject puts the old value back.
+   ===================================================================== */
+const CA_={data:null,show:'p'};
+function caEsc_(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function caIsAdmin_(){const r=String((typeof AUTH_USER!=='undefined'&&AUTH_USER&&AUTH_USER.role)||'').trim().toLowerCase();return r==='admin'||r==='super admin';}
+function caMount_(){
+  const menu=document.querySelector('#transactionsModule .moduleMenu');if(!menu)return;
+  let b=menu.querySelector('[data-ca]');
+  if(!b){b=document.createElement('button');b.type='button';b.dataset.ca='1';b.innerHTML='Change Approvals <b class="caCount" style="display:none"></b>';b.addEventListener('click',caOpen_);
+    const after=menu.querySelector('[data-ic]')||menu.lastElementChild;if(after)after.insertAdjacentElement('afterend',b);else menu.appendChild(b);}
+  b.style.display=caIsAdmin_()?'':'none';
+}
+function caOpen_(){
+  caClose_();
+  const back=document.createElement('div');back.className='daBack';back.id='caBack';back.addEventListener('click',caClose_);
+  const el=document.createElement('section');el.className='da';el.id='ca';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');
+  el.innerHTML=`<div class="daHead"><div><small>Transactions</small><h2>Change Approvals</h2></div><div class="daTools"><button type="button" class="daBtn" data-ref>↻ Refresh</button><button type="button" class="daX" aria-label="Close">×</button></div></div><div class="daBody"><div class="daNote" style="text-align:center;padding:40px">Loading…</div></div>`;
+  document.body.append(back,el);
+  el.querySelector('.daX').addEventListener('click',caClose_);el.querySelector('[data-ref]').addEventListener('click',caLoad_);
+  document.addEventListener('keydown',caKey_);caLoad_();
+}
+function caClose_(){document.getElementById('ca')?.remove();document.getElementById('caBack')?.remove();document.removeEventListener('keydown',caKey_);}
+function caKey_(e){if(e.key==='Escape')caClose_();}
+function caLoad_(){google.script.run.withSuccessHandler(d=>{CA_.data=d;caRender_();}).withFailureHandler(err=>{const b=document.querySelector('#ca .daBody');if(b)b.innerHTML=`<div class="daNote daMsg err">${caEsc_((err&&err.message)||err)}</div>`;}).getChangeApprovals(AUTH_TOKEN);}
+function caRender_(){
+  const body=document.querySelector('#ca .daBody');if(!body||!CA_.data)return;
+  const D=CA_.data,rows=D.rows||[],cnt={p:rows.filter(r=>r.status==='Pending').length,a:rows.length};
+  const list=CA_.show==='p'?rows.filter(r=>r.status==='Pending'):rows;
+  const when=s=>s?new Date(s).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):'';
+  body.innerHTML=`<div class="caBar"><button type="button" class="daBtn${CA_.show==='p'?' ok':''}" data-show="p">Waiting <b>${cnt.p}</b></button><button type="button" class="daBtn${CA_.show==='a'?' ok':''}" data-show="a">All <b>${cnt.a}</b></button>
+      <span style="flex:1"></span>${D.off?'<span class="caSt r">Turned off</span>':''}</div>
+    ${list.length?`<table class="daTable"><thead><tr><th>When</th><th>Deal</th><th>Field</th><th>Change</th><th>By</th><th>Status</th><th></th></tr></thead><tbody>
+      ${list.map(r=>`<tr><td>${caEsc_(when(r.at))}</td><td><b>${caEsc_(r.unit)}</b><br><small class="daMuted">${caEsc_(r.client)} · row ${r.row}</small></td><td>${caEsc_(r.field)}</td>
+        <td class="caChg"><s>${caEsc_(r.old||'—')}</s> → <b>${caEsc_(r.now||'—')}</b></td><td>${caEsc_(r.by)}</td>
+        <td><span class="caSt ${r.status==='Pending'?'p':r.status==='Approved'?'a':'r'}">${caEsc_(r.status)}</span>${r.decidedBy?`<br><small class="daMuted">${caEsc_(r.decidedBy)} · ${caEsc_(when(r.decidedAt))}${r.note?' · '+caEsc_(r.note):''}</small>`:''}</td>
+        <td>${r.status==='Pending'?`<button type="button" class="daBtn ok" data-ok="${caEsc_(r.id)}">✅ Approve</button> <button type="button" class="daBtn no" data-no="${caEsc_(r.id)}">⛔ Reject &amp; undo</button>`:''}</td></tr>`).join('')}
+      </tbody></table>`:`<div class="daNote" style="text-align:center;padding:30px">${CA_.show==='p'?'✅ Nothing waiting for approval.':'No changes yet.'}</div>`}
+    <div class="caSet"><label style="display:flex;align-items:center;gap:6px;font-weight:700"><input type="checkbox" data-on${D.off?'':' checked'}> Require approval</label>
+      <span style="font-size:12px;color:var(--ds-muted)">No approval needed for (emails):</span><input type="text" data-ex value="${caEsc_(D.exempt)}"><button type="button" class="daBtn" data-saveset>Save</button></div>
+    <div class="daNote">Watched in the Deals sheet: cancellation date / reason / received money (always), and final price, discount, meter price after discount, unit code, sales name, shared with — once the contract date is filled. The edit stays in the sheet while waiting; <b>Reject &amp; undo</b> puts the old value back (only if nobody changed that cell again). Edits of several cells at once (paste) are not checked. Also on Telegram: buttons on each change, and /changes.</div>`;
+  body.querySelectorAll('[data-show]').forEach(b=>b.addEventListener('click',()=>{CA_.show=b.dataset.show;caRender_();}));
+  const act=(id,approve,btn)=>{let note='';if(!approve){note=prompt('Reason (optional):')||'';}btn.disabled=true;
+    google.script.run.withSuccessHandler(d=>{CA_.data=d;caRender_();caBadge_();}).withFailureHandler(err=>{btn.disabled=false;alert((err&&err.message)||err);}).decideChange(AUTH_TOKEN,{id,approve,note});};
+  body.querySelectorAll('[data-ok]').forEach(b=>b.addEventListener('click',()=>act(b.dataset.ok,true,b)));
+  body.querySelectorAll('[data-no]').forEach(b=>b.addEventListener('click',()=>{if(confirm('Reject this change and put the old value back in the sheet?'))act(b.dataset.no,false,b);}));
+  body.querySelector('[data-saveset]').addEventListener('click',e=>{e.target.disabled=true;
+    google.script.run.withSuccessHandler(d=>{CA_.data=d;caRender_();}).withFailureHandler(err=>{e.target.disabled=false;alert((err&&err.message)||err);})
+      .saveChangeApprovalSettings(AUTH_TOKEN,{off:!body.querySelector('[data-on]').checked,exempt:body.querySelector('[data-ex]').value});});
+  caBadge_();
+}
+function caBadge_(){const b=document.querySelector('#transactionsModule [data-ca] .caCount');if(!b||!CA_.data)return;const n=(CA_.data.rows||[]).filter(r=>r.status==='Pending').length;b.textContent=n;b.style.display=n?'':'none';}
+(function(){const go=()=>{caMount_();setInterval(caMount_,2000);};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();})();
+</script>

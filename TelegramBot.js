@@ -148,6 +148,7 @@ function telegramPollJob() {
 function tgOnButton_(q) {
   const data = String(q.data || '');
   if (data === 'noop') { tgApi_('answerCallbackQuery', { callback_query_id: q.id }); return; }
+  if (typeof caOnButton_ === 'function' && caOnButton_(q)) return;
   const m = data.match(/^da\|([AR])\|(\d+)\|(.*)$/);
   if (!m) { tgApi_('answerCallbackQuery', { callback_query_id: q.id }); return; }
   if (!tgIsApprover_(q.from)) {
@@ -213,8 +214,14 @@ function tgOnMessage_(msg) {
       if (r && r.ok) sent[instKey_(d.project, d.unit)] = { at: Date.now(), msg: r.result.message_id, row: d.row };
     });
     tgSentSave_(sent);
+  } else if (cmd === 'changes') {
+    const sh = caSheet_(), last = sh.getLastRow();
+    const pend = last < 2 ? [] : sh.getRange(2, 1, last - 1, CA_HEAD_.length).getValues().filter(r => String(r[11]) === 'Pending');
+    if (!pend.length) { tgApi_('sendMessage', { chat_id: msg.chat.id, text: '✅ No sheet changes waiting for approval.' }); return; }
+    pend.slice(-10).forEach(r => tgApi_('sendMessage', { chat_id: msg.chat.id, text: caText_(r), parse_mode: 'HTML',
+      reply_markup: { inline_keyboard: [[{ text: '✅ Approve', callback_data: 'ca|A|' + r[0] }, { text: '⛔ Reject & undo', callback_data: 'ca|R|' + r[0] }]] } }));
   } else if (cmd === 'help' || cmd === 'start') {
-    tgApi_('sendMessage', { chat_id: msg.chat.id, text: 'EDEN BI bot\n/pending — discounts waiting for approval (with buttons)\n/myid — your Telegram id' });
+    tgApi_('sendMessage', { chat_id: msg.chat.id, text: 'EDEN BI bot\n/pending — discounts waiting for approval (with buttons)\n/changes — sheet changes waiting for approval\n/myid — your Telegram id' });
   }
 }
 
