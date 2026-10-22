@@ -7,6 +7,19 @@ html[data-theme] #appRoot .dsTgSeg button{all:unset;cursor:pointer;padding:7px 1
 html[data-theme] #appRoot .dsTgSeg button.on{background:var(--ds-gold-grad);color:var(--ds-on-gold)}
 html[data-theme] #appRoot .dsTgBar select{height:36px;padding:0 12px;border-radius:10px;border:1px solid var(--ds-line);background:var(--ds-surface-2);color:var(--ds-text);font-weight:600;font-size:13px}
 html[data-theme] #appRoot .dsTgBar .grow{flex:1}
+html[data-theme] #appRoot .dsTgSt{position:relative}
+html[data-theme] #appRoot .dsTgSt>button{height:36px;max-width:340px;padding:0 12px;border-radius:10px;border:1px solid var(--ds-line);background:var(--ds-surface-2);color:var(--ds-muted);font-weight:600;font-size:12.5px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html[data-theme] #appRoot .dsTgSt>button b{color:var(--ds-text)}
+html[data-theme] #appRoot .dsTgSt>button.on{border-color:var(--ds-gold-line,#b08a42);background:var(--ds-gold-soft)}
+html[data-theme] #appRoot .dsTgSt>button.on b{color:var(--ds-gold-strong)}
+html[data-theme] #appRoot .dsTgStPop{position:absolute;top:calc(100% + 6px);left:0;z-index:60;width:280px;max-height:380px;display:flex;flex-direction:column;padding:8px;border-radius:12px;background:var(--ds-surface);border:1px solid var(--ds-line);box-shadow:0 14px 34px rgba(0,0,0,.18)}
+html[data-theme] #appRoot .dsTgStAct{display:flex;gap:6px;margin-bottom:6px}
+html[data-theme] #appRoot .dsTgStAct button{flex:1;height:28px;border-radius:8px;border:1px solid var(--ds-line);background:var(--ds-surface-2);font-size:11px;font-weight:700;cursor:pointer;color:var(--ds-text);white-space:nowrap}
+html[data-theme] #appRoot .dsTgStList{overflow:auto;display:flex;flex-direction:column}
+html[data-theme] #appRoot .dsTgStList label{display:flex;align-items:center;gap:8px;padding:6px;border-radius:7px;font-size:12.5px;cursor:pointer;color:var(--ds-text)}
+html[data-theme] #appRoot .dsTgStList label:hover{background:var(--ds-hover)}
+html[data-theme] #appRoot .dsTgStList label.zero{opacity:.5}
+html[data-theme] #appRoot .dsTgStList span{flex:1}html[data-theme] #appRoot .dsTgStList small{color:var(--ds-muted);font-variant-numeric:tabular-nums}
 html[data-theme] #appRoot .dsTgBtn{height:38px;padding:0 16px;border-radius:11px;border:0;background:var(--ds-gold-grad);color:var(--ds-on-gold);font-weight:700;font-size:13px;cursor:pointer}
 html[data-theme] #appRoot .dsTgHero{display:grid;grid-template-columns:1.4fr 1fr;gap:14px}
 html[data-theme] #appRoot .dsTgCard{border:1px solid var(--ds-line);border-radius:16px;background:var(--ds-surface);box-shadow:var(--ds-shadow);padding:18px 20px}
@@ -63,6 +76,7 @@ html[data-theme] #appRoot .dsTgEmpty{padding:24px;text-align:center;color:var(--
    rule: own deals 100%, shared deals 50%. Cancelled deals don't count.
    ===================================================================== */
 const DS_TG_MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+let DS_TG_ST=null;try{DS_TG_ST=JSON.parse(localStorage.getItem('edenTgStatus')||'null');}catch(e){}
 const DS_TG={period:'Monthly',year:new Date().getFullYear(),month:new Date().getMonth()+1,quarter:Math.floor(new Date().getMonth()/3)+1,cur:'EGP',tab:'Sales'};
 
 function dsTgIsAdmin_(){return typeof isCurrentAdmin==='function'&&isCurrentAdmin();}
@@ -80,9 +94,39 @@ function dsTgRows_(){
   const months=new Set(dsTgMonthsOf_());
   return (typeof rawRows!=='undefined'?rawRows:[]).filter(r=>
     Number(r.year)===Number(DS_TG.year)&&months.has(dsTgRowMonth_(r))&&
-    !(typeof isCancelledStatus_==='function'?isCancelledStatus_(r.status):/^cancel/i.test(String(r.status||'')))&&
-    projectCurrency_(r)===DS_TG.cur);
+    dsTgStatusOk_(r)&&projectCurrency_(r)===DS_TG.cur);
 }
+/* Deal status filter: null = every status except Cancel (default); otherwise the picked statuses. */
+function dsTgIsCancel_(st){return typeof isCancelledStatus_==='function'?isCancelledStatus_(st):/^cancel/i.test(String(st||''));}
+function dsTgStLabel_(r){return String(r.status||'').trim()||'(No status)';}
+function dsTgStatusOk_(r){return Array.isArray(DS_TG_ST)?DS_TG_ST.includes(dsTgStLabel_(r)):!dsTgIsCancel_(r.status);}
+function dsTgStSave_(){try{localStorage.setItem('edenTgStatus',JSON.stringify(DS_TG_ST));}catch(e){}}
+function dsTgStText_(){
+  if(!Array.isArray(DS_TG_ST))return 'All except Cancel';
+  if(!DS_TG_ST.length)return 'None';
+  return DS_TG_ST.length>2?DS_TG_ST.slice(0,2).join(', ')+' +'+(DS_TG_ST.length-2):DS_TG_ST.join(', ');
+}
+/* Counts per status in the chosen period / currency (before the status filter). */
+function dsTgStCounts_(){
+  const months=new Set(dsTgMonthsOf_()),c={};
+  (typeof rawRows!=='undefined'?rawRows:[]).forEach(r=>{const k=dsTgStLabel_(r);if(!(k in c))c[k]=0;
+    if(Number(r.year)===Number(DS_TG.year)&&months.has(dsTgRowMonth_(r))&&projectCurrency_(r)===DS_TG.cur)c[k]++;});
+  return c;
+}
+function dsTgStPop_(btn){
+  document.querySelector('.dsTgStPop')?.remove();
+  const c=dsTgStCounts_(),list=Object.keys(c).sort((a,b)=>(c[b]>0)-(c[a]>0)||c[b]-c[a]||a.localeCompare(b));
+  const on=k=>Array.isArray(DS_TG_ST)?DS_TG_ST.includes(k):!dsTgIsCancel_(k);
+  const pop=document.createElement('div');pop.className='dsTgStPop';
+  pop.innerHTML=`<div class="dsTgStAct"><button type="button" data-st="def">All except Cancel</button><button type="button" data-st="all">All</button><button type="button" data-st="none">Clear</button></div>
+    <div class="dsTgStList">${list.map(k=>`<label class="${c[k]?'':'zero'}"><input type="checkbox" value="${dsTgEsc_(k)}"${on(k)?' checked':''}><span>${dsTgEsc_(k)}</span><small>${c[k]}</small></label>`).join('')}</div>`;
+  btn.parentElement.appendChild(pop);
+  const apply=()=>{dsTgStSave_();dsTargetsRender_();const b=document.querySelector('#dsTargets [data-tg-st]');if(b)dsTgStPop_(b);};
+  pop.addEventListener('click',e=>{e.stopPropagation();const a=e.target.closest('[data-st]');if(!a)return;
+    DS_TG_ST=a.dataset.st==='def'?null:a.dataset.st==='all'?list.slice():[];apply();});
+  pop.addEventListener('change',e=>{DS_TG_ST=[...pop.querySelectorAll('input:checked')].map(i=>i.value);apply();});
+}
+document.addEventListener('click',e=>{if(!e.target.closest('.dsTgSt'))document.querySelector('.dsTgStPop')?.remove();});
 /* Elapsed share of the period (0..1) for the pace marker. */
 function dsTgPace_(){
   const ms=dsTgMonthsOf_(),start=new Date(DS_TG.year,ms[0]-1,1),end=new Date(DS_TG.year,ms[ms.length-1],1),now=new Date();
@@ -191,6 +235,7 @@ function dsTgMount_(){
   el.id='dsTargets';el.className='dsTg hidden';
   anchor.insertAdjacentElement('afterend',el);
   el.addEventListener('click',e=>{
+    const st=e.target.closest('[data-tg-st]');if(st){e.stopPropagation();if(st.parentElement.querySelector('.dsTgStPop'))st.parentElement.querySelector('.dsTgStPop').remove();else dsTgStPop_(st);return;}
     const b=e.target.closest('[data-tg]');if(!b)return;
     const [k,v]=b.dataset.tg.split(':');
     if(k==='period')DS_TG.period=v;
@@ -273,6 +318,7 @@ function dsTargetsRender_(){
       ${DS_TG.period==='Quarterly'?sel('quarter',[[1,'Q1'],[2,'Q2'],[3,'Q3'],[4,'Q4']],DS_TG.quarter):''}
       ${sel('year',years.map(y=>[y,y]),DS_TG.year)}
       ${seg('cur',[['EGP','EGP'],['USD','USD']],cur)}
+      <div class="dsTgSt"><button type="button" data-tg-st class="${Array.isArray(DS_TG_ST)?'on':''}" title="Which deal statuses count as achieved">Deal status: <b>${dsTgEsc_(dsTgStText_())}</b> ▾</button></div>
       <span class="grow"></span>
       ${admin?'<button type="button" class="dsTgBtn" data-tg="manage:1">Manage targets</button>':''}
     </div>
@@ -314,7 +360,7 @@ function dsTargetsRender_(){
           <span class="dsTgChip ${cls}">${txt}</span>
           ${admin?`<button type="button" class="dsTgSet" data-tg="set:1" data-scope="${DS_TG.tab}" data-name="${dsTgEsc_(g.name)}">${g.t&&!g.est?'Edit':'Set'}</button>`:'<span></span>'}
         </div>`;}).join(''):`<div class="dsTgEmpty">No ${cur} sales in ${dsTgEsc_(dsTgPeriodLabel_())}.</div>`}</div>
-      <p class="dsTgNote">Achieved = deals in the period except Cancel. Salespeople and managers get 100% of their own deals and 50% of shared deals. “est.” = taken from a quarterly or yearly target.</p>
+      <p class="dsTgNote">Achieved = deals in the period with the chosen deal status (${dsTgEsc_(dsTgStText_())}). Salespeople and managers get 100% of their own deals and 50% of shared deals. “est.” = taken from a quarterly or yearly target.</p>
     </div>`;
 }
 
