@@ -77,3 +77,55 @@ function saveCommSetup(authToken, setup) {
   auditLog_(user, 'Commission setup saved', { details: clean.staff.length + ' staff · ' + clean.roles.map(r => r.role + ' ' + r.target).join(', ') });
   return clean;
 }
+
+/* ---------- Manual eligibility per deal ----------
+   Besides the automatic rule (DP paid % range, not cancelled), an admin can tick a
+   deal in (counts) or out (doesn't count). Kept in the hidden sheet "_Comm Overrides":
+   Key | Include | Label | By | At.  Key = project|unit|client|reservation date. */
+const COMM_OV_SHEET_ = '_Comm Overrides';
+function commOvSheet_() {
+  const ss = targetsSpreadsheet_();
+  let sh = ss.getSheetByName(COMM_OV_SHEET_);
+  if (!sh) {
+    sh = ss.insertSheet(COMM_OV_SHEET_);
+    sh.getRange(1, 1, 1, 5).setValues([['Key', 'Include', 'Deal', 'By', 'At']]).setFontWeight('bold');
+    sh.setFrozenRows(1);
+    try { sh.hideSheet(); } catch (e) {}
+  }
+  return sh;
+}
+function getCommOverrides(authToken) {
+  commAdmin_(authToken);
+  const sh = commOvSheet_(), last = sh.getLastRow(), out = {};
+  if (last < 2) return out;
+  sh.getRange(2, 1, last - 1, 5).getValues().forEach(r => {
+    const k = String(r[0] || '').trim();
+    if (k) out[k] = { inc: r[1] === true || String(r[1]).toUpperCase() === 'TRUE', by: String(r[3] || ''), at: r[4] instanceof Date ? r[4].toISOString() : String(r[4] || '') };
+  });
+  return out;
+}
+/* items: [{key, inc: true|false|null, label}] — null removes the override (back to automatic). */
+function setCommOverrides(authToken, items) {
+  const user = commAdmin_(authToken);
+  items = (Array.isArray(items) ? items : []).map(i => ({ key: String(i && i.key || '').trim(), inc: i && i.inc === null ? null : !!(i && i.inc), label: String(i && i.label || '').slice(0, 200) })).filter(i => i.key);
+  if (!items.length) return getCommOverrides(authToken);
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    const sh = commOvSheet_(), last = sh.getLastRow();
+    let rows = last >= 2 ? sh.getRange(2, 1, last - 1, 5).getValues() : [];
+    const now = new Date(), who = (user && (user.name || user.username)) || '';
+    let inc = 0, exc = 0, auto = 0;
+    items.forEach(it => {
+      const idx = rows.findIndex(r => String(r[0]).trim() === it.key);
+      if (it.inc === null) { if (idx >= 0) rows.splice(idx, 1); auto++; return; }
+      const rec = [it.key, it.inc, it.label, who, now];
+      if (idx >= 0) rows[idx] = rec; else rows.push(rec);
+      it.inc ? inc++ : exc++;
+    });
+    if (rows.length) sh.getRange(2, 1, rows.length, 5).setValues(rows);
+    const extra = Math.max(0, (last - 1) - rows.length);
+    if (extra) sh.getRange(2 + rows.length, 1, extra, 5).clearContent();
+    auditLog_(user, 'Commission deals chosen', { details: (inc ? inc + ' included ' : '') + (exc ? exc + ' excluded ' : '') + (auto ? auto + ' back to automatic' : '') + (items.length === 1 ? ' · ' + items[0].label : '') });
+  } finally { lock.releaseLock(); }
+  return getCommOverrides(authToken);
+}

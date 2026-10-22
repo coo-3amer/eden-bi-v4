@@ -15,6 +15,12 @@
 .icFilters{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;padding:10px 18px 0}
 .icFilters label{display:flex;flex-direction:column;gap:3px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ds-muted,#83796b)}
 .icFilters input,.icFilters select{height:32px!important}
+.icDlBar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}.icDlBar .daBtn b{margin-left:4px}
+.icDl tr.off td{opacity:.55}.icDl tr.man td{background:rgba(176,138,66,.07)}.icDl tr.off.man td{opacity:.75}
+.icDl input[type=checkbox]{width:18px;height:18px;cursor:pointer;accent-color:#a8843f}
+.icHow{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;background:var(--ds-surface-2,#f3ede2);color:var(--ds-muted,#83796b)}
+.icHow.man{background:rgba(176,138,66,.16);color:#8f6d2c}
+.icUndo{all:unset;cursor:pointer;margin-left:4px;padding:1px 6px;border-radius:6px;font-weight:800;color:#8f6d2c}.icUndo:hover{background:rgba(176,138,66,.15)}
 .icTc{font-size:10.5px;font-weight:700;color:var(--ds-gold-strong,#8f6d2c)}
 .icMsWrap{display:flex;flex-wrap:wrap;gap:8px;width:100%;order:9}
 .icGrp{display:flex;flex-direction:column;gap:4px;padding:6px 10px 8px;border:1px solid var(--ds-line,#e8e0d1);border-radius:12px;background:var(--ds-surface-2,#faf6ef)}
@@ -54,7 +60,7 @@ html.edenEgv [data-eden-commissions],html.edenEgv [data-ic],html.edenEgv [data-b
    on all the month's deals or only their team's (Sales Manager / Head of Sales).
    Settings: getCommSetup / saveCommSetup (CommissionSetup.js).
    ===================================================================== */
-const IC_={setup:null,tab:'sales',from:'',to:'',sel:null,q:'',dpMin:9,dpMax:null,open:{},busy:false,draft:null};
+const IC_={ov:{},dl:'all',setup:null,tab:'sales',from:'',to:'',sel:null,q:'',dpMin:9,dpMax:null,open:{},busy:false,draft:null};
 const IC_SCHEMES_={tiers:'Sales tiers (target)',pct:'% of sales',perDeal:'EGP per contract',perMillion:'EGP per 1M'};
 function icEsc_(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function icN_(n,d=0){return Number(n||0).toLocaleString('en-US',{maximumFractionDigits:d});}
@@ -99,20 +105,33 @@ const IC_MF_=[
 const IC_MF_GROUPS_=[['',['project','status']],['Sales team',['branch','manager','sales','dealType','sharedWith','commission']],['Source',['mainSource','sourceType','campaign','mediaBuyer','brokerage']],['Client',['clientType','unitType']]];
 function icMsGroupsHtml_(){return IC_MF_GROUPS_.map(([g,keys])=>`<div class="icGrp">${g?`<em>${g}</em>`:''}<div>${keys.map(k=>icMsHtml_(IC_MF_.find(f=>f[0]===k))).join('')}</div></div>`).join('');}
 const icVals_=(f,r)=>[].concat(f[2](r)).map(x=>String(x??'').trim()).filter(Boolean);
-function icDeals_(){
+/* Deals inside the dates + filters (any DP %, cancelled included) — the "All deals" list. */
+function icCancelled_(r){return typeof isCancelledStatus_==='function'?isCancelledStatus_(r.status):/^cancel/i.test(String(r.status||''));}
+function icInScope_(){
   const rows=(typeof rawRows!=='undefined'&&rawRows)||[],sel=IC_.sel||{};
-  const cancelled=r=>typeof isCancelledStatus_==='function'?isCancelledStatus_(r.status):/^cancel/i.test(String(r.status||''));
   return rows.filter(r=>{
     const d=icDealDay_(r);if(!d||(IC_.from&&d<IC_.from)||(IC_.to&&d>IC_.to))return false;
     if(!(Number(r.amount)>0))return false;
-    // cancelled deals never count unless "Cancel" is picked in Status
-    if(cancelled(r)&&!(sel.status||[]).some(v=>/^cancel/i.test(v)))return false;
     if(IC_.q&&!Object.values(r).join(' ').toLowerCase().includes(IC_.q))return false;
-    for(const f of IC_MF_){const want=sel[f[0]];if(want&&want.length&&!icVals_(f,r).some(v=>want.includes(v)))return false;}
-    const p=icDpPct_(r);if(IC_.dpMin!=null&&p<IC_.dpMin-1e-9)return false;if(IC_.dpMax!=null&&p>IC_.dpMax+1e-9)return false;
+    for(const f of IC_MF_){if(f[0]==='status')continue;const want=sel[f[0]];if(want&&want.length&&!icVals_(f,r).some(v=>want.includes(v)))return false;}
     return true;
   });
 }
+/* The automatic rule: [eligible, reason]. */
+function icAuto_(r){
+  const sel=IC_.sel||{},st=sel.status||[];
+  if(st.length&&!st.includes(String(r.status||'').trim()))return [false,'Status '+(r.status||'—')];
+  if(icCancelled_(r)&&!st.some(v=>/^cancel/i.test(v)))return [false,'Cancelled'];
+  const p=icDpPct_(r);
+  if(IC_.dpMin!=null&&p<IC_.dpMin-1e-9)return [false,'DP '+icN_(p,2)+'% < '+IC_.dpMin+'%'];
+  if(IC_.dpMax!=null&&p>IC_.dpMax+1e-9)return [false,'DP '+icN_(p,2)+'% > '+IC_.dpMax+'%'];
+  return [true,'DP '+icN_(p,2)+'%'];
+}
+function icDealKey_(r){return [r.project,r.unitCode,r.clientName,icDealDay_(r)].map(v=>String(v??'').trim().toLowerCase().replace(/\s+/g,' ')).join('|');}
+function icOv_(r){const o=(IC_.ov||{})[icDealKey_(r)];return o?o.inc:null;}
+function icEligible_(r){const o=icOv_(r);return o===null?icAuto_(r)[0]:o;}
+/* Deals that earn commission: automatic rule, unless picked by hand. */
+function icDeals_(){return icInScope_().filter(icEligible_);}
 function icMsHtml_(f){
   const want=(IC_.sel||{})[f[0]]||[];
   const lab=want.length?(want.length>2?want.slice(0,2).join(', ')+' +'+(want.length-2):want.join(', ')):'All';
@@ -220,6 +239,7 @@ function icOpen_(){
   el.querySelector('[data-q]').addEventListener('input',e=>{clearTimeout(IC_.qt);IC_.qt=setTimeout(()=>{IC_.q=e.target.value.trim().toLowerCase();icRender_(true);},250);});
   el.querySelector('[data-clearf]').addEventListener('click',()=>{IC_.q='';el.querySelector('[data-q]').value='';IC_.sel={project:IC_.setup&&IC_.setup.project?[IC_.setup.project]:[]};IC_.dpMin=9;IC_.dpMax=null;el.querySelector('[data-f="dpMin"]').value=9;el.querySelector('[data-f="dpMax"]').value='';icRender_();});
   document.addEventListener('keydown',icKey_);
+  google.script.run.withSuccessHandler(o=>{IC_.ov=o||{};icRender_();}).withFailureHandler(()=>{IC_.ov=IC_.ov||{};}).getCommOverrides(AUTH_TOKEN);
   google.script.run.withSuccessHandler(s=>{IC_.setup=s;if(!IC_.sel)IC_.sel={project:s.project?[s.project]:[]};icRender_();})
     .withFailureHandler(err=>{const b=el.querySelector('.daBody');if(b)b.innerHTML=`<div class="daNote daMsg err" style="text-align:center;padding:40px">Could not load.<br>${icEsc_(err&&err.message||err)}</div>`;})
     .getCommSetup(AUTH_TOKEN);
@@ -231,10 +251,11 @@ function icRender_(keepFilters){
   const ff=el.querySelector('.icFilters');if(ff)ff.style.display=IC_.tab==='setup'?'none':'';
   const mw=el.querySelector('.icMsWrap');if(mw&&!keepFilters)mw.innerHTML=icMsGroupsHtml_();
   const sales=icSales_(),others=icOthers_();
-  el.querySelector('.daTabs').innerHTML=[['sales','Sales team',sales.length],['others','Other departments',others.length],['setup','Setup','']].map(([k,l,n])=>`<button type="button" class="daTab${IC_.tab===k?' on':''}" data-tab="${k}">${l}${n!==''?`<b>${n}</b>`:''}</button>`).join('');
+  el.querySelector('.daTabs').innerHTML=[['sales','Sales team',sales.length],['others','Other departments',others.length],['deals','All deals · choose',icInScope_().length],['setup','Setup','']].map(([k,l,n])=>`<button type="button" class="daTab${IC_.tab===k?' on':''}" data-tab="${k}">${l}${n!==''?`<b>${n}</b>`:''}</button>`).join('');
   el.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{IC_.tab=b.dataset.tab;IC_.draft=null;icRender_();}));
   const body=el.querySelector('.daBody');
   if(IC_.tab==='setup'){icSetup_(body);return;}
+  if(IC_.tab==='deals'){icDealsTab_(body);return;}
   const deals=icDeals_(),total=deals.reduce((a,r)=>a+(Number(r.amount)||0),0);
   const sc=sales.reduce((a,p)=>a+p.comm,0),oc=others.reduce((a,p)=>a+p.comm,0);
   let html=`<div class="icKpis"><div class="icKpi"><span>${icEsc_(icRangeLabel_())} · sales</span><b>${icN_(total)}</b></div><div class="icKpi"><span>Deals</span><b>${deals.length}</b></div>
@@ -254,7 +275,7 @@ function icRender_(keepFilters){
       });
       html+=`</tbody></table>`;
     }
-    html+=`<div class="daNote">Deals counted by their <b>reservation date</b> inside the chosen dates; cancelled deals are left out; only deals whose <b>DP paid %</b> (Actual Paid ÷ Final Price) is in the chosen range count (default from 9%). Targets are monthly — for a longer range the target is multiplied by the number of months (${icMonths_()}). Credited sales = own deals in full + ${icPct_(IC_.setup.shareSplit,0)} of each share deal. The month's achievement (credited ÷ target) sets the rate for <b>all</b> that person's deals. Direct = Main Source “Direct”; Private = “Private” in the source; everything else In-direct. Click a row to see its deals. Roles and rates are in <b>Setup</b>.</div>`;
+    html+=`<div class="daNote">Deals counted by their <b>reservation date</b> inside the chosen dates; cancelled deals are left out; only deals whose <b>DP paid %</b> (Actual Paid ÷ Final Price) is in the chosen range count (default from 9%) — or that you ticked by hand in <b>All deals · choose</b>. Targets are monthly — for a longer range the target is multiplied by the number of months (${icMonths_()}). Credited sales = own deals in full + ${icPct_(IC_.setup.shareSplit,0)} of each share deal. The month's achievement (credited ÷ target) sets the rate for <b>all</b> that person's deals. Direct = Main Source “Direct”; Private = “Private” in the source; everything else In-direct. Click a row to see its deals. Roles and rates are in <b>Setup</b>.</div>`;
   }else{
     if(!others.length)html+=`<div class="daNote" style="text-align:center;padding:30px">No staff from other departments yet — add them in <b>Setup</b>.</div>`;
     else{
@@ -270,6 +291,49 @@ function icRender_(keepFilters){
   }
   body.innerHTML=html;
   body.querySelectorAll('[data-open]').forEach(tr=>tr.addEventListener('click',()=>{const p=sales[+tr.dataset.open];IC_.open[p.name]=!IC_.open[p.name];icRender_();}));
+}
+/* ---------- All deals · choose ---------- */
+function icDealsTab_(body){
+  const all=icInScope_(),info=all.map(r=>{const a=icAuto_(r),o=icOv_(r);return {r,auto:a[0],why:a[1],ov:o,on:o===null?a[0]:o};});
+  const cnt={all:info.length,on:info.filter(x=>x.on).length,off:info.filter(x=>!x.on).length,manual:info.filter(x=>x.ov!==null).length};
+  const stick=IC_.dlStick||(IC_.dlStick=new Set());
+  const list=info.filter(x=>stick.has(icDealKey_(x.r))||(IC_.dl==='on'?x.on:IC_.dl==='off'?!x.on:IC_.dl==='manual'?x.ov!==null:true))
+    .sort((a,b)=>String(icDealDay_(b.r)).localeCompare(String(icDealDay_(a.r))));
+  const val=info.filter(x=>x.on).reduce((a,x)=>a+(Number(x.r.amount)||0),0);
+  const chip=(k,l)=>`<button type="button" class="daBtn${IC_.dl===k?' ok':''}" data-dl="${k}">${l} <b>${cnt[k]}</b></button>`;
+  body.innerHTML=`<div class="icKpis"><div class="icKpi"><span>Deals in range</span><b>${cnt.all}</b></div><div class="icKpi gold"><span>Earn commission</span><b>${cnt.on}</b></div>
+      <div class="icKpi"><span>Value that earns</span><b>${icN_(val)}</b></div><div class="icKpi"><span>Chosen by hand</span><b>${cnt.manual}</b></div></div>
+    <div class="icDlBar">${chip('all','All')}${chip('on','✓ Earn')}${chip('off','✗ Not')}${chip('manual','✋ By hand')}
+      <span style="flex:1"></span><span class="daMsg" data-dlmsg></span>
+      <button type="button" class="daBtn" data-bulk="1" title="Tick every deal shown">✓ Tick all shown</button><button type="button" class="daBtn" data-bulk="0" title="Untick every deal shown">✗ Untick all shown</button><button type="button" class="daBtn" data-bulk="auto" title="Back to the automatic rule for the deals shown">↺ Automatic for shown</button></div>
+    ${list.length?`<table class="daTable icDl"><thead><tr><th style="width:44px">Earns</th><th>How</th><th>Unit</th><th>Client</th><th>Sales</th><th>Status</th><th>Reservation</th><th class="num">Value</th><th class="num">DP paid</th></tr></thead><tbody>
+      ${list.map(x=>{const r=x.r,i=info.indexOf(x),sh=typeof isShareDeal_==='function'&&isShareDeal_(r);
+        return `<tr class="${x.on?'':'off'}${x.ov!==null?' man':''}"><td><input type="checkbox" data-dk="${i}"${x.on?' checked':''}></td>
+          <td>${x.ov===null?`<span class="icHow">Auto</span> <small class="daMuted">${icEsc_(x.why)}</small>`:`<span class="icHow man">✋ ${x.on?'Included':'Excluded'} by hand</span> <small class="daMuted">auto: ${x.auto?'yes':'no'} (${icEsc_(x.why)})</small> <button type="button" class="icUndo" data-undo="${i}" title="Back to automatic">↺</button>`}</td>
+          <td><b>${icEsc_(r.unitCode||'')}</b></td><td>${icEsc_(r.clientName||'')}</td><td>${icEsc_(r.salesName||'')}${sh&&r.sharedWith?` <small class="daMuted">+ ${icEsc_(r.sharedWith)}</small>`:''}</td>
+          <td>${icEsc_(r.status||'')}</td><td>${icEsc_(icDealDay_(r))}</td><td class="num">${icN_(r.amount)}</td><td class="num">${icN_(icDpPct_(r),2)}%</td></tr>`;}).join('')}</tbody></table>`
+      :`<div class="daNote" style="text-align:center;padding:30px">No deals here.</div>`}
+    <div class="daNote">All deals in the chosen dates and filters, whatever their DP paid %. <b>Auto</b> = the automatic rule (DP paid % range${IC_.dpMin!=null?' from '+IC_.dpMin+'%':''}${IC_.dpMax!=null?' to '+IC_.dpMax+'%':''}, not cancelled). Tick or untick a deal to decide by hand — your choice wins over the rule and is saved for everyone; ↺ puts it back to automatic.</div>`;
+  const save=(items,msg)=>{
+    items.forEach(it=>stick.add(it.key));
+    const m=body.querySelector('[data-dlmsg]');m.className='daMsg';m.textContent='Saving…';
+    // show it right away
+    items.forEach(it=>{if(it.inc===null)delete IC_.ov[it.key];else IC_.ov[it.key]={inc:it.inc};});
+    google.script.run.withSuccessHandler(o=>{IC_.ov=o||{};icRender_(true);const mm=document.querySelector('#ic [data-dlmsg]');if(mm){mm.className='daMsg ok';mm.textContent=msg||'Saved ✓';}})
+      .withFailureHandler(err=>{const mm=document.querySelector('#ic [data-dlmsg]');if(mm){mm.className='daMsg err';mm.textContent=(err&&err.message)||String(err);}})
+      .setCommOverrides(AUTH_TOKEN,items);
+    icRender_(true);
+  };
+  const label=r=>[r.unitCode,r.clientName,icDealDay_(r)].filter(Boolean).join(' · ');
+  body.querySelectorAll('[data-dl]').forEach(b=>b.addEventListener('click',()=>{IC_.dl=b.dataset.dl;stick.clear();icRender_(true);}));
+  body.querySelectorAll('[data-dk]').forEach(c=>c.addEventListener('change',()=>{const x=info[+c.dataset.dk];
+    // ticking back to what the rule says = automatic again
+    save([{key:icDealKey_(x.r),inc:c.checked===x.auto?null:c.checked,label:label(x.r)}]);}));
+  body.querySelectorAll('[data-undo]').forEach(b=>b.addEventListener('click',()=>{const x=info[+b.dataset.undo];save([{key:icDealKey_(x.r),inc:null,label:label(x.r)}],'Back to automatic ✓');}));
+  body.querySelectorAll('[data-bulk]').forEach(b=>b.addEventListener('click',()=>{
+    if(!list.length)return;const v=b.dataset.bulk;
+    if(!confirm((v==='auto'?'Put ':v==='1'?'Tick ':'Untick ')+list.length+' deal(s)'+(v==='auto'?' back to automatic':'')+'?'))return;
+    save(list.map(x=>({key:icDealKey_(x.r),inc:v==='auto'?null:(v==='1')===x.auto?null:v==='1',label:label(x.r)})));}));
 }
 /* ---------- Setup ---------- */
 function icSetup_(body){
@@ -328,6 +392,13 @@ function icSetup_(body){
 function icExcel_(){
   if(!IC_.setup||typeof edenXlsxDownload_!=='function')return;
   const label=icRangeLabel_()+((IC_.sel&&IC_.sel.project||[]).length?' · '+IC_.sel.project.join(', '):'')+(IC_.dpMin!=null||IC_.dpMax!=null?' · DP paid '+(IC_.dpMin??0)+'%'+(IC_.dpMax!=null?'–'+IC_.dpMax+'%':'+'):'');
+  if(IC_.tab==='deals'){
+    const rows=icInScope_().map(r=>{const a=icAuto_(r),o=icOv_(r),on=o===null?a[0]:o;
+      return [on?'Yes':'No',o===null?'Auto':(o?'Included by hand':'Excluded by hand'),a[1],r.unitCode||'',r.clientName||'',r.salesName||'',r.sharedWith||'',r.status||'',icDealDay_(r),Number(r.amount)||0,icN_(icDpPct_(r),2)+'%'];});
+    edenXlsxDownload_('EDEN commission deals '+IC_.from+' to '+IC_.to,{title:'Internal commissions — deals that earn · '+label,sheetName:'Deals',
+      headers:['Earns','How','Rule','Unit','Client','Sales','Shared with','Status','Reservation date','Value','DP paid'],rows});
+    return;
+  }
   if(IC_.tab==='others'){
     const o=icOthers_();
     edenXlsxDownload_('EDEN internal commissions (other departments) '+IC_.from+' to '+IC_.to,{title:'Internal commissions — other departments · '+label,sheetName:'Other departments',
