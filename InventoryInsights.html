@@ -1,0 +1,121 @@
+<style id="eden-inv-insights">
+.iiSeg{display:inline-flex;flex-wrap:wrap;gap:4px;padding:3px;border-radius:999px;background:var(--ds-surface-2,#f6f1e8);border:1px solid var(--ds-line,#e8e0d1)}
+.iiSeg button{all:unset;cursor:pointer;padding:6px 12px;border-radius:999px;font-size:12.5px;font-weight:700;color:var(--ds-muted,#83796b)}
+.iiSeg button.on{background:var(--ds-gold-grad,linear-gradient(135deg,#c9a45c,#a07c3a));color:var(--ds-on-gold,#fff)}
+.iiBar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
+.iiSig{display:inline-block;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:800;white-space:nowrap}
+.iiSig.hot{background:rgba(214,69,69,.12);color:#b3261e}.iiSig.slow{background:rgba(70,120,190,.12);color:#2f5fa0}.iiSig.ok{background:var(--ds-surface-2,#f3ede2);color:var(--ds-muted,#83796b)}
+.iiTrack{display:inline-block;width:80px;height:7px;border-radius:9px;background:var(--ds-line,#e8e0d1);vertical-align:middle;margin-right:6px;overflow:hidden}.iiTrack i{display:block;height:100%;border-radius:9px;background:#b08a42}
+.iiGap.up{color:#2f9e62;font-weight:700}.iiGap.down{color:#b3261e;font-weight:700}
+.iiCards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.iiCards div{border:1px solid var(--ds-line,#e8e0d1);border-radius:12px;padding:10px 12px;background:var(--ds-surface-2,#faf6ef)}
+.iiCards span{display:block;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ds-muted,#83796b)}
+.iiCards b{display:block;margin-top:4px;font-size:18px;color:var(--ds-heading,#16130f);font-variant-numeric:tabular-nums}
+.iiH{margin:18px 0 8px;font-size:14px}
+</style>
+<script>
+/* =====================================================================
+   EDEN BI — Inventory › Demand & pricing.
+   For the project open in Inventory: every segment (floor, unit type,
+   area band, view, type) with units, sold %, sales in the last 90 days,
+   the price per m² actually sold vs the asking price of what is left,
+   and a signal:  🔥 hot = sells fast → room to raise the price;
+   🧊 slow = little sold and nothing in 90+ days → push / review price.
+   Plus the available units sitting in slow segments.
+   ===================================================================== */
+const II_={dim:'floor',days:90};
+function iiEsc_(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function iiN_(n){return Number(n||0).toLocaleString('en-US',{maximumFractionDigits:0});}
+function iiUnit_(s){return String(s||'').trim().replace(/\.+$/,'').toUpperCase();}
+function iiState_(st){const s=String(st||'').toLowerCase();
+  if(s==='available')return 'avail';if(s.includes('reserv'))return 'res';
+  if(/closed|sold|deliver|contract|signed|part of dp|total dp/.test(s))return 'sold';return 'other';}
+function iiArea_(a){a=Number(a)||0;if(!a)return 'Unknown';const b=[25,50,75,100,150,200,300,500];for(const x of b)if(a<=x)return '≤ '+x+' m²';return '> 500 m²';}
+function iiDim_(u){
+  if(II_.dim==='floor')return typeof edenFloorKey_==='function'?(edenFloorKey_(u.floor)||'—'):(u.floor||'—');
+  if(II_.dim==='unitType')return u.unitType||'—';
+  if(II_.dim==='area')return iiArea_(u.area);
+  if(II_.dim==='view')return u.view||'—';
+  return u.type||'—';
+}
+function iiDeals_(){
+  const inv=(typeof inventoryRows!=='undefined'&&inventoryRows)||[];
+  const norm=v=>{const t=String(v||'').trim().toUpperCase().replace(/[_\s]+/g,' ');return t==='CCG'?'CITY CENTER GLDANI':t;};
+  const P=norm(inv[0]&&inv[0].project);
+  const rows=(typeof rawRows!=='undefined'&&rawRows)||[];
+  const cancel=r=>typeof isCancelledStatus_==='function'?isCancelledStatus_(r.status):/^cancel/i.test(String(r.status||''));
+  const units=new Set(inv.map(u=>iiUnit_(u.unitCode)));
+  return rows.filter(r=>!cancel(r)&&units.has(iiUnit_(r.unitCode))&&(!P||norm(r.project)===P));
+}
+function iiDay_(r){const y=Number(r.year),m=Number(r.month);return y&&m?new Date(y,m-1,Number(r.day)||1):null;}
+function iiCompute_(){
+  const inv=(typeof inventoryRows!=='undefined'&&inventoryRows)||[],deals=iiDeals_(),now=new Date(),cut=new Date(now.getTime()-II_.days*864e5),cut12=new Date(now.getTime()-365*864e5);
+  const byUnit={};inv.forEach(u=>byUnit[iiUnit_(u.unitCode)]=u);
+  const seg={};
+  const S=k=>seg[k]||(seg[k]={k,units:0,avail:0,res:0,sold:0,other:0,recent:0,last:null,soldPm:[],askPm:[],availUnits:[]});
+  inv.forEach(u=>{const s=S(iiDim_(u)),st=iiState_(u.status);s.units++;s[st]++;
+    if(st==='avail'){s.availUnits.push(u);if(Number(u.meterPrice)>0)s.askPm.push(Number(u.meterPrice));}});
+  deals.forEach(r=>{const u=byUnit[iiUnit_(r.unitCode)];if(!u)return;const s=S(iiDim_(u)),d=iiDay_(r);
+    if(d&&d>=cut)s.recent++;if(d&&(!s.last||d>s.last))s.last=d;
+    const a=Number(u.area)||0,amt=Number(r.amount)||0;if(a>0&&amt>0&&d&&d>=cut12)s.soldPm.push(amt/a);});
+  const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
+  const list=Object.values(seg).map(s=>{
+    const sold=s.sold+s.res,sell=s.units?sold/s.units:0,soldPm=avg(s.soldPm),askPm=avg(s.askPm);
+    const idle=s.last?Math.round((now-s.last)/864e5):null;
+    let sig='ok';
+    if(s.avail>0&&sell>=0.7&&s.recent>=2)sig='hot';
+    else if(s.avail>0&&sell<0.35&&s.recent===0)sig='slow';
+    return {...s,sold,sell,soldPm,askPm,gap:soldPm&&askPm?(askPm-soldPm)/soldPm:null,idle,sig};
+  });
+  const order=typeof edenFloorOrder_==='function'&&II_.dim==='floor'?(a,b)=>edenFloorOrder_(a.k)-edenFloorOrder_(b.k):(a,b)=>b.units-a.units;
+  return {list:list.sort(order),inv,deals};
+}
+function iiOpen_(){
+  if(!(typeof inventoryRows!=='undefined'&&inventoryRows&&inventoryRows.length)){alert('Open a project inventory first.');return;}
+  iiClose_();
+  const back=document.createElement('div');back.className='daBack';back.id='iiBack';back.addEventListener('click',iiClose_);
+  const el=document.createElement('section');el.className='da';el.id='ii';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');
+  const title=(typeof inventoryMeta!=='undefined'&&inventoryMeta&&(inventoryMeta.title||inventoryMeta.project))||'Inventory';
+  el.innerHTML=`<div class="daHead"><div><small>Inventory · ${iiEsc_(title)}</small><h2>Demand &amp; pricing</h2></div><div class="daTools"><button type="button" class="daX" aria-label="Close">×</button></div></div><div class="daBody"></div>`;
+  document.body.append(back,el);
+  el.querySelector('.daX').addEventListener('click',iiClose_);
+  document.addEventListener('keydown',iiKey_);
+  iiRender_();
+}
+function iiClose_(){document.getElementById('ii')?.remove();document.getElementById('iiBack')?.remove();document.removeEventListener('keydown',iiKey_);}
+function iiKey_(e){if(e.key==='Escape')iiClose_();}
+function iiRender_(){
+  const el=document.getElementById('ii');if(!el)return;
+  const C=iiCompute_(),L=C.list,cur=(C.inv[0]&&C.inv[0].currency)||'';
+  const tot=k=>L.reduce((a,s)=>a+s[k],0),units=tot('units'),sold=tot('sold'),avail=tot('avail'),recent=tot('recent');
+  const seg=(k,vals,v)=>`<div class="iiSeg">${vals.map(([a,l])=>`<button type="button" data-ii="${k}:${a}" class="${String(v)===String(a)?'on':''}">${l}</button>`).join('')}</div>`;
+  const pct=x=>Math.round(x*100)+'%';
+  const slowUnits=L.filter(s=>s.sig==='slow').flatMap(s=>s.availUnits.map(u=>({u,s}))).slice(0,150);
+  el.querySelector('.daBody').innerHTML=`
+    <div class="iiBar">${seg('dim',[['floor','Floor'],['unitType','Unit type'],['area','Area'],['view','View'],['type','Type']],II_.dim)}
+      ${seg('days',[[60,'Last 60 days'],[90,'90 days'],[180,'180 days']],II_.days)}</div>
+    <div class="iiCards"><div><span>Units</span><b>${iiN_(units)}</b></div><div><span>Sold + reserved</span><b>${iiN_(sold)} · ${units?pct(sold/units):'0%'}</b></div>
+      <div><span>Available</span><b>${iiN_(avail)}</b></div><div><span>Sales in last ${II_.days} days</span><b>${iiN_(recent)}</b></div></div>
+    <table class="daTable"><thead><tr><th>${{floor:'Floor',unitType:'Unit type',area:'Area',view:'View',type:'Type'}[II_.dim]}</th><th class="num">Units</th><th>Sold %</th><th class="num">Available</th><th class="num">Sales ${II_.days}d</th><th class="num">Last sale</th><th class="num">Sold / m² (12m)</th><th class="num">Asking / m²</th><th class="num">Asking vs sold</th><th>Signal</th></tr></thead><tbody>
+      ${L.map(s=>`<tr><td><b>${iiEsc_(s.k)}</b></td><td class="num">${s.units}</td><td><span class="iiTrack"><i style="width:${Math.round(s.sell*100)}%"></i></span>${pct(s.sell)}</td><td class="num">${s.avail}</td><td class="num">${s.recent}</td>
+        <td class="num">${s.idle==null?'—':s.idle+' d ago'}</td><td class="num">${s.soldPm?iiN_(s.soldPm):'—'}</td><td class="num">${s.askPm?iiN_(s.askPm):'—'}</td>
+        <td class="num">${s.gap==null?'—':`<span class="iiGap ${s.gap>=0?'up':'down'}">${s.gap>=0?'+':''}${Math.round(s.gap*100)}%</span>`}</td>
+        <td>${s.sig==='hot'?'<span class="iiSig hot">🔥 Hot — room to raise price</span>':s.sig==='slow'?'<span class="iiSig slow">🧊 Slow — push / review price</span>':'<span class="iiSig ok">Steady</span>'}</td></tr>`).join('')}
+    </tbody></table>
+    <h3 class="iiH">🧊 Available units in slow segments (${slowUnits.length})</h3>
+    ${slowUnits.length?`<table class="daTable"><thead><tr><th>Unit</th><th>Floor</th><th>Unit type</th><th class="num">Area</th><th class="num">Asking / m²</th><th class="num">Total price</th><th>Segment last sale</th></tr></thead><tbody>
+      ${slowUnits.map(({u,s})=>`<tr><td><b>${iiEsc_(u.unitCode)}</b></td><td>${iiEsc_(u.floor)}</td><td>${iiEsc_(u.unitType)}</td><td class="num">${iiN_(u.area)}</td><td class="num">${u.meterPrice?iiN_(u.meterPrice):'—'}</td><td class="num">${u.totalPrice?iiN_(u.totalPrice):'—'}</td><td>${s.idle==null?'Never sold':s.idle+' days ago'}</td></tr>`).join('')}</tbody></table>`
+      :'<div class="daNote">No slow segments — every segment with stock has sold recently.</div>'}
+    <div class="daNote">Sold % = sold + reserved ÷ all units of the segment (inventory status). Sales = deals in Deals (not cancelled) on this project's units, by reservation date. Sold / m² = deal value ÷ unit area for deals in the last 12 months; Asking / m² = the inventory meter price of the units still available${cur?' ('+iiEsc_(cur)+')':''}. 🔥 Hot = 70%+ sold and 2+ sales in the period. 🧊 Slow = under 35% sold and no sale in the period.</div>`;
+  el.querySelectorAll('[data-ii]').forEach(b=>b.addEventListener('click',()=>{const [k,v]=b.dataset.ii.split(':');II_[k]=k==='days'?Number(v):v;iiRender_();}));
+}
+(function(){
+  const add=()=>{
+    const link=document.getElementById('inventorySheetLink');if(!link||document.getElementById('iiBtn'))return;
+    const b=document.createElement('button');b.type='button';b.id='iiBtn';b.className='btn';b.textContent='📊 Demand & pricing';
+    b.addEventListener('click',iiOpen_);link.insertAdjacentElement('beforebegin',b);
+  };
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add);else add();
+  setInterval(add,3000);
+})();
+</script>
