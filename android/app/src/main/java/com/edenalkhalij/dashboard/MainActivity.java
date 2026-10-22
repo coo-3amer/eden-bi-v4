@@ -205,6 +205,8 @@ public class MainActivity extends Activity {
         popup = new Dialog(this, android.R.style.Theme_Material_Light_NoActionBar_Fullscreen);
         popup.requestWindowFeature(Window.FEATURE_NO_TITLE);
         popup.setContentView(box);
+        // Pop-ups (statements, reports) are separate windows: block screenshots there too.
+        if (popup.getWindow() != null) popup.getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
         popup.setOnDismissListener(d -> {
             if (popupWeb != null) { popupWeb.destroy(); popupWeb = null; }
             popup = null;
