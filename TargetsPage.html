@@ -10,6 +10,7 @@ html[data-theme] #appRoot .dsTgBar .grow{flex:1}
 html[data-theme] #appRoot .dsTgSt{position:relative}
 html[data-theme] #appRoot .dsTgTop{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin-top:10px;padding:12px 14px;border-radius:12px;background:var(--ds-gold-soft);border:1px solid var(--ds-gold-line,rgba(176,138,66,.35))}
 html[data-theme] #appRoot .dsTgTop span{width:100%;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ds-gold-strong)}
+html[data-theme] #appRoot .dsTgTop.sell{background:var(--ds-surface-2);border-color:var(--ds-line)}
 html[data-theme] #appRoot .dsTgTop b{font-size:18px;color:var(--ds-heading)}
 html[data-theme] #appRoot .dsTgTop em{font-style:normal;font-size:13px;font-weight:700;color:var(--ds-gold-strong);font-variant-numeric:tabular-nums}
 html[data-theme] #appRoot .dsTgXl{background:var(--ds-surface-2);color:var(--ds-text);border:1px solid var(--ds-line)}
@@ -293,7 +294,7 @@ function dsTgExportData_(){
     [['Sales','Salesperson'],['Manager','Manager'],['Branch','Branch']].forEach(([tab,lab])=>{
       DS_TG.tab=tab;
       dsTgGroups_(rows).map(g=>{const t=dsTgTarget_(tab,g.name);return {...g,t:t.v,est:t.est,p:t.v?g.v/t.v*100:0};})
-        .sort((a,b)=>b.v-a.v||b.p-a.p)
+        .sort((a,b)=>((b.t&&b.p>=100)?1:0)-((a.t&&a.p>=100)?1:0)||b.v-a.v||b.p-a.p)
         .forEach((g,i)=>out.push({rank:i+1,level:lab,name:g.name,n:g.n,v:g.v,t:g.t,est:g.est,p:g.p,st:dsTgStatus_(g.p,!!g.t,pace)}));
     });
   }finally{DS_TG.tab=keep;}
@@ -314,7 +315,8 @@ function dsTgPdf_(){
   const D=dsTgExportData_(),cur=D.cur,E=dsTgEsc_,F=v=>Math.round(Number(v)||0).toLocaleString('en-US');
   const w=window.open('','_blank');if(!w){alert('Please allow pop-ups to export PDF.');return;}
   const co=D.out.find(x=>x.level==='Company');
-  const top=D.out.find(x=>x.level==='Salesperson');
+  const SP=D.out.filter(x=>x.level==='Salesperson');
+  const top=SP.filter(x=>x.t&&x.p>=100).sort((a,b)=>b.v-a.v)[0],seller=SP.slice().sort((a,b)=>b.v-a.v)[0];
   const col={ok:'#2e7d4f',track:'#8f6d2c',behind:'#b3261e',none:'#8a8174'};
   const section=(lab,title)=>{const L=D.out.filter(x=>x.level===lab);if(!L.length)return '';
     return `<h2>${title}</h2><table><thead><tr><th>#</th><th>Name</th><th class="n">Deals</th><th class="n">Achieved ${cur}</th><th class="n">Target ${cur}</th><th class="bar">Achievement</th><th>Status</th></tr></thead><tbody>
@@ -332,7 +334,7 @@ function dsTgPdf_(){
 .hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #b08a42;padding-bottom:10px;margin-bottom:14px}
 .brand{font-family:Georgia,serif;font-size:26px;letter-spacing:.18em;font-weight:700}.brand small{display:block;font-family:Arial;font-size:9px;letter-spacing:.3em;color:#8a7f70}
 .hd h1{margin:0;font-size:18px;text-align:right}.hd p{margin:3px 0 0;font-size:11px;color:#6f675b;text-align:right}
-.kp{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:14px}
 .kp div{border:1px solid #e6dcc8;border-radius:10px;padding:9px 11px;background:#fbf8f2}.kp span{display:block;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#8a7f70}.kp b{display:block;font-size:15px;margin-top:3px}
 .kp .g{background:#f6eedc;border-color:#d9c08c}
 h2{font-family:Georgia,serif;font-size:15px;margin:16px 0 6px;color:#3a3227}
@@ -350,10 +352,11 @@ td.bar{width:150px}.trk{display:inline-block;width:95px;height:7px;border-radius
   <div><span>Company achieved</span><b>${co?F(co.v)+' '+cur:'—'}</b></div>
   <div><span>Company target</span><b>${co&&co.t?F(co.t)+' '+cur:'Not set'}</b></div>
   <div><span>Achievement</span><b>${co&&co.t?co.p.toFixed(1)+'%':'—'}</b></div>
-  <div class="g"><span>🏆 Top achiever</span><b>${top?E(top.name):'—'}</b><span style="text-transform:none;letter-spacing:0;margin-top:2px">${top?F(top.v)+' '+cur:''}</span></div>
+  <div class="g"><span>🏆 Top achiever</span><b>${top?E(top.name):'No one yet'}</b><span style="text-transform:none;letter-spacing:0;margin-top:2px">${top?F(top.v)+' '+cur+' · '+top.p.toFixed(0)+'% of target':'Nobody reached the target'}</span></div>
+  ${seller&&seller.v&&(!top||seller.name!==top.name)?`<div><span>💰 Top seller</span><b>${E(seller.name)}</b><span style="text-transform:none;letter-spacing:0;margin-top:2px">${F(seller.v)} ${cur}${seller.t?' · '+seller.p.toFixed(0)+'% of target':''}</span></div>`:''}
 </div>
 ${section('Salesperson','Salespeople')}${section('Manager','Managers')}${section('Branch','Branches')}
-<div class="ft">Ranked by total sales amount. Salespeople and managers get 100% of their own deals and 50% of shared deals. “est.” = taken from a quarterly or yearly target.</div>
+<div class="ft">Target achievers first, then by total sales amount. Top achiever = highest sales among those who reached their target. Salespeople and managers get 100% of their own deals and 50% of shared deals. “est.” = taken from a quarterly or yearly target.</div>
 <script>window.onload=function(){setTimeout(function(){window.print();},400);}<\/script>
 </body></html>`);
   w.document.close();
@@ -389,7 +392,7 @@ function dsTargetsRender_(){
   const remain=Math.max(0,company.v-achieved),daysLeft=dsTgDaysLeft_();
 
   const groups=dsTgGroups_(rows).map(g=>{const t=dsTgTarget_(DS_TG.tab,g.name);return {...g,t:t.v,est:t.est,pct:t.v?g.v/t.v*100:0};})
-    .sort((a,b)=>b.v-a.v||b.pct-a.pct);   // ranked by total sales amount
+    .sort((a,b)=>((b.t&&b.pct>=100)?1:0)-((a.t&&a.pct>=100)?1:0)||b.v-a.v||b.pct-a.pct);   // target achieved first, then by total sales amount
   const withT=groups.filter(g=>g.t);
   const hit=withT.filter(g=>g.pct>=100).length,behind=withT.filter(g=>g.pct<100&&dsTgStatus_(g.pct,true,pace)[0]==='behind').length;
   const sel=(k,opts,v)=>`<select data-tg-sel="${k}" aria-label="${k}">${opts.map(([val,lab])=>`<option value="${val}"${Number(val)===Number(v)?' selected':''}>${lab}</option>`).join('')}</select>`;
@@ -429,7 +432,10 @@ function dsTargetsRender_(){
           <div class="g"><b>${hit}</b><span>Achieved</span></div>
           <div class="r"><b>${behind}</b><span>${pace>=1?'Missed':'Behind pace'}</span></div>
         </div>
-        ${groups[0]&&groups[0].v?`<div class="dsTgTop"><span>🏆 Top achiever · ${dsTgEsc_(tabLabel)}</span><b>${dsTgEsc_(groups[0].name)}</b><em>${dsTgFmt_(groups[0].v)} ${cur}${groups[0].t?' · '+groups[0].pct.toFixed(0)+'% of target':''}</em></div>`:''}
+        ${(()=>{const ach=groups.filter(g=>g.t&&g.pct>=100).sort((a,b)=>b.v-a.v)[0],sel=groups.slice().sort((a,b)=>b.v-a.v)[0];
+          const box=(ic,lab,g,cls)=>`<div class="dsTgTop${cls}"><span>${ic} ${lab} · ${dsTgEsc_(tabLabel)}</span><b>${dsTgEsc_(g.name)}</b><em>${dsTgFmt_(g.v)} ${cur}${g.t?' · '+g.pct.toFixed(0)+'% of target':''}</em></div>`;
+          return (ach?box('🏆','Top achiever',ach,''):`<div class="dsTgTop"><span>🏆 Top achiever · ${dsTgEsc_(tabLabel)}</span><em>Nobody reached the target yet</em></div>`)+
+            (sel&&sel.v&&(!ach||sel.name!==ach.name)?box('💰','Top seller',sel,' sell'):'');})()}
         <p class="dsTgNote">${pace>=1?'This period has ended.':pace<=0?'This period has not started yet.':`“On track” = at least 90% of where they should be today (${Math.round(pace*100)}% of the period has passed).`}</p>
       </div>
     </div>
@@ -448,7 +454,7 @@ function dsTargetsRender_(){
           <span class="dsTgChip ${cls}">${txt}</span>
           ${admin?`<button type="button" class="dsTgSet" data-tg="set:1" data-scope="${DS_TG.tab}" data-name="${dsTgEsc_(g.name)}">${g.t&&!g.est?'Edit':'Set'}</button>`:'<span></span>'}
         </div>`;}).join(''):`<div class="dsTgEmpty">No ${cur} sales in ${dsTgEsc_(dsTgPeriodLabel_())}.</div>`}</div>
-      <p class="dsTgNote">Achieved = deals in the period with the chosen deal status (${dsTgEsc_(dsTgStText_())}). Salespeople and managers get 100% of their own deals and 50% of shared deals. “est.” = taken from a quarterly or yearly target.</p>
+      <p class="dsTgNote">Order: target achieved first, then total sales amount. Achieved = deals in the period with the chosen deal status (${dsTgEsc_(dsTgStText_())}). Salespeople and managers get 100% of their own deals and 50% of shared deals. “est.” = taken from a quarterly or yearly target.</p>
     </div>`;
 }
 
