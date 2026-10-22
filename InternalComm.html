@@ -15,6 +15,9 @@
 .icFilters{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;padding:10px 18px 0}
 .icFilters label{display:flex;flex-direction:column;gap:3px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ds-muted,#83796b)}
 .icFilters input,.icFilters select{height:32px!important}
+.icClose{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px;padding:10px 14px;border-radius:12px;border:1px dashed var(--ds-line,#e3d9c7);font-size:12.5px;color:var(--ds-muted,#83796b)}
+.icClose.closed{border-style:solid;border-color:#d9c08c;background:var(--ds-gold-soft,#fbf4e6);color:var(--ds-text)}
+.icPaid td{background:rgba(47,158,98,.06)}.icPaidL{display:inline-flex;align-items:center;gap:6px;font-weight:700;cursor:pointer}.icPaidL input{width:17px;height:17px;accent-color:#2f9e62}
 .icDlBar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}.icDlBar .daBtn b{margin-left:4px}
 .icDl tr.off td{opacity:.55}.icDl tr.man td{background:rgba(176,138,66,.07)}.icDl tr.off.man td{opacity:.75}
 .icDl input[type=checkbox]{width:18px;height:18px;cursor:pointer;accent-color:#a8843f}
@@ -60,7 +63,7 @@ html.edenEgv [data-eden-commissions],html.edenEgv [data-ic],html.edenEgv [data-b
    on all the month's deals or only their team's (Sales Manager / Head of Sales).
    Settings: getCommSetup / saveCommSetup (CommissionSetup.js).
    ===================================================================== */
-const IC_={ov:{},dl:'all',setup:null,tab:'sales',from:'',to:'',sel:null,q:'',dpMin:9,dpMax:null,open:{},busy:false,draft:null};
+const IC_={closings:{},ov:{},dl:'all',setup:null,tab:'sales',from:'',to:'',sel:null,q:'',dpMin:9,dpMax:null,open:{},busy:false,draft:null};
 const IC_SCHEMES_={tiers:'Sales tiers (target)',pct:'% of sales',perDeal:'EGP per contract',perMillion:'EGP per 1M'};
 function icEsc_(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function icN_(n,d=0){return Number(n||0).toLocaleString('en-US',{maximumFractionDigits:d});}
@@ -256,9 +259,14 @@ function icRender_(keepFilters){
   const body=el.querySelector('.daBody');
   if(IC_.tab==='setup'){icSetup_(body);return;}
   if(IC_.tab==='deals'){icDealsTab_(body);return;}
+  // A whole month picked: closed → show the saved snapshot; open → offer to close it.
+  const mk=icMonthKey_();
+  if(mk&&IC_.closings[mk]===undefined)icLoadClosing_(mk);
+  const CL=mk?IC_.closings[mk]:null;
+  if(CL&&CL.closed){body.innerHTML=icClosedView_(CL);icClosedWire_(body,CL);return;}
   const deals=icDeals_(),total=deals.reduce((a,r)=>a+(Number(r.amount)||0),0);
   const sc=sales.reduce((a,p)=>a+p.comm,0),oc=others.reduce((a,p)=>a+p.comm,0);
-  let html=`<div class="icKpis"><div class="icKpi"><span>${icEsc_(icRangeLabel_())} · sales</span><b>${icN_(total)}</b></div><div class="icKpi"><span>Deals</span><b>${deals.length}</b></div>
+  let html=icCloseBar_(mk,CL)+`<div class="icKpis"><div class="icKpi"><span>${icEsc_(icRangeLabel_())} · sales</span><b>${icN_(total)}</b></div><div class="icKpi"><span>Deals</span><b>${deals.length}</b></div>
     <div class="icKpi"><span>Sales team commission</span><b>${icN_(sc)}</b></div><div class="icKpi gold"><span>All commissions</span><b>${icN_(sc+oc)}</b></div></div>`;
   if(IC_.tab==='sales'){
     if(!sales.length)html+=`<div class="daNote" style="text-align:center;padding:30px">No deals for ${icEsc_(icRangeLabel_())}with these filters.</div>`;
@@ -291,6 +299,99 @@ function icRender_(keepFilters){
   }
   body.innerHTML=html;
   body.querySelectorAll('[data-open]').forEach(tr=>tr.addEventListener('click',()=>{const p=sales[+tr.dataset.open];IC_.open[p.name]=!IC_.open[p.name];icRender_();}));
+  body.querySelector('[data-close]')?.addEventListener('click',()=>icCloseMonth_(mk,sales,others));
+}
+/* ---------- Monthly close ---------- */
+function icMonthKey_(){
+  const f=IC_.from,t=IC_.to;if(!f||!t||f.slice(0,7)!==t.slice(0,7)||f.slice(8)!=='01')return '';
+  const [y,m]=f.split('-').map(Number);return Number(t.slice(8))===new Date(y,m,0).getDate()?f.slice(0,7):'';
+}
+function icMonthLabel_(mk){const [y,m]=mk.split('-').map(Number);return new Date(y,m-1,1).toLocaleDateString('en-GB',{month:'long',year:'numeric'});}
+function icLoadClosing_(mk){
+  IC_.closings[mk]=null;
+  google.script.run.withSuccessHandler(c=>{IC_.closings[mk]=c||{closed:false};icRender_(true);})
+    .withFailureHandler(()=>{IC_.closings[mk]={closed:false,err:true};icRender_(true);}).getCommClosing(AUTH_TOKEN,mk);
+}
+function icCloseBar_(mk,CL){
+  if(!mk)return `<div class="icClose"><span>🔓 Pick one whole month (e.g. <b>This month</b>) to close it and mark commissions as paid.</span></div>`;
+  if(CL===null)return `<div class="icClose"><span>Checking ${icEsc_(icMonthLabel_(mk))}…</span></div>`;
+  return `<div class="icClose"><span>🔓 <b>${icEsc_(icMonthLabel_(mk))}</b> is open — the numbers follow the deals and filters live.</span><span style="flex:1"></span>
+    <button type="button" class="daBtn ok" data-close>🔒 Close ${icEsc_(icMonthLabel_(mk))}</button></div>`;
+}
+function icCloseMonth_(mk,sales,others){
+  const total=sales.reduce((a,p)=>a+p.comm,0)+others.reduce((a,p)=>a+p.comm,0);
+  const filt=[(IC_.sel.project||[]).length?'Project: '+IC_.sel.project.join(', '):'',IC_.dpMin!=null?'DP ≥ '+IC_.dpMin+'%':'',Object.keys(IC_.ov||{}).length?'with manual choices':''].filter(Boolean).join(' · ');
+  if(!confirm(`Close ${icMonthLabel_(mk)}?\n\n${sales.length} salespeople + ${others.length} staff · total ${icN_(total)} EGP\n${filt}\n\nThe numbers will be frozen as they are now (with the current filters). Later changes to deals or rates won't change this month.`))return;
+  const people=sales.map(p=>({name:p.name,dept:'Sales',role:p.role,target:p.target,credited:p.credited,ach:p.ach,comm:p.comm,n:p.deals.length,sales:p.credited,how:'Target tiers',
+      details:p.deals.map(d=>({u:d.r.unitCode,c:d.r.clientName||'',d:icDealDay_(d.r),a:Number(d.r.amount)||0,cr:Math.round(d.credit),s:d.share?1:0,t:d.type,r:d.rate,cm:Math.round(d.comm*100)/100}))}))
+    .concat(others.map(p=>({name:p.name,dept:p.dept,role:p.role,target:0,credited:0,ach:0,comm:p.comm,n:p.n,sales:p.sales,
+      how:(p.scheme==='pct'?icN_(p.value,3)+'% of sales':p.scheme==='perDeal'?icN_(p.value)+' EGP / contract':p.scheme==='perMillion'?icN_(p.value)+' EGP / 1M':'')+(p.scope==='team'?' · his team':''),details:[]})));
+  const b=document.querySelector('#ic [data-close]');if(b){b.disabled=true;b.textContent='Closing…';}
+  google.script.run.withSuccessHandler(c=>{IC_.closings[mk]=c;icRender_(true);})
+    .withFailureHandler(err=>{if(b){b.disabled=false;b.textContent='🔒 Close';}alert((err&&err.message)||err);})
+    .closeCommMonth(AUTH_TOKEN,{month:mk,people,label:filt});
+}
+function icClosedView_(C){
+  const S=C.people.filter(p=>p.dept==='Sales'),O=C.people.filter(p=>p.dept!=='Sales');
+  const tot=C.people.reduce((a,p)=>a+p.comm,0),paid=C.people.filter(p=>p.paid),paidV=paid.reduce((a,p)=>a+p.comm,0);
+  const list=IC_.tab==='others'?O:S;
+  const when=C.closedAt?new Date(C.closedAt).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+  const row=p=>{const i=C.people.indexOf(p);return `<tr class="${p.paid?'icPaid':''}"><td><b>${icEsc_(p.name)}</b> <small class="daMuted">${p.n} deal${p.n===1?'':'s'}</small></td>
+    ${IC_.tab==='others'?`<td>${icEsc_(p.dept)}</td><td>${icEsc_(p.how)}</td><td class="num">${icN_(p.sales)}</td>`:`<td>${icEsc_(p.role)}</td><td class="num">${icN_(p.target)}</td><td class="num">${icN_(p.credited)}</td><td>${icPct_(p.ach)}</td>`}
+    <td class="num"><b>${icN_(p.comm)}</b></td>
+    <td><label class="icPaidL"><input type="checkbox" data-paid="${i}"${p.paid?' checked':''}> ${p.paid?'Paid':'Not paid'}</label>${p.paid&&p.paidAt?`<br><small class="daMuted">${new Date(p.paidAt).toLocaleDateString('en-GB')} · ${icEsc_(p.paidBy)}</small>`:''}</td>
+    <td><button type="button" class="daBtn" data-slip="${i}">🧾 Notice</button></td></tr>`;};
+  return `<div class="icClose closed"><span>🔒 <b>${icEsc_(icMonthLabel_(C.month))}</b> is closed${when?' · '+when:''}${C.closedBy?' · by '+icEsc_(C.closedBy):''}${C.label?' · '+icEsc_(C.label):''}. The numbers below are frozen — filters don't change them.</span><span style="flex:1"></span>
+      <button type="button" class="daBtn" data-slipall>🧾 All notices</button><button type="button" class="daBtn" data-paidall>✓ Mark all ${IC_.tab==='others'?'staff':'sales'} paid</button><button type="button" class="daBtn no" data-reopen>Reopen</button></div>
+    <div class="icKpis"><div class="icKpi"><span>Total commissions</span><b>${icN_(tot)}</b></div><div class="icKpi"><span>People</span><b>${C.people.length}</b></div>
+      <div class="icKpi gold"><span>Paid</span><b>${icN_(paidV)}</b></div><div class="icKpi"><span>Still to pay</span><b>${icN_(tot-paidV)}</b></div></div>
+    ${list.length?`<table class="daTable"><thead><tr><th>Name</th>${IC_.tab==='others'?'<th>Department</th><th>How paid</th><th class="num">Sales value</th>':'<th>Role</th><th class="num">Target</th><th class="num">Credited</th><th>Achievement</th>'}<th class="num">Commission</th><th>Paid</th><th></th></tr></thead><tbody>${list.map(row).join('')}</tbody></table>`
+      :`<div class="daNote" style="text-align:center;padding:30px">Nobody in this tab for the closed month.</div>`}
+    <div class="daNote">Tick <b>Paid</b> once the money is handed over. “Notice” prints a commission notice (Save as PDF) to sign. To change a closed month: untick Paid, Reopen, then close it again.</div>`;
+}
+function icClosedWire_(body,C){
+  const mk=C.month,busy=b=>{if(b){b.disabled=true;}};
+  const done=c=>{IC_.closings[mk]=c;icRender_(true);},fail=err=>{alert((err&&err.message)||err);icRender_(true);};
+  body.querySelectorAll('[data-paid]').forEach(c=>c.addEventListener('change',()=>{const p=C.people[+c.dataset.paid];busy(c);
+    google.script.run.withSuccessHandler(done).withFailureHandler(fail).setCommPaid(AUTH_TOKEN,{month:mk,names:[p.name],dept:p.dept,paid:c.checked});}));
+  body.querySelector('[data-paidall]')?.addEventListener('click',e=>{const L=C.people.filter(p=>(IC_.tab==='others')!==(p.dept==='Sales')&&!p.paid);
+    if(!L.length||!confirm('Mark '+L.length+' people as paid?'))return;busy(e.target);
+    google.script.run.withSuccessHandler(done).withFailureHandler(fail).setCommPaid(AUTH_TOKEN,{month:mk,names:L.map(p=>p.name),paid:true});});
+  body.querySelector('[data-reopen]')?.addEventListener('click',e=>{if(!confirm('Reopen '+icMonthLabel_(mk)+'? The frozen numbers will be deleted and the month will follow the live data again.'))return;busy(e.target);
+    google.script.run.withSuccessHandler(done).withFailureHandler(fail).reopenCommMonth(AUTH_TOKEN,mk);});
+  body.querySelectorAll('[data-slip]').forEach(b=>b.addEventListener('click',()=>icNotice_(C,[C.people[+b.dataset.slip]])));
+  body.querySelector('[data-slipall]')?.addEventListener('click',()=>icNotice_(C,C.people.filter(p=>(IC_.tab==='others')!==(p.dept==='Sales'))));
+}
+/* Commission notice (print / Save as PDF), one page per person. */
+function icNotice_(C,people){
+  if(!people.length)return;
+  const E=icEsc_,N=n=>Number(n||0).toLocaleString('en-US',{maximumFractionDigits:0}),ml=icMonthLabel_(C.month);
+  const page=p=>{const deals=(p.details||[]);
+    return `<section class="pg"><div class="hd"><div class="brand">EDEN<small>DEVELOPMENT</small></div><div class="ti"><h1>Commission Notice<small>إشعار عمولة · ${E(ml)}</small></h1></div></div>
+    <div class="info"><div><span>Name</span><b>${E(p.name)}</b></div><div><span>Department</span><b>${E(p.dept)}</b></div><div><span>Role</span><b>${E(p.role||'—')}</b></div><div><span>Month</span><b>${E(ml)}</b></div></div>
+    <div class="k">${p.dept==='Sales'?`<div><span>Target</span><b>${N(p.target)}</b></div><div><span>Credited sales</span><b>${N(p.credited)}</b></div><div><span>Achievement</span><b>${icPct_(p.ach)}</b></div>`:`<div><span>How paid</span><b style="font-size:12px">${E(p.how)}</b></div><div><span>Deals</span><b>${p.n}</b></div><div><span>Sales value</span><b>${N(p.sales)}</b></div>`}
+      <div class="g"><span>Commission (EGP)</span><b>${N(p.comm)}</b></div></div>
+    ${deals.length?`<table><thead><tr><th>Unit</th><th>Client</th><th>Reservation</th><th class="n">Value</th><th class="n">Credited</th><th>Type</th><th class="n">Rate</th><th class="n">Commission</th></tr></thead><tbody>
+      ${deals.map(d=>`<tr><td>${E(d.u)}</td><td>${E(d.c)}</td><td>${E(d.d)}</td><td class="n">${N(d.a)}</td><td class="n">${N(d.cr)}${d.s?' <small>(share)</small>':''}</td><td>${E(d.t)}</td><td class="n">${icPct_(d.r,2)}</td><td class="n">${N(d.cm)}</td></tr>`).join('')}
+      </tbody><tfoot><tr><td colspan="7">Total</td><td class="n">${N(p.comm)}</td></tr></tfoot></table>`:''}
+    <div class="st">${p.paid?`Paid on ${new Date(p.paidAt).toLocaleDateString('en-GB')}${p.paidBy?' · '+E(p.paidBy):''}`:'Not paid yet'}</div>
+    <div class="sig"><div>Employee<br>الموظف</div><div>HR<br>الموارد البشرية</div><div>Finance<br>المالية</div><div>COO<br>مدير العمليات</div></div></section>`;};
+  const w=window.open('','_blank');if(!w){alert('Allow pop-ups to print the notice.');return;}
+  w.document.open();
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Commission notice · ${E(ml)}</title><style>
+@page{size:A4;margin:12mm}*{box-sizing:border-box}body{font:12px/1.45 Arial,sans-serif;color:#1f1b16;margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.pg{padding:18px;page-break-after:always}.pg:last-child{page-break-after:auto}
+.hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #b08a42;padding-bottom:10px;margin-bottom:14px}
+.brand{font:700 26px/1 Georgia,serif;letter-spacing:.18em}.brand small{display:block;font:600 9px/1.6 Arial;letter-spacing:.42em;color:#8f6d2c}
+h1{margin:0;font:600 20px Georgia,serif;text-align:right}h1 small{display:block;font:12px Arial;color:#83796b}
+.info{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}.info span,.k span{display:block;font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#83796b}.info b{font-size:13px}
+.k{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}.k div{border:1px solid #e8e0d1;border-radius:8px;padding:8px 10px;background:#faf6ef}.k b{font-size:15px}.k .g{background:#f3e8d2;border-color:#d9c08c}
+table{width:100%;border-collapse:collapse}th{background:#f3ece0;text-align:left;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;padding:6px 7px}td{padding:5px 7px;border-bottom:1px solid #eee3d2}.n{text-align:right;font-variant-numeric:tabular-nums}tfoot td{font-weight:700;border-top:2px solid #b08a42}tr{page-break-inside:avoid}
+.st{margin-top:12px;font-weight:700;color:#8f6d2c}.sig{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:46px;text-align:center;font-size:11px;color:#6f675b}.sig div{border-top:1px solid #999;padding-top:6px}
+.noprint{position:fixed;bottom:16px;right:16px}.noprint button{font:600 13px Arial;padding:8px 14px;border-radius:8px;border:0;background:#b08a42;color:#fff;cursor:pointer}@media print{.noprint{display:none}}
+</style></head><body><div class="noprint"><button onclick="window.print()">Print / Save as PDF</button></div>${people.map(page).join('')}
+<script>window.onload=function(){setTimeout(function(){window.print();},400);}<\/script></body></html>`);
+  w.document.close();
 }
 /* ---------- All deals · choose ---------- */
 function icDealsTab_(body){
