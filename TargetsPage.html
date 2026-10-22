@@ -8,6 +8,8 @@ html[data-theme] #appRoot .dsTgSeg button.on{background:var(--ds-gold-grad);colo
 html[data-theme] #appRoot .dsTgBar select{height:36px;padding:0 12px;border-radius:10px;border:1px solid var(--ds-line);background:var(--ds-surface-2);color:var(--ds-text);font-weight:600;font-size:13px}
 html[data-theme] #appRoot .dsTgBar .grow{flex:1}
 html[data-theme] #appRoot .dsTgSt{position:relative}
+html[data-theme] #appRoot .dsTgSign{height:36px;padding:0 12px;border-radius:10px;border:1px solid var(--ds-line);background:var(--ds-surface-2);color:var(--ds-muted);font-weight:700;font-size:12.5px;cursor:pointer;white-space:nowrap}
+html[data-theme] #appRoot .dsTgSign.on{border-color:var(--ds-gold-line,#b08a42);background:var(--ds-gold-soft);color:var(--ds-gold-strong)}
 html[data-theme] #appRoot .dsTgTop{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin-top:10px;padding:12px 14px;border-radius:12px;background:var(--ds-gold-soft);border:1px solid var(--ds-gold-line,rgba(176,138,66,.35))}
 html[data-theme] #appRoot .dsTgTop span{width:100%;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ds-gold-strong)}
 html[data-theme] #appRoot .dsTgTop.sell{background:var(--ds-surface-2);border-color:var(--ds-line)}
@@ -82,6 +84,7 @@ html[data-theme] #appRoot .dsTgEmpty{padding:24px;text-align:center;color:var(--
    rule: own deals 100%, shared deals 50%. Cancelled deals don't count.
    ===================================================================== */
 const DS_TG_MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+let DS_TG_SIGNED=true;try{DS_TG_SIGNED=localStorage.getItem('edenTgSigned')!=='0';}catch(e){}
 let DS_TG_ST=null;try{DS_TG_ST=JSON.parse(localStorage.getItem('edenTgStatus')||'null');}catch(e){}
 const DS_TG={period:'Monthly',year:new Date().getFullYear(),month:new Date().getMonth()+1,quarter:Math.floor(new Date().getMonth()/3)+1,cur:'EGP',tab:'Sales'};
 
@@ -100,14 +103,18 @@ function dsTgRows_(){
   const months=new Set(dsTgMonthsOf_());
   return (typeof rawRows!=='undefined'?rawRows:[]).filter(r=>
     Number(r.year)===Number(DS_TG.year)&&months.has(dsTgRowMonth_(r))&&
-    dsTgStatusOk_(r)&&projectCurrency_(r)===DS_TG.cur);
+    dsTgStatusOk_(r)&&dsTgSignedOk_(r)&&projectCurrency_(r)===DS_TG.cur);
 }
 /* Deal status filter: null = every status except Cancel (default); otherwise the picked statuses. */
 function dsTgIsCancel_(st){return typeof isCancelledStatus_==='function'?isCancelledStatus_(st):/^cancel/i.test(String(st||''));}
 function dsTgStLabel_(r){return String(r.status||'').trim()||'(No status)';}
+/* Counts toward the target only when "Client Sigend" (Deal Confirmation) is ticked — switchable. */
+function dsTgSignedOk_(r){if(!DS_TG_SIGNED)return true;const v=r&&r.confClientSigned;
+  return typeof commissionTrue_==='function'?commissionTrue_(v):(v===true||/^(true|1|yes)$/i.test(String(v||'').trim()));}
 function dsTgStatusOk_(r){return Array.isArray(DS_TG_ST)?DS_TG_ST.includes(dsTgStLabel_(r)):!dsTgIsCancel_(r.status);}
 function dsTgStSave_(){try{localStorage.setItem('edenTgStatus',JSON.stringify(DS_TG_ST));}catch(e){}}
-function dsTgStText_(){
+function dsTgStText_(){return dsTgStText0_()+(DS_TG_SIGNED?' · Client signed only':'');}
+function dsTgStText0_(){
   if(!Array.isArray(DS_TG_ST))return 'All except Cancel';
   if(!DS_TG_ST.length)return 'None';
   return DS_TG_ST.length>2?DS_TG_ST.slice(0,2).join(', ')+' +'+(DS_TG_ST.length-2):DS_TG_ST.join(', ');
@@ -247,6 +254,7 @@ function dsTgMount_(){
     if(k==='period')DS_TG.period=v;
     else if(k==='cur')DS_TG.cur=v;
     else if(k==='tab')DS_TG.tab=v;
+    else if(k==='signed'){DS_TG_SIGNED=!DS_TG_SIGNED;try{localStorage.setItem('edenTgSigned',DS_TG_SIGNED?'1':'0');}catch(e){}}
     else if(k==='xl'){dsTgExport_();return;}
     else if(k==='pdf'){dsTgPdf_();return;}
     else if(k==='manage'){if(typeof openTargetsManager_==='function')openTargetsManager_();return;}
@@ -406,7 +414,8 @@ function dsTargetsRender_(){
       ${DS_TG.period==='Quarterly'?sel('quarter',[[1,'Q1'],[2,'Q2'],[3,'Q3'],[4,'Q4']],DS_TG.quarter):''}
       ${sel('year',years.map(y=>[y,y]),DS_TG.year)}
       ${seg('cur',[['EGP','EGP'],['USD','USD']],cur)}
-      <div class="dsTgSt"><button type="button" data-tg-st class="${Array.isArray(DS_TG_ST)?'on':''}" title="Which deal statuses count as achieved">Deal status: <b>${dsTgEsc_(dsTgStText_())}</b> ▾</button></div>
+      <div class="dsTgSt"><button type="button" data-tg-st class="${Array.isArray(DS_TG_ST)?'on':''}" title="Which deal statuses count as achieved">Deal status: <b>${dsTgEsc_(dsTgStText0_())}</b> ▾</button></div>
+      <button type="button" class="dsTgSign${DS_TG_SIGNED?' on':''}" data-tg="signed:1" aria-pressed="${DS_TG_SIGNED}" title="Count only deals where the Client Sigend box is ticked">${DS_TG_SIGNED?'☑':'☐'} Client signed only</button>
       <span class="grow"></span>
       <button type="button" class="dsTgBtn dsTgXl" data-tg="xl:1" title="Download as Excel">⬇ Excel</button>
       <button type="button" class="dsTgBtn dsTgXl" data-tg="pdf:1" title="Print or save as PDF">⬇ PDF</button>
