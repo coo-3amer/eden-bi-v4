@@ -168,13 +168,14 @@ function ipRender_(){
   const want=(()=>{const g=ipGenDefaults_(r,d);return g.n;})();
   const have=d.schedule.filter(x=>!/^(down payment|maintenance)$/i.test(x.name)).length;
   if(want&&have!==want)html=`<div class="ipMsg err" style="font-weight:700;margin:0 0 12px">This schedule has ${have} installments, but the deal says ${want} (${ipEsc_((d.plan&&d.plan.planCode)||r.planCode||'')}).${d.canEdit?' Press “Rebuild schedule” below to fix it.':''}</div>`+html;
-  html+=`<div class="ipActions"><button type="button" class="ipBtn main" data-a="stmt">🧾 Statement of account</button>${d.canEdit?'<button type="button" class="ipBtn" data-a="gen">Rebuild schedule</button><span class="ipMsg">Rebuilding keeps every payment already recorded.</span>':''}</div>`;
+  html+=`<div class="ipActions"><button type="button" class="ipBtn main" data-a="stmt">🧾 Statement of account</button><button type="button" class="ipBtn" data-a="wa" title="Send the client a summary of the account on WhatsApp">💬 WhatsApp</button>${d.canEdit?'<button type="button" class="ipBtn" data-a="gen">Rebuild schedule</button><span class="ipMsg">Rebuilding keeps every payment already recorded.</span>':''}</div>`;
   const b=ipBody_(html);
   b.querySelectorAll('[data-pay]').forEach(x=>x.addEventListener('click',()=>{IP_.payFor=x.dataset.pay;ipRender_();b.querySelector('.ipPay input')?.focus();}));
   b.querySelector('[data-a="cancelPay"]')?.addEventListener('click',()=>{IP_.payFor=null;ipRender_();});
   b.querySelector('[data-a="savePay"]')?.addEventListener('click',ipSavePay_);
   b.querySelector('[data-a="gen"]')?.addEventListener('click',()=>{IP_.gen=ipGenDefaults_(r,d);ipRender_();});
   b.querySelector('[data-a="stmt"]')?.addEventListener('click',()=>ipStatement_());
+  b.querySelector('[data-a="wa"]')?.addEventListener('click',()=>ipWhatsApp_());
   b.querySelectorAll('[data-del]').forEach(x=>x.addEventListener('click',()=>{
     if(!confirm('Delete this payment?'))return;
     x.disabled=true;
@@ -333,6 +334,36 @@ function ipCollectionsBlock_(){
       ||((typeof rawRows!=='undefined'&&rawRows)||[]).find(r=>key(r.unitCode)===key(u));
     if(d)ipOpen_(d.row);
   }));
+}
+/* ---------- WhatsApp: account summary to the client (Arabic) ----------
+   Opens WhatsApp with the client's number and a ready message; attach the
+   PDF statement there if needed (Statement of account → Save as PDF). */
+function ipWaPhone_(m){
+  const nums=typeof splitPhoneNumbers_==='function'?splitPhoneNumbers_(m):String(m||'').split(/[-,/|]/);
+  let n=String((nums||[])[0]||'').replace(/[^\d+]/g,'');
+  if(!n)return '';
+  if(n.startsWith('+'))return n.slice(1);
+  if(n.startsWith('00'))return n.slice(2);
+  if(/^01[0125]\d{8}$/.test(n))return '2'+n;          // Egypt mobile
+  if(/^1[0125]\d{8}$/.test(n))return '20'+n;
+  return n;
+}
+function ipWhatsApp_(){
+  const d=IP_.data,r=ipDeal_(IP_.row);if(!d||!r||!d.schedule.length)return;
+  const paid=ipPaidMap_(d),cur=d.schedule[0].currency||ipCur_(r);
+  const sum=(a,f)=>a.reduce((t,x)=>t+f(x),0);
+  const main=d.schedule.filter(x=>!/maint/i.test(x.name));
+  const tot=sum(main,x=>x.amount),pd=sum(main,x=>Math.min(x.amount,paid[x.no]||0));
+  const open=d.schedule.map(x=>({x,left:Math.max(0,x.amount-(paid[x.no]||0)),dd:ipParse_(x.due)})).filter(z=>z.left>1&&z.dd).sort((a,b)=>a.dd-b.dd);
+  const today=ipToday_(),late=open.filter(z=>z.dd<today),next=open.find(z=>z.dd>=today);
+  const L=[`أهلاً أ/ ${r.clientName||''}،`,`ملخص حسابك مع EDEN Development — وحدة ${r.unitCode} (${r.project}):`,
+    `• إجمالي الوحدة: ${ipNum_(tot)} ${cur}`,`• المدفوع: ${ipNum_(pd)} ${cur}`,`• المتبقي: ${ipNum_(Math.max(0,tot-pd))} ${cur}`];
+  if(late.length)L.push(`• متأخر: ${ipNum_(sum(late,z=>z.left))} ${cur} (${late.map(z=>z.x.name).join('، ')})`);
+  if(next)L.push(`• القسط الجاي: ${next.x.name} بتاريخ ${ipFmt_(next.x.due)} بقيمة ${ipNum_(next.left)} ${cur}`);
+  L.push('','لأي استفسار تحت أمرك. شكراً لثقتك في EDEN.');
+  const phone=ipWaPhone_(r.mobile);
+  const url=(phone?'https://wa.me/'+phone:'https://wa.me/')+'?text='+encodeURIComponent(L.join('\n'));
+  window.open(url,'_blank');
 }
 /* ---------- Statement of account (print / Save as PDF) ---------- */
 function ipStatement_(){
