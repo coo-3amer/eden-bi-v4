@@ -302,6 +302,11 @@ function dsTgMount_(){
     else if(k==='tab')DS_TG.tab=v;
     else if(k==='signed'){DS_TG_SIGNED=!DS_TG_SIGNED;try{localStorage.setItem('edenTgSigned',DS_TG_SIGNED?'1':'0');}catch(e){}}
     else if(k==='brief'){b.disabled=true;b.textContent='Sending…';google.script.run.withSuccessHandler(r=>{b.textContent=r&&r.ok?'Sent ✓':'Not sent — check Telegram setup';setTimeout(()=>{b.disabled=false;b.textContent='📨 Morning brief';},4000);}).withFailureHandler(err=>{b.disabled=false;b.textContent='📨 Morning brief';alert((err&&err.message)||err);}).sendMorningBriefNow(AUTH_TOKEN);return;}
+    else if(k==='board'){const now=new Date(),d=DS_TG.period==='Monthly'?new Date(DS_TG.year,DS_TG.month-1,1):new Date(now.getFullYear(),now.getMonth()-1,1);
+      const ym=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'),send=confirm('Monthly report for '+d.toLocaleDateString('en-GB',{month:'long',year:'numeric'})+'.\n\nOK = open it and also send it to Telegram\nCancel = just open it');
+      const w=window.open('','_blank');if(!w){alert('Please allow pop-ups.');return;}w.document.write('<p style="font:14px Arial;padding:30px">Building the report…</p>');
+      google.script.run.withSuccessHandler(r=>{w.document.open();w.document.write(r.html.replace('</body>','<div style="position:fixed;bottom:16px;right:16px" class="np"><button onclick="window.print()" style="font:600 13px Arial;padding:8px 14px;border-radius:8px;border:0;background:#b08a42;color:#fff;cursor:pointer">Print / Save as PDF</button></div><style>@media print{.np{display:none}}</style></body>'));w.document.close();if(send)alert(r.sent?'Sent to Telegram ✓':'Could not send to Telegram — check the bot setup.');})
+        .withFailureHandler(err=>{w.close();alert((err&&err.message)||err);}).getBoardPack(AUTH_TOKEN,ym,send);return;}
     else if(k==='xl'){dsTgExport_();return;}
     else if(k==='pdf'){dsTgPdf_();return;}
     else if(k==='manage'){if(typeof openTargetsManager_==='function')openTargetsManager_();return;}
@@ -496,6 +501,7 @@ function dsTargetsRender_(){
       <span class="grow"></span>
       ${dsTgFilter_().active?'<span class="dsTgFlt" title="The page filters (branch, manager, source…) apply here">⚲ Page filters on</span>':''}
       <div class="dsTgEx"><button type="button" class="dsTgBtn dsTgXl" data-tg-ex>⬇ Export ▾</button></div>
+      ${admin?'<button type="button" class="dsTgBtn dsTgXl" data-tg="board:1" title="Monthly management report (PDF) — also sent to Telegram on the 1st of each month">📄 Monthly report</button>':''}
       ${admin?'<button type="button" class="dsTgBtn dsTgXl" data-tg="brief:1" title="Send the morning brief to Telegram now (it also goes out every day at 9:00)">📨 Morning brief</button>':''}
       ${admin?'<button type="button" class="dsTgBtn" data-tg="manage:1">Manage targets</button>':''}
     </div>

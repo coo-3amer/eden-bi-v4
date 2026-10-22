@@ -26,6 +26,7 @@ function dailyJobs_(force) {
   props.setProperty('DAILY_JOBS_DAY', day);
   if (props.getProperty('BRIEF_OFF') !== '1') { try { morningBrief_(); } catch (e) { console.warn('Morning brief: ' + e); } }
   if (props.getProperty('REMIND_OFF') !== '1') { try { collectionReminders_(); } catch (e) { console.warn('Collection reminders: ' + e); } }
+  try { if (typeof boardPackMonthly_ === 'function') boardPackMonthly_(); } catch (e) { console.warn('Board pack: ' + e); }
 }
 
 /* ---------- helpers ---------- */
