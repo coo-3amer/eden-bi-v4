@@ -208,14 +208,20 @@ function getInstallmentsOverview(authToken) {
   return instOverview_();
 }
 function instOverview_() {
-  const paid = {};
+  const paid = {}, payKeys = [];
   instRows_(instSheet_(INST_PAY_SHEET_, INST_PAY_HEAD_, false)).forEach(r => {
     const k = String(r[1]) + '#' + String(r[4]);
     paid[k] = (paid[k] || 0) + (Number(r[5]) || 0);
+    payKeys.push([k, String(r[1]), instDateOut_(r[6]), Number(r[5]) || 0]);
   });
+  // Money received per month (paid date), per currency — for the cash-flow chart.
+  const curOf = {};
+  instRows_(instSheet_(INST_SHEET_, INST_HEAD_, false)).forEach(r => { curOf[String(r[0])] = String(r[9] || 'EGP'); });
+  const received = {};
+  payKeys.forEach(p => { const m = String(p[2]).slice(0, 7); if (!/^\d{4}-\d{2}$/.test(m)) return; const k = m + '|' + (/usd/i.test(curOf[p[1]] || '') ? 'USD' : 'EGP'); received[k] = (received[k] || 0) + p[3]; });
   const rows = instRows_(instSheet_(INST_SHEET_, INST_HEAD_, false)).map(r => ({
     key: String(r[0]), project: String(r[1]), unitCode: String(r[2]), client: String(r[3]), no: String(r[5]), name: String(r[6]),
     due: instDateOut_(r[7]), amount: Number(r[8]) || 0, currency: String(r[9] || ''), paid: paid[String(r[0]) + '#' + String(r[5])] || 0
   }));
-  return { rows: rows, generatedAt: new Date().toISOString() };
+  return { rows: rows, received: received, generatedAt: new Date().toISOString() };
 }

@@ -286,7 +286,7 @@ function ipRenderGen_(){
 }
 
 /* ---------- Collections page: overdue + next 30 days ---------- */
-(function(){const st=document.createElement('style');st.textContent='.ipRemind{height:32px;padding:0 12px;border-radius:9px;border:1px solid var(--ds-line);background:var(--ds-surface-2);color:var(--ds-text);font-size:12px;font-weight:700;cursor:pointer}.ipRemind:hover{border-color:var(--ds-gold)}';document.head.appendChild(st);})();
+(function(){const st=document.createElement('style');st.textContent='.ipSeg{display:inline-flex;padding:3px;border-radius:999px;background:var(--ds-surface-2);border:1px solid var(--ds-line)}.ipSeg button{all:unset;cursor:pointer;padding:5px 11px;border-radius:999px;font-size:12px;font-weight:700;color:var(--ds-muted)}.ipSeg button.on{background:var(--ds-gold-grad);color:var(--ds-on-gold)}.ipFlowChart{display:flex;align-items:flex-end;gap:6px;height:200px;margin:14px 0 6px;padding:0 4px;border-bottom:1px solid var(--ds-line)}.ipFlowChart .c{flex:1;display:flex;flex-direction:column;align-items:center;height:100%;min-width:0}.ipFlowChart .b{flex:1;width:100%;display:flex;align-items:flex-end;justify-content:center;gap:3px;position:relative}.ipFlowChart .b i{display:block;width:42%;max-width:34px;border-radius:5px 5px 0 0}.ipFlowChart .c:not(.past) .b i{width:70%;max-width:46px}.ipFlowChart .c:not(.past) .b{flex-direction:column;align-items:center;justify-content:flex-end;gap:2px}.ipFlowChart .b em{font-style:normal;font-size:10.5px;font-weight:700;color:var(--ds-gold-strong)}.ipFlowChart .c span{font-size:10.5px;color:var(--ds-muted);padding:5px 0 4px;white-space:nowrap}.ipFlowChart .sep{width:1px;align-self:stretch;background:var(--ds-line);margin:0 4px}.ipLegend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--ds-muted)}.ipLegend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}.ipRemind{height:32px;padding:0 12px;border-radius:9px;border:1px solid var(--ds-line);background:var(--ds-surface-2);color:var(--ds-text);font-size:12px;font-weight:700;cursor:pointer}.ipRemind:hover{border-color:var(--ds-gold)}';document.head.appendChild(st);})();
 let IP_OVERVIEW_=null,IP_OVERVIEW_AT_=0,IP_OVERVIEW_BUSY_=false;
 function ipCollectionsBlock_(){
   const host=document.getElementById('dsCollections');if(!host||host.classList.contains('hidden'))return;
@@ -322,6 +322,7 @@ function ipCollectionsBlock_(){
     <div class="ipSec" style="margin-top:6px">Overdue</div>${list(late,true)}
     <div class="ipSec">Due in the next 30 days</div>${list(next,false)}
     ${units?'':'<div class="ipMsg">Open a client → Payments on a unit to create its schedule.</div>'}`;
+  try{ipForecast_(host);}catch(e){console.warn('Cash flow',e);}
   el.querySelector('[data-remind]')?.addEventListener('click',e=>{const b=e.currentTarget;b.disabled=true;b.textContent='Sending…';
     google.script.run.withSuccessHandler(r=>{b.textContent=r&&r.ok?'Sent ✓':'Nothing due today';setTimeout(()=>{b.disabled=false;b.textContent='📨 Send reminders to Telegram';},4000);})
       .withFailureHandler(err=>{b.disabled=false;b.textContent='📨 Send reminders to Telegram';alert((err&&err.message)||err);}).sendCollectionRemindersNow(AUTH_TOKEN);});
@@ -335,6 +336,49 @@ function ipCollectionsBlock_(){
     if(d)ipOpen_(d.row);
   }));
 }
+/* ---------- Cash-flow forecast ----------
+   From the payment schedules: what is due each month (still unpaid) for the
+   next 3 / 6 / 12 months, and the last 6 months: due vs actually received. */
+let IP_FLOW_={n:6,cur:'EGP'};
+function ipForecast_(host){
+  let el=document.getElementById('ipFlow');
+  if(!el){el=document.createElement('div');el.id='ipFlow';el.className='ipColl';const c=document.getElementById('ipColl');host.insertBefore(el,c);}
+  const today=ipToday_(),F=IP_FLOW_,cur=F.cur,mk=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  const ml=k=>{const [y,m]=k.split('-').map(Number);return new Date(y,m-1,1).toLocaleDateString('en-GB',{month:'short',year:'2-digit'});};
+  const rows=(IP_OVERVIEW_.rows||[]).filter(x=>((x.currency||'EGP').toUpperCase()==='USD'?'USD':'EGP')===cur).map(x=>({...x,d:ipParse_(x.due)})).filter(x=>x.d);
+  const thisM=mk(today),fut=[],past=[];
+  for(let i=0;i<F.n;i++)fut.push(mk(new Date(today.getFullYear(),today.getMonth()+i,1)));
+  for(let i=6;i>=1;i--)past.push(mk(new Date(today.getFullYear(),today.getMonth()-i,1)));
+  const overdue=rows.filter(x=>x.d<today).reduce((a,x)=>a+Math.max(0,x.amount-x.paid),0);
+  const exp={};rows.forEach(x=>{const k=mk(x.d),left=Math.max(0,x.amount-x.paid);if(k>=thisM&&x.d>=today)exp[k]=(exp[k]||0)+left;});
+  const due={};rows.forEach(x=>{const k=mk(x.d);due[k]=(due[k]||0)+x.amount;});
+  const rec=k=>(IP_OVERVIEW_.received||{})[k+'|'+cur]||0;
+  const futT=fut.reduce((a,k)=>a+(exp[k]||0),0),after=rows.filter(x=>mk(x.d)>fut[fut.length-1]).reduce((a,x)=>a+Math.max(0,x.amount-x.paid),0);
+  const pastDue=past.reduce((a,k)=>a+(due[k]||0),0),pastRec=past.reduce((a,k)=>a+rec(k),0);
+  const mx=Math.max(1,...fut.map(k=>exp[k]||0),...past.map(k=>Math.max(due[k]||0,rec(k))));
+  const bar=(v,c,t)=>`<i style="height:${Math.max(v>0?2:0,v/mx*100)}%;background:${c}" title="${t}: ${ipNum_(v)} ${cur}"></i>`;
+  const seg=(k,vals,v)=>vals.map(([a,l])=>`<button type="button" data-fl="${k}:${a}" class="${String(v)===String(a)?'on':''}">${l}</button>`).join('');
+  // units with a remaining balance but no schedule are not in the forecast
+  const sched=new Set((IP_OVERVIEW_.rows||[]).map(x=>ipNormProj_(x.project)+'|'+ipNormUnit_(x.unitCode)));
+  const noSched=(typeof dsScopeRows_==='function'?dsScopeRows_():[]).filter(r=>Number(r.remain)>0&&!(typeof isCancelledStatus_==='function'&&isCancelledStatus_(r.status))&&!sched.has(ipNormProj_(r.project)+'|'+ipNormUnit_(r.unitCode))&&(typeof projectCurrency_!=='function'||projectCurrency_(r)===cur));
+  el.innerHTML=`<h3 style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">Cash-flow forecast <small style="font-weight:600;color:var(--ds-muted)">· from the payment schedules</small><span style="flex:1"></span>
+      <span class="ipSeg">${seg('n',[[3,'3 months'],[6,'6 months'],[12,'12 months']],F.n)}</span><span class="ipSeg">${seg('cur',[['EGP','EGP'],['USD','USD']],cur)}</span></h3>
+    <div class="ipKpis" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+      <div class="ipKpi"><span>Expected next ${F.n} months</span><b>${ipNum_(futT)}</b><small>${cur} · still unpaid</small></div>
+      <div class="ipKpi red"><span>Overdue now</span><b>${ipNum_(overdue)}</b><small>${cur} · should already be in</small></div>
+      <div class="ipKpi"><span>Later than ${F.n} months</span><b>${ipNum_(after)}</b><small>${cur}</small></div>
+      <div class="ipKpi"><span>Last 6 months collected</span><b>${pastDue?Math.round(pastRec/pastDue*100):0}%</b><small>${ipNum_(pastRec)} of ${ipNum_(pastDue)} due</small></div>
+    </div>
+    <div class="ipFlowChart">
+      ${past.map(k=>`<div class="c past"><div class="b">${bar(due[k]||0,'rgba(176,138,66,.28)','Due')}${bar(rec(k),'#2f9e62','Received')}</div><span>${ml(k)}</span></div>`).join('')}
+      <div class="sep"></div>
+      ${fut.map(k=>`<div class="c"><div class="b"><em>${exp[k]?ipShort_(exp[k]):''}</em>${bar(exp[k]||0,'linear-gradient(180deg,#c9a45c,#a07c3a)','Expected').replace('height:','flex:0 0 auto;height:')}</div><span>${ml(k)}</span></div>`).join('')}
+    </div>
+    <div class="ipLegend"><span><i style="background:rgba(176,138,66,.28)"></i>Due (past)</span><span><i style="background:#2f9e62"></i>Received</span><span><i style="background:#b08a42"></i>Expected (unpaid)</span></div>
+    ${noSched.length?`<div class="ipMsg">Not in the forecast: <b>${noSched.length}</b> unit${noSched.length===1?'':'s'} with a remaining balance but no payment schedule yet (${ipNum_(noSched.reduce((a,r)=>a+(Number(r.remain)||0),0))} ${cur}). Add their schedule from the client card → Payments.</div>`:''}`;
+  el.querySelectorAll('[data-fl]').forEach(b=>b.addEventListener('click',()=>{const [k,v]=b.dataset.fl.split(':');IP_FLOW_[k]=k==='n'?Number(v):v;ipForecast_(host);}));
+}
+function ipShort_(n){const v=Number(n)||0;return v>=1e6?(Math.round(v/1e5)/10)+'M':v>=1e3?Math.round(v/1e3)+'K':String(Math.round(v));}
 /* ---------- WhatsApp: account summary to the client (Arabic) ----------
    Opens WhatsApp with the client's number and a ready message; attach the
    PDF statement there if needed (Statement of account → Save as PDF). */
