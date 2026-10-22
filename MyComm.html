@@ -1,0 +1,91 @@
+<style id="eden-my-comm">
+html[data-theme] #appRoot .myc{border:1px solid var(--ds-gold-line,#d9c08c);border-radius:16px;background:var(--ds-surface);box-shadow:var(--ds-shadow);padding:18px 20px}
+html[data-theme] #appRoot .myc h3{margin:2px 0 12px;font-family:var(--ds-serif);font-size:22px;font-weight:600;color:var(--ds-heading)}
+html[data-theme] #appRoot .mycK{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+html[data-theme] #appRoot .mycK div{padding:10px 12px;border-radius:12px;background:var(--ds-surface-2);border:1px solid var(--ds-line)}
+html[data-theme] #appRoot .mycK span{display:block;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ds-muted)}
+html[data-theme] #appRoot .mycK b{display:block;margin-top:4px;font-size:18px;color:var(--ds-heading);font-variant-numeric:tabular-nums}
+html[data-theme] #appRoot .mycK .g{background:var(--ds-gold-soft);border-color:var(--ds-gold-line,#d9c08c)}html[data-theme] #appRoot .mycK .g b{color:var(--ds-gold-strong)}
+html[data-theme] #appRoot .mycNext{margin:12px 0 4px;padding:10px 14px;border-radius:12px;background:var(--ds-green-soft,rgba(47,158,98,.1));color:var(--ds-green,#2f7d4f);font-weight:700;font-size:13px}
+html[data-theme] #appRoot .mycT{width:100%;border-collapse:collapse;margin-top:10px;font-size:12.5px}
+html[data-theme] #appRoot .mycT th{text-align:left;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ds-muted);padding:6px 8px;background:var(--ds-surface-2)}
+html[data-theme] #appRoot .mycT td{padding:6px 8px;border-bottom:1px solid var(--ds-line)}html[data-theme] #appRoot .mycT .n{text-align:right;font-variant-numeric:tabular-nums}
+html[data-theme] #appRoot .mycH{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+html[data-theme] #appRoot .mycH span{padding:6px 10px;border-radius:10px;border:1px solid var(--ds-line);background:var(--ds-surface-2);font-size:12px}
+html[data-theme] #appRoot .mycH b{font-variant-numeric:tabular-nums}
+html[data-theme] #appRoot .mycNote{font-size:11.5px;color:var(--ds-muted);margin-top:10px}
+@media(max-width:900px){html[data-theme] #appRoot .mycK{grid-template-columns:1fr 1fr}}
+</style>
+<script>
+/* =====================================================================
+   EDEN BI — "My commission" for Sales / Sales Manager accounts
+   (Targets page). Same calculation as Internal Commissions, from the
+   person's own deals and rates (getMyCommSetup), for the chosen month.
+   ===================================================================== */
+let MYC_=null,MYC_BUSY_=false;
+function mycLoad_(){
+  if(MYC_BUSY_||MYC_)return;MYC_BUSY_=true;
+  google.script.run.withSuccessHandler(d=>{MYC_BUSY_=false;MYC_=d||{err:true};if(typeof dsTargetsRender_==='function')dsTargetsRender_();})
+    .withFailureHandler(()=>{MYC_BUSY_=false;MYC_={err:true};}).getMyCommSetup(AUTH_TOKEN);
+}
+function mycMonth_(){
+  const T=typeof DS_TG!=='undefined'?DS_TG:null,now=new Date();
+  const y=T&&T.period==='Monthly'?Number(T.year):now.getFullYear(),m=T&&T.period==='Monthly'?Number(T.month):now.getMonth()+1;
+  const p=n=>String(n).padStart(2,'0');return {from:`${y}-${p(m)}-01`,to:`${y}-${p(m)}-${p(new Date(y,m,0).getDate())}`,key:`${y}-${p(m)}`,label:new Date(y,m-1,1).toLocaleDateString('en-GB',{month:'long',year:'numeric'})};
+}
+/* Run the Internal Commissions engine on this person's data, then put its state back. */
+function mycCompute_(){
+  if(!MYC_||MYC_.err||typeof icSales_!=='function')return null;
+  const M=mycMonth_(),keep={};['setup','ov','from','to','sel','dpMin','dpMax','q'].forEach(k=>keep[k]=IC_[k]);
+  try{
+    Object.assign(IC_,{setup:MYC_.setup,ov:MYC_.ov||{},from:M.from,to:M.to,sel:{project:MYC_.setup.project?[MYC_.setup.project]:[]},dpMin:9,dpMax:null,q:''});
+    const me=icNorm_(MYC_.name);
+    const s=icSales_().find(p=>icNorm_(p.name)===me);
+    if(s)return {kind:'sales',p:s,M};
+    const o=icOthers_().find(p=>icNorm_(p.name)===me);
+    return o?{kind:'other',p:o,M}:{kind:'none',M};
+  }finally{Object.assign(IC_,keep);}
+}
+function mycRender_(){
+  const self=typeof dsSalesSelf_==='function'?dsSalesSelf_():null;
+  const host=document.getElementById('dsTargets');if(!host)return;
+  let el=document.getElementById('myc');
+  if(!self){el?.remove();return;}
+  if(!MYC_){mycLoad_();return;}
+  if(MYC_.err)return;
+  if(!el){el=document.createElement('div');el.id='myc';el.className='myc';const hero=host.querySelector('.dsTgHero');if(hero)hero.after(el);else host.prepend(el);}
+  else{const hero=host.querySelector('.dsTgHero');if(hero&&el.previousElementSibling!==hero)hero.after(el);}
+  const R=mycCompute_(),N=n=>Number(n||0).toLocaleString('en-US',{maximumFractionDigits:0}),E=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const closed=(MYC_.closed||[]).find(c=>c.month===R.M.key);
+  const hist=(MYC_.closed||[]).slice(0,6);
+  let body='';
+  if(R.kind==='sales'){
+    const p=R.p,S=MYC_.setup;
+    // next tier (In-direct = most deals)
+    const tiers=(S.indirect||[]).slice().sort((a,b)=>a[0]-b[0]),next=tiers.find(t=>t[0]>p.ach+1e-9);
+    const need=next&&p.target?Math.max(0,next[0]*p.target-p.credited):0;
+    body=`<div class="mycK"><div class="g"><span>${closed?'Commission (closed)':'Estimated commission'}</span><b>${N(closed?closed.comm:p.comm)} EGP</b></div>
+        <div><span>Credited sales</span><b>${N(p.credited)}</b></div><div><span>Target</span><b>${N(p.target)}</b></div><div><span>Achievement</span><b>${icPct_(p.ach)}</b></div></div>
+      ${closed?`<div class="mycNext" style="background:var(--ds-gold-soft);color:var(--ds-gold-strong)">🔒 This month is closed${closed.paid?' · Paid ✓':' · waiting to be paid'}.</div>`:
+        next&&need>0?`<div class="mycNext">🚀 ${N(need)} EGP more and your In-direct rate goes up to ${icPct_(next[1],2)} on all your deals this month.</div>`:p.ach>=1?`<div class="mycNext">🏆 Target achieved — top rate this month.</div>`:''}
+      ${p.deals.length?`<table class="mycT"><thead><tr><th>Unit</th><th>Client</th><th>Reservation</th><th class="n">Credited</th><th>Type</th><th class="n">Rate</th><th class="n">Commission</th></tr></thead><tbody>
+        ${p.deals.map(d=>`<tr><td>${E(d.r.unitCode)}</td><td>${E(d.r.clientName||'')}</td><td>${E(icDealDay_(d.r))}</td><td class="n">${N(d.credit)}${d.share?' <small>(share)</small>':''}</td><td>${E(d.type)}</td><td class="n">${icPct_(d.rate,2)}</td><td class="n">${N(d.comm)}</td></tr>`).join('')}</tbody></table>`
+        :'<div class="mycNote">No deals counting for commission this month yet (deals count from 9% down payment paid).</div>'}`;
+  }else if(R.kind==='other'){
+    const p=R.p;
+    body=`<div class="mycK"><div class="g"><span>${closed?'Commission (closed)':'Estimated commission'}</span><b>${N(closed?closed.comm:p.comm)} EGP</b></div><div><span>Deals</span><b>${p.n}</b></div><div><span>Sales value</span><b>${N(p.sales)}</b></div><div><span>Department</span><b style="font-size:14px">${E(p.dept)}</b></div></div>`;
+  }else body='<div class="mycNote">You are not set up for internal commissions yet — ask the admin.</div>';
+  el.innerHTML=`<div class="dsTgKicker">My commission · ${E(R.M.label)}</div><h3>${E(MYC_.name)}</h3>${body}
+    ${hist.length?`<div class="mycH">${hist.map(c=>`<span>${E(new Date(c.month+'-01T00:00').toLocaleDateString('en-GB',{month:'short',year:'numeric'}))} · <b>${N(c.comm)}</b> ${c.paid?'✓ paid':'⏳'}</span>`).join('')}</div>`:''}
+    <div class="mycNote">Estimate from your deals so far — deals count by reservation date once 9% of the price is paid; shared deals count half. The final figure is the one in the closed month.</div>`;
+}
+(function(){
+  const hook=()=>{
+    if(typeof dsTargetsRender_!=='function'||dsTargetsRender_.__myc)return false;
+    const o=dsTargetsRender_;
+    dsTargetsRender_=function(){const r=o.apply(this,arguments);try{if(typeof currentView!=='undefined'&&currentView==='targets')mycRender_();}catch(e){console.warn('My commission',e);}return r;};
+    dsTargetsRender_.__myc=true;return true;
+  };
+  if(!hook())document.addEventListener('DOMContentLoaded',hook);
+})();
+</script>

@@ -129,3 +129,40 @@ function setCommOverrides(authToken, items) {
   } finally { lock.releaseLock(); }
   return getCommOverrides(authToken);
 }
+
+/* ---------- Sales / Sales Manager: their own commission view ----------
+   Only what is needed to estimate their own commission: rates, their own
+   staff entry, the manual choices on their own deals, and their closed months. */
+function getMyCommSetup(authToken) {
+  const user = validateAuthToken_(authToken);
+  if (!isSalesScopedUser_(user)) throw new Error('For sales accounts only.');
+  const me = salesNameKey_(user.name);
+  const s = commReadSetup_();
+  const staff = (s.staff || []).filter(p => salesNameKey_(p.name) === me && p.active !== false);
+  const setup = { roles: s.roles, indirect: s.indirect, direct: s.direct, privateRate: s.privateRate, shareSplit: s.shareSplit, project: s.project, depts: s.depts, staff: staff };
+  // manual choices only for the deals this user can see
+  let ov = {};
+  try {
+    let data = dashCacheRead_('ALL', 6 * 3600 * 1000) || buildDashboardData_({ role: 'Admin' });
+    const mine = scopeDashboardForSales_(data, user).rows || [];
+    const key = r => [r.project, r.unitCode, r.clientName, (Number(r.year) && Number(r.month)) ? r.year + '-' + String(r.month).padStart(2, '0') + '-' + String(Number(r.day) || 1).padStart(2, '0') : '']
+      .map(v => String(v == null ? '' : v).trim().toLowerCase().replace(/\s+/g, ' ')).join('|');
+    const keys = {}; mine.forEach(r => keys[key(r)] = 1);
+    const all = getCommOverridesAll_();
+    Object.keys(all).forEach(k => { if (keys[k]) ov[k] = { inc: all[k].inc }; });
+  } catch (e) { console.warn('My overrides: ' + e); }
+  // closed months for this person
+  let closed = [];
+  try {
+    closed = commCloseRows_().filter(r => salesNameKey_(r[1]) === me).map(r => ({ month: String(r[0]), comm: Number(r[7]) || 0, credited: Number(r[5]) || 0, ach: Number(r[6]) || 0,
+      paid: r[12] === true || String(r[12]).toUpperCase() === 'TRUE', paidAt: r[13] instanceof Date ? r[13].toISOString() : String(r[13] || '') }))
+      .sort((a, b) => b.month.localeCompare(a.month)).slice(0, 12);
+  } catch (e) {}
+  return { setup: setup, ov: ov, closed: closed, name: user.name };
+}
+function getCommOverridesAll_() {
+  const sh = commOvSheet_(), last = sh.getLastRow(), out = {};
+  if (last < 2) return out;
+  sh.getRange(2, 1, last - 1, 2).getValues().forEach(r => { const k = String(r[0] || '').trim(); if (k) out[k] = { inc: r[1] === true || String(r[1]).toUpperCase() === 'TRUE' }; });
+  return out;
+}
