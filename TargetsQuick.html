@@ -1,0 +1,269 @@
+<style id="eden-targets-quick">
+#targetsModal .targetsDialog{max-height:calc(100vh - 40px);overflow:auto}
+.tqTabs{display:flex;gap:6px;margin:14px 0 4px;border-bottom:1px solid var(--ds-line,#e8e0d1)}
+.tqTab{all:unset;cursor:pointer;padding:9px 14px;font-size:13px;font-weight:700;color:var(--ds-muted,#83796b);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tqTab.on{color:var(--ds-gold-strong,#8f6d2c);border-bottom-color:var(--ds-gold,#b08a42)}
+#targetsModal.tqMode .targetForm,#targetsModal.tqMode .targetsTableWrap{display:none}
+#targetsModal:not(.tqMode) #tq{display:none}
+#tq{margin-top:12px}
+.tqBar{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end}
+.tqField{display:flex;flex-direction:column;gap:5px}
+.tqField>span{font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--ds-muted,#83796b)}
+.tqSeg{display:inline-flex;flex-wrap:wrap;gap:4px;padding:3px;border-radius:11px;background:var(--ds-surface-2,#f6f1e8);border:1px solid var(--ds-line,#e8e0d1)}
+.tqSeg button{all:unset;cursor:pointer;padding:6px 11px;border-radius:8px;font-size:12.5px;font-weight:700;color:var(--ds-text,#2b261f)}
+.tqSeg button.on{background:var(--ds-gold-grad,linear-gradient(135deg,#c9a45c,#a07c3a));color:var(--ds-on-gold,#fff);box-shadow:0 2px 6px rgba(160,124,58,.25)}
+.tqSeg.months button{padding:6px 8px;min-width:30px;text-align:center}
+.tqTools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:14px 0 10px;padding:10px 12px;border-radius:12px;background:var(--ds-surface-2,#f8f4ec);border:1px solid var(--ds-line,#e8e0d1)}
+.tqTools input{height:34px;border:1px solid var(--ds-line,#e3d9c7);border-radius:9px;padding:0 10px;background:var(--ds-surface,#fff);color:var(--ds-text);font:inherit;font-size:13px}
+.tqTools .tqAll{width:140px;text-align:right;font-variant-numeric:tabular-nums}
+.tqTools .tqSearch{flex:1 1 160px;min-width:140px}
+.tqBtn{all:unset;cursor:pointer;height:34px;padding:0 12px;display:inline-flex;align-items:center;gap:6px;border-radius:9px;border:1px solid var(--ds-line,#e3d9c7);background:var(--ds-surface,#fff);font-size:12.5px;font-weight:700;color:var(--ds-text)}
+.tqBtn:hover{border-color:var(--ds-gold,#b08a42)}
+.tqBtn.gold{background:var(--ds-gold-grad,linear-gradient(135deg,#c9a45c,#a07c3a));color:var(--ds-on-gold,#fff);border-color:transparent}
+.tqBtn[disabled]{opacity:.45;pointer-events:none}
+.tqSel{height:36px;border:1px solid var(--ds-line,#e3d9c7);border-radius:10px;padding:0 10px;background:var(--ds-surface,#fff);color:var(--ds-text);font:inherit;font-size:13px;font-weight:700}
+.tqSep{width:1px;height:24px;background:var(--ds-line,#e3d9c7)}
+.tqChk{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--ds-muted,#83796b);cursor:pointer}
+.tqList{border:1px solid var(--ds-line,#e8e0d1);border-radius:14px;overflow:hidden}
+.tqRow{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) 190px 28px;gap:12px;align-items:center;padding:7px 14px;border-top:1px solid var(--ds-line,#efe8db)}
+.tqRow:first-child{border-top:0}
+.tqRow.head{background:var(--ds-surface-2,#f8f4ec);font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--ds-muted,#83796b);padding:9px 14px}
+.tqRow .nm{font-weight:700;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tqRow .nm small{display:block;font-weight:500;font-size:11px;color:var(--ds-muted,#83796b)}
+.tqRow .prev{font-size:12px;color:var(--ds-muted,#83796b);font-variant-numeric:tabular-nums}
+.tqRow input{height:34px;width:100%;box-sizing:border-box;border:1px solid var(--ds-line,#e3d9c7);border-radius:9px;padding:0 10px;text-align:right;font:inherit;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;background:var(--ds-surface,#fff);color:var(--ds-text)}
+.tqRow input:focus{outline:none;border-color:var(--ds-gold,#b08a42);box-shadow:0 0 0 3px var(--ds-gold-soft,rgba(176,138,66,.15))}
+.tqRow.chg{background:var(--ds-gold-soft,#fbf4e6)}
+.tqRow.chg input{border-color:var(--ds-gold,#b08a42)}
+.tqRow .dot{font-size:15px;text-align:center;color:var(--ds-gold,#b08a42)}
+.tqRow .clr{all:unset;cursor:pointer;color:var(--ds-muted,#83796b);font-size:16px;text-align:center}
+.tqRow .clr:hover{color:#b3261e}
+.tqEmpty{padding:28px;text-align:center;color:var(--ds-muted,#83796b);font-size:13px}
+.tqFoot{position:sticky;bottom:-24px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-top:12px;padding:12px 14px;border-radius:14px;background:var(--ds-surface,#fffdf8);border:1px solid var(--ds-line,#e8e0d1);box-shadow:0 -6px 18px rgba(0,0,0,.06)}
+.tqFoot .sum{font-size:13px;color:var(--ds-muted,#83796b)}.tqFoot .sum b{color:var(--ds-text);font-size:15px;font-variant-numeric:tabular-nums}
+.tqHint{font-size:11.5px;color:var(--ds-muted,#83796b);margin-top:8px}
+.tqMsg{font-size:12.5px;font-weight:700}.tqMsg.ok{color:#1f7a4d}.tqMsg.err{color:#b3261e}
+@media (max-width:720px){.tqRow{grid-template-columns:minmax(0,1fr) 130px 22px}.tqRow .prev{display:none}}
+</style>
+<script>
+/* =====================================================================
+   EDEN BI — Target Center › Quick setup.
+   Pick who (Sales / Managers / Branches / Company), the period and the
+   currency once; everyone is listed with a box for the target. Type the
+   numbers (8m, 750k, 8,000,000 all work), "same for all", or copy the
+   previous period, then save everything with one click (saveTargetsBulk).
+   Clearing a box removes that person's target for the period.
+   ===================================================================== */
+const TQ_MONTHS_=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const TQ_={mode:'quick',scope:'Sales',period:'Monthly',year:new Date().getFullYear(),month:new Date().getMonth()+1,quarter:Math.floor(new Date().getMonth()/3)+1,cur:'EGP',vals:{},all:false,q:'',busy:false,msg:''};
+function tqEsc_(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function tqFmt_(n){return n?Number(n).toLocaleString('en-US',{maximumFractionDigits:2}):'';}
+/* "8m" → 8,000,000 · "750k" → 750,000 · "8,000,000" → 8000000 · "8 مليون" → 8,000,000 */
+function tqParse_(s){
+  s=String(s??'').trim().toLowerCase().replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/,|\s/g,'');
+  if(!s)return 0;
+  const m=s.match(/^(\d*\.?\d+)(m|mn|million|مليون|k|ألف|الف|b|bn)?$/);if(!m)return NaN;
+  const mul={m:1e6,mn:1e6,million:1e6,'مليون':1e6,k:1e3,'ألف':1e3,'الف':1e3,b:1e9,bn:1e9}[m[2]]||1;
+  return Math.round(Number(m[1])*mul*100)/100;
+}
+function tqLow_(v){return String(v||'').trim().toLowerCase();}
+function tqData_(){return (typeof TARGETS_DATA!=='undefined'&&Array.isArray(TARGETS_DATA))?TARGETS_DATA:[];}
+/* Saved target of a name for a period (exact match only). */
+function tqSaved_(name,per){
+  per=per||TQ_;const key=TQ_.cur==='USD'?'targetUSD':'targetEGP';
+  const t=tqData_().find(t=>tqLow_(t.scope)===tqLow_(TQ_.scope)&&tqLow_(t.name)===tqLow_(name)&&tqLow_(t.period)===tqLow_(per.period)&&Number(t.year)===Number(per.year)&&
+    (per.period!=='Monthly'||tqLow_(t.month)===tqLow_(TQ_MONTHS_[per.month-1]))&&(per.period!=='Quarterly'||String(t.quarter).toUpperCase()==='Q'+per.quarter));
+  return t?(Number(t[key])||0):0;
+}
+function tqPrevPer_(){
+  const p={period:TQ_.period,year:TQ_.year,month:TQ_.month,quarter:TQ_.quarter};
+  if(p.period==='Monthly'){if(p.month===1){p.month=12;p.year--;}else p.month--;}
+  else if(p.period==='Quarterly'){if(p.quarter===1){p.quarter=4;p.year--;}else p.quarter--;}
+  else p.year--;
+  return p;
+}
+function tqPerLabel_(p){p=p||TQ_;return p.period==='Monthly'?TQ_MONTHS_[p.month-1].slice(0,3)+' '+p.year:p.period==='Quarterly'?'Q'+p.quarter+' '+p.year:String(p.year);}
+/* Names for the scope; "active" = sold in the last 6 months, or already has a target for this period. */
+function tqNames_(){
+  const base=(typeof targetNameOptions_==='function'?targetNameOptions_(TQ_.scope):[])||[];
+  const names=new Set(base.map(n=>String(n).trim()).filter(Boolean));
+  tqData_().forEach(t=>{if(tqLow_(t.scope)===tqLow_(TQ_.scope)&&t.name)names.add(String(t.name).trim());});
+  let list=[...names];
+  const deals={},cut=new Date();cut.setMonth(cut.getMonth()-6);const cutKey=cut.getFullYear()*100+cut.getMonth()+1;
+  if(TQ_.scope==='Sales'){
+    ((typeof rawRows!=='undefined'&&rawRows)||[]).forEach(r=>{
+      const k=(Number(r.year)||0)*100+(Number(r.month)||0);if(k<cutKey)return;
+      if(typeof isCancelledStatus_==='function'&&isCancelledStatus_(r.status))return;
+      [r.salesName,typeof isShareDeal_==='function'&&isShareDeal_(r)?r.sharedWith:''].forEach(n=>{n=tqLow_(n);if(n)deals[n]=(deals[n]||0)+1;});
+    });
+    if(!TQ_.all)list=list.filter(n=>deals[tqLow_(n)]||tqSaved_(n)||(n in TQ_.vals));
+  }
+  if(TQ_.q)list=list.filter(n=>tqLow_(n).includes(TQ_.q));
+  return list.sort((a,b)=>a.localeCompare(b)).map(n=>({name:n,deals:deals[tqLow_(n)]||0}));
+}
+function tqCur_(name){return name in TQ_.vals?TQ_.vals[name]:tqSaved_(name);}
+function tqChanged_(){return Object.keys(TQ_.vals).filter(n=>{const v=TQ_.vals[n];return !isNaN(v)&&v!==tqSaved_(n);});}
+
+function tqMount_(){
+  const modal=document.getElementById('targetsModal'),dlg=modal&&modal.querySelector('.targetsDialog');
+  if(!dlg||document.getElementById('tq'))return;
+  const tabs=document.createElement('div');tabs.className='tqTabs';
+  tabs.innerHTML='<button type="button" class="tqTab" data-tqmode="quick">⚡ Quick setup</button><button type="button" class="tqTab" data-tqmode="list">All targets</button>';
+  const head=dlg.querySelector('.targetsDialogHead');head.after(tabs);
+  const box=document.createElement('div');box.id='tq';tabs.after(box);
+  tabs.addEventListener('click',e=>{const b=e.target.closest('[data-tqmode]');if(!b)return;TQ_.mode=b.dataset.tqmode;tqPaintMode_();});
+  box.addEventListener('click',tqClick_);
+  box.addEventListener('input',e=>{
+    if(e.target.matches('.tqSearch')){TQ_.q=tqLow_(e.target.value);tqRenderList_();return;}
+    const i=e.target.closest('input[data-nm]');if(!i)return;
+    TQ_.vals[i.dataset.nm]=tqParse_(i.value);tqPaintRow_(i.closest('.tqRow'),i.dataset.nm);tqPaintFoot_();
+  });
+  box.addEventListener('change',e=>{
+    if(e.target.matches('[data-tqall-show]')){TQ_.all=e.target.checked;tqRenderList_();return;}
+    if(e.target.matches('[data-tqyear]')){if(tqGuard_()){TQ_.year=Number(e.target.value);tqRender_();}else e.target.value=TQ_.year;return;}
+    const i=e.target.closest('input[data-nm]');if(i){const v=tqParse_(i.value);if(!isNaN(v))i.value=tqFmt_(v);}
+  });
+  box.addEventListener('keydown',e=>{
+    const i=e.target.closest('input[data-nm]');
+    if(i&&(e.key==='Enter'||e.key==='ArrowDown'||e.key==='ArrowUp')){
+      e.preventDefault();const all=[...box.querySelectorAll('input[data-nm]')],k=all.indexOf(i)+(e.key==='ArrowUp'?-1:1);
+      if(all[k]){all[k].focus();all[k].select();}else if(e.key==='Enter')tqSave_();
+    }
+    if(e.target.matches('.tqAll')&&e.key==='Enter'){e.preventDefault();box.querySelector('[data-tq="fill"]').click();}
+  });
+}
+function tqPaintMode_(){
+  const modal=document.getElementById('targetsModal');if(!modal)return;
+  modal.classList.toggle('tqMode',TQ_.mode==='quick');
+  modal.querySelectorAll('[data-tqmode]').forEach(b=>b.classList.toggle('on',b.dataset.tqmode===TQ_.mode));
+  if(TQ_.mode==='quick')tqRender_();
+}
+/* Unsaved numbers would be lost when switching period / scope / currency. */
+function tqGuard_(){
+  if(!tqChanged_().length)return true;
+  if(!confirm('You have '+tqChanged_().length+' unsaved target(s). Discard them?'))return false;
+  TQ_.vals={};return true;
+}
+function tqClick_(e){
+  const b=e.target.closest('[data-tq]');if(!b)return;
+  const [k,v]=b.dataset.tq.split(':');
+  if(k==='scope'||k==='period'||k==='cur'){if(TQ_[k]===v||!tqGuard_())return;TQ_[k]=v;TQ_.msg='';tqRender_();return;}
+  if(k==='month'||k==='quarter'){if(TQ_[k]===Number(v)||!tqGuard_())return;TQ_[k]=Number(v);TQ_.msg='';tqRender_();return;}
+  if(k==='fill'){
+    const inp=document.querySelector('#tq .tqAll'),n=tqParse_(inp.value);
+    if(isNaN(n)||!n){inp.focus();return;}
+    tqNames_().forEach(x=>TQ_.vals[x.name]=n);tqRenderList_();return;
+  }
+  if(k==='copy'){
+    const p=tqPrevPer_();let c=0;
+    tqNames_().forEach(x=>{const pv=tqSaved_(x.name,p);if(pv){TQ_.vals[x.name]=pv;c++;}});
+    TQ_.msg=c?'':'No targets in '+tqPerLabel_(p)+' to copy.';tqRenderList_();return;
+  }
+  if(k==='clr'){TQ_.vals[v]=0;tqRenderList_();return;}
+  if(k==='undo'){TQ_.vals={};TQ_.msg='';tqRenderList_();return;}
+  if(k==='save'){tqSave_();return;}
+}
+function tqRender_(){
+  const box=document.getElementById('tq');if(!box)return;
+  const y=new Date().getFullYear(),years=[];for(let i=y-2;i<=y+2;i++)years.push(i);
+  const seg=(key,list,cls)=>`<div class="tqSeg${cls?' '+cls:''}">${list.map(([v,l])=>`<button type="button" data-tq="${key}:${v}" class="${String(TQ_[key])===String(v)?'on':''}">${l}</button>`).join('')}</div>`;
+  box.innerHTML=`<div class="tqBar">
+      <div class="tqField"><span>Who</span>${seg('scope',[['Sales','Sales'],['Manager','Managers'],['Branch','Branches'],['Company','Company']])}</div>
+      <div class="tqField"><span>Period</span>${seg('period',[['Monthly','Month'],['Quarterly','Quarter'],['Yearly','Year']])}</div>
+      <div class="tqField"><span>Year</span><select data-tqyear class="tqSel">${years.map(v=>`<option${v===TQ_.year?' selected':''}>${v}</option>`).join('')}</select></div>
+      <div class="tqField"><span>Currency</span>${seg('cur',[['EGP','EGP'],['USD','USD']])}</div>
+    </div>
+    ${TQ_.period==='Monthly'?`<div class="tqBar" style="margin-top:10px"><div class="tqField"><span>Month</span>${seg('month',TQ_MONTHS_.map((m,i)=>[i+1,m.slice(0,3)]),'months')}</div></div>`:''}
+    ${TQ_.period==='Quarterly'?`<div class="tqBar" style="margin-top:10px"><div class="tqField"><span>Quarter</span>${seg('quarter',[[1,'Q1'],[2,'Q2'],[3,'Q3'],[4,'Q4']])}</div></div>`:''}
+    <div class="tqTools">
+      <input class="tqAll" placeholder="e.g. 8m" inputmode="decimal"><button type="button" class="tqBtn" data-tq="fill">Same for everyone</button>
+      <span class="tqSep"></span>
+      <button type="button" class="tqBtn" data-tq="copy">⧉ Copy ${tqEsc_(tqPerLabel_(tqPrevPer_()))}</button>
+      <span class="tqSep"></span>
+      <input class="tqSearch" type="search" placeholder="Search name…" value="${tqEsc_(TQ_.q)}">
+      ${TQ_.scope==='Sales'?`<label class="tqChk"><input type="checkbox" data-tqall-show${TQ_.all?' checked':''}> Show everyone (not only active)</label>`:''}
+    </div>
+    <div class="tqList" id="tqList"></div>
+    <div class="tqHint">Type 8m, 750k or 8,000,000 · Enter / ↓ moves to the next person · an empty box removes that person's target for ${tqEsc_(tqPerLabel_())}.</div>
+    <div class="tqFoot" id="tqFoot"></div>`;
+  tqRenderList_();
+}
+function tqRenderList_(){
+  const el=document.getElementById('tqList');if(!el)return;
+  const names=tqNames_(),prev=tqPrevPer_();
+  el.innerHTML=`<div class="tqRow head"><span>${TQ_.scope==='Sales'?'Salesperson':TQ_.scope}</span><span>${tqEsc_(tqPerLabel_(prev))}</span><span style="text-align:right">Target ${tqEsc_(tqPerLabel_())} · ${TQ_.cur}</span><span></span></div>`+
+    (names.length?names.map(x=>{const v=tqCur_(x.name),pv=tqSaved_(x.name,prev);
+      return `<div class="tqRow" data-row="${tqEsc_(x.name)}"><div class="nm">${tqEsc_(x.name)}${TQ_.scope==='Sales'?`<small>${x.deals?x.deals+(x.deals===1?' deal':' deals')+' · last 6 months':'No deals in 6 months'}</small>`:''}</div>
+        <div class="prev">${pv?tqFmt_(pv):'—'}</div>
+        <input data-nm="${tqEsc_(x.name)}" inputmode="decimal" placeholder="0" value="${tqFmt_(v)}">
+        <button type="button" class="clr" data-tq="clr:${tqEsc_(x.name)}" title="Clear">×</button></div>`;}).join(''):
+      `<div class="tqEmpty">No names${TQ_.q?' match the search':''}.</div>`);
+  el.querySelectorAll('.tqRow[data-row]').forEach(r=>tqPaintRow_(r,r.dataset.row));
+  tqPaintFoot_();
+}
+function tqPaintRow_(row,name){
+  if(!row)return;const v=TQ_.vals[name],bad=name in TQ_.vals&&isNaN(v);
+  row.classList.toggle('chg',name in TQ_.vals&&!bad&&v!==tqSaved_(name));
+  const i=row.querySelector('input');if(i)i.style.borderColor=bad?'#b3261e':'';
+}
+function tqPaintFoot_(){
+  const f=document.getElementById('tqFoot');if(!f)return;
+  const ch=tqChanged_(),bad=Object.values(TQ_.vals).some(v=>isNaN(v));
+  const total=tqNames_().reduce((a,x)=>a+(Number(tqCur_(x.name))||0),0);
+  f.innerHTML=`<div class="sum">Total ${tqEsc_(tqPerLabel_())}: <b>${tqFmt_(total)||0} ${TQ_.cur}</b>${TQ_.msg?` · <span class="tqMsg ${/^Saved/.test(TQ_.msg)?'ok':'err'}">${tqEsc_(TQ_.msg)}</span>`:''}${bad?' · <span class="tqMsg err">Fix the red box</span>':''}</div>
+    <div style="display:flex;gap:8px"><button type="button" class="tqBtn" data-tq="undo"${ch.length?'':' disabled'}>Discard</button>
+    <button type="button" class="tqBtn gold" data-tq="save"${ch.length&&!bad&&!TQ_.busy?'':' disabled'}>${TQ_.busy?'Saving…':ch.length?'Save '+ch.length+' change'+(ch.length>1?'s':''):'Saved'}</button></div>`;
+}
+function tqSave_(){
+  const ch=tqChanged_();if(!ch.length||TQ_.busy)return;
+  if(Object.values(TQ_.vals).some(v=>isNaN(v)))return;
+  const other=TQ_.cur==='USD'?'targetEGP':'targetUSD';
+  const items=ch.map(n=>{
+    // keep the other currency as it is
+    const t=tqData_().find(t=>tqLow_(t.scope)===tqLow_(TQ_.scope)&&tqLow_(t.name)===tqLow_(n)&&tqLow_(t.period)===tqLow_(TQ_.period)&&Number(t.year)===TQ_.year&&
+      (TQ_.period!=='Monthly'||tqLow_(t.month)===tqLow_(TQ_MONTHS_[TQ_.month-1]))&&(TQ_.period!=='Quarterly'||String(t.quarter).toUpperCase()==='Q'+TQ_.quarter));
+    const o=t?Number(t[other])||0:0,v=Number(TQ_.vals[n])||0;
+    return TQ_.cur==='USD'?{name:n,egp:o,usd:v}:{name:n,egp:v,usd:o};
+  });
+  TQ_.busy=true;TQ_.msg='';tqPaintFoot_();
+  google.script.run.withSuccessHandler(res=>{
+      TQ_.busy=false;TQ_.vals={};TQ_.msg='Saved ✓ '+((res&&res.saved)||0)+' updated'+(res&&res.removed?', '+res.removed+' removed':'');
+      if(typeof loadTargetsData_==='function')loadTargetsData_();else tqRenderList_();
+    })
+    .withFailureHandler(err=>{TQ_.busy=false;TQ_.msg=(err&&err.message)||String(err);tqPaintFoot_();})
+    .saveTargetsBulk(AUTH_TOKEN,{scope:TQ_.scope,period:TQ_.period,year:TQ_.year,month:TQ_MONTHS_[TQ_.month-1],quarter:'Q'+TQ_.quarter,items});
+}
+(function initTargetsQuick_(){
+  const go=()=>{
+    tqMount_();
+    if(typeof openTargetsManager_==='function'&&!openTargetsManager_.__tq){
+      const o=openTargetsManager_;
+      openTargetsManager_=function(){const r=o.apply(this,arguments);tqMount_();tqPaintMode_();return r;};
+      openTargetsManager_.__tq=true;
+    }
+    if(typeof renderTargetsManager_==='function'&&!renderTargetsManager_.__tq){
+      const o=renderTargetsManager_;
+      renderTargetsManager_=function(){const r=o.apply(this,arguments);if(TQ_.mode==='quick'&&!document.getElementById('targetsModal')?.classList.contains('hidden'))tqRenderList_();return r;};
+      renderTargetsManager_.__tq=true;
+    }
+    if(typeof closeTargetsManager_==='function'&&!closeTargetsManager_.__tq){
+      const o=closeTargetsManager_;
+      closeTargetsManager_=function(){if(tqChanged_().length&&!confirm('You have unsaved targets. Close anyway?'))return;TQ_.vals={};TQ_.msg='';return o.apply(this,arguments);};
+      closeTargetsManager_.__tq=true;
+    }
+    // "Set / Edit" on the Targets page: open Quick setup on that period and jump to the person.
+    if(typeof dsTgPrefill_==='function'&&!dsTgPrefill_.__tq){
+      dsTgPrefill_=function(scope,name){
+        if(typeof DS_TG!=='undefined'){TQ_.period=DS_TG.period||TQ_.period;TQ_.year=Number(DS_TG.year)||TQ_.year;TQ_.month=Number(DS_TG.month)||TQ_.month;TQ_.quarter=Number(DS_TG.quarter)||TQ_.quarter;TQ_.cur=DS_TG.cur==='USD'?'USD':'EGP';}
+        TQ_.scope=scope||'Sales';TQ_.vals={};TQ_.q='';TQ_.msg='';TQ_.mode='quick';
+        if(TQ_.scope==='Sales'&&!tqNames_().some(x=>x.name===name))TQ_.all=true;
+        openTargetsManager_();
+        const i=[...document.querySelectorAll('#tq input[data-nm]')].find(x=>x.dataset.nm===name);
+        if(i){i.scrollIntoView({block:'center'});i.focus();i.select();}
+      };
+      dsTgPrefill_.__tq=true;
+    }
+  };
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();
+})();
+</script>

@@ -15,6 +15,7 @@
 .icFilters{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;padding:10px 18px 0}
 .icFilters label{display:flex;flex-direction:column;gap:3px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ds-muted,#83796b)}
 .icFilters input,.icFilters select{height:32px!important}
+.icTc{font-size:10.5px;font-weight:700;color:var(--ds-gold-strong,#8f6d2c)}
 .icMsWrap{display:flex;flex-wrap:wrap;gap:8px;width:100%;order:9}
 .icGrp{display:flex;flex-direction:column;gap:4px;padding:6px 10px 8px;border:1px solid var(--ds-line,#e8e0d1);border-radius:12px;background:var(--ds-surface-2,#faf6ef)}
 .icGrp>em{font-style:normal;font-size:11px;font-weight:800;color:var(--ds-gold-strong,#8f6d2c)}.icGrp>div{display:flex;gap:8px;flex-wrap:wrap}
@@ -141,6 +142,26 @@ function icMsOpen_(btn){
 document.addEventListener('click',e=>{if(!e.target.closest('.icMs'))document.querySelector('.icMsPop')?.remove();});
 function icStaff_(){return ((IC_.setup&&IC_.setup.staff)||[]).filter(p=>p.active!==false);}
 /* Sales team */
+/* Target of a salesperson over the filter range, month by month: the Target Center
+   (monthly, else quarterly ÷ 3, else yearly ÷ 12, EGP) wins; otherwise the role's monthly target. */
+function icTcTarget_(name,roleMonthly){
+  const T=(typeof TARGETS_DATA!=='undefined'&&Array.isArray(TARGETS_DATA))?TARGETS_DATA:[],n=icNorm_(name);
+  const mine=T.filter(t=>icNorm_(t.scope)==='sales'&&icNorm_(t.name)===n);
+  const M=['january','february','march','april','may','june','july','august','september','october','november','december'];
+  if(!IC_.from||!IC_.to)return {v:roleMonthly,from:0};
+  let d=new Date(IC_.from+'T00:00');const end=new Date(IC_.to+'T00:00');let v=0,from=0;
+  while(d<=end||(d.getFullYear()===end.getFullYear()&&d.getMonth()===end.getMonth())){
+    const y=d.getFullYear(),m=d.getMonth(),q='Q'+(Math.floor(m/3)+1);
+    const yr=mine.filter(t=>Number(t.year)===y);
+    const mo=yr.find(t=>icNorm_(t.period)==='monthly'&&(icNorm_(t.month)===M[m]||Number(t.month)===m+1));
+    const qu=yr.find(t=>icNorm_(t.period)==='quarterly'&&String(t.quarter).toUpperCase()===q);
+    const ye=yr.find(t=>icNorm_(t.period)==='yearly');
+    const x=mo?Number(mo.targetEGP):qu?Number(qu.targetEGP)/3:ye?Number(ye.targetEGP)/12:0;
+    if(x>0){v+=x;from++;}else v+=roleMonthly;
+    d=new Date(y,m+1,1);if(d>end)break;
+  }
+  return {v,from};
+}
 function icSales_(){
   const S=IC_.setup,deals=icDeals_(),split=Number(S.shareSplit)||0.5,people={};
   const roleOf=n=>{const p=icStaff_().find(x=>icNorm_(x.name)===icNorm_(n)&&x.dept==='Sales');return p&&p.role||'';};
@@ -154,9 +175,9 @@ function icSales_(){
   icStaff_().filter(p=>p.dept==='Sales').forEach(p=>{const k=icNorm_(p.name);if(!people[k])people[k]={name:p.name,deals:[],credited:0,by:{Direct:0,'In-direct':0,Private:0}};});
   return Object.values(people).map(P=>{
     const role=roleOf(P.name),R=(S.roles||[]).find(x=>x.role===role)||(S.roles||[])[0]||{role:'',target:0};
-    const target=(Number(R.target)||0)*icMonths_(),ach=target?P.credited/target:0;
+    const tc=icTcTarget_(P.name,Number(R.target)||0),target=tc.v,ach=target?P.credited/target:0;
     let comm=0;P.deals.forEach(d=>{d.rate=d.type==='Private'?S.privateRate:icRate_(d.type==='Direct'?S.direct:S.indirect,ach);d.comm=d.credit*d.rate;comm+=d.comm;});
-    return Object.assign(P,{role:R.role,roleSet:!!role,target,ach,comm});
+    return Object.assign(P,{role:R.role,roleSet:!!role||tc.from>0,tcFrom:tc.from,target,ach,comm});
   }).sort((a,b)=>b.credited-a.credited||a.name.localeCompare(b.name));
 }
 /* Other departments */
@@ -225,7 +246,7 @@ function icRender_(keepFilters){
       sales.forEach((p,i)=>{
         const ok=p.ach>=1;
         html+=`<tr class="icRow" data-open="${i}"><td><b>${icEsc_(p.name)}</b> <small class="daMuted">${p.deals.length} deal${p.deals.length===1?'':'s'}</small></td>
-          <td>${icEsc_(p.role)}${p.roleSet?'':'<br><span class="icWarn">role not set</span>'}</td><td class="num">${icN_(p.target)}</td><td class="num"><b>${icN_(p.credited)}</b></td>
+          <td>${icEsc_(p.role)}${p.roleSet?'':'<br><span class="icWarn">role not set</span>'}</td><td class="num">${icN_(p.target)}${p.tcFrom?'<br><small class="icTc" title="From the Target Center">🎯 Target Center</small>':''}</td><td class="num"><b>${icN_(p.credited)}</b></td>
           <td><div class="icAch"><div class="icBar"><i class="${ok?'ok':''}" style="width:${Math.min(100,p.ach*100)}%"></i></div><b>${icPct_(p.ach)}</b>${ok?' ✅':''}</div></td>
           <td class="num daHide">${icN_(p.by.Direct)}</td><td class="num daHide">${icN_(p.by['In-direct'])}</td><td class="num daHide">${icN_(p.by.Private)}</td><td class="num"><b>${icN_(p.comm)}</b></td></tr>`;
         if(IC_.open[p.name])p.deals.forEach(d=>{html+=`<tr class="icSub"><td colspan="2">${icEsc_(d.r.unitCode)} · ${icEsc_(d.r.clientName||'')}</td><td class="num daMuted">${icN_(d.r.amount)}</td><td class="num">${icN_(d.credit)}${d.share?' <small class="daMuted">(share)</small>':''}</td>

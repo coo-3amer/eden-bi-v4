@@ -120,3 +120,51 @@ function deleteTargetRecord(authToken,id){
   sh.deleteRow(idx+2);
   return {success:true};
 }
+
+/* Quick setup: save many targets of ONE period at once.
+   payload = {scope, period, year, month, quarter, items:[{name, egp, usd}]}
+   Each name's target for that exact period is updated / added; 0 in both
+   currencies removes it. One read + one write of the sheet. */
+function saveTargetsBulk(authToken, payload){
+  const user=targetsRequireAdmin_(authToken);
+  payload=payload||{};
+  const scope=String(payload.scope||'Sales').trim();
+  const period=String(payload.period||'Monthly').trim();
+  const year=Number(payload.year)||new Date().getFullYear();
+  const month=period==='Monthly'?String(payload.month||'').trim():'';
+  const quarter=period==='Quarterly'?String(payload.quarter||'').trim():'';
+  if(!['Company','Manager','Sales','Branch'].includes(scope))throw new Error('Invalid target scope.');
+  if(!['Monthly','Quarterly','Yearly'].includes(period))throw new Error('Invalid target period.');
+  if(period==='Monthly'&&!month)throw new Error('Select a month.');
+  if(period==='Quarterly'&&!quarter)throw new Error('Select a quarter.');
+  const items=(Array.isArray(payload.items)?payload.items:[]).map(i=>({
+    name:String(i&&i.name||'').trim(),
+    egp:Math.max(0,Number(i&&i.egp)||0),
+    usd:Math.max(0,Number(i&&i.usd)||0)
+  })).filter(i=>i.name);
+  if(!items.length)return {success:true,saved:0,removed:0};
+
+  const lock=LockService.getScriptLock();lock.waitLock(20000);
+  try{
+    const sh=ensureTargetsSheet_();
+    const last=sh.getLastRow();
+    let rows=last>=2?sh.getRange(2,1,last-1,10).getValues():[];
+    const low=v=>String(v||'').trim().toLowerCase();
+    const same=r=>low(r[1])===low(scope)&&low(r[3])===low(period)&&Number(r[4])===year&&
+      (period!=='Monthly'||low(r[5])===low(month))&&(period!=='Quarterly'||low(r[6])===low(quarter));
+    const now=new Date();let saved=0,removed=0;
+    items.forEach(it=>{
+      const idx=rows.findIndex(r=>same(r)&&low(r[2])===low(it.name));
+      if(!it.egp&&!it.usd){if(idx>=0){rows.splice(idx,1);removed++;}return;}
+      const rec=[idx>=0?rows[idx][0]:Utilities.getUuid(),scope,it.name,period,year,month,quarter,it.egp,it.usd,now];
+      if(idx>=0){const o=rows[idx];if(Number(o[7])===it.egp&&Number(o[8])===it.usd)return;rows[idx]=rec;}
+      else rows.push(rec);
+      saved++;
+    });
+    if(rows.length)sh.getRange(2,1,rows.length,10).setValues(rows);
+    const extra=Math.max(0,(last-1)-rows.length);
+    if(extra)sh.getRange(2+rows.length,1,extra,10).clearContent();
+    auditLog_(user,'Targets saved',{details:scope+' · '+period+' '+(month||quarter||'')+' '+year+' · '+saved+' saved, '+removed+' removed'});
+    return {success:true,saved,removed};
+  }finally{lock.releaseLock();}
+}
