@@ -166,3 +166,37 @@ function getCommOverridesAll_() {
   sh.getRange(2, 1, last - 1, 2).getValues().forEach(r => { const k = String(r[0] || '').trim(); if (k) out[k] = { inc: r[1] === true || String(r[1]).toUpperCase() === 'TRUE' }; });
   return out;
 }
+
+/* ---------- Mark commission paid on deals (Deals sheet › Internal comm) ----------
+   req = {items:[{row, unit}], cols:['sales'|'managers'|'staff'], value:true|false}
+   Writes TRUE/FALSE (as checkboxes) in the chosen columns of each deal row,
+   after checking the row still holds that unit. */
+function setDealCommPaid(authToken, req) {
+  const user = commAdmin_(authToken);
+  req = req || {};
+  const items = (Array.isArray(req.items) ? req.items : []).filter(i => Number(i && i.row) >= DATA_START_ROW);
+  const want = (Array.isArray(req.cols) ? req.cols : []).map(c => String(c).toLowerCase()).filter(c => ['sales', 'managers', 'staff'].indexOf(c) >= 0);
+  if (!items.length || !want.length) throw new Error('Pick the deals and which commission (Sales / Managers / Staff).');
+  if (items.length > 500) throw new Error('Too many deals at once (max 500).');
+  const value = req.value !== false;
+  const lock = LockService.getScriptLock(); lock.waitLock(30000);
+  const done = [], skipped = [];
+  try {
+    const sh = getMainDealsSheet_(), cols = mainDealsColumns_(sh), at = n => mainDealsCol_(cols, n);
+    const C = { sales: at(['internal comm|sales']), managers: at(['internal comm|managers']), staff: at(['internal comm|staff']) }, cu = at(['Unit Code']);
+    want.forEach(k => { if (!C[k]) throw new Error('Column "Internal comm › ' + k + '" was not found in Deals.'); });
+    const last = sh.getLastRow();
+    const units = sh.getRange(DATA_START_ROW, cu, last - DATA_START_ROW + 1, 1).getDisplayValues().map(r => String(r[0] || '').trim().toUpperCase().replace(/\.+$/, ''));
+    items.forEach(i => {
+      const row = Number(i.row), u = String(i.unit || '').trim().toUpperCase().replace(/\.+$/, '');
+      if (row > last || units[row - DATA_START_ROW] !== u) { skipped.push(i.unit || ('row ' + row)); return; }
+      want.forEach(k => { const cell = sh.getRange(row, C[k]); if (!cell.getDataValidation()) cell.insertCheckboxes(); cell.setValue(value); });
+      done.push(u);
+    });
+    SpreadsheetApp.flush();
+  } finally { lock.releaseLock(); }
+  try { clearDashboardCache_(); } catch (e) {}
+  auditLog_(user, value ? 'Commission marked paid on deals' : 'Commission unmarked on deals', {
+    details: want.join(' + ') + ' · ' + done.length + ' deal' + (done.length === 1 ? '' : 's') + (done.length <= 8 ? ': ' + done.join(', ') : '') + (skipped.length ? ' · skipped (row changed): ' + skipped.join(', ') : '') });
+  return { done: done.length, skipped: skipped };
+}

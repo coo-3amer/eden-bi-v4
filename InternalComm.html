@@ -18,6 +18,11 @@
 .icClose{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px;padding:10px 14px;border-radius:12px;border:1px dashed var(--ds-line,#e3d9c7);font-size:12.5px;color:var(--ds-muted,#83796b)}
 .icClose.closed{border-style:solid;border-color:#d9c08c;background:var(--ds-gold-soft,#fbf4e6);color:var(--ds-text)}
 .icPaid td{background:rgba(47,158,98,.06)}.icPaidL{display:inline-flex;align-items:center;gap:6px;font-weight:700;cursor:pointer}.icPaidL input{width:17px;height:17px;accent-color:#2f9e62}
+.icSep{width:1px;height:22px;background:var(--ds-line,#e3d9c7);margin:0 2px}
+.icPayBar{display:none;flex-wrap:wrap;gap:8px;align-items:center;margin:-2px 0 10px;padding:10px 12px;border-radius:12px;background:rgba(47,158,98,.08);border:1px solid rgba(47,158,98,.3)}.icPayBar.on{display:flex}
+.icDl tr.sel td{background:rgba(47,158,98,.07)}.icDl input.icPs{accent-color:#2f9e62}
+.icPc{white-space:nowrap}.icPc button{all:unset;cursor:pointer;min-width:22px;padding:2px 5px;margin-right:3px;border-radius:6px;text-align:center;font-size:10.5px;font-weight:800;border:1px solid var(--ds-line,#e3d9c7);color:var(--ds-muted,#83796b);background:var(--ds-surface,#fff)}
+.icPc button.on{background:#2f9e62;border-color:#2f9e62;color:#fff}.icPc button:disabled{opacity:.5}
 .icDlBar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}.icDlBar .daBtn b{margin-left:4px}
 .icDl tr.off td{opacity:.55}.icDl tr.man td{background:rgba(176,138,66,.07)}.icDl tr.off.man td{opacity:.75}
 .icDl input[type=checkbox]{width:18px;height:18px;cursor:pointer;accent-color:#a8843f}
@@ -353,7 +358,14 @@ function icClosedWire_(body,C){
   const mk=C.month,busy=b=>{if(b){b.disabled=true;}};
   const done=c=>{IC_.closings[mk]=c;icRender_(true);},fail=err=>{alert((err&&err.message)||err);icRender_(true);};
   body.querySelectorAll('[data-paid]').forEach(c=>c.addEventListener('change',()=>{const p=C.people[+c.dataset.paid];busy(c);
-    google.script.run.withSuccessHandler(done).withFailureHandler(fail).setCommPaid(AUTH_TOKEN,{month:mk,names:[p.name],dept:p.dept,paid:c.checked});}));
+    // a salesperson paid → offer to tick "Sales" on his deals in the Deals sheet
+    const rows=(typeof rawRows!=='undefined'&&rawRows)||[],U=v=>String(v||'').trim().toUpperCase().replace(/\.+$/,'');
+    const deals=p.dept==='Sales'?(p.details||[]).map(d=>rows.find(r=>U(r.unitCode)===U(d.u)&&icDealDay_(r)===d.d)||rows.find(r=>U(r.unitCode)===U(d.u))).filter(Boolean):[];
+    const alsoDeals=deals.length&&confirm((c.checked?'Also tick':'Also untick')+' “Sales” (Internal comm) in the Deals sheet for '+p.name+'’s '+deals.length+' deal'+(deals.length===1?'':'s')+'?');
+    google.script.run.withSuccessHandler(res=>{done(res);
+      if(alsoDeals)google.script.run.withSuccessHandler(()=>{deals.forEach(r=>r.internalCommSales=c.checked);}).withFailureHandler(err=>alert('Deals sheet: '+((err&&err.message)||err)))
+        .setDealCommPaid(AUTH_TOKEN,{items:deals.map(r=>({row:r.row,unit:r.unitCode})),cols:['sales'],value:c.checked});})
+      .withFailureHandler(fail).setCommPaid(AUTH_TOKEN,{month:mk,names:[p.name],dept:p.dept,paid:c.checked});}));
   body.querySelector('[data-paidall]')?.addEventListener('click',e=>{const L=C.people.filter(p=>(IC_.tab==='others')!==(p.dept==='Sales')&&!p.paid);
     if(!L.length||!confirm('Mark '+L.length+' people as paid?'))return;busy(e.target);
     google.script.run.withSuccessHandler(done).withFailureHandler(fail).setCommPaid(AUTH_TOKEN,{month:mk,names:L.map(p=>p.name),paid:true});});
@@ -396,25 +408,32 @@ table{width:100%;border-collapse:collapse}th{background:#f3ece0;text-align:left;
 /* ---------- All deals · choose ---------- */
 function icDealsTab_(body){
   const all=icInScope_(),info=all.map(r=>{const a=icAuto_(r),o=icOv_(r);return {r,auto:a[0],why:a[1],ov:o,on:o===null?a[0]:o};});
-  const cnt={all:info.length,on:info.filter(x=>x.on).length,off:info.filter(x=>!x.on).length,manual:info.filter(x=>x.ov!==null).length};
+  const paidAny=r=>icPaidCols_(r).some(Boolean);
+  const cnt={all:info.length,on:info.filter(x=>x.on).length,off:info.filter(x=>!x.on).length,manual:info.filter(x=>x.ov!==null).length,
+    unpaid:info.filter(x=>x.on&&!paidAny(x.r)).length,paid:info.filter(x=>paidAny(x.r)).length};
+  const psel=IC_.psel||(IC_.psel=new Set());
   const stick=IC_.dlStick||(IC_.dlStick=new Set());
-  const list=info.filter(x=>stick.has(icDealKey_(x.r))||(IC_.dl==='on'?x.on:IC_.dl==='off'?!x.on:IC_.dl==='manual'?x.ov!==null:true))
+  const list=info.filter(x=>stick.has(icDealKey_(x.r))||(IC_.dl==='on'?x.on:IC_.dl==='off'?!x.on:IC_.dl==='manual'?x.ov!==null:IC_.dl==='unpaid'?(x.on&&!paidAny(x.r)):IC_.dl==='paid'?paidAny(x.r):true))
     .sort((a,b)=>String(icDealDay_(b.r)).localeCompare(String(icDealDay_(a.r))));
   const val=info.filter(x=>x.on).reduce((a,x)=>a+(Number(x.r.amount)||0),0);
   const chip=(k,l)=>`<button type="button" class="daBtn${IC_.dl===k?' ok':''}" data-dl="${k}">${l} <b>${cnt[k]}</b></button>`;
   body.innerHTML=`<div class="icKpis"><div class="icKpi"><span>Deals in range</span><b>${cnt.all}</b></div><div class="icKpi gold"><span>Earn commission</span><b>${cnt.on}</b></div>
       <div class="icKpi"><span>Value that earns</span><b>${icN_(val)}</b></div><div class="icKpi"><span>Chosen by hand</span><b>${cnt.manual}</b></div></div>
-    <div class="icDlBar">${chip('all','All')}${chip('on','✓ Earn')}${chip('off','✗ Not')}${chip('manual','✋ By hand')}
+    <div class="icDlBar">${chip('all','All')}${chip('on','✓ Earn')}${chip('off','✗ Not')}${chip('manual','✋ By hand')}<span class="icSep"></span>${chip('unpaid','💰 Earns · not paid yet')}${chip('paid','✅ Paid in Deals')}
       <span style="flex:1"></span><span class="daMsg" data-dlmsg></span>
       <button type="button" class="daBtn" data-bulk="1" title="Tick every deal shown">✓ Tick all shown</button><button type="button" class="daBtn" data-bulk="0" title="Untick every deal shown">✗ Untick all shown</button><button type="button" class="daBtn" data-bulk="auto" title="Back to the automatic rule for the deals shown">↺ Automatic for shown</button></div>
-    ${list.length?`<table class="daTable icDl"><thead><tr><th style="width:44px">Earns</th><th>How</th><th>Unit</th><th>Client</th><th>Sales</th><th>Status</th><th>Reservation</th><th class="num">Value</th><th class="num">DP paid</th></tr></thead><tbody>
-      ${list.map(x=>{const r=x.r,i=info.indexOf(x),sh=typeof isShareDeal_==='function'&&isShareDeal_(r);
-        return `<tr class="${x.on?'':'off'}${x.ov!==null?' man':''}"><td><input type="checkbox" data-dk="${i}"${x.on?' checked':''}></td>
+    <div class="icPayBar${psel.size?' on':''}"><b>${psel.size} selected</b> <span class="daMuted">· write in Deals › Internal comm:</span>
+      <button type="button" class="daBtn ok" data-pay="sales">✓ Sales paid</button><button type="button" class="daBtn ok" data-pay="managers">✓ Managers paid</button><button type="button" class="daBtn ok" data-pay="staff">✓ Staff paid</button><button type="button" class="daBtn ok" data-pay="all">✓ All 3 paid</button>
+      <button type="button" class="daBtn no" data-unpay>Untick…</button><button type="button" class="daBtn" data-pclear>Clear selection</button><span class="daMsg" data-paymsg></span></div>
+    ${list.length?`<table class="daTable icDl"><thead><tr><th style="width:34px" title="Select to mark commission paid"><input type="checkbox" data-pall${list.length&&list.every(x=>psel.has(Number(x.r.row)))?' checked':''}></th><th style="width:44px">Earns</th><th>How</th><th>Unit</th><th>Client</th><th>Sales</th><th>Status</th><th>Reservation</th><th class="num">Value</th><th class="num">DP paid</th><th title="Deals sheet › Internal comm (click to tick / untick)">Paid in Deals</th></tr></thead><tbody>
+      ${list.map(x=>{const r=x.r,i=info.indexOf(x),sh=typeof isShareDeal_==='function'&&isShareDeal_(r),pc=icPaidCols_(r);
+        return `<tr class="${x.on?'':'off'}${x.ov!==null?' man':''}${psel.has(Number(r.row))?' sel':''}"><td><input type="checkbox" class="icPs" data-ps="${i}"${psel.has(Number(r.row))?' checked':''}></td><td><input type="checkbox" data-dk="${i}"${x.on?' checked':''}></td>
           <td>${x.ov===null?`<span class="icHow">Auto</span> <small class="daMuted">${icEsc_(x.why)}</small>`:`<span class="icHow man">✋ ${x.on?'Included':'Excluded'} by hand</span> <small class="daMuted">auto: ${x.auto?'yes':'no'} (${icEsc_(x.why)})</small> <button type="button" class="icUndo" data-undo="${i}" title="Back to automatic">↺</button>`}</td>
           <td><b>${icEsc_(r.unitCode||'')}</b></td><td>${icEsc_(r.clientName||'')}</td><td>${icEsc_(r.salesName||'')}${sh&&r.sharedWith?` <small class="daMuted">+ ${icEsc_(r.sharedWith)}</small>`:''}</td>
-          <td>${icEsc_(r.status||'')}</td><td>${icEsc_(icDealDay_(r))}</td><td class="num">${icN_(r.amount)}</td><td class="num">${icN_(icDpPct_(r),2)}%</td></tr>`;}).join('')}</tbody></table>`
+          <td>${icEsc_(r.status||'')}</td><td>${icEsc_(icDealDay_(r))}</td><td class="num">${icN_(r.amount)}</td><td class="num">${icN_(icDpPct_(r),2)}%</td>
+          <td class="icPc">${['sales','managers','staff'].map((k,j)=>`<button type="button" class="${pc[j]?'on':''}" data-pc="${i}:${k}" title="${['Sales','Managers','Staff'][j]} commission ${pc[j]?'paid — click to untick':'not paid — click to tick'}">${['S','M','St'][j]}</button>`).join('')}</td></tr>`;}).join('')}</tbody></table>`
       :`<div class="daNote" style="text-align:center;padding:30px">No deals here.</div>`}
-    <div class="daNote">All deals in the chosen dates and filters, whatever their DP paid %. <b>Auto</b> = the automatic rule (DP paid % range${IC_.dpMin!=null?' from '+IC_.dpMin+'%':''}${IC_.dpMax!=null?' to '+IC_.dpMax+'%':''}, not cancelled). Tick or untick a deal to decide by hand — your choice wins over the rule and is saved for everyone; ↺ puts it back to automatic.</div>`;
+    <div class="daNote">All deals in the chosen dates and filters, whatever their DP paid %. <b>Auto</b> = the automatic rule (DP paid % range${IC_.dpMin!=null?' from '+IC_.dpMin+'%':''}${IC_.dpMax!=null?' to '+IC_.dpMax+'%':''}, not cancelled). Tick or untick a deal to decide by hand — your choice wins over the rule and is saved for everyone; ↺ puts it back to automatic.<br><b>Paid in Deals</b>: S / M / St = the Sales, Managers and Staff boxes of “Internal comm” in the Deals sheet. Select deals with the first box and mark them paid — TRUE is written in the sheet.</div>`;
   const save=(items,msg)=>{
     items.forEach(it=>stick.add(it.key));
     const m=body.querySelector('[data-dlmsg]');m.className='daMsg';m.textContent='Saving…';
@@ -435,7 +454,32 @@ function icDealsTab_(body){
     if(!list.length)return;const v=b.dataset.bulk;
     if(!confirm((v==='auto'?'Put ':v==='1'?'Tick ':'Untick ')+list.length+' deal(s)'+(v==='auto'?' back to automatic':'')+'?'))return;
     save(list.map(x=>({key:icDealKey_(x.r),inc:v==='auto'?null:(v==='1')===x.auto?null:v==='1',label:label(x.r)})));}));
+  // ---- commission paid in Deals ----
+  const rowsOf=sel=>info.filter(x=>sel.has(Number(x.r.row))).map(x=>x.r);
+  const pay=(rs,cols,value)=>{
+    if(!rs.length)return;const m=body.querySelector('[data-paymsg]');if(m){m.className='daMsg';m.textContent='Writing in Deals…';}
+    google.script.run.withSuccessHandler(res=>{
+        const skip=new Set((res.skipped||[]).map(String));
+        rs.forEach(r=>{if(skip.has(String(r.unitCode).trim().toUpperCase().replace(/\.+$/,'')))return;cols.forEach(k=>{r[{sales:'internalCommSales',managers:'internalCommManagers',staff:'internalCommStaff'}[k]]=value;});});
+        if(value!==undefined&&rs.length>1)psel.clear();
+        icRender_(true);const mm=document.querySelector('#ic [data-paymsg]')||document.querySelector('#ic [data-dlmsg]');
+        if(mm){mm.className='daMsg '+(skip.size?'err':'ok');mm.textContent=`Saved in Deals ✓ ${res.done} deal${res.done===1?'':'s'}`+(skip.size?` · not changed (row moved): ${[...skip].join(', ')}`:'');}})
+      .withFailureHandler(err=>{const mm=document.querySelector('#ic [data-paymsg]')||document.querySelector('#ic [data-dlmsg]');if(mm){mm.className='daMsg err';mm.textContent=(err&&err.message)||String(err);}})
+      .setDealCommPaid(AUTH_TOKEN,{items:rs.map(r=>({row:r.row,unit:r.unitCode})),cols,value});
+  };
+  body.querySelectorAll('[data-ps]').forEach(c=>c.addEventListener('change',()=>{const r=info[+c.dataset.ps].r;c.checked?psel.add(Number(r.row)):psel.delete(Number(r.row));icRender_(true);}));
+  body.querySelector('[data-pall]')?.addEventListener('change',e=>{list.forEach(x=>e.target.checked?psel.add(Number(x.r.row)):psel.delete(Number(x.r.row)));icRender_(true);});
+  body.querySelector('[data-pclear]')?.addEventListener('click',()=>{psel.clear();icRender_(true);});
+  body.querySelectorAll('[data-pay]').forEach(b=>b.addEventListener('click',()=>{const rs=rowsOf(psel),k=b.dataset.pay,cols=k==='all'?['sales','managers','staff']:[k];
+    if(!rs.length)return;if(!confirm(`Write TRUE in Deals › Internal comm › ${cols.map(c=>c[0].toUpperCase()+c.slice(1)).join(' + ')} for ${rs.length} deal${rs.length===1?'':'s'}?`))return;pay(rs,cols,true);}));
+  body.querySelector('[data-unpay]')?.addEventListener('click',()=>{const rs=rowsOf(psel);if(!rs.length)return;
+    const w=prompt('Untick which commission for '+rs.length+' deal(s)? Type: sales, managers, staff or all','sales');if(!w)return;
+    const k=w.trim().toLowerCase(),cols=k==='all'?['sales','managers','staff']:['sales','managers','staff'].includes(k)?[k]:null;if(!cols){alert('Type sales, managers, staff or all.');return;}
+    pay(rs,cols,false);});
+  body.querySelectorAll('[data-pc]').forEach(b=>b.addEventListener('click',()=>{const [i,k]=b.dataset.pc.split(':'),r=info[+i].r,now=b.classList.contains('on');
+    b.disabled=true;pay([r],[k],!now);}));
 }
+function icPaidCols_(r){const T=v=>typeof commissionTrue_==='function'?commissionTrue_(v):(v===true||/^(true|1|yes)$/i.test(String(v||'').trim()));return [T(r.internalCommSales),T(r.internalCommManagers),T(r.internalCommStaff)];}
 /* ---------- Setup ---------- */
 function icSetup_(body){
   const S=IC_.draft||(IC_.draft=JSON.parse(JSON.stringify(IC_.setup)));
