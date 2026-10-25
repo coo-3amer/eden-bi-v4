@@ -1,0 +1,150 @@
+<style id="eden-glass">
+/* =====================================================================
+   EDEN BI — Glass theme (admins only). A layer on top of Light / Dark:
+   a soft moving colour wallpaper, frosted translucent panels
+   (backdrop blur + saturation), light edges, rounder corners and
+   gentle motion. Turned on with the "Glass" button next to Light / Dark.
+   ===================================================================== */
+html.edenGlass[data-theme="light"]{
+  --ds-bg:transparent;
+  --ds-surface:rgba(255,255,255,.56);
+  --ds-surface-2:rgba(255,255,255,.40);
+  --ds-surface-3:rgba(255,255,255,.32);
+  --ds-sidebar:rgba(255,255,255,.42);
+  --ds-input:rgba(255,255,255,.62);
+  --ds-hover:rgba(255,255,255,.55);
+  --ds-line:rgba(120,96,58,.14);
+  --ds-line-strong:rgba(120,96,58,.24);
+  --gl-edge:rgba(255,255,255,.75);
+  --gl-hi:inset 0 1px 0 rgba(255,255,255,.85),inset 0 0 0 1px rgba(255,255,255,.35);
+  --gl-shadow:0 1px 1px rgba(60,44,18,.04),0 12px 40px rgba(60,44,18,.10);
+  --gl-blur:saturate(180%) blur(22px);
+  --gl-base:#ece5da;
+  --gl-b1:#f0c77a;--gl-b2:#f5a99a;--gl-b3:#9cc0f5;--gl-b4:#a6e3c5;
+}
+html.edenGlass[data-theme="dark"]{
+  --ds-bg:transparent;
+  --ds-surface:rgba(30,28,25,.50);
+  --ds-surface-2:rgba(38,35,31,.42);
+  --ds-surface-3:rgba(48,44,38,.40);
+  --ds-sidebar:rgba(22,20,18,.45);
+  --ds-input:rgba(20,19,17,.55);
+  --ds-hover:rgba(255,255,255,.07);
+  --ds-line:rgba(255,255,255,.08);
+  --ds-line-strong:rgba(255,255,255,.14);
+  --gl-edge:rgba(255,255,255,.10);
+  --gl-hi:inset 0 1px 0 rgba(255,255,255,.10),inset 0 0 0 1px rgba(255,255,255,.04);
+  --gl-shadow:0 1px 1px rgba(0,0,0,.3),0 16px 50px rgba(0,0,0,.45);
+  --gl-blur:saturate(160%) blur(24px);
+  --gl-base:#0b0a09;
+  --gl-b1:#8a6726;--gl-b2:#5e2f6e;--gl-b3:#1f4f8f;--gl-b4:#13695e;
+}
+/* wallpaper: base colour + four slowly drifting blobs */
+html.edenGlass body{background:var(--gl-base)!important}
+html.edenGlass body::before,html.edenGlass body::after{content:"";position:fixed;inset:-8vmax;z-index:-1;pointer-events:none}
+html.edenGlass body::before{
+  background:
+    radial-gradient(42vmax 36vmax at 24% 26%,var(--gl-b1),transparent 64%),
+    radial-gradient(38vmax 34vmax at 80% 22%,var(--gl-b2),transparent 62%),
+    radial-gradient(46vmax 40vmax at 74% 78%,var(--gl-b3),transparent 64%),
+    radial-gradient(38vmax 34vmax at 26% 80%,var(--gl-b4),transparent 62%);
+  filter:blur(8px);opacity:1;animation:glDrift 38s ease-in-out infinite alternate;
+}
+html.edenGlass body::after{
+  background:radial-gradient(30vmax 30vmax at 50% 45%,var(--gl-b1),transparent 65%);
+  opacity:.25;animation:glDrift2 26s ease-in-out infinite alternate;
+}
+@keyframes glDrift{0%{transform:translate3d(0,0,0) rotate(0deg) scale(1)}50%{transform:translate3d(3vmax,-2vmax,0) rotate(8deg) scale(1.06)}100%{transform:translate3d(-3vmax,2vmax,0) rotate(-6deg) scale(1.02)}}
+@keyframes glDrift2{0%{transform:translate3d(-8vmax,4vmax,0)}100%{transform:translate3d(8vmax,-4vmax,0)}}
+
+/* frosted panels */
+html.edenGlass #appRoot :is(.sidebar,.filters,.tableBox,.panel,.card,.edenKpiCard,.edenInsightCard,.edenSalesCurvePanel,.edenCurveExecBox,.edenCurveYearCard,.edenCurveFilters,.edenCurveSeriesStat,.dsProjBar,.dsStatusBar,.dsStatusChip,.dsAlert,.dsTgBar,.dsTgCard,.dsTgRow,.dsCollKpi,.dsCollPanel,.ipColl,.dsUserCard,.dsSearch,.dsSeg,.dsLive,.multiPanel,.commKpi,.commissionsPanel,.inventoryFilterBar,.myc,.dsIconBtn),
+html.edenGlass :is(.da,#dsGsPanel,.icMsPop,.dsTgStPop,.dsTgExPop,.fbPop){
+  -webkit-backdrop-filter:var(--gl-blur);backdrop-filter:var(--gl-blur);
+  border-color:var(--gl-edge)!important;
+  box-shadow:var(--gl-hi),var(--gl-shadow)!important;
+}
+html.edenGlass #appRoot :is(.card,.edenKpiCard,.edenInsightCard,.dsTgCard,.dsCollKpi,.dsCollPanel,.ipColl,.tableBox,.filters,.dsProjBar,.dsStatusBar,.edenSalesCurvePanel,.myc){border-radius:22px!important}
+html.edenGlass .da{background:var(--ds-surface)!important;border-radius:26px!important}
+html.edenGlass .daBack{background:rgba(20,16,10,.18)!important;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+html.edenGlass #appRoot .sidebar{border-right:1px solid var(--gl-edge)!important;box-shadow:var(--gl-hi)!important}
+html.edenGlass #appRoot #mainTable thead th{-webkit-backdrop-filter:var(--gl-blur);backdrop-filter:var(--gl-blur)}
+html.edenGlass #appRoot #mainTable tbody td{background:transparent}
+html.edenGlass #appRoot #mainTable tbody tr:hover td{background:var(--ds-hover)}
+
+/* motion */
+html.edenGlass #appRoot :is(.card,.edenKpiCard,.edenInsightCard,.dsTgCard,.dsTgRow,.dsCollKpi,.dsStatusChip,.dsAlert,.myc){transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s ease,background-color .25s ease}
+html.edenGlass #appRoot :is(.card,.edenKpiCard,.edenInsightCard,.dsTgCard,.dsCollKpi,.dsStatusChip,.dsAlert):hover{transform:translateY(-3px)}
+html.edenGlass #appRoot .dsTgRow:hover{transform:translateX(3px)}
+html.edenGlass :is(button,.btn,.daBtn,.dsTgBtn){transition:transform .15s ease,filter .2s ease,background-color .2s ease}
+html.edenGlass :is(button,.btn,.daBtn,.dsTgBtn):active{transform:scale(.96)}
+html.edenGlass .glIn{animation:glIn .6s cubic-bezier(.2,.8,.2,1) both;animation-delay:var(--gl-d,0ms)}
+@keyframes glIn{from{opacity:0;transform:translateY(14px) scale(.985);filter:blur(4px)}to{opacity:1;transform:none;filter:none}}
+html.edenGlass .da{animation:glPop .45s cubic-bezier(.2,.9,.25,1.05) both}
+html.edenGlass .daBack{animation:glFade .3s ease both}
+@keyframes glPop{from{opacity:0;transform:translateY(18px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes glFade{from{opacity:0}to{opacity:1}}
+html.edenGlass #dsGsPanel.show,html.edenGlass .icMsPop,html.edenGlass .dsTgStPop,html.edenGlass .dsTgExPop{animation:glPop .28s cubic-bezier(.2,.9,.25,1) both}
+html.edenGlass #appRoot .sidebar :is(button,a){transition:background-color .25s ease,color .25s ease,transform .2s ease}
+html.edenGlass #appRoot .sidebar :is(button,a):hover{transform:translateX(2px)}
+/* light sweep on gold buttons */
+html.edenGlass :is(.dsTgBtn,.daBtn.ok,.tqBtn.gold){position:relative;overflow:hidden}
+html.edenGlass :is(.dsTgBtn,.daBtn.ok,.tqBtn.gold)::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.45) 50%,transparent 70%);transform:translateX(-120%);transition:transform .7s ease}
+html.edenGlass :is(.dsTgBtn,.daBtn.ok,.tqBtn.gold):hover::after{transform:translateX(120%)}
+
+@media (prefers-reduced-motion:reduce){
+  html.edenGlass body::before,html.edenGlass body::after{animation:none}
+  html.edenGlass .glIn,html.edenGlass .da,html.edenGlass .daBack{animation:none}
+  html.edenGlass *{transition:none!important}
+}
+/* the Glass switch next to Light / Dark (admins only) */
+html:not(.edenGlassAllowed) #appRoot .dsSeg [data-ds-glass]{display:none!important}
+html.edenGlass #appRoot .dsSeg [data-ds-glass]{background:linear-gradient(135deg,rgba(255,255,255,.9),rgba(255,255,255,.35));color:var(--ds-heading);box-shadow:var(--gl-hi),0 4px 14px rgba(0,0,0,.08)}
+</style>
+<script>
+/* Glass theme switch + entrance motion. Only admins can turn it on. */
+const EDEN_GLASS_KEY='EDEN_BI_GLASS';
+function edenGlassAllowed_(){const r=String((typeof AUTH_USER!=='undefined'&&AUTH_USER&&AUTH_USER.role)||'').trim().toLowerCase();return r==='admin'||r==='super admin';}
+function edenGlassWanted_(){try{return localStorage.getItem(EDEN_GLASS_KEY)==='1';}catch(e){return false;}}
+function edenGlassApply_(){
+  const ok=edenGlassAllowed_(),on=ok&&edenGlassWanted_();
+  const html=document.documentElement,was=html.classList.contains('edenGlass');
+  html.classList.toggle('edenGlassAllowed',ok);
+  html.classList.toggle('edenGlass',on);
+  const b=document.querySelector('#appRoot [data-ds-glass]');if(b)b.setAttribute('aria-pressed',String(on));
+  if(on&&!was)edenGlassAnimate_(true);
+  // charts read colours from CSS — redraw when switching
+  if(was!==on&&typeof render==='function'&&typeof rawRows!=='undefined'&&rawRows.length){try{render();}catch(e){}}
+}
+function edenGlassToggle_(){try{localStorage.setItem(EDEN_GLASS_KEY,edenGlassWanted_()?'0':'1');}catch(e){}edenGlassApply_();}
+/* cards float in, one after the other, when a page opens */
+function edenGlassAnimate_(force){
+  if(!document.documentElement.classList.contains('edenGlass'))return;
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const v=typeof currentView!=='undefined'?currentView:'';
+  if(!force&&v===edenGlassAnimate_.last)return;edenGlassAnimate_.last=v;
+  const els=[...document.querySelectorAll('#appRoot :is(.edenKpiCard,.card,.edenInsightCard,.edenSalesCurvePanel,.dsTgCard,.dsTgRow,.dsCollKpi,.dsCollPanel,.dsStatusChip,.dsAlert,.tableBox,.myc,.ipColl,.dsProjBar)')]
+    .filter(el=>{const r=el.getBoundingClientRect();return r.width&&r.height&&r.top<innerHeight+200;}).slice(0,24);
+  els.forEach((el,i)=>{el.classList.remove('glIn');void el.offsetWidth;el.style.setProperty('--gl-d',Math.min(i,14)*45+'ms');el.classList.add('glIn');
+    setTimeout(()=>el.classList.remove('glIn'),1400+i*45);});
+}
+(function(){
+  const mount=()=>{
+    const seg=document.querySelector('#appRoot .dsSeg');
+    if(seg&&!seg.querySelector('[data-ds-glass]')){
+      const b=document.createElement('button');b.type='button';b.dataset.dsGlass='1';b.setAttribute('aria-pressed','false');b.title='Glass theme (admins)';
+      b.innerHTML='<svg class="dsIco" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 4.6L18.5 9l-4.7 1.4L12 15l-1.8-4.6L5.5 9l4.7-1.4z"/><path d="M19 14l.9 2.1L22 17l-2.1.9L19 20l-.9-2.1L16 17l2.1-.9z"/></svg><span>Glass</span>';
+      b.addEventListener('click',edenGlassToggle_);seg.appendChild(b);
+    }
+    edenGlassApply_();
+  };
+  const go=()=>{mount();setInterval(mount,3000);};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();
+  // after sign-in / sign-out, and entrance motion on page changes
+  const hook=()=>{
+    ['showAppAfterLogin','logout'].forEach(n=>{if(typeof window[n]==='function'&&!window[n].__gl){const o=window[n];window[n]=function(){const r=o.apply(this,arguments);setTimeout(edenGlassApply_,30);return r;};window[n].__gl=true;}});
+    if(typeof render==='function'&&!render.__gl){const o=render;render=function(){const r=o.apply(this,arguments);try{requestAnimationFrame(()=>edenGlassAnimate_(false));}catch(e){}return r;};render.__gl=true;}
+  };
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(hook,0));else setTimeout(hook,0);
+})();
+</script>
