@@ -177,7 +177,7 @@ function edenStatusChipsRender_(){
    Sales figures come from the rows in the current filters (Cancel excluded
    by default). Project size comes from the Inventory sheet, loaded once per
    project on first hover. */
-const EDEN_INV_KEYS={'KOBULETI':'KOBULETI','GLDANI':'CITY_CENTER_GLDANI','EDEN WALK':'EDEN_WALK'};
+const EDEN_INV_KEYS={'GLDANI':'CITY_CENTER_GLDANI','EDEN WALK':'EDEN_WALK'};
 const EDEN_INV_CACHE={};
 function edenCompact_(n){
   const a=Math.abs(Number(n)||0);
@@ -214,6 +214,18 @@ function edenRenderSize_(card){
     `<span class="dsSizeBar"><i style="width:${pct(sold)}%;background:var(--ds-green)"></i><i style="width:${pct(res)}%;background:var(--ds-gold)"></i><i style="width:${pct(av)}%;background:var(--ds-blue)"></i><i style="width:${pct(other)}%;background:var(--ds-line-strong)"></i></span>`+
     `<span class="dsSizeLegend"><span style="--c:var(--ds-green)">${sold} sold</span><span style="--c:var(--ds-gold)">${res} reserved</span><span style="--c:var(--ds-blue)">${av} available</span></span>`;
 }
+/* Front of the card: deals, sales and % sold, always visible. */
+function edenFillQuick_(card){
+  const box=card.querySelector('[data-f="quick"]');if(!box)return;
+  const rows=edenProjectRows_(card),usd=String(card.dataset.currency||'').toUpperCase()==='USD',cur=usd?'USD':'EGP';
+  const value=rows.filter(r=>(String(r.currency||'').toUpperCase()==='USD')===usd).reduce((a,r)=>a+(Number(r.amount)||0),0);
+  const key=edenInvKeyFor_(card),inv=key&&EDEN_INV_CACHE[key]&&EDEN_INV_CACHE[key].state==='ok'?EDEN_INV_CACHE[key].stats||{}:null;
+  const total=inv?Number(inv.totalUnits)||0:0,sold=inv?Number(inv.closed)||0:0,res=inv?Number(inv.reservation)||0:0;
+  const stat=(l,v)=>`<span><small>${l}</small><strong>${v}</strong></span>`;
+  box.innerHTML=stat('Deals',rows.length.toLocaleString('en-US'))+stat('Sales '+cur,edenCompact_(value))+
+    (total?stat('Sold',Math.round((sold+res)/total*100)+'%')+`<span class="dsProjProg"><i style="width:${(sold/total*100).toFixed(1)}%;background:#4cc386"></i><i style="width:${(res/total*100).toFixed(1)}%;background:#e4c27a"></i></span>`
+      :stat('Clients',new Set(rows.map(r=>r.clientKey||r.clientName).filter(Boolean)).size.toLocaleString('en-US')));
+}
 function edenLoadInventory_(card){
   const key=edenInvKeyFor_(card);
   if(!key||EDEN_INV_CACHE[key]||typeof google==='undefined'||!google.script||typeof AUTH_TOKEN==='undefined')return;
@@ -221,7 +233,7 @@ function edenLoadInventory_(card){
   google.script.run
     .withSuccessHandler(data=>{
       EDEN_INV_CACHE[key]={state:'ok',stats:(data&&data.stats)||{}};
-      document.querySelectorAll('#dsProjects .dsProjCard').forEach(c=>{if(edenInvKeyFor_(c)===key)edenRenderSize_(c);});
+      document.querySelectorAll('#dsProjects .dsProjCard').forEach(c=>{if(edenInvKeyFor_(c)===key){edenRenderSize_(c);edenFillQuick_(c);}});
     })
     .withFailureHandler(()=>{
       EDEN_INV_CACHE[key]={state:'error'};
@@ -296,6 +308,7 @@ function edenUpdateHero_(){
   const box=document.getElementById('loggedUserBox');
   const name=String(box?.textContent||'').split('•')[0].trim().split(/\s+/)[0]||'there';
   set('dsHeroName',name);
+  document.querySelectorAll('#dsProjects .dsProjCard').forEach(c=>{try{edenFillQuick_(c);edenLoadInventory_(c);}catch(e){}});
 }
 (function initEdenHero_(){
   edenMountHero_();
