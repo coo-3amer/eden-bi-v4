@@ -22,7 +22,7 @@
 .icPayBar{display:none;flex-wrap:wrap;gap:8px;align-items:center;margin:-2px 0 10px;padding:10px 12px;border-radius:12px;background:rgba(47,158,98,.08);border:1px solid rgba(47,158,98,.3)}.icPayBar.on{display:flex}
 .icDl tr.sel td{background:rgba(47,158,98,.07)}.icDl input.icPs{accent-color:#2f9e62}
 .icPc{white-space:nowrap}.icPc button{all:unset;cursor:pointer;min-width:22px;padding:2px 5px;margin-right:3px;border-radius:6px;text-align:center;font-size:10.5px;font-weight:800;border:1px solid var(--ds-line,#e3d9c7);color:var(--ds-muted,#83796b);background:var(--ds-surface,#fff)}
-.icPc button.on{background:#2f9e62;border-color:#2f9e62;color:#fff}.icPc button:disabled{opacity:.5}
+.icPc button.on{background:#2f9e62;border-color:#2f9e62;color:#fff}.icPc button.pend{animation:icPend 1s ease-in-out infinite}@keyframes icPend{50%{opacity:.45}}.icPc button:disabled{opacity:.5}
 .icDlBar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}.icDlBar .daBtn b{margin-left:4px}
 .icDl tr.off td{opacity:.55}.icDl tr.man td{background:rgba(176,138,66,.07)}.icDl tr.off.man td{opacity:.75}
 .icDl input[type=checkbox]{width:18px;height:18px;cursor:pointer;accent-color:#a8843f}
@@ -431,7 +431,7 @@ function icDealsTab_(body){
           <td>${x.ov===null?`<span class="icHow">Auto</span> <small class="daMuted">${icEsc_(x.why)}</small>`:`<span class="icHow man">✋ ${x.on?'Included':'Excluded'} by hand</span> <small class="daMuted">auto: ${x.auto?'yes':'no'} (${icEsc_(x.why)})</small> <button type="button" class="icUndo" data-undo="${i}" title="Back to automatic">↺</button>`}</td>
           <td><b>${icEsc_(r.unitCode||'')}</b></td><td>${icEsc_(r.clientName||'')}</td><td>${icEsc_(r.salesName||'')}${sh&&r.sharedWith?` <small class="daMuted">+ ${icEsc_(r.sharedWith)}</small>`:''}</td>
           <td>${icEsc_(r.status||'')}</td><td>${icEsc_(icDealDay_(r))}</td><td class="num">${icN_(r.amount)}</td><td class="num">${icN_(icDpPct_(r),2)}%</td>
-          <td class="icPc">${['sales','managers','staff'].map((k,j)=>`<button type="button" class="${pc[j]?'on':''}" data-pc="${i}:${k}" title="${['Sales','Managers','Staff'][j]} commission ${pc[j]?'paid — click to untick':'not paid — click to tick'}">${['S','M','St'][j]}</button>`).join('')}</td></tr>`;}).join('')}</tbody></table>`
+          <td class="icPc">${['sales','managers','staff'].map((k,j)=>`<button type="button" class="${pc[j]?'on':''}${icPayPending_(r,k)?' pend':''}" data-pc="${i}:${k}" title="${['Sales','Managers','Staff'][j]} commission ${pc[j]?'paid — click to untick':'not paid — click to tick'}">${['S','M','St'][j]}</button>`).join('')}</td></tr>`;}).join('')}</tbody></table>`
       :`<div class="daNote" style="text-align:center;padding:30px">No deals here.</div>`}
     <div class="daNote">All deals in the chosen dates and filters, whatever their DP paid %. <b>Auto</b> = the automatic rule (DP paid % range${IC_.dpMin!=null?' from '+IC_.dpMin+'%':''}${IC_.dpMax!=null?' to '+IC_.dpMax+'%':''}, not cancelled). Tick or untick a deal to decide by hand — your choice wins over the rule and is saved for everyone; ↺ puts it back to automatic.<br><b>Paid in Deals</b>: S / M / St = the Sales, Managers and Staff boxes of “Internal comm” in the Deals sheet. Select deals with the first box and mark them paid — TRUE is written in the sheet.</div>`;
   const save=(items,msg)=>{
@@ -456,17 +456,7 @@ function icDealsTab_(body){
     save(list.map(x=>({key:icDealKey_(x.r),inc:v==='auto'?null:(v==='1')===x.auto?null:v==='1',label:label(x.r)})));}));
   // ---- commission paid in Deals ----
   const rowsOf=sel=>info.filter(x=>sel.has(Number(x.r.row))).map(x=>x.r);
-  const pay=(rs,cols,value)=>{
-    if(!rs.length)return;const m=body.querySelector('[data-paymsg]');if(m){m.className='daMsg';m.textContent='Writing in Deals…';}
-    google.script.run.withSuccessHandler(res=>{
-        const skip=new Set((res.skipped||[]).map(String));
-        rs.forEach(r=>{if(skip.has(String(r.unitCode).trim().toUpperCase().replace(/\.+$/,'')))return;cols.forEach(k=>{r[{sales:'internalCommSales',managers:'internalCommManagers',staff:'internalCommStaff'}[k]]=value;});});
-        if(value!==undefined&&rs.length>1)psel.clear();
-        icRender_(true);const mm=document.querySelector('#ic [data-paymsg]')||document.querySelector('#ic [data-dlmsg]');
-        if(mm){mm.className='daMsg '+(skip.size?'err':'ok');mm.textContent=`Saved in Deals ✓ ${res.done} deal${res.done===1?'':'s'}`+(skip.size?` · not changed (row moved): ${[...skip].join(', ')}`:'');}})
-      .withFailureHandler(err=>{const mm=document.querySelector('#ic [data-paymsg]')||document.querySelector('#ic [data-dlmsg]');if(mm){mm.className='daMsg err';mm.textContent=(err&&err.message)||String(err);}})
-      .setDealCommPaid(AUTH_TOKEN,{items:rs.map(r=>({row:r.row,unit:r.unitCode})),cols,value});
-  };
+  const pay=(rs,cols,value)=>{rs.forEach(r=>stick.add(icDealKey_(r)));icPayQueue_(rs,cols,value);if(rs.length>1)psel.clear();icRender_(true);};
   body.querySelectorAll('[data-ps]').forEach(c=>c.addEventListener('change',()=>{const r=info[+c.dataset.ps].r;c.checked?psel.add(Number(r.row)):psel.delete(Number(r.row));icRender_(true);}));
   body.querySelector('[data-pall]')?.addEventListener('change',e=>{list.forEach(x=>e.target.checked?psel.add(Number(x.r.row)):psel.delete(Number(x.r.row)));icRender_(true);});
   body.querySelector('[data-pclear]')?.addEventListener('click',()=>{psel.clear();icRender_(true);});
@@ -477,7 +467,38 @@ function icDealsTab_(body){
     const k=w.trim().toLowerCase(),cols=k==='all'?['sales','managers','staff']:['sales','managers','staff'].includes(k)?[k]:null;if(!cols){alert('Type sales, managers, staff or all.');return;}
     pay(rs,cols,false);});
   body.querySelectorAll('[data-pc]').forEach(b=>b.addEventListener('click',()=>{const [i,k]=b.dataset.pc.split(':'),r=info[+i].r,now=b.classList.contains('on');
-    b.disabled=true;pay([r],[k],!now);}));
+    pay([r],[k],!now);}));
+}
+/* Paid ticks: shown at once, written to the Deals sheet together (one call per burst of clicks). */
+const IC_PAYF_={sales:'internalCommSales',managers:'internalCommManagers',staff:'internalCommStaff'};
+function icPayPending_(r,k){const q=IC_.payQ&&IC_.payQ.get(Number(r.row)),f=IC_.payFly&&IC_.payFly.get(Number(r.row));return !!((q&&k in q.set)||(f&&k in f.set));}
+function icPayQueue_(rs,cols,value){
+  IC_.payQ=IC_.payQ||new Map();
+  rs.forEach(r=>{const row=Number(r.row);const it=IC_.payQ.get(row)||{r,unit:r.unitCode,set:{},prev:{}};
+    cols.forEach(k=>{if(!(k in it.prev))it.prev[k]=r[IC_PAYF_[k]];it.set[k]=value;r[IC_PAYF_[k]]=value;});IC_.payQ.set(row,it);});
+  icPayMsg_('Saving…','');
+  clearTimeout(IC_.payT);IC_.payT=setTimeout(icPayFlush_,700);
+}
+function icPayMsg_(t,cls){const m=document.querySelector('#ic [data-paymsg]')||document.querySelector('#ic [data-dlmsg]');if(m){m.className='daMsg '+(cls||'');m.textContent=t;}}
+function icPayFlush_(){
+  if(IC_.payBusy){clearTimeout(IC_.payT);IC_.payT=setTimeout(icPayFlush_,500);return;}
+  const q=IC_.payQ;if(!q||!q.size)return;
+  IC_.payQ=new Map();IC_.payFly=q;IC_.payBusy=true;
+  const items=[...q.values()].map(it=>({row:it.r.row,unit:it.unit,set:it.set}));
+  google.script.run.withSuccessHandler(res=>{
+      IC_.payBusy=false;IC_.payFly=null;
+      const skip=new Set((res.skipped||[]).map(String));
+      q.forEach(it=>{if(skip.has(String(it.unit))||skip.has(String(it.unit).trim().toUpperCase().replace(/\.+$/,'')))Object.keys(it.prev).forEach(k=>it.r[IC_PAYF_[k]]=it.prev[k]);});
+      icRender_(true);
+      icPayMsg_(`Saved in Deals ✓ ${res.done} deal${res.done===1?'':'s'}`+(skip.size?` · not changed (row moved): ${[...skip].join(', ')}`:''),skip.size?'err':'ok');
+      if(IC_.payQ&&IC_.payQ.size){clearTimeout(IC_.payT);IC_.payT=setTimeout(icPayFlush_,300);}
+    })
+    .withFailureHandler(err=>{
+      IC_.payBusy=false;IC_.payFly=null;
+      q.forEach(it=>Object.keys(it.prev).forEach(k=>it.r[IC_PAYF_[k]]=it.prev[k]));   // put the boxes back
+      icRender_(true);icPayMsg_('Not saved: '+((err&&err.message)||err),'err');
+    })
+    .setDealCommPaid(AUTH_TOKEN,{items});
 }
 function icPaidCols_(r){const T=v=>typeof commissionTrue_==='function'?commissionTrue_(v):(v===true||/^(true|1|yes)$/i.test(String(v||'').trim()));return [T(r.internalCommSales),T(r.internalCommManagers),T(r.internalCommStaff)];}
 /* ---------- Setup ---------- */

@@ -168,35 +168,60 @@ function getCommOverridesAll_() {
 }
 
 /* ---------- Mark commission paid on deals (Deals sheet › Internal comm) ----------
-   req = {items:[{row, unit}], cols:['sales'|'managers'|'staff'], value:true|false}
-   Writes TRUE/FALSE (as checkboxes) in the chosen columns of each deal row,
-   after checking the row still holds that unit. */
+   req = {items:[{row, unit, set:{sales:true, managers:false, staff:true}}]}
+   (old form {items:[{row,unit}], cols:[...], value} still works).
+   Checks each row still holds that unit, then writes all the cells in a few calls. */
 function setDealCommPaid(authToken, req) {
   const user = commAdmin_(authToken);
   req = req || {};
-  const items = (Array.isArray(req.items) ? req.items : []).filter(i => Number(i && i.row) >= DATA_START_ROW);
-  const want = (Array.isArray(req.cols) ? req.cols : []).map(c => String(c).toLowerCase()).filter(c => ['sales', 'managers', 'staff'].indexOf(c) >= 0);
-  if (!items.length || !want.length) throw new Error('Pick the deals and which commission (Sales / Managers / Staff).');
+  const KEYS = ['sales', 'managers', 'staff'];
+  let items = (Array.isArray(req.items) ? req.items : []).filter(i => Number(i && i.row) >= DATA_START_ROW);
+  if (Array.isArray(req.cols)) {
+    const v = req.value !== false;
+    items = items.map(i => { const set = {}; req.cols.forEach(c => { c = String(c).toLowerCase(); if (KEYS.indexOf(c) >= 0) set[c] = v; }); return { row: i.row, unit: i.unit, set: set }; });
+  }
+  items = items.filter(i => i.set && Object.keys(i.set).some(k => KEYS.indexOf(k) >= 0));
+  if (!items.length) throw new Error('Pick the deals and which commission (Sales / Managers / Staff).');
   if (items.length > 500) throw new Error('Too many deals at once (max 500).');
-  const value = req.value !== false;
   const lock = LockService.getScriptLock(); lock.waitLock(30000);
-  const done = [], skipped = [];
+  const done = [], skipped = [], counts = {};
   try {
-    const sh = getMainDealsSheet_(), cols = mainDealsColumns_(sh), at = n => mainDealsCol_(cols, n);
-    const C = { sales: at(['internal comm|sales']), managers: at(['internal comm|managers']), staff: at(['internal comm|staff']) }, cu = at(['Unit Code']);
-    want.forEach(k => { if (!C[k]) throw new Error('Column "Internal comm › ' + k + '" was not found in Deals.'); });
+    const sh = getMainDealsSheet_();
+    const cache = CacheService.getScriptCache();
+    let C = null; try { C = JSON.parse(cache.get('COMM_PAID_COLS') || 'null'); } catch (e) {}
+    if (!C) {
+      const cols = mainDealsColumns_(sh), at = n => mainDealsCol_(cols, n);
+      C = { sales: at(['internal comm|sales']), managers: at(['internal comm|managers']), staff: at(['internal comm|staff']), unit: at(['Unit Code']) };
+      cache.put('COMM_PAID_COLS', JSON.stringify(C), 600);
+    }
+    KEYS.forEach(k => { if (!C[k]) throw new Error('Column "Internal comm › ' + k + '" was not found in Deals.'); });
     const last = sh.getLastRow();
-    const units = sh.getRange(DATA_START_ROW, cu, last - DATA_START_ROW + 1, 1).getDisplayValues().map(r => String(r[0] || '').trim().toUpperCase().replace(/\.+$/, ''));
+    const norm = v => String(v || '').trim().toUpperCase().replace(/\.+$/, '');
+    // units of the rows involved (one read for many rows, a few small reads for a handful)
+    const rows = items.map(i => Number(i.row)).filter(r => r <= last);
+    const unitAt = {};
+    if (rows.length > 15) {
+      const lo = Math.min.apply(null, rows), hi = Math.max.apply(null, rows);
+      sh.getRange(lo, C.unit, hi - lo + 1, 1).getDisplayValues().forEach((r, k) => unitAt[lo + k] = norm(r[0]));
+    } else if (rows.length) {
+      sh.getRangeList(rows.map(r => sh.getRange(r, C.unit).getA1Notation())).getRanges().forEach((rg, k) => unitAt[rows[k]] = norm(rg.getDisplayValue()));
+    }
+    const groups = {};   // "sales|true" -> [A1, …]
     items.forEach(i => {
-      const row = Number(i.row), u = String(i.unit || '').trim().toUpperCase().replace(/\.+$/, '');
-      if (row > last || units[row - DATA_START_ROW] !== u) { skipped.push(i.unit || ('row ' + row)); return; }
-      want.forEach(k => { const cell = sh.getRange(row, C[k]); if (!cell.getDataValidation()) cell.insertCheckboxes(); cell.setValue(value); });
+      const row = Number(i.row), u = norm(i.unit);
+      if (row > last || unitAt[row] !== u) { skipped.push(i.unit || ('row ' + row)); return; }
+      Object.keys(i.set).forEach(k => { if (KEYS.indexOf(k) < 0) return; const g = k + '|' + (i.set[k] ? '1' : '0'); (groups[g] = groups[g] || []).push(sh.getRange(row, C[k]).getA1Notation()); counts[g] = (counts[g] || 0) + 1; });
       done.push(u);
     });
-    SpreadsheetApp.flush();
+    Object.keys(groups).forEach(g => {
+      const list = sh.getRangeList(groups[g]);
+      list.insertCheckboxes();
+      list.setValue(g.slice(-1) === '1');
+    });
   } finally { lock.releaseLock(); }
   try { clearDashboardCache_(); } catch (e) {}
-  auditLog_(user, value ? 'Commission marked paid on deals' : 'Commission unmarked on deals', {
-    details: want.join(' + ') + ' · ' + done.length + ' deal' + (done.length === 1 ? '' : 's') + (done.length <= 8 ? ': ' + done.join(', ') : '') + (skipped.length ? ' · skipped (row changed): ' + skipped.join(', ') : '') });
+  const what = Object.keys(counts).map(g => (g.slice(-1) === '1' ? '✓ ' : '✗ ') + g.split('|')[0] + ' ×' + counts[g]).join(', ');
+  auditLog_(user, 'Commission paid ticks in Deals', {
+    details: what + ' · ' + done.length + ' deal' + (done.length === 1 ? '' : 's') + (done.length <= 8 ? ': ' + done.join(', ') : '') + (skipped.length ? ' · skipped (row changed): ' + skipped.join(', ') : '') });
   return { done: done.length, skipped: skipped };
 }
