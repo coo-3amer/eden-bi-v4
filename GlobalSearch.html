@@ -51,6 +51,14 @@ html[data-theme] #appRoot .dsAppBar{position:sticky}
     const out={clients:[],units:[],brokers:[],deals:0};
     if(q.length<2)return out;
     const rows=(typeof rawRows!=='undefined'&&rawRows)||[];
+    // A pasted list ("a ; b ; c"): every client matching any line.
+    if(q.indexOf(';')>=0&&typeof edenQ_==='function'){
+      const hits=rows.filter(r=>edenQ_(Object.values(r).join(' '),q)),by=new Map();
+      hits.forEach(r=>{const k=typeof clientKeyOf==='function'?clientKeyOf(r):r.clientName;if(!by.has(k))by.set(k,{key:k,name:r.clientName,rows:[]});by.get(k).rows.push(r);});
+      out.clients=[...by.values()];out.deals=hits.length;out.multi=true;
+      out.missing=typeof edenQMissing_==='function'?edenQMissing_(rows,q,r=>Object.values(r).join(' ')):[];
+      return out;
+    }
     const phoneHit=r=>qd.length>=4&&digits(r.mobile).includes(qd);
     // Clients (one entry per client)
     const byClient=new Map();
@@ -76,7 +84,7 @@ html[data-theme] #appRoot .dsAppBar{position:sticky}
       const k=String(b.company||'').trim().toLowerCase();
       if(!hit||!k||seen.has(k))return false;seen.add(k);return true;
     });
-    out.deals=rows.filter(r=>Object.values(r).join(' ').toLowerCase().includes(q)).length;
+    out.deals=rows.filter(r=>edenQ_(Object.values(r).join(' '),q)).length;
     return out;
   }
 
@@ -90,7 +98,9 @@ html[data-theme] #appRoot .dsAppBar{position:sticky}
       html+=`<div class="gsGroup"><span>${title}</span><span>${list.length>max?max+' of '+list.length:list.length}</span></div>`;
       list.slice(0,max).forEach(x=>{const it=fn(x);items.push(it.go);html+=`<button type="button" class="gsItem" data-i="${items.length-1}">${it.html}</button>`;});
     };
-    group('Clients',res.clients,6,c=>{
+    if(res.multi){const n=q.split(';').map(x=>x.trim()).filter(Boolean).length;
+      html+=`<div class="gsGroup"><span>🔎 ${n-res.missing.length} of ${n} found</span><span></span></div>`+(res.missing.length?`<div class="gsEmpty" style="text-align:left;color:var(--ds-red,#b3261e)">Not found: ${input.value.split(';').map(x=>x.trim()).filter(x=>x&&res.missing.includes(x.toLowerCase())).map(esc).join(' · ')}</div>`:'');}
+    group('Clients',res.clients,res.multi?60:6,c=>{
       const active=c.rows.filter(r=>!cancelled(r.status));
       const units=[...new Set(c.rows.map(r=>r.unitCode).filter(Boolean))];
       const projects=[...new Set(c.rows.map(r=>r.project).filter(Boolean))];

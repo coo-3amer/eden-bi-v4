@@ -100,7 +100,7 @@ function daOnKey_(e){if(e.key!=='Escape')return;if(DA_.rejectFor){DA_.rejectFor=
 function daRender_(){
   const el=document.getElementById('da');if(!el||!DA_.data)return;
   const from=DA_.from||'',q=String(DA_.q||'').trim().toLowerCase(),lim=daLimit_();
-  const all=daList_().filter(x=>!from||!x.date||x.date>=from).filter(x=>!q||[x.r.clientName,x.r.unitCode,x.r.project,x.r.salesName,x.r.sharedWith].join(' ').toLowerCase().includes(q));
+  const all=daList_().filter(x=>!from||!x.date||x.date>=from).filter(x=>!q||edenQ_([x.r.clientName,x.r.unitCode,x.r.project,x.r.salesName,x.r.sharedWith].join(' '),q));
   const by={pending:[],approved:[],rejected:[]};all.forEach(x=>by[x.state].push(x));
   el.querySelector('.daTabs').innerHTML=[['pending','Waiting'],['approved','Approved'],['rejected','Rejected']].map(([k,l])=>`<button type="button" class="daTab${DA_.tab===k?' on':''}" data-tab="${k}">${l}<b>${by[k].length}</b></button>`).join('');
   el.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{DA_.tab=b.dataset.tab;DA_.rejectFor=null;daRender_();}));

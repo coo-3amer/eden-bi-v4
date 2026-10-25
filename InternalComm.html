@@ -120,7 +120,7 @@ function icInScope_(){
   return rows.filter(r=>{
     const d=icDealDay_(r);if(!d||(IC_.from&&d<IC_.from)||(IC_.to&&d>IC_.to))return false;
     if(!(Number(r.amount)>0))return false;
-    if(IC_.q&&!Object.values(r).join(' ').toLowerCase().includes(IC_.q))return false;
+    if(IC_.q&&!edenQ_(Object.values(r).join(' '),IC_.q))return false;
     for(const f of IC_MF_){if(f[0]==='status')continue;const want=sel[f[0]];if(want&&want.length&&!icVals_(f,r).some(v=>want.includes(v)))return false;}
     return true;
   });

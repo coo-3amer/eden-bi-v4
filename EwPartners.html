@@ -194,7 +194,7 @@ function ewCall_(fn,req,msgEl,after){
 function ewList_(){
   const D=EW_.data||{units:[]},q=EW_.q.trim().toLowerCase();
   return D.units.map(u=>{const c=ewCalc_(u),d=ewDeal_(u.unit);return {u,c,client:d?String(d.clientName||''):'',sales:d?String(d.salesName||''):''};})
-    .filter(x=>!q||[x.u.unit,x.client,x.sales,x.u.offer].join(' ').toLowerCase().includes(q));
+    .filter(x=>!q||edenQ_([x.u.unit,x.client,x.sales,x.u.offer].join(' '),q));
 }
 function ewRender_(){
   const body=document.querySelector('#ew .ewBody');if(!body||!EW_.data)return;
@@ -316,7 +316,7 @@ function ewTabColl_(body){
   const D=EW_.data,yrs=D.years||[],q=EW_.q.trim().toLowerCase();
   const f=EW_.cf||(EW_.cf={type:'',year:'',month:''});
   const units=D.units.map(u=>u.unit).sort();
-  const rows=(D.collections||[]).filter(c=>(!f.type||c.type===f.type)&&(!f.month||String(c.date).slice(0,7)===f.month)&&(!q||[c.unit,c.ref,c.method,(ewDeal_(c.unit)||{}).clientName].join(' ').toLowerCase().includes(q)))
+  const rows=(D.collections||[]).filter(c=>(!f.type||c.type===f.type)&&(!f.month||String(c.date).slice(0,7)===f.month)&&(!q||edenQ_([c.unit,c.ref,c.method,(ewDeal_(c.unit)||{}).clientName].join(' '),q)))
     .sort((a,b)=>String(b.date).localeCompare(String(a.date)));
   const tot=t=>rows.filter(c=>!t||c.type===t).reduce((a,c)=>a+(Number(c.amount)||0),0);
   const months=[...new Set((D.collections||[]).map(c=>String(c.date).slice(0,7)).filter(Boolean))].sort().reverse();

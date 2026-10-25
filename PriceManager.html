@@ -102,7 +102,7 @@ function pmUnits_(){
     if(PM_.status&&PM_.status!=='available'&&PM_.status!=='all'&&st!==PM_.status)return false;
     if(PM_.floor&&u.floor!==PM_.floor)return false;
     if(PM_.type&&(u.unitType||u.type)!==PM_.type)return false;
-    if(q&&![u.unitCode,u.floor,u.unitType,u.type,u.view].join(' ').toLowerCase().includes(q))return false;
+    if(q&&!edenQ_([u.unitCode,u.floor,u.unitType,u.type,u.view].join(' '),q))return false;
     return true;
   });
 }

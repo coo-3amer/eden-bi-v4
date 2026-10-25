@@ -60,7 +60,7 @@ function dsOpenDealFinder_(){
   const input=box.querySelector('#dsuFind');
   const run=()=>{
     const q=input.value.trim().toLowerCase();
-    const rows=(typeof rawRows!=='undefined'?rawRows:[]).filter(r=>!q||[r.clientName,r.unitCode,r.mobile,r.project].join(' ').toLowerCase().includes(q))
+    const rows=(typeof rawRows!=='undefined'?rawRows:[]).filter(r=>!q||edenQ_([r.clientName,r.unitCode,r.mobile,r.project].join(' '),q))
       .sort((a,b)=>Number(b.row)-Number(a.row)).slice(0,30);
     box.querySelector('#dsuList').innerHTML=rows.map(r=>`<button type="button" class="dsuItem" onclick="dsOpenDealUpdate_(${Number(r.row)})">
       <span><b>${dsuEsc_(r.clientName||'—')}</b><br><small>${dsuEsc_(r.project||'')} · ${dsuEsc_(r.unitCode||'')} · Row ${Number(r.row)}</small></span>

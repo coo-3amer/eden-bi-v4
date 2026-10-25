@@ -1,0 +1,84 @@
+<script>
+/* =====================================================================
+   EDEN BI — search for many things at once.
+   Paste a list (one client / unit per line) into any search box: the lines
+   are kept apart with " ; " and a row shows when it matches ANY of them.
+   A line can hold a name, a unit code, or both ("Youssef Qadri EW-F1-C12",
+   even glued "Gad IbrahimEW-F1-A5/6C"); names match whatever the spacing,
+   case or dashes ("El-Sayed" = "El Sayed").
+   One word / phrase without ";" searches exactly as before.
+   ===================================================================== */
+const EDEN_Q_CODE_=/([a-z]{1,4}-[a-z0-9]{1,4}-[a-z0-9\/]+)/g;
+function edenQNorm_(s){return String(s??'').toLowerCase().replace(/[ً-ْ]/g,'').replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي').replace(/[^a-z0-9؀-ۿ\/]+/g,' ').replace(/\s+/g,' ').trim();}
+/* Split "Name EW-F1-C12" into {codes:['ew-f1-c12'], name:'name'}. */
+function edenQTerm_(t){
+  const low=String(t).toLowerCase();
+  const codes=(low.match(EDEN_Q_CODE_)||[]).map(c=>c.replace(/\/+$/,''));
+  const name=edenQNorm_(low.replace(EDEN_Q_CODE_,' '));
+  return {codes,name,raw:low.trim()};
+}
+let EDEN_Q_CACHE_={q:null,terms:null};
+const edenQCompact_=s=>s.replace(/ /g,'');
+/* Name match ignoring spaces / dashes inside names ("Abdel-Rahman" = "Abdelrahman"). */
+function edenQName_(norm,name){if(!name||name.length<3)return false;if(norm.includes(name))return true;return name.length>=8&&edenQCompact_(norm).includes(edenQCompact_(name));}
+function edenQ_(text,q){
+  q=String(q??'');if(!q)return true;
+  const t=String(text??'').toLowerCase();
+  if(q.indexOf(';')<0)return t.includes(q.toLowerCase());          // one term: exactly as before
+  if(EDEN_Q_CACHE_.q!==q){
+    const terms=q.split(';').map(s=>s.trim()).filter(Boolean).map(edenQTerm_);
+    // a line with a name AND a unit: the name wins when that client exists; the unit is only the fallback
+    const all=(typeof rawRows!=='undefined'&&rawRows)||[];
+    terms.forEach(T=>{if(T.name&&T.codes.length)T.nameFound=all.some(r=>edenQName_(edenQNorm_(r.clientName),T.name));});
+    EDEN_Q_CACHE_={q,terms};
+  }
+  const norm=edenQNorm_(t);
+  return EDEN_Q_CACHE_.terms.some(T=>{
+    if(T.name&&edenQName_(norm,T.name))return true;
+    if(T.codes.length&&!T.nameFound&&T.codes.some(c=>t.includes(c)))return true;
+    return !T.codes.length&&!T.name&&t.includes(T.raw);
+  });
+}
+/* How many of the pasted lines found nothing (shown under the box). */
+function edenQMissing_(rows,q,textOf){
+  if(String(q||'').indexOf(';')<0)return [];
+  const terms=String(q).split(';').map(s=>s.trim()).filter(Boolean);
+  return terms.filter(term=>!rows.some(r=>edenQ_(textOf(r),term+' ;')));
+}
+/* Under the main search box: "Found 20 of 24 · not found: …" */
+function edenQHint_(){
+  const el=document.getElementById('search');if(!el)return;
+  let h=document.getElementById('edenQHint');
+  const q=String(el.value||'').toLowerCase();
+  if(q.indexOf(';')<0){if(h)h.remove();return;}
+  if(!h){h=document.createElement('div');h.id='edenQHint';h.style.cssText='grid-column:1/-1;flex-basis:100%;width:100%;font-size:12px;margin-top:6px;line-height:1.5;color:var(--ds-muted,#83796b)';
+    const box=el.closest('.dsSearch,.filterGroup,.fbSearch,label')||el;box.insertAdjacentElement('afterend',h);}
+  const rows=(typeof rawRows!=='undefined'&&rawRows)||[];
+  const terms=q.split(';').map(x=>x.trim()).filter(Boolean);
+  const orig=String(el.value||'').split(';').map(x=>x.trim()).filter(Boolean);
+  const missLow=new Set(edenQMissing_(rows,q,r=>Object.values(r).join(' ')));
+  const miss=orig.filter(x=>missLow.has(x.toLowerCase()));
+  const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  h.innerHTML=`🔎 <b>${terms.length-miss.length}</b> of ${terms.length} found`+(miss.length?` · <span style="color:var(--ds-red,#b3261e)">not found: ${miss.map(esc).join(' · ')}</span>`:' ✓');
+}
+(function(){
+  document.addEventListener('input',e=>{if(e.target&&e.target.id==='search')setTimeout(edenQHint_,60);},true);
+  // Pasting several lines into a search box keeps them apart.
+  document.addEventListener('paste',e=>{
+    const el=e.target;if(!el||el.tagName!=='INPUT'||!/^(search|text)$/i.test(el.type||'text'))return;
+    const txt=(e.clipboardData||window.clipboardData)?.getData('text')||'';
+    const lines=txt.split(/\r?\n|\t/).map(s=>s.trim()).filter(Boolean);
+    if(lines.length<2)return;
+    e.preventDefault();
+    // unglue "IbrahimEW-F1-A5/6C" → "Ibrahim EW-F1-A5/6C", and drop duplicates
+    const seen=new Set(),out=[];
+    lines.forEach(l=>{l=l.replace(/([a-z؀-ۿ])([A-Z]{1,4}-[A-Z0-9]{1,4}-)/g,'$1 $2');const k=l.toLowerCase();if(!seen.has(k)){seen.add(k);out.push(l);}});
+    const val=out.join(' ; ');
+    const s=el.selectionStart??el.value.length,en=el.selectionEnd??el.value.length;
+    el.value=(el.value.slice(0,s)+(s&&!/;\s*$/.test(el.value.slice(0,s))&&el.value.slice(0,s).trim()?' ; ':'')+val+el.value.slice(en)).trim();
+    el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));
+    el.dispatchEvent(new KeyboardEvent('keyup',{bubbles:true,key:'v'}));
+    el.title=out.length+' names / units — a row shows when it matches any of them';
+  },true);
+})();
+</script>

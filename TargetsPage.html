@@ -137,7 +137,7 @@ function dsTgFilter_(){
     (typeof contractFilterMatch_!=='function'||contractFilterMatch_(r))&&
     (typeof edenFloorMatch_!=='function'||edenFloorMatch_(r))&&
     (typeof edenDpMatch_!=='function'||edenDpMatch_(r))&&
-    (!q||Object.values(r).join(' ').toLowerCase().includes(q)));
+    (!q||edenQ_(Object.values(r).join(' '),q)));
   return {active,match};
 }
 /* Deal status filter: null = every status except Cancel (default); otherwise the picked statuses. */

@@ -1651,7 +1651,7 @@ function applyFilters(){
     (!years.length||years.includes(String(r.year))) &&
     (typeof edenDateRangeMatch_!=='function'||edenDateRangeMatch_(r)) &&
     (typeof edenDpMatch_!=='function'||edenDpMatch_(r)) &&
-    (!q||Object.values(r).join(' ').toLowerCase().includes(q));
+    (!q||edenQ_(Object.values(r).join(' '),q));
   const floorMatch=r=>typeof edenFloorMatch_!=='function'||edenFloorMatch_(r);
   const restMatch=r=>restMatchNoFloor(r)&&floorMatch(r);
   const projectMatch=r=>!projects.length||projects.includes(String(r.project));
@@ -1668,7 +1668,7 @@ function applyFilters(){
   FLOOR_BASE_ROWS=rawRows.filter(r=>restMatchNoFloor(r)&&contractFilterMatch_(r)&&projectMatch(r)&&statusMatch(r));
 
   const bEden=getMulti('brokerEden'),bCreatedBy=getMulti('brokerCreatedBy'),bLastSales=getMulti('brokerLastSales'),bLink=getMulti('brokerLink'),bStatus=getMulti('brokerStatus'),bDays=getMulti('brokerDay'),bMonths=getMulti('brokerMonth'),bYears=getMulti('brokerYear'),bq=document.getElementById('brokerSearch').value.toLowerCase();
-  brokerFiltered=brokerRows.filter(r=>(!bEden.length||bEden.includes(String(r.edenSales))||(r.sharedList||[]).some(n=>bEden.includes(String(n))))&&(!bCreatedBy.length||bCreatedBy.includes(String(r.createdBy)))&&(!bLastSales.length||bLastSales.includes(String(r.lastSales)))&&(!bLink.length||bLink.includes(String(r.linkStatus)))&&(!bStatus.length||bStatus.includes(String(r.status)))&&(!bDays.length||bDays.includes(String(r.day)))&&(!bMonths.length||bMonths.includes(String(r.month)))&&(!bYears.length||bYears.includes(String(r.year)))&&(!bq||Object.values(r).join(' ').toLowerCase().includes(bq)));
+  brokerFiltered=brokerRows.filter(r=>(!bEden.length||bEden.includes(String(r.edenSales))||(r.sharedList||[]).some(n=>bEden.includes(String(n))))&&(!bCreatedBy.length||bCreatedBy.includes(String(r.createdBy)))&&(!bLastSales.length||bLastSales.includes(String(r.lastSales)))&&(!bLink.length||bLink.includes(String(r.linkStatus)))&&(!bStatus.length||bStatus.includes(String(r.status)))&&(!bDays.length||bDays.includes(String(r.day)))&&(!bMonths.length||bMonths.includes(String(r.month)))&&(!bYears.length||bYears.includes(String(r.year)))&&(!bq||edenQ_(Object.values(r).join(' '),bq)));
   render();
 }
 function isBrokerView(){return String(currentView).startsWith('broker')}
@@ -1899,7 +1899,7 @@ function teamComparisonBaseRows_(){
     (!months.length||months.includes(String(r.month))) &&
     (!years.length||years.includes(String(r.year))) &&
     (typeof edenDateRangeMatch_!=='function'||edenDateRangeMatch_(r)) &&
-    (!q||Object.values(r).join(' ').toLowerCase().includes(q))
+    (!q||edenQ_(Object.values(r).join(' '),q))
   );
 
   // Same dashboard rule: Cancel is excluded unless Status is explicitly selected.
@@ -3567,7 +3567,7 @@ function edenNonDateScopeRows_(){
     (!brokerageCompanies.length||brokerageCompanies.includes(String(r.brokerageCompany))) &&
     (!bcSales.length||bcSales.includes(String(r.bcSales))) &&
     (!bcManagers.length||bcManagers.includes(String(r.bcManager))) &&
-    (!q||Object.values(r).join(' ').toLowerCase().includes(q))
+    (!q||edenQ_(Object.values(r).join(' '),q))
   );
 }
 function edenStatusScopeFor_(rows){
@@ -6796,7 +6796,7 @@ function applyInventoryFilters(){
     (!types.length||types.includes(String(r.type))) &&
     (!statuses.length||statuses.includes(String(r.status))) &&
     (!companies.length||companies.includes(String(r.company))) &&
-    (!q||Object.values(r).join(' ').toLowerCase().includes(q))
+    (!q||edenQ_(Object.values(r).join(' '),q))
   );
 
   inventoryDiscountPercent=normalizeInventoryDiscount_(
@@ -7021,7 +7021,7 @@ function dealFilterUnits_(){
   const keep=dealSelectedUnit?key(dealSelectedUnit):sel.value;
   const label=r=>[r.unitCode,r.type||r.unitType,r.floor,r.area?`${r.area} m²`:'',r.status&&String(r.status).toLowerCase()!=='available'?`[${r.status}]`:'',r.dealStatus?`has a deal (${r.dealStatus})`:''].filter(Boolean).map(escapeHtml).join(' — ');
   const list=DEAL_UNITS_ALL_.filter(r=>(!floor||String(r.floor||'').trim()===floor)&&
-    (!q||[r.unitCode,r.type,r.unitType,r.floor,r.area,r.status,r.view,r.inventoryCategory].join(' ').toLowerCase().includes(q)));
+    (!q||edenQ_([r.unitCode,r.type,r.unitType,r.floor,r.area,r.status,r.view,r.inventoryCategory].join(' '),q)));
   const groups={};list.forEach(r=>{(groups[r.inventoryCategory||'Units']=groups[r.inventoryCategory||'Units']||[]).push(r);});
   const names=Object.keys(groups);
   const opts=names.map(g=>{

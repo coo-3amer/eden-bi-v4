@@ -303,7 +303,7 @@ function dsCollectionsRender_(){
     ||'<tr><td colspan="5" class="dsEmpty">No remaining balances.</td></tr>';
 
   const q=EDEN_COLL_QUERY;
-  const list=rows.filter(r=>!q||[r.clientName,r.mobile,r.unitCode,r.salesName,r.project].join(' ').toLowerCase().includes(q));
+  const list=rows.filter(r=>!q||edenQ_([r.clientName,r.mobile,r.unitCode,r.salesName,r.project].join(' '),q));
   const val={date:r=>dsDealDate_(r)?.getTime()||0,client:r=>String(r.clientName||'').toLowerCase(),sales:r=>String(r.salesName||'').toLowerCase(),dp:r=>Number(r.actualDP)||0,paid:r=>Number(r.actualPaid||r.dpPaid)||0,remain:r=>Number(r.remain)||0,age:r=>dsAgeDays_(r)||0}[EDEN_COLL_SORT.key];
   list.sort((a,b)=>{const x=val(a),y=val(b);return (x<y?-1:x>y?1:0)*EDEN_COLL_SORT.dir;});
   k('list').innerHTML=list.map(r=>{

@@ -94,7 +94,7 @@ function alFiltered_(ignoreAction){
     (ignoreAction||!AL_.action||r.action===AL_.action)&&
     (!AL_.user||r.user===AL_.user)&&
     (!AL_.from||r.time.slice(0,10)>=AL_.from)&&(!AL_.to||r.time.slice(0,10)<=AL_.to)&&
-    (!q||[r.user,r.action,r.project,r.unit,r.client,r.details,r.ref].join(' ').toLowerCase().includes(q)));
+    (!q||edenQ_([r.user,r.action,r.project,r.unit,r.client,r.details,r.ref].join(' '),q)));
 }
 function alRender_(){
   const el=document.getElementById('al');if(!el)return;
