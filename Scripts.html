@@ -4666,7 +4666,7 @@ function renderTable(){
   if(cols[0]==='project'&&typeof rcCell_==='function'&&typeof rcIsAdmin_==='function'&&rcIsAdmin_()&&rows.some(r=>/^reserv/i.test(String(r.status||'').trim()))){
     const at=Math.max(cols.indexOf('status'),cols.indexOf('date'));cols=at>=0?[...cols.slice(0,at+1),'resActions',...cols.slice(at+1)]:cols.concat('resActions');
   }
-  const tagged=(c,html,r)=>html.replace(/^<td/,`<td data-col="${c}"${c==='clientName'&&r&&clientKeyOf(r)?` data-ck="${escapeAttr(clientKeyOf(r))}"`:''}`);
+  const tagged=(c,html,r)=>{html=html.replace(/^<td/,`<td data-col="${c}"${c==='clientName'&&r&&clientKeyOf(r)?` data-ck="${escapeAttr(clientKeyOf(r))}"`:''}`);if(c==='clientName'&&typeof cpBar_==='function'){const b=cpBar_(r);if(b)html=html.replace(/<\/td>\s*$/,b+'</td>');}return html;};
   mainTable.innerHTML=`<thead><tr>${cols.map(c=>`<th data-col="${c}"${c==='docsUrl'?' class="docsHead"':''}>${label(c)}</th>`).join('')}</tr></thead><tbody>${rows.slice(0,1000).map(r=>{const ck=cols.includes('clientName')&&r&&clientKeyOf(r);return `<tr${ck?` data-ck="${escapeAttr(ck)}"`:''}>${cols.map(c=>tagged(c,c==='resActions'?rcCell_(r):cell(c,r[c]),r)).join('')}</tr>`;}).join('')}</tbody>`;
   if(currentView==='clients')renderNewClientsByYear();
 }

@@ -1,0 +1,33 @@
+<style id="eden-client-progress">
+/* Progress bar under each client's name in the Deals table:
+   yellow → green as the deal moves on, 100% at Closed, red for Cancel. */
+#appRoot td[data-col="clientName"] .cpPg{display:flex;align-items:center;gap:7px;margin-top:5px;min-width:130px;max-width:240px}
+#appRoot td[data-col="clientName"] .cpTr{position:relative;flex:1;height:6px;border-radius:99px;background:color-mix(in srgb,var(--ds-line,#e2d7c4) 75%,transparent);overflow:hidden}
+#appRoot td[data-col="clientName"] .cpTr i{position:absolute;inset:0 auto 0 0;border-radius:99px;transform-origin:left;animation:cpGrow .7s cubic-bezier(.2,.8,.2,1) both}
+#appRoot td[data-col="clientName"] .cpPc{font-size:10.5px;font-weight:800;min-width:30px;text-align:right;font-variant-numeric:tabular-nums;line-height:1}
+@keyframes cpGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@media(prefers-reduced-motion:reduce){#appRoot td[data-col="clientName"] .cpTr i{animation:none}}
+@media print{#appRoot td[data-col="clientName"] .cpPg{display:none}}
+</style>
+<script>
+const CP_STEPS_={reservation:[15,'Reservation'],part:[30,'Part of DP'],total:[45,'Total DP'],csPart:[55,'Client signed · Part DP'],csTotal:[65,'Client signed · Total DP'],coPart:[75,'Company signed · Part DP'],coTotal:[85,'Company signed · Total DP'],delivered:[95,'Delivered'],closed:[100,'Closed']};
+/* Stage of the deal for the bar ("Needs review" falls back to the furthest step actually ticked). */
+function cpStage_(r){
+  let k=dealStage_(r);
+  if(k==='review'){const T=v=>commissionTrue_(v),st=String(r.status||'').trim().toLowerCase();
+    k=T(r.confDelivered)||st==='delivered'?'coTotal':T(r.confCompanySigned)?'coPart':T(r.confClientSigned)?'csPart':'reservation';}
+  // the Status column can be ahead of the Deal Confirmation ticks: take whichever is further
+  const st=String(r.status||'').trim().toLowerCase();
+  const byStatus=/deliver/.test(st)?'delivered':/company\s*sig/.test(st)?'coPart':/client\s*sig/.test(st)?'csPart':/total/.test(st)?'total':/part/.test(st)?'part':'';
+  if(byStatus&&CP_STEPS_[k]&&CP_STEPS_[byStatus][0]>CP_STEPS_[k][0])k=byStatus;
+  return k;
+}
+function cpBar_(r){
+  if(!r||r.status==null||!('confClientSigned' in r||'confPartDP' in r||r.row))return '';
+  const k=cpStage_(r);
+  if(k==='cancel')return `<span class="cpPg" title="Cancelled"><span class="cpTr"><i style="width:100%;background:linear-gradient(90deg,#f07a7a,#d12f2f)"></i></span><span class="cpPc" style="color:var(--ds-red,#d12f2f)">✕</span></span>`;
+  const s=CP_STEPS_[k]||CP_STEPS_.reservation,p=s[0],h=Math.round(45+95*p/100);
+  const dark=document.documentElement.getAttribute('data-theme')==='dark';
+  return `<span class="cpPg" title="${s[1]} · ${p}%"><span class="cpTr"><i style="width:${p}%;background:linear-gradient(90deg,hsl(45 92% 52%),hsl(${h} 70% ${48-p*0.08}%))"></i></span><span class="cpPc" style="color:hsl(${h} 70% ${dark?62:36}%)">${p}%</span></span>`;
+}
+</script>
