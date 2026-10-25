@@ -134,7 +134,17 @@ function morningBrief_() {
 
   // Reservations ending today / tomorrow
   try {
-    const holds = (resHoldList_().rows || []).filter(h => h.endsAt);
+    const hl = resHoldList_();
+    if (!hl.auto) {
+      // manual only: list reservations that are 7+ days old so someone decides on them
+      const lateR = (hl.rows || []).filter(h => h.days != null && h.days >= (hl.holdDays || 7)).sort((x, y) => y.days - x.days);
+      if (lateR.length) {
+        lines.push('⏳ <b>حجوزات عدّى عليها ' + (hl.holdDays || 7) + ' أيام أو أكتر (' + lateR.length + ') — محتاجة قرار يدوي</b>');
+        lateR.slice(0, 15).forEach(h => lines.push('• ' + dailyE_(h.unit) + ' — ' + dailyE_(h.client) + ' · ' + dailyE_(h.sales) + ' · ' + h.days + ' يوم'));
+        lines.push('');
+      }
+    }
+    const holds = (hl.rows || []).filter(h => h.endsAt);
     const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2).getTime();
     const soon = holds.filter(h => new Date(h.endsAt).getTime() < end).sort((a, b) => new Date(a.endsAt) - new Date(b.endsAt));
     if (soon.length) {

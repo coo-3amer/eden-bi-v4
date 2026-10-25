@@ -12,7 +12,15 @@
  *   - Runs from the 5-minute warm-up, at most every 10 minutes.
  *   - Script Property RES_HOLD_MINUTES (optional) overrides the 7 days.
  *   - Test: a deal whose Unit Code contains "TEST" is held 10 minutes only.
+ *
+ * OFF by default (Oct 2026): units are opened by hand only (✕ Cancel on the
+ * Reservations column / client card, or a cancel entered in the sheet).
+ * Script Property RES_HOLD_AUTO = on turns the automatic cancel back on.
  ************************************************/
+
+function resHoldAutoOn_() {
+  return String(PropertiesService.getScriptProperties().getProperty('RES_HOLD_AUTO') || '').trim().toLowerCase() === 'on';
+}
 
 const RES_HOLD_DAYS_ = 7;
 const RES_HOLD_REASON_ = 'انتهت مدة الحجز (7 أيام) بدون سداد المقدم — إلغاء تلقائي';
@@ -62,6 +70,7 @@ function resHoldColumns_(sh) {
 /* Called by warmDashboardCache. Never throws. */
 function reservationHoldJob_(force) {
   try {
+    if (!resHoldAutoOn_()) return { off: true };                     // manual only
     const cache = CacheService.getScriptCache();
     if (!force && cache.get('RES_HOLD_AT')) return;
     cache.put('RES_HOLD_AT', '1', 240);
@@ -190,7 +199,8 @@ function resHoldList_() {
   const oldSet = {};
   JSON.parse(props.getProperty('RES_HOLD_OLD') || '[]').forEach(k => oldSet[k] = 1);
   const hold = resHoldMs_(), custom = resHoldCustom_();
-  const out = { since: props.getProperty('RES_HOLD_SINCE') || '', holdDays: Math.round(hold / 86400000 * 100) / 100, rows: [] };
+  const auto = resHoldAutoOn_();
+  const out = { since: props.getProperty('RES_HOLD_SINCE') || '', holdDays: Math.round(hold / 86400000 * 100) / 100, auto: auto, rows: [] };
   if (last < DATA_START_ROW || !c.s || !c.u) return out;
   const n = last - DATA_START_ROW + 1;
   const disp = k => k ? sh.getRange(DATA_START_ROW, k, n, 1).getDisplayValues().map(r => String(r[0] || '').trim()) : new Array(n).fill('');
@@ -204,7 +214,8 @@ function resHoldList_() {
     const own = custom[resHoldKey_(K[i], U[i])] || '';
     out.rows.push({ row: DATA_START_ROW + i, project: P[i], unit: U[i], client: CL[i], resCode: K[i], sales: SA[i],
       amount: AM[i], currency: CU[i], resDate: d ? d.toISOString() : '', old: isOld, custom: !!own,
-      endsAt: own || ((!isOld && end) ? new Date(end).toISOString() : '') });
+      days: d ? Math.floor((Date.now() - new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()) / 86400000) : null,
+      endsAt: auto ? (own || ((!isOld && end) ? new Date(end).toISOString() : '')) : '' });
   }
   return out;
 }
@@ -279,6 +290,7 @@ function cancelReservation(authToken, req) {
 /* Admins: set (or clear) the time a reservation is cancelled automatically. req: {row, unit, endsAt: ISO | ''} */
 function setReservationCancelTime(authToken, req) {
   const user = resHoldAdmin_(authToken);
+  if (!resHoldAutoOn_() && req && req.endsAt) throw new Error('Automatic cancel is off — reservations are cancelled by hand only (✕ Cancel).');
   req = req || {};
   const row = Number(req.row), unit = String(req.unit || '').trim();
   if (!row || row < DATA_START_ROW || !unit) throw new Error('Choose a reservation.');

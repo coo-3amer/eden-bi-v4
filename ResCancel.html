@@ -50,17 +50,21 @@ function rcRefreshCard_(row,unit){
 function rcWhenText_(row,unit){
   if(!RC_.data)return '🗓 Auto-cancel';
   const x=rcFind_(row,unit);
+  if(RC_.data.auto===false)return x&&x.days!=null?'📅 Day '+x.days:'📅 Manual';
   if(x&&x.endsAt)return '⏱ Auto-cancel '+rcFmt_(x.endsAt,x.custom);
   return '🗓 Set auto-cancel';
 }
 function rcPaintWhen_(){
   document.querySelectorAll('[data-rcwhen]').forEach(b=>{const [row,...u]=b.dataset.rcwhen.split('|');b.textContent=rcWhenText_(row,u.join('|'));
-    const x=rcFind_(row,u.join('|'));b.classList.toggle('rcSet',!!(x&&x.custom));b.classList.toggle('rcLate',!!(x&&x.endsAt&&new Date(x.endsAt)<new Date()));});
+    const x=rcFind_(row,u.join('|'));b.classList.toggle('rcSet',!!(x&&x.custom));b.classList.toggle('rcLate',RC_.data&&RC_.data.auto===false?!!(x&&x.days>=(RC_.data.holdDays||7)):!!(x&&x.endsAt&&new Date(x.endsAt)<new Date()));});
 }
 function rcC360Btns_(r){
   if(!rcIsAdmin_()||!/^reserv/i.test(String(r&&r.status||'').trim())||!Number(r.row))return '';
   if(!RC_.loading&&(!RC_.data||Date.now()-(RC_.at||0)>5*60000))setTimeout(()=>rcLoad_(),0);
   const unit=String(r.unitCode||'').trim(),arg=`${Number(r.row)},'${rcEsc_(unit).replace(/'/g,"\\'")}'`;
+  if(RC_.data&&RC_.data.auto===false){const x=rcFind_(r.row,unit);
+    return `<span class="c360Files rcC360When${x&&x.days>=(RC_.data.holdDays||7)?' rcLate':''}" data-rcwhen="${Number(r.row)}|${rcEsc_(unit)}" title="Reservation age — cancelled by hand only">${rcEsc_(rcWhenText_(r.row,unit))}</span>`+
+      `<button type="button" class="c360Files rcC360X" onclick="rcCancel_(${arg})">✕ Cancel reservation</button>`;}
   return `<button type="button" class="c360Files rcC360When" data-rcwhen="${Number(r.row)}|${rcEsc_(unit)}" onclick="rcTime_(${arg})">${rcEsc_(rcWhenText_(r.row,unit))}</button>`+
     `<button type="button" class="c360Files rcC360X" onclick="rcCancel_(${arg})">✕ Cancel reservation</button>`;
 }
@@ -76,6 +80,8 @@ function rcCell_(r){
   const x=rcFind_(r.row,r.unitCode),arg=`${Number(r.row)},'${rcEsc_(String(r.unitCode||'').trim()).replace(/'/g,"\\'")}'`;
   let when;
   if(!RC_.data)when=`<span class="rcWhen none">…</span>`;
+  else if(RC_.data.auto===false){const late=x&&x.days!=null&&x.days>=(RC_.data.holdDays||7);
+    when=`<span class="rcWhen none${late?' late':''}" title="Days since the reservation date — no automatic cancel, cancel by hand">📅 ${x&&x.days!=null?'Day '+x.days:'—'}</span>`;}
   else if(!x)when=`<button type="button" class="rcWhen none" onclick="rcTime_(${arg})" title="Set a date & time to cancel automatically">🗓 Set</button>`;
   else if(x.endsAt){const late=new Date(x.endsAt).getTime()<Date.now();
     when=`<button type="button" class="rcWhen${x.custom?' set':''}${late?' late':''}" onclick="rcTime_(${arg})" title="${x.custom?'Cancel time set by hand':'Cancelled automatically after '+(RC_.data.holdDays||7)+' days'} — click to change">⏱ ${rcFmt_(x.endsAt,x.custom)}</button>`;}
@@ -119,6 +125,7 @@ function rcCancel_(row,unit){
 }
 function rcTime_(row,unit){
   if(!rcIsAdmin_())return;
+  if(RC_.data&&RC_.data.auto===false){rcToast_('Automatic cancel is off — use ✕ Cancel to open the unit by hand.');return;}
   const d=rcDeal_(row,unit),x=rcFind_(row,unit);
   const rule=x&&!x.custom&&x.endsAt?`Now: cancelled automatically on <b>${rcFmt_(x.endsAt)}</b> (the ${(RC_.data&&RC_.data.holdDays)||7}-day rule).`:
     x&&x.custom?`Now: cancelled automatically on <b>${rcFmt_(x.endsAt,true)}</b> (set by hand).`:'Now: no automatic cancel.';
