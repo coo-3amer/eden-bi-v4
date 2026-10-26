@@ -63,7 +63,11 @@ function setupDealsDb(authToken) {
   const lock = LockService.getScriptLock(); lock.waitLock(30000);
   try {
     if (ddbId_()) return getDealsDbInfo(authToken);
+    // a file left half-made by a failed try goes to the bin first
+    const props = PropertiesService.getScriptProperties(), pending = props.getProperty('DEALS_DB_PENDING');
+    if (pending) { try { Drive.Files.update({ trashed: true }, pending, null, { supportsAllDrives: true }); } catch (e) {} props.deleteProperty('DEALS_DB_PENDING'); }
     const ss = SpreadsheetApp.create('EDEN Deals DB');
+    props.setProperty('DEALS_DB_PENDING', ss.getId());
     try { ss.setSpreadsheetTimeZone('Africa/Cairo'); } catch (e) {}
     const deals = ss.getSheets()[0]; deals.setName('Deals');
     const lists = ss.insertSheet('Lists'), guide = ss.insertSheet('Guide'), log = ss.insertSheet('Log');
@@ -79,7 +83,6 @@ function setupDealsDb(authToken) {
       if (i === n || DDB_COLS_[i][0] !== DDB_COLS_[start][0]) {
         const g = DDB_COLS_[start][0], color = DDB_GROUP_COLORS_[g] || '#616161';
         const top = deals.getRange(1, start + 1, 1, i - start);
-        if (i - start > 1) top.merge();
         top.getCell(1, 1).setValue(g);
         top.setBackground(color).setFontColor('#ffffff').setFontWeight('bold').setFontSize(9);
         deals.getRange(DDB_HEADER_ROW_, start + 1, 1, i - start).setBackground(color);
@@ -160,7 +163,7 @@ function setupDealsDb(authToken) {
       if (parents.length) Drive.Files.update({}, ss.getId(), null, { addParents: parents.join(','), removeParents: 'root', supportsAllDrives: true });
     } catch (e) { console.warn('Deals DB folder: ' + e); }
 
-    PropertiesService.getScriptProperties().setProperty('DEALS_DB_ID', ss.getId());
+    props.setProperty('DEALS_DB_ID', ss.getId()); props.deleteProperty('DEALS_DB_PENDING');
     auditLog_(user, 'Deals DB created', { details: ss.getName() + ' · ' + n + ' columns · ' + ss.getUrl() });
     return getDealsDbInfo(authToken);
   } finally { lock.releaseLock(); }
