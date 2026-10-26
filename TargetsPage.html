@@ -279,7 +279,7 @@ function dsTgPeriodLabel_(){
 
 function dsTgMount_(){
   const menu=document.querySelector('#transactionsModule .moduleMenu');
-  if(menu&&!menu.querySelector('[data-ds-targets]')){
+  if(menu&&!document.querySelector('.nav [data-ds-targets]')){
     const btn=document.createElement('button');
     btn.type='button';btn.dataset.dsTargets='1';btn.textContent='Targets';
     btn.addEventListener('click',()=>setView('targets',btn));

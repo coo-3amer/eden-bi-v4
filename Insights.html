@@ -220,7 +220,7 @@ function dsOpenAlert_(kind){
 /* ---------------- Collections page ---------------- */
 function dsCollectionsMount_(){
   const menu=document.querySelector('#transactionsModule .moduleMenu');
-  if(menu&&!menu.querySelector('[data-ds-collections]')){
+  if(menu&&!document.querySelector('.nav [data-ds-collections]')){
     const btn=document.createElement('button');
     btn.type='button';btn.dataset.dsCollections='1';btn.textContent='Collections';
     btn.addEventListener('click',()=>setView('collections',btn));

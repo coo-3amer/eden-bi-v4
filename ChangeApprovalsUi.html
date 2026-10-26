@@ -17,7 +17,7 @@ function caEsc_(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':
 function caIsAdmin_(){const r=String((typeof AUTH_USER!=='undefined'&&AUTH_USER&&AUTH_USER.role)||'').trim().toLowerCase();return r==='admin'||r==='super admin';}
 function caMount_(){
   const menu=document.querySelector('#transactionsModule .moduleMenu');if(!menu)return;
-  let b=menu.querySelector('[data-ca]');
+  let b=document.querySelector('.nav [data-ca]');
   if(!b){b=document.createElement('button');b.type='button';b.dataset.ca='1';b.innerHTML='Change Approvals <b class="caCount" style="display:none"></b>';b.addEventListener('click',caOpen_);
     const after=menu.querySelector('[data-ic]')||menu.lastElementChild;if(after)after.insertAdjacentElement('afterend',b);else menu.appendChild(b);}
   b.style.display=caIsAdmin_()?'':'none';
@@ -60,6 +60,6 @@ function caRender_(){
       .saveChangeApprovalSettings(AUTH_TOKEN,{off:!body.querySelector('[data-on]').checked,exempt:body.querySelector('[data-ex]').value});});
   caBadge_();
 }
-function caBadge_(){const b=document.querySelector('#transactionsModule [data-ca] .caCount');if(!b||!CA_.data)return;const n=(CA_.data.rows||[]).filter(r=>r.status==='Pending').length;b.textContent=n;b.style.display=n?'':'none';}
+function caBadge_(){const b=document.querySelector('.nav [data-ca] .caCount');if(!b||!CA_.data)return;const n=(CA_.data.rows||[]).filter(r=>r.status==='Pending').length;b.textContent=n;b.style.display=n?'':'none';}
 (function(){const go=()=>{caMount_();setInterval(caMount_,2000);};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();})();
 </script>

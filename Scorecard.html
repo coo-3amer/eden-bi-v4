@@ -88,7 +88,7 @@ function scCompute_(){
 }
 function scMount_(){
   const menu=document.querySelector('#transactionsModule .moduleMenu');
-  if(!menu||menu.querySelector('[data-sc]'))return;
+  if(!menu||document.querySelector('.nav [data-sc]'))return;
   const b=document.createElement('button');b.type='button';b.dataset.sc='1';b.textContent='Sales Scorecard';b.addEventListener('click',scOpen_);
   const after=[...menu.querySelectorAll('button')].find(x=>/targets/i.test(x.textContent));
   if(after)after.insertAdjacentElement('afterend',b);else menu.appendChild(b);

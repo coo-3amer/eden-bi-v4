@@ -1,0 +1,92 @@
+<style id="eden-nav-groups">
+html[data-theme] #appRoot .navGroupCount{margin-left:auto;margin-right:6px;min-width:18px;height:18px;padding:0 6px;border-radius:99px;background:var(--ds-red,#d12f2f);color:#fff;font-size:10.5px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;line-height:1}
+</style>
+<script>
+/* =====================================================================
+   EDEN BI — sidebar groups.
+   The old "Transactions" section is split into:
+     Dashboard (#transactionsModule, kept so older code still finds it)
+     Deals · Approvals · Performance · Finance (Broker Commissions moves here)
+   Menu buttons are added by many files at different times, so this file
+   moves each button into its group whenever the sidebar changes.
+   A group with no visible button is hidden (sales / viewer roles).
+   ===================================================================== */
+const NAV_GROUPS_=[
+  {id:'navDealsModule',title:'Deals',icon:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>',
+   items:["[onclick*=\"'deals'\"]","[onclick*=\"'dealEntry'\"]",'#dsuMenuBtn','#dsDcMenuBtn'],views:['deals','dealEntry','dataHealth']},
+  {id:'navApprovalsModule',title:'Approvals',icon:'<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.6 2.6L16 9.5"/>',
+   items:['[data-ca]','[data-da]'],views:[],badge:true},
+  {id:'navPerformanceModule',title:'Performance',icon:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/>',
+   items:['[data-ds-targets]','[data-sc]','[data-ic]'],views:['targets']},
+  {id:'navFinanceModule',title:'Finance',icon:'<rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10h18M7 15h3"/>',
+   items:['[data-ds-collections]','[data-bc]'],views:['collections']}
+];
+let NAV_BUSY_=false;
+function navEnsureGroups_(){
+  const tm=document.getElementById('transactionsModule');if(!tm)return false;
+  let prev=tm;
+  NAV_GROUPS_.forEach(g=>{
+    let m=document.getElementById(g.id);
+    if(!m){
+      const div=document.createElement('div');div.className='sectionDivider';
+      m=document.createElement('div');m.className='module';m.id=g.id;
+      m.innerHTML=`<button type="button" class="moduleHeader" onclick="toggleModule('${g.id}')"><span><svg class="dsIco" viewBox="0 0 24 24" aria-hidden="true">${g.icon}</svg>${g.title}</span>${g.badge?'<b class="navGroupCount" style="display:none"></b>':''}<span class="moduleArrow">▸</span></button><div class="moduleMenu"></div>`;
+      const anchor=prev.nextElementSibling&&prev.nextElementSibling.classList.contains('sectionDivider')?prev.nextElementSibling:prev;
+      anchor.insertAdjacentElement('afterend',div);div.insertAdjacentElement('afterend',m);
+    }
+    prev=m;
+  });
+  return true;
+}
+function navOrganize_(){
+  if(NAV_BUSY_||!navEnsureGroups_())return;
+  NAV_BUSY_=true;
+  try{
+    NAV_GROUPS_.forEach(g=>{
+      const menu=document.querySelector('#'+g.id+' .moduleMenu');
+      // wanted buttons in the listed order; touch the DOM only when it differs (no observer loops)
+      const want=[];
+      g.items.forEach(sel=>document.querySelectorAll('.sidebar .nav .moduleMenu '+sel).forEach(x=>{if(x.tagName==='BUTTON'&&want.indexOf(x)<0)want.push(x);}));
+      const now=[...menu.children];
+      if(want.length!==now.length||want.some((x,i)=>now[i]!==x))want.forEach(x=>menu.appendChild(x));
+      const shown=want.some(x=>x.style.display!=='none');
+      const mod=document.getElementById(g.id),disp=shown?'':'none';
+      if(mod.style.display!==disp)mod.style.display=disp;
+      const sep=mod.previousElementSibling;if(sep&&sep.classList.contains('sectionDivider')&&sep.style.display!==disp)sep.style.display=disp;
+      if(g.badge){
+        let n=0;menu.querySelectorAll('.caCount,.daCount').forEach(x=>{if(x.style.display!=='none')n+=Number(String(x.textContent).trim())||0;});
+        const c=mod.querySelector('.navGroupCount');if(c){if(c.textContent!==String(n))c.textContent=n;const d=n?'':'none';if(c.style.display!==d)c.style.display=d;}
+      }
+    });
+  }finally{NAV_BUSY_=false;}
+}
+let NAV_T_=0;
+function navSoon_(){clearTimeout(NAV_T_);NAV_T_=setTimeout(navOrganize_,30);}
+/* Open the group that holds the page being shown. */
+function navOpenFor_(btn,view){
+  let mod=btn&&btn.closest&&btn.closest('.module');
+  if(!mod||mod.id==='transactionsModule'){const g=NAV_GROUPS_.find(x=>x.views.indexOf(String(view||''))>=0);if(g)mod=document.getElementById(g.id);}
+  if(mod&&mod.id&&mod.id!=='transactionsModule'&&typeof openModule==='function')openModule(mod.id);
+}
+(function initEdenNavGroups_(){
+  const hook=()=>{
+    if(typeof setView==='function'&&!setView.__nav){
+      const o=setView;setView=function(v,btn){const r=o.apply(this,arguments);try{navOpenFor_(btn,v);}catch(e){}return r;};setView.__nav=true;
+    }
+    if(typeof render==='function'&&!render.__nav){
+      const o=render;render=function(){const r=o.apply(this,arguments);navSoon_();return r;};render.__nav=true;
+    }
+    navOrganize_();
+    const nav=document.querySelector('.sidebar .nav');
+    if(nav&&!nav.__navObs){nav.__navObs=new MutationObserver(()=>{if(!NAV_BUSY_)navSoon_();});
+      nav.__navObs.observe(nav,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['style']});}
+  };
+  // pages opened from a moved button (their own open functions) keep their group open
+  document.addEventListener('click',e=>{
+    const b=e.target.closest&&e.target.closest('.sidebar .nav .moduleMenu button');if(!b)return;
+    setTimeout(()=>{const mod=b.closest('.module');if(mod&&!mod.classList.contains('open')&&typeof openModule==='function')openModule(mod.id);
+      document.querySelectorAll('.sidebar .moduleMenu button').forEach(x=>x.classList.toggle('active',x===b));},0);
+  },true);
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(hook,0));else setTimeout(hook,0);
+})();
+</script>

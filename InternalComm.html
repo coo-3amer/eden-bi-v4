@@ -219,7 +219,7 @@ function icOthers_(){
 }
 function icMount_(){
   const menu=document.querySelector('#transactionsModule .moduleMenu');if(!menu)return;
-  let b=menu.querySelector('[data-ic]');
+  let b=document.querySelector('.nav [data-ic]');
   if(!b){b=document.createElement('button');b.type='button';b.dataset.ic='1';b.textContent='Internal Commissions';b.addEventListener('click',icOpen_);
     const after=menu.querySelector('[data-eden-commissions]')||[...menu.querySelectorAll('button')].find(x=>/deals details/i.test(x.textContent));
     if(after)after.insertAdjacentElement('afterend',b);else menu.appendChild(b);}

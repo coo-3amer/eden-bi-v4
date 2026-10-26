@@ -66,7 +66,7 @@ function daPendingCount_(){const from=DA_.from||daDefaultFrom_();return daList_(
 function daMount_(){
   const menu=document.querySelector('#transactionsModule .moduleMenu');
   if(!menu)return;
-  let b=menu.querySelector('[data-da]');
+  let b=document.querySelector('.nav [data-da]');
   if(!b){
     b=document.createElement('button');b.type='button';b.dataset.da='1';b.addEventListener('click',daOpen_);
     const after=menu.querySelector('[data-sc]')||[...menu.querySelectorAll('button')].find(x=>/targets/i.test(x.textContent));

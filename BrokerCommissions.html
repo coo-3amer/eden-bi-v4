@@ -125,7 +125,7 @@ function bcMoney_(cur,k){const e=Object.entries(cur).filter(([,t])=>Math.round(t
 function bcMount_(){
   const menu=document.querySelector('#brokersModule .moduleMenu');
   if(!menu)return;
-  let b=menu.querySelector('[data-bc]');
+  let b=document.querySelector('.nav [data-bc]');
   if(!b){b=document.createElement('button');b.type='button';b.dataset.bc='1';b.textContent='Broker Commissions';b.addEventListener('click',bcOpen_);menu.appendChild(b);}
   b.style.display=bcIsAdmin_()?'':'none';
 }
