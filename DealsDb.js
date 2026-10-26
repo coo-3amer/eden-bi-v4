@@ -59,24 +59,54 @@ function ddbId_(key) { return String(PropertiesService.getScriptProperties().get
 function ddbOpen_(key) { const id = ddbId_(key); return id ? SpreadsheetApp.openById(id) : null; }
 function ddbColIndex_() { const o = {}; DDB_COLS_.forEach((c, i) => o[c[1]] = i + 1); return o; }
 
-/* Private file: out of any shared folder (into the owner's My Drive) and every
-   access removed except the owner's — no people, no "anyone with the link". */
+/* The private folder for the new files: in the owner's My Drive, shared with nobody. */
+function ddbFolder_() {
+  const props = PropertiesService.getScriptProperties();
+  let id = props.getProperty('DEALS_DB_FOLDER_ID');
+  if (id) { try { const f = Drive.Files.get(id, { fields: 'id,trashed' }); if (!f.trashed) return id; } catch (e) {} }
+  const root = Drive.Files.get('root', { fields: 'id' }).id;
+  id = Drive.Files.create({ name: 'EDEN Deals DB — private', mimeType: 'application/vnd.google-apps.folder', parents: [root] }, null, { fields: 'id' }).id;
+  props.setProperty('DEALS_DB_FOLDER_ID', id);
+  ddbDropAccess_(id);
+  return id;
+}
+/* Every access removed except the owner's (people, groups, domain, anyone-with-link). */
+function ddbDropAccess_(id) {
+  const removed = [];
+  const perms = (Drive.Permissions.list(id, { fields: 'permissions(id,role,type,emailAddress)', supportsAllDrives: true }).permissions || []);
+  perms.filter(p => p.role !== 'owner').forEach(p => {
+    try { (Drive.Permissions.remove || Drive.Permissions['delete']).call(Drive.Permissions, id, p.id, { supportsAllDrives: true }); removed.push(p.emailAddress || p.type); }
+    catch (e) { console.warn('Deals DB permission ' + (p.emailAddress || p.type) + ': ' + e); }
+  });
+  return removed;
+}
+/* Private file: inside the private folder only, nobody but the owner. */
 function ddbMakePrivate_(id) {
   const res = { moved: false, removed: [] };
   try {
+    const folder = ddbFolder_();
     const f = Drive.Files.get(id, { fields: 'parents', supportsAllDrives: true });
-    const root = Drive.Files.get('root', { fields: 'id' }).id;
-    const others = (f.parents || []).filter(p => p !== root);
-    if (others.length) { Drive.Files.update({}, id, null, { addParents: root, removeParents: others.join(','), supportsAllDrives: true }); res.moved = true; }
+    const others = (f.parents || []).filter(p => p !== folder);
+    if (others.length || !(f.parents || []).length) { Drive.Files.update({}, id, null, { addParents: folder, removeParents: others.join(','), supportsAllDrives: true }); res.moved = true; }
   } catch (e) { console.warn('Deals DB move: ' + e); res.moveError = String(e && e.message || e); }
-  try {
-    const perms = (Drive.Permissions.list(id, { fields: 'permissions(id,role,type,emailAddress)', supportsAllDrives: true }).permissions || []);
-    perms.filter(p => p.role !== 'owner').forEach(p => {
-      try { (Drive.Permissions.remove || Drive.Permissions['delete']).call(Drive.Permissions, id, p.id, { supportsAllDrives: true }); res.removed.push(p.emailAddress || p.type); }
-      catch (e) { console.warn('Deals DB permission ' + (p.emailAddress || p.type) + ': ' + e); }
-    });
-  } catch (e) { console.warn('Deals DB permissions: ' + e); res.permError = String(e && e.message || e); }
+  try { res.removed = ddbDropAccess_(id); } catch (e) { res.permError = String(e && e.message || e); }
   return res;
+}
+/* Admins: delete one new file for good and make it again, privately (key = 'EG' | 'GP'). */
+function rebuildDealsDb(authToken, key) {
+  const user = targetsRequireAdmin_(authToken);
+  key = DDB_STORES_[key] ? key : 'EG';
+  const props = PropertiesService.getScriptProperties(), st = DDB_STORES_[key], gone = [];
+  const kill = id => { if (!id) return; try { Drive.Files.remove(id, { supportsAllDrives: true }); gone.push(id); } catch (e) { try { Drive.Files.update({ trashed: true }, id, null, { supportsAllDrives: true }); gone.push(id); } catch (e2) {} } };
+  kill(props.getProperty(st.prop)); kill(props.getProperty(st.prop + '_PENDING'));
+  props.deleteProperty(st.prop); props.deleteProperty(st.prop + '_PENDING');
+  if (key === 'EG') {
+    // the empty file left by the very first failed try
+    try { (Drive.Files.list({ q: "name = 'EDEN Deals DB' and 'me' in owners and trashed = false", fields: 'files(id)', pageSize: 10 }).files || []).forEach(f => kill(f.id)); } catch (e) {}
+    props.deleteProperty('DEALS_DB_COPIED_AT');
+  }
+  auditLog_(user, 'Deals DB deleted', { details: st.name + ' · ' + gone.length + ' file(s) deleted — making it again privately' });
+  return setupDealsDb(authToken, key);
 }
 
 /* Admins: both files' status (created or not, link, deals in each). */

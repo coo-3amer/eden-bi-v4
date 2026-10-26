@@ -38,17 +38,29 @@ function ddbRender_(){
   const ok=S.length&&S.every(x=>x.created&&!x.error);
   const step=(n,st,t,s)=>`<div class="ddbStep ${st}"><i>${st==='done'?'✓':n}</i><div><b>${t}</b><small>${s}</small></div><span class="daNote">${st==='done'?'Done':st==='now'?'Next':''}</span></div>`;
   const card=x=>x.created?(x.error?`<div class="ddbBox daMsg err"><b>${ddbEsc_(x.name)}</b><br>${ddbEsc_(x.error)}</div>`:
-      `<div class="ddbBox">✅ <b>${ddbEsc_(x.name)}</b> — <a href="${ddbEsc_(x.url)}" target="_blank" rel="noopener">open the sheet ↗</a><br><span class="daNote">${ddbEsc_(x.label)} · ${x.deals} deal${x.deals===1?'':'s'} in it · private: only you have access.${x.privacy&&(x.privacy.moved||x.privacy.removed.length)?` <b>Just fixed:</b> ${x.privacy.moved?'moved out of the shared folder':''}${x.privacy.removed.length?' · access removed for '+ddbEsc_(x.privacy.removed.join(', ')):''}.`:''}${x.privacy&&(x.privacy.moveError||x.privacy.permError)?` <span class="daMsg err">Could not make it private: ${ddbEsc_(x.privacy.moveError||x.privacy.permError)}</span>`:''}</span></div>`):
+      `<div class="ddbBox">✅ <b>${ddbEsc_(x.name)}</b> — <a href="${ddbEsc_(x.url)}" target="_blank" rel="noopener">open the sheet ↗</a><br><span class="daNote">${ddbEsc_(x.label)} · ${x.deals} deal${x.deals===1?'':'s'} in it · private: only you have access (folder “EDEN Deals DB — private”).${x.privacy&&(x.privacy.moved||x.privacy.removed.length)?` <b>Just fixed:</b> ${x.privacy.moved?'moved out of the shared folder':''}${x.privacy.removed.length?' · access removed for '+ddbEsc_(x.privacy.removed.join(', ')):''}.`:''}${x.privacy&&(x.privacy.moveError||x.privacy.permError)?` <span class="daMsg err">Could not make it private: ${ddbEsc_(x.privacy.moveError||x.privacy.permError)}</span>`:''}</span></div>`):
     `<div class="ddbBox"><b>${ddbEsc_(x.name)}</b> — not created yet<br><span class="daNote">${ddbEsc_(x.label)}. Same ${i.columns} columns, lists, guide and lock as the other file; starts empty.</span>
       <div style="margin-top:10px"><button type="button" class="daBtn" data-create="${x.key}">Create this sheet</button> <span class="daMsg"></span></div></div>`;
   const copy=ok?`<div class="ddbBox"><b>Copy the old deals into the new sheets</b><br><span class="daNote">Every deal in the old Deals sheet is cleaned (names without unit codes, phones in international format, real dates and numbers, status) and copied into its file by project. Run it again any time — copies are refreshed, their Deal IDs stay the same, deals added straight to a new sheet are not touched. ${i.live?'<b>The dashboard now counts the copies (switched over).</b>':'The dashboard keeps reading the old sheet until the switch, so nothing changes on the pages.'}${i.copiedAt?`<br>Last copy: <b>${new Date(i.copiedAt).toLocaleString('en-GB')}</b>`:''}</span>
       <div style="margin-top:10px"><button type="button" class="daBtn" data-copy>${i.copiedAt?'Copy again (refresh)':'Copy the old deals now'}</button> <span class="daMsg"></span></div>${DDB_.res?ddbResHtml_(DDB_.res):''}</div>`:'';
-  el.querySelector('.daBody').innerHTML=S.map(card).join('')+copy+`<div class="ddbBox"><span class="daNote">The old Deals sheet keeps working as before until it is switched off. New projects: Egypt → the Egypt file; Georgia → the Georgia &amp; Past file.</span></div><div class="ddbSteps">
+  const rebuild=S.some(x=>x.created)?`<div class="ddbBox"><b>Start again, private</b><br><span class="daNote">Deletes both new sheets for good and makes them again inside a private folder in your My Drive (“EDEN Deals DB — private”, shared with nobody), then copies the old deals into them again. The old Deals sheet is not touched.</span>
+      <div style="margin-top:10px"><button type="button" class="daBtn" data-rebuild>Delete and make both again — private</button> <span class="daMsg"></span></div></div>`:'';
+  el.querySelector('.daBody').innerHTML=rebuild+S.map(card).join('')+copy+`<div class="ddbBox"><span class="daNote">The old Deals sheet keeps working as before until it is switched off. New projects: Egypt → the Egypt file; Georgia → the Georgia &amp; Past file.</span></div><div class="ddbSteps">
     ${step(1,ok?'done':'now','Create the new sheets','Two files with the new columns, lists and guide: Egypt · Georgia & Past.')}
     ${step(2,ok?'done':'','Dashboard reads all the sheets','Deals in the new sheets show on every page; a deal moved from the old sheet is counted once.')}
     ${step(3,ok?'now':'','New deals go to the new sheets','Add New Deal writes to the right file by project; Update Deal, cancel, commission ticks and approvals work on both.')}
     ${step(4,'','Move the old deals','One deal, one project or everything — cleaned on the way (names, phones, dates); problems stop for review.')}
     ${step(5,'','Switch the old Deals sheet off','Read-only, then retired.')}</div>`;
+  const rb=el.querySelector('[data-rebuild]');
+  if(rb)rb.addEventListener('click',()=>{if(DDB_.busy)return;if(!confirm('Delete both new sheets for good and make them again in your private folder? (The old Deals sheet is not touched.)'))return;
+    DDB_.busy=true;rb.disabled=true;const m=rb.nextElementSibling;m.className='daMsg';
+    const fail=e=>{DDB_.busy=false;rb.disabled=false;m.className='daMsg err';m.textContent=e&&e.message||String(e);};
+    const run=(fn,args,txt)=>new Promise((ok,no)=>{m.textContent=txt;google.script.run.withSuccessHandler(ok).withFailureHandler(no)[fn](AUTH_TOKEN,...args);});
+    run('rebuildDealsDb',['EG'],'1/3 · Egypt sheet: deleting and making it again… (about a minute)')
+      .then(()=>run('rebuildDealsDb',['GP'],'2/3 · Georgia & Past sheet: deleting and making it again… (about a minute)'))
+      .then(()=>run('copyOldDealsToDb',[],'3/3 · Copying the old deals into them…'))
+      .then(r=>{DDB_.res=r;return run('getDealsDbInfo',[],'Done — loading…');})
+      .then(i=>{DDB_.busy=false;DDB_.info=i;ddbRender_();}).catch(fail);});
   const cp=el.querySelector('[data-copy]');
   if(cp)cp.addEventListener('click',()=>{if(DDB_.busy)return;if(!confirm('Copy all the deals of the old Deals sheet into the two new sheets now? The old sheet is only read, not changed.'))return;
     DDB_.busy=true;cp.disabled=true;const m=cp.nextElementSibling;m.className='daMsg';m.textContent='Copying… (up to a couple of minutes)';
