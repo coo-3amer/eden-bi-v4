@@ -1,0 +1,58 @@
+<style id="eden-deals-db">
+#ddb .ddbSteps{display:grid;gap:10px;max-width:880px}
+#ddb .ddbStep{display:grid;grid-template-columns:36px 1fr auto;gap:12px;align-items:center;background:var(--ds-surface,#fffdf9);border:1px solid var(--ds-line,#e2d7c4);border-radius:14px;padding:12px 14px}
+#ddb .ddbStep i{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-weight:800;background:var(--ds-surface-3,#efe7d8);color:var(--ds-muted,#6b6255)}
+#ddb .ddbStep.done i{background:var(--ds-green,#178a4c);color:#fff}#ddb .ddbStep.now i{background:var(--ds-gold,#a8791f);color:#fff}
+#ddb .ddbStep b{display:block;color:var(--ds-heading,#120f0b)}#ddb .ddbStep small{color:var(--ds-muted,#6b6255);font-size:12px}
+#ddb .ddbBox{background:var(--ds-surface,#fffdf9);border:1px solid var(--ds-line,#e2d7c4);border-radius:14px;padding:14px 16px;margin-bottom:14px;max-width:880px}
+#ddb .ddbBox a{color:var(--ds-gold-strong,#835c12);font-weight:700}
+#ddb .ddbChips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}#ddb .ddbChips span{padding:3px 9px;border-radius:99px;background:var(--ds-surface-3,#f3ede2);font-size:11.5px}
+#ddb .daBody{background:var(--ds-bg,#f4f0e8);padding:18px 22px}
+</style>
+<script>
+/* =====================================================================
+   EDEN BI — the new deals sheet (EDEN Deals DB). System › Deals DB.
+   Admins: create the file, open it, follow the move from the old Deals tab.
+   ===================================================================== */
+const DDB_={info:null,busy:false};
+function ddbIsAdmin_(){const r=String((typeof AUTH_USER!=='undefined'&&AUTH_USER&&AUTH_USER.role)||'').trim().toLowerCase();return r==='admin'||r==='super admin';}
+const ddbEsc_=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function ddbMount_(){
+  const menu=document.querySelector('#systemModule .moduleMenu');if(!menu)return;
+  let b=document.querySelector('.nav [data-ddb]');
+  if(!b){b=document.createElement('button');b.type='button';b.dataset.ddb='1';b.textContent='Deals DB (new)';b.addEventListener('click',ddbOpen_);menu.appendChild(b);}
+  const d=ddbIsAdmin_()?'':'none';if(b.style.display!==d)b.style.display=d;
+}
+function ddbClose_(){document.getElementById('ddb')?.remove();document.getElementById('ddbBack')?.remove();}
+function ddbOpen_(){
+  if(!ddbIsAdmin_())return;ddbClose_();
+  const back=document.createElement('div');back.className='daBack';back.id='ddbBack';back.addEventListener('click',ddbClose_);
+  const el=document.createElement('section');el.className='da';el.id='ddb';el.setAttribute('role','dialog');
+  el.innerHTML=`<div class="daHead"><div><small>System</small><h2>Deals DB — the new deals sheet</h2></div><div class="daTools"><button type="button" class="daX" aria-label="Close">×</button></div></div><div class="daBody"><div class="daNote">Loading…</div></div>`;
+  document.body.append(back,el);el.querySelector('.daX').addEventListener('click',ddbClose_);
+  google.script.run.withSuccessHandler(i=>{DDB_.info=i;ddbRender_();}).withFailureHandler(e=>{el.querySelector('.daBody').innerHTML=`<div class="daNote daMsg err">${ddbEsc_(e&&e.message||e)}</div>`;}).getDealsDbInfo(AUTH_TOKEN);
+}
+function ddbRender_(){
+  const el=document.getElementById('ddb');if(!el)return;const i=DDB_.info||{};
+  const step=(n,st,t,s)=>`<div class="ddbStep ${st}"><i>${st==='done'?'✓':n}</i><div><b>${t}</b><small>${s}</small></div><span class="daNote">${st==='done'?'Done':st==='now'?'Next':''}</span></div>`;
+  const top=i.created?(i.error?`<div class="ddbBox daMsg err">${ddbEsc_(i.error)}</div>`:
+      `<div class="ddbBox">✅ <b>${ddbEsc_(i.name||'EDEN Deals DB')}</b> is ready — <a href="${ddbEsc_(i.url)}" target="_blank" rel="noopener">open the sheet ↗</a><br><span class="daNote">${i.columns} columns · ${i.deals} deal${i.deals===1?'':'s'} in it · locked: only EDEN BI writes to it. The old Deals sheet keeps working as before.</span></div>`):
+    `<div class="ddbBox"><b>The new deals sheet has not been created yet.</b><br><span class="daNote">A separate Google Sheets file “EDEN Deals DB” (next to the current deals file): tabs Deals · Lists · Guide · Log, ${i.columns} columns in ${(i.groups||[]).length} coloured groups, dropdowns from the Lists tab, checkboxes, real dates and numbers, every tab locked so deals are changed from the dashboard only. It starts empty — nothing changes in the old Deals sheet.</span>
+      <div class="ddbChips">${(i.groups||[]).map(g=>`<span>${ddbEsc_(g)}</span>`).join('')}</div>
+      <div style="margin-top:12px"><button type="button" class="daBtn" data-create>Create the new sheet</button> <span class="daMsg"></span></div></div>`;
+  el.querySelector('.daBody').innerHTML=top+`<div class="ddbSteps">
+    ${step(1,i.created&&!i.error?'done':'now','Create the new sheet','Empty file with the new columns, lists and guide.')}
+    ${step(2,i.created&&!i.error?'now':'','Dashboard reads both sheets','Deals in the new sheet show on every page; a deal moved to the new sheet is counted once.')}
+    ${step(3,'','New deals go to the new sheet','Add New Deal, Update Deal, cancel, commission ticks and approvals write to the new sheet.')}
+    ${step(4,'','Move the old deals','One deal, one project or everything — cleaned on the way (names, phones, dates); problems stop for review.')}
+    ${step(5,'','Switch the old Deals sheet off','Read-only, then retired.')}</div>`;
+  const c=el.querySelector('[data-create]');
+  if(c)c.addEventListener('click',()=>{if(DDB_.busy)return;if(!confirm('Create the new “EDEN Deals DB” sheet now? (It starts empty; the old Deals sheet is not touched.)'))return;
+    DDB_.busy=true;c.disabled=true;const m=c.nextElementSibling;m.className='daMsg';m.textContent='Creating… (about a minute)';
+    google.script.run.withSuccessHandler(i=>{DDB_.busy=false;DDB_.info=i;ddbRender_();}).withFailureHandler(e=>{DDB_.busy=false;c.disabled=false;m.className='daMsg err';m.textContent=e&&e.message||String(e);}).setupDealsDb(AUTH_TOKEN);});
+}
+(function initEdenDealsDb_(){
+  const hook=()=>{if(typeof render==='function'&&!render.__ddb){const o=render;render=function(){const r=o.apply(this,arguments);try{ddbMount_();}catch(e){}return r;};render.__ddb=true;}ddbMount_();};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(hook,0));else setTimeout(hook,0);
+})();
+</script>
