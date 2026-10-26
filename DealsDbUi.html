@@ -42,8 +42,8 @@ function ddbRender_(){
       <div style="margin-top:12px"><button type="button" class="daBtn" data-create>Create the new sheet</button> <span class="daMsg"></span></div></div>`;
   el.querySelector('.daBody').innerHTML=top+`<div class="ddbSteps">
     ${step(1,i.created&&!i.error?'done':'now','Create the new sheet','Empty file with the new columns, lists and guide.')}
-    ${step(2,i.created&&!i.error?'now':'','Dashboard reads both sheets','Deals in the new sheet show on every page; a deal moved to the new sheet is counted once.')}
-    ${step(3,'','New deals go to the new sheet','Add New Deal, Update Deal, cancel, commission ticks and approvals write to the new sheet.')}
+    ${step(2,i.created&&!i.error?'done':'','Dashboard reads both sheets','Deals in the new sheet show on every page; a deal moved to the new sheet is counted once.')}
+    ${step(3,i.created&&!i.error?'now':'','New deals go to the new sheet','Add New Deal, Update Deal, cancel, commission ticks and approvals write to the new sheet.')}
     ${step(4,'','Move the old deals','One deal, one project or everything — cleaned on the way (names, phones, dates); problems stop for review.')}
     ${step(5,'','Switch the old Deals sheet off','Read-only, then retired.')}</div>`;
   const c=el.querySelector('[data-create]');

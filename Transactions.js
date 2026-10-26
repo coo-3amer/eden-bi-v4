@@ -683,6 +683,17 @@ function buildDashboardData_(authUser) {
     });
   });
 
+  // DEALS DB (new sheet): its deals join the old ones; old rows already moved there are dropped.
+  try {
+    if (typeof ddbDashboardRows_ === 'function') {
+      const db = ddbDashboardRows_(egyptViewer);
+      if (db.rows.length || Object.keys(db.moved).length) {
+        for (let k = rows.length - 1; k >= 0; k--) if (db.moved[rows[k].row]) rows.splice(k, 1);
+        db.rows.forEach(x => rows.push(x));
+      }
+    }
+  } catch (e) { console.warn('Deals DB read: ' + e); }
+
   const options = buildOptions_(rows, availableFilters);
 
   // SOURCE DETAILS filter options are built directly from mapped rows.

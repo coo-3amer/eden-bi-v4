@@ -168,3 +168,68 @@ function setupDealsDb(authToken) {
     return getDealsDbInfo(authToken);
   } finally { lock.releaseLock(); }
 }
+
+/* ================= Phase 2: the dashboard reads the new sheet too =================
+   Returns rows in the same shape as the old Deals rows (Transactions.js), plus
+   src:'db' and dealId. `moved` = old Deals rows already moved to the new sheet
+   (their "Old Deals Row"), which the old reader then skips so nothing is counted twice. */
+function ddbDashboardRows_(egyptViewer) {
+  const out = { rows: [], moved: {} };
+  const ss = ddbOpen_(); if (!ss) return out;
+  const sh = ss.getSheetByName('Deals'); if (!sh) return out;
+  const last = sh.getLastRow(); if (last < DDB_FIRST_ROW_) return out;
+  const n = DDB_COLS_.length;
+  const vals = sh.getRange(DDB_FIRST_ROW_, 1, last - DDB_FIRST_ROW_ + 1, n).getValues();
+  const at = ddbColIndex_(), tz = 'Africa/Cairo';
+  vals.forEach((v, i) => {
+    const g = name => { const c = at[name]; const x = c ? v[c - 1] : ''; return x === null || x === undefined ? '' : x; };
+    const s = name => { const x = g(name); return x instanceof Date ? Utilities.formatDate(x, tz, 'd-MMM-yyyy') : String(x).trim(); };
+    const num = name => { const x = g(name); return typeof x === 'number' ? x : parseNumber_(x); };
+    const chk = name => g(name) === true || /^true$/i.test(String(g(name))) ? 'TRUE' : 'FALSE';
+    const dealId = s('Deal ID'); if (!dealId) return;
+    const project = s('Project'), nationality = s('Nationality');
+    if (egyptViewer) {
+      if (project.toUpperCase() !== 'EDEN WALK') return;
+      if (!isEgyptNationality_(nationality)) return;
+    }
+    const old = Number(g('Old Deals Row')); if (old) out.moved[old] = dealId;
+    const d = g('Reservation Date'), dd = d instanceof Date ? d : parseDate_(s('Reservation Date'));
+    const y = dd ? dd.getFullYear() : '', m = dd ? dd.getMonth() + 1 : '';
+    const unitType = normalizeUnitType_(s('Unit Type'));
+    if (isEOneProject_(project) && E_ONE_DEAL_UNIT_TYPES_.indexOf(unitType) < 0) return;
+    let status = s('Status') || 'Reservation';
+    if (status === 'Client Signed') status = 'Client Sigend';            // same spelling as the old sheet, so filters match
+    const additionalStatus = s('Additional Status'), isRenovation = additionalStatus.toLowerCase() === 'renovation';
+    const final = num('Final Price'), primary = num('Primary Total Price');
+    const discRaw = g('Discount %');
+    let discountPct = typeof discRaw === 'number' ? (discRaw <= 1 ? discRaw * 100 : discRaw) : (String(discRaw).trim() ? parseNumber_(discRaw) : (primary && final && final <= primary ? (1 - final / primary) * 100 : null));
+    if (discountPct != null) discountPct = isFinite(discountPct) && discountPct >= 0 && discountPct <= 100 ? Math.round(discountPct * 100) / 100 : null;
+    const pct = name => { const x = g(name); return typeof x === 'number' ? (x <= 1 ? x * 100 : x) : parseNumber_(x); };
+    const clientName = cleanClientName_(s('Client Name'));
+    out.rows.push({
+      row: 0, src: 'db', dealId: dealId, dbRow: DDB_FIRST_ROW_ + i, deal: dealId, num: dealId,
+      year: y, month: m, day: dd ? dd.getDate() : '', monthName: m ? monthName_(m) : '', yearMonth: y && m ? y + '-' + String(m).padStart(2, '0') : '',
+      project: project, clientName: clientName, clientKey: normalizeClientKey_(clientName), docsUrl: s('Documents Link'), sysAdded: 1,
+      mobile: [s('Mobile 1'), s('Mobile 2')].filter(Boolean).join(' - '), nationality: nationality, clientType: normalizeClientType_(s('Client Type')),
+      unitCode: s('Unit Code'), status: status, additionalStatus: additionalStatus, isRenovation: isRenovation, renovationStatus: isRenovation ? 'Renovation' : 'Without Renovation',
+      date: s('Reservation Date'), clientSignDate: s('Client Sign Date'), contractDate: s('Contract Date'), companySignDate: s('Company Sign Date'), delivered: s('Delivery Date'),
+      daysToClose: num('Days to Close'), clientStatue: '',
+      block: s('Block'), view: s('View'), floor: s('Floor'), finishing: s('Finishing Type'), unitType: unitType, unitCategory: classifyUnitType_(unitType),
+      area: num('Area m²'), outArea: num('Outdoor Area m²'), outdoor: s('Outdoor Area m²'),
+      meterPrice: num('Meter Price After Discount') || num('Primary Meter Price'),
+      amount: final || primary || num('Reservation Amount'), currency: normalizeCurrency_(s('Currency')),
+      dpPercent: pct('DP %'), actualDP: num('DP Required'), dpPaid: num('DP Paid'), actualPaid: num('Total Paid'), remain: num('Remaining DP'),
+      maintenanceAmount: num('Maintenance Amount'), discountOffer: s('Discount Offer'), maintenancePercent: s('Maintenance %'),
+      confPartDP: chk('Part of DP ✓'), confTotalDP: chk('Total DP ✓'), confClientSigned: chk('Client Signed ✓'), confCompanySigned: chk('Company Signed ✓'),
+      confDeliverySigned: chk('Delivery Signed ✓'), confDelivered: chk('Delivered ✓'), cooConfirmed: chk('COO Confirmed ✓'),
+      primaryTotal: primary || '', discountPct: discountPct, cancelReason: s('Cancel Reason'), cancelDate: s('Cancel Date'), dpDate: s('DP Date'),
+      planType: s('Plan Type'), planPeriod: s('Installments Period'), planCode: s('Installment Plan'), planEvery: s('Period Type'),
+      branch: s('Branch') || 'Not Assigned', salesName: s('Sales Name') || 'Not Assigned', sharedWith: s('Shared With'), salesManager: s('Sales Manager'),
+      internalCommSales: chk('Comm Sales Paid ✓'), internalCommManagers: chk('Comm Managers Paid ✓'), internalCommStaff: chk('Comm Staff Paid ✓'), internalCommStatue: s('Comm Note'),
+      headOfSales: s('Head Of Sales'), cco: s('CCO'), dealStatus: s('Deal Type'),
+      mainSource: s('Main Source'), sourceType: s('Source Type'), campaignName: s('Campaign Name'), mediaBuyer: s('Media Buyer'),
+      brokerageCompany: s('Brokerage Company'), bcSales: s('BC Sales'), bcManager: s('BC Manager')
+    });
+  });
+  return out;
+}
