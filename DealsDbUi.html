@@ -31,6 +31,7 @@ function ddbOpen_(){
   const el=document.createElement('section');el.className='da';el.id='ddb';el.setAttribute('role','dialog');
   el.innerHTML=`<div class="daHead"><div><small>System</small><h2>Deals DB — the new deals sheet</h2></div><div class="daTools"><button type="button" class="daX" aria-label="Close">×</button></div></div><div class="daBody"><div class="daNote">Loading…</div></div>`;
   document.body.append(back,el);el.querySelector('.daX').addEventListener('click',ddbClose_);
+  google.script.run.withSuccessHandler(r=>{if(r&&(!DDB_.res||r.at>DDB_.res.at)){DDB_.res=r;ddbRender_();}}).withFailureHandler(()=>{}).getDealsDbLastCopy(AUTH_TOKEN);
   google.script.run.withSuccessHandler(i=>{DDB_.info=i;ddbRender_();}).withFailureHandler(e=>{el.querySelector('.daBody').innerHTML=`<div class="daNote daMsg err">${ddbEsc_(e&&e.message||e)}</div>`;}).getDealsDbInfo(AUTH_TOKEN);
 }
 function ddbRender_(){
@@ -65,7 +66,7 @@ function ddbRender_(){
   if(cp)cp.addEventListener('click',()=>{if(DDB_.busy)return;if(!confirm('Copy all the deals of the old Deals sheet into the two new sheets now? The old sheet is only read, not changed.'))return;
     DDB_.busy=true;cp.disabled=true;const m=cp.nextElementSibling;m.className='daMsg';m.textContent='Copying… (up to a couple of minutes)';
     google.script.run.withSuccessHandler(r=>{DDB_.busy=false;DDB_.res=r;google.script.run.withSuccessHandler(i=>{DDB_.info=i;ddbRender_();}).getDealsDbInfo(AUTH_TOKEN);})
-      .withFailureHandler(e=>{DDB_.busy=false;cp.disabled=false;m.className='daMsg err';m.textContent=e&&e.message||String(e);}).copyOldDealsToDb(AUTH_TOKEN);});
+      .withFailureHandler(e=>{DDB_.busy=false;cp.disabled=false;const t=String(e&&e.message||e);m.className='daMsg err';m.textContent=/did not answer|timed? ?out/i.test(t)?'Still copying in the background — close this page and open it again in 2 minutes to see the result.':t;}).copyOldDealsToDb(AUTH_TOKEN);});
   const xl=el.querySelector('[data-issxl]');
   if(xl)xl.addEventListener('click',()=>{const r=DDB_.res;if(!r||typeof edenXlsxDownload_!=='function')return;
     edenXlsxDownload_('EDEN_Deals_DB_copy_check',{title:'Deals DB copy — things to check',sheetName:'Check',kpis:[['Copied at',new Date(r.at).toLocaleString('en-GB')],['Egypt',r.summary.EG.copied],['Georgia & Past',r.summary.GP.copied]],

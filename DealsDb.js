@@ -503,15 +503,21 @@ function copyOldDealsToDb(authToken) {
       if (rows.length) {
         const cleared = rows.map(r => r.map((x, j) => DDB_COLS_[j][2] === 'check' ? x === true : x));
         sh.getRange(DDB_FIRST_ROW_, 1, rows.length, N).setValues(cleared);
-        // put the links back (only in the cells that had one)
+        // put the links back: one write per column that has links (fast)
         let nLinks = 0;
-        rows.forEach((r, k) => {
-          const L = r.__links; if (!L) return;
-          Object.keys(L).forEach(c => {
-            const x = L[c]; let b = SpreadsheetApp.newRichTextValue().setText(x.text);
+        const linkCols = {};
+        rows.forEach(r => Object.keys(r.__links || {}).forEach(c => linkCols[c] = 1));
+        Object.keys(linkCols).forEach(c => {
+          const col = Number(c);
+          const rts = rows.map(r => {
+            const x = r.__links && r.__links[c];
+            if (!x) return [SpreadsheetApp.newRichTextValue().setText(String(r[col - 1] == null ? '' : r[col - 1])).build()];
+            let b = SpreadsheetApp.newRichTextValue().setText(x.text);
             x.runs.forEach(([a, z, url]) => { if (z > a) b = b.setLinkUrl(a, z, url); });
-            try { sh.getRange(DDB_FIRST_ROW_ + k, Number(c)).setRichTextValue(b.build()); nLinks++; } catch (e) { console.warn('Deals DB link: ' + e); }
+            nLinks++;
+            return [b.build()];
           });
+          try { sh.getRange(DDB_FIRST_ROW_, col, rows.length, 1).setRichTextValues(rts); } catch (e) { console.warn('Deals DB links col ' + col + ': ' + e); }
         });
         summary.links = (summary.links || 0) + nLinks;
       }
@@ -519,7 +525,14 @@ function copyOldDealsToDb(authToken) {
     });
     PropertiesService.getScriptProperties().setProperty('DEALS_DB_COPIED_AT', now.toISOString());
     auditLog_(user, 'Old deals copied to Deals DB', { details: 'Egypt ' + summary.EG.copied + ' · Georgia & Past ' + summary.GP.copied + ' · ' + issues.length + ' things to check' });
-    return { summary: summary, issues: issues, at: now.toISOString(), live: ddbLive_() };
+    const result = { summary: summary, issues: issues, at: now.toISOString(), live: ddbLive_() };
+    try { CacheService.getScriptCache().put('DDB_LAST_COPY', JSON.stringify(result), 21600); } catch (e) {}
+    return result;
   } finally { lock.releaseLock(); }
+}
+/* Admins: the result of the last copy (when the page stopped waiting before it ended). */
+function getDealsDbLastCopy(authToken) {
+  targetsRequireAdmin_(authToken);
+  try { const x = CacheService.getScriptCache().get('DDB_LAST_COPY'); return x ? JSON.parse(x) : null; } catch (e) { return null; }
 }
 function ddbLive_() { return String(PropertiesService.getScriptProperties().getProperty('DEALS_DB_LIVE') || '').toLowerCase() === 'on'; }
