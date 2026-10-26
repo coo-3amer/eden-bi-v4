@@ -5260,7 +5260,7 @@ function renderBrokerCompanyDetails_(){
   empty?.classList.add('hidden');
   table.innerHTML=`
     <thead><tr>${cols.map(([,title])=>`<th>${title}</th>`).join('')}</tr></thead>
-    <tbody>${allDeals.map(r=>{const ck=!(typeof isEgyptViewer_==='function'&&isEgyptViewer_())&&typeof clientKeyOf==='function'&&clientKeyOf(r);return `
+    <tbody>${allDeals.map(r=>{const ck=typeof clientKeyOf==='function'&&clientKeyOf(r);return `
       <tr${ck?` data-ck="${escapeAttr(ck)}" title="Open this deal"`:''}>
         ${cols.map(([key])=>{
           if(key==='amount')return `<td class="brokerCompanyDealMoney">${money(r.amount||0)}</td>`;
