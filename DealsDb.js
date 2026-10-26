@@ -59,6 +59,26 @@ function ddbId_(key) { return String(PropertiesService.getScriptProperties().get
 function ddbOpen_(key) { const id = ddbId_(key); return id ? SpreadsheetApp.openById(id) : null; }
 function ddbColIndex_() { const o = {}; DDB_COLS_.forEach((c, i) => o[c[1]] = i + 1); return o; }
 
+/* Private file: out of any shared folder (into the owner's My Drive) and every
+   access removed except the owner's — no people, no "anyone with the link". */
+function ddbMakePrivate_(id) {
+  const res = { moved: false, removed: [] };
+  try {
+    const f = Drive.Files.get(id, { fields: 'parents', supportsAllDrives: true });
+    const root = Drive.Files.get('root', { fields: 'id' }).id;
+    const others = (f.parents || []).filter(p => p !== root);
+    if (others.length) { Drive.Files.update({}, id, null, { addParents: root, removeParents: others.join(','), supportsAllDrives: true }); res.moved = true; }
+  } catch (e) { console.warn('Deals DB move: ' + e); res.moveError = String(e && e.message || e); }
+  try {
+    const perms = (Drive.Permissions.list(id, { fields: 'permissions(id,role,type,emailAddress)', supportsAllDrives: true }).permissions || []);
+    perms.filter(p => p.role !== 'owner').forEach(p => {
+      try { (Drive.Permissions.remove || Drive.Permissions['delete']).call(Drive.Permissions, id, p.id, { supportsAllDrives: true }); res.removed.push(p.emailAddress || p.type); }
+      catch (e) { console.warn('Deals DB permission ' + (p.emailAddress || p.type) + ': ' + e); }
+    });
+  } catch (e) { console.warn('Deals DB permissions: ' + e); res.permError = String(e && e.message || e); }
+  return res;
+}
+
 /* Admins: both files' status (created or not, link, deals in each). */
 function getDealsDbInfo(authToken) {
   targetsRequireAdmin_(authToken);
@@ -71,7 +91,8 @@ function getDealsDbInfo(authToken) {
       let deals = 0;
       if (last >= DDB_FIRST_ROW_) deals = sh.getRange(DDB_FIRST_ROW_, 1, last - DDB_FIRST_ROW_ + 1, 1).getValues().filter(r => String(r[0]).trim()).length;
       if (ss.getName() !== st.name) { try { ss.rename(st.name); } catch (e) {} }
-      return Object.assign(base, { created: true, id: id, url: ss.getUrl(), name: st.name, deals: deals });
+      let priv = null; try { priv = ddbMakePrivate_(id); if (priv.moved || priv.removed.length) auditLog_('System', 'Deals DB made private', { details: st.name + (priv.moved ? ' · moved out of the shared folder' : '') + (priv.removed.length ? ' · access removed: ' + priv.removed.join(', ') : '') }); } catch (e) {}
+      return Object.assign(base, { created: true, id: id, url: ss.getUrl(), name: st.name, deals: deals, privacy: priv });
     } catch (e) { return Object.assign(base, { created: true, id: id, error: 'The file cannot be opened: ' + (e && e.message || e) }); }
   };
   return { live: ddbLive_(), copiedAt: PropertiesService.getScriptProperties().getProperty('DEALS_DB_COPIED_AT') || '', stores: [one('EG'), one('GP')], columns: DDB_COLS_.length, groups: [...new Set(DDB_COLS_.map(c => c[0]))], removed: DDB_REMOVED_, gpProjects: DDB_GP_PROJECTS_ };
@@ -179,11 +200,8 @@ function setupDealsDb(authToken, key) {
       try { const p = sh.protect().setDescription('EDEN BI only — change deals from the dashboard'); p.removeEditors(p.getEditors()); if (p.canDomainEdit()) p.setDomainEdit(false); } catch (e) {}
     });
 
-    // keep it next to the old deals file
-    try {
-      const parents = (Drive.Files.get(SPREADSHEET_ID, { fields: 'parents', supportsAllDrives: true }).parents || []);
-      if (parents.length) Drive.Files.update({}, ss.getId(), null, { addParents: parents.join(','), removeParents: 'root', supportsAllDrives: true });
-    } catch (e) { console.warn('Deals DB folder: ' + e); }
+    // private: only the owner (never inside a shared folder)
+    ddbMakePrivate_(ss.getId());
 
     props.setProperty(st.prop, ss.getId()); props.deleteProperty(pendingProp);
     auditLog_(user, 'Deals DB created', { details: ss.getName() + ' · ' + n + ' columns · ' + ss.getUrl() });
