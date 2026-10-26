@@ -77,7 +77,7 @@ function ddbRender_(){
 }
 function ddbResHtml_(r){
   const grp={};r.issues.forEach(x=>{const k=x[5].replace(/:.*$/,'').replace(/\(rows.*$/,'').replace(/".*"/,'…').trim();grp[k]=(grp[k]||0)+1;});
-  return `<div style="margin-top:12px"><b>✓ Copied:</b> Egypt <b>${r.summary.EG.copied}</b> deals · Georgia &amp; Past <b>${r.summary.GP.copied}</b> deals${(r.summary.EG.native+r.summary.GP.native)?` · ${r.summary.EG.native+r.summary.GP.native} deals added straight to the new sheets were kept`:''}.</div>
+  return `<div style="margin-top:12px"><b>✓ Copied:</b> Egypt <b>${r.summary.EG.copied}</b> deals · Georgia &amp; Past <b>${r.summary.GP.copied}</b> deals${r.summary.links?` · <b>${r.summary.links}</b> file links kept`:''}${(r.summary.EG.native+r.summary.GP.native)?` · ${r.summary.EG.native+r.summary.GP.native} deals added straight to the new sheets were kept`:''}.</div>
     <div style="margin-top:8px"><b>${r.issues.length}</b> things to check <button type="button" class="daBtn" data-issxl>⬇ Excel</button></div>
     <div class="ddbChips">${Object.entries(grp).sort((a,b)=>b[1]-a[1]).map(([k,n])=>`<span>${ddbEsc_(k)} · <b>${n}</b></span>`).join('')}</div>
     <div style="max-height:320px;overflow:auto;margin-top:10px"><table class="daTable ddbIss" style="width:100%;font-size:12px;table-layout:fixed"><thead><tr><th>File</th><th>Row</th><th>Project</th><th>Unit</th><th>Client</th><th>What to check</th></tr></thead><tbody>${r.issues.slice(0,400).map(x=>`<tr><td>${x[0]==='EG'?'Egypt':'Georgia'}</td><td>${ddbEsc_(x[1])}</td><td>${ddbEsc_(x[2])}</td><td>${ddbEsc_(x[3])}</td><td>${ddbEsc_(x[4])}</td><td>${ddbEsc_(x[5])}</td></tr>`).join('')}</tbody></table></div>`;

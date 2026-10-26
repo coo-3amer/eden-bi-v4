@@ -391,6 +391,16 @@ function copyOldDealsToDb(authToken) {
     const nRows = last - DATA_START_ROW + 1;
     const V = old.getRange(DATA_START_ROW, 1, nRows, oc.lastCol).getValues();
     const D = old.getRange(DATA_START_ROW, 1, nRows, oc.lastCol).getDisplayValues();
+    // links inside cells (file chips / hyperlinks such as "EX.pdf") — kept, not just the text
+    let RT = null;
+    try { RT = old.getRange(DATA_START_ROW, 1, nRows, oc.lastCol).getRichTextValues(); } catch (e) { console.warn('Deals DB links: ' + e); }
+    const linksOf = (i, c) => {
+      if (!RT || !c) return null;
+      const rt = RT[i][c - 1]; if (!rt) return null;
+      const runs = (rt.getRuns ? rt.getRuns() : []).filter(r => r.getLinkUrl && r.getLinkUrl()).map(r => [r.getStartIndex(), r.getEndIndex(), r.getLinkUrl()]);
+      if (!runs.length && rt.getLinkUrl && rt.getLinkUrl()) runs.push([0, rt.getText().length, rt.getLinkUrl()]);
+      return runs.length ? { text: rt.getText(), runs: runs } : null;
+    };
     const colOf = {}; Object.keys(DDB_OLD_MAP_).forEach(k => colOf[k] = mainDealsCol_(oc, DDB_OLD_MAP_[k]));
     const contactCol = mainDealsCol_(oc, ['client info|contact', 'Contact']);
     const cancelChk = (resHoldColumns_(old) || {}).chk || 0;
@@ -405,7 +415,7 @@ function copyOldDealsToDb(authToken) {
       const raw = k => colOf[k] ? v[colOf[k] - 1] : '', disp = k => colOf[k] ? String(d[colOf[k] - 1] || '').trim() : '';
       const project = disp('Project'), unit = disp('Unit Code').replace(/\s+/g, ''), rawName = disp('Client Name');
       if (!project && !unit && !rawName) continue;
-      const store = ddbStoreOf_(project), rec = new Array(N).fill('');
+      const store = ddbStoreOf_(project), rec = new Array(N).fill(''), links = {};
       const put = (name, val) => { if (at[name]) rec[at[name] - 1] = val; };
       const issue = (what) => issues.push([store, row, project, unit, ddbCleanName_(rawName), what]);
       Object.keys(DDB_OLD_MAP_).forEach(k => {
@@ -415,7 +425,11 @@ function copyOldDealsToDb(authToken) {
         else if (t === 'date') { const dt = x instanceof Date ? x : parseDate_(s); put(k, dt || (s ? s : '')); if (s && !dt) issue(k + ': not a date (' + s + ')'); }
         else if (t === 'money' || t === 'number') put(k, typeof x === 'number' ? x : (s ? parseNumber_(s) : ''));
         else if (t === 'percent') { const p = typeof x === 'number' ? (x > 1 ? x / 100 : x) : (s ? parseNumber_(s) / 100 : ''); put(k, p); }
-        else put(k, s);
+        else {
+          put(k, s);
+          const L = ['Client Name', 'Unit Code', 'Project', 'Email', 'Nationality'].indexOf(k) < 0 ? linksOf(i, colOf[k]) : null;
+          if (L && at[k]) { links[at[k]] = L; put(k, L.text); }
+        }
       });
       // client name / phones / email
       const name = ddbCleanName_(rawName); put('Client Name', name);
@@ -452,6 +466,7 @@ function copyOldDealsToDb(authToken) {
       if (!rec[at['Reservation Date'] - 1]) issue('No reservation date');
       put('Documents Link', docLinks[i] || '');
       put('Old Deals Row', row); put('Created At', now); put('Created By', who); put('Updated At', now); put('Updated By', who);
+      rec.__links = links;
       perStore[store].push(rec);
     }
 
@@ -488,8 +503,19 @@ function copyOldDealsToDb(authToken) {
       if (rows.length) {
         const cleared = rows.map(r => r.map((x, j) => DDB_COLS_[j][2] === 'check' ? x === true : x));
         sh.getRange(DDB_FIRST_ROW_, 1, rows.length, N).setValues(cleared);
+        // put the links back (only in the cells that had one)
+        let nLinks = 0;
+        rows.forEach((r, k) => {
+          const L = r.__links; if (!L) return;
+          Object.keys(L).forEach(c => {
+            const x = L[c]; let b = SpreadsheetApp.newRichTextValue().setText(x.text);
+            x.runs.forEach(([a, z, url]) => { if (z > a) b = b.setLinkUrl(a, z, url); });
+            try { sh.getRange(DDB_FIRST_ROW_ + k, Number(c)).setRichTextValue(b.build()); nLinks++; } catch (e) { console.warn('Deals DB link: ' + e); }
+          });
+        });
+        summary.links = (summary.links || 0) + nLinks;
       }
-      summary[key] = { copied: perStore[key].length, native: native.length, name: st.name };
+      summary[key] = Object.assign(summary[key] || {}, { copied: perStore[key].length, native: native.length, name: st.name });
     });
     PropertiesService.getScriptProperties().setProperty('DEALS_DB_COPIED_AT', now.toISOString());
     auditLog_(user, 'Old deals copied to Deals DB', { details: 'Egypt ' + summary.EG.copied + ' · Georgia & Past ' + summary.GP.copied + ' · ' + issues.length + ' things to check' });
