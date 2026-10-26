@@ -33,7 +33,7 @@ const DDB_LISTS_ = [
   ['Unit Category', null], ['Cancel Reason', null], ['Plan Type', 'planType'], ['Period Type', null]
 ];
 const DDB_FIXED_LISTS_ = {
-  'Status': ['Reservation', 'Part of DP', 'Total DP', 'Client Signed', 'Company Signed', 'Delivered', 'Closed', 'Cancel'],
+  'Status': ['EOI', 'Reservation', 'Part of DP', 'Total DP', 'Client Signed', 'Company Signed', 'Delivered', 'Closed', 'Cancel'],
   'Currency': ['EGP', 'USD'], 'Reservation Currency': ['EGP', 'USD'], 'DP Currency': ['EGP', 'USD'], 'Gender': ['Male', 'Female'],
   'ID Type': ['National ID', 'Passport'], 'Unit Category': ['Main Unit', 'Shared Unit', 'Divided Unit'],
   'Cancel Reason': ['Changed unit', 'Could not pay the down payment', 'Changed mind', 'Financial reasons', 'Personal reasons', 'Payment default', 'Other'],
@@ -74,7 +74,7 @@ function getDealsDbInfo(authToken) {
       return Object.assign(base, { created: true, id: id, url: ss.getUrl(), name: st.name, deals: deals });
     } catch (e) { return Object.assign(base, { created: true, id: id, error: 'The file cannot be opened: ' + (e && e.message || e) }); }
   };
-  return { stores: [one('EG'), one('GP')], columns: DDB_COLS_.length, groups: [...new Set(DDB_COLS_.map(c => c[0]))], removed: DDB_REMOVED_, gpProjects: DDB_GP_PROJECTS_ };
+  return { live: ddbLive_(), copiedAt: PropertiesService.getScriptProperties().getProperty('DEALS_DB_COPIED_AT') || '', stores: [one('EG'), one('GP')], columns: DDB_COLS_.length, groups: [...new Set(DDB_COLS_.map(c => c[0]))], removed: DDB_REMOVED_, gpProjects: DDB_GP_PROJECTS_ };
 }
 
 /* Admins: create one of the two files (once). key = 'EG' | 'GP'. */
@@ -209,7 +209,7 @@ function ddbReadStore_(key, egyptViewer, out) {
   const last = sh.getLastRow(); if (last < DDB_FIRST_ROW_) return out;
   const n = DDB_COLS_.length;
   const vals = sh.getRange(DDB_FIRST_ROW_, 1, last - DDB_FIRST_ROW_ + 1, n).getValues();
-  const at = ddbColIndex_(), tz = 'Africa/Cairo';
+  const at = ddbColIndex_(), tz = 'Africa/Cairo', live = ddbLive_();
   vals.forEach((v, i) => {
     const g = name => { const c = at[name]; const x = c ? v[c - 1] : ''; return x === null || x === undefined ? '' : x; };
     const s = name => { const x = g(name); return x instanceof Date ? Utilities.formatDate(x, tz, 'd-MMM-yyyy') : String(x).trim(); };
@@ -221,7 +221,8 @@ function ddbReadStore_(key, egyptViewer, out) {
       if (project.toUpperCase() !== 'EDEN WALK') return;
       if (!isEgyptNationality_(nationality)) return;
     }
-    const old = Number(g('Old Deals Row')); if (old) out.moved[old] = dealId;
+    const old = Number(g('Old Deals Row'));
+    if (old) { if (!live) return; out.moved[old] = dealId; }     // copies count only after the switch
     const d = g('Reservation Date'), dd = d instanceof Date ? d : parseDate_(s('Reservation Date'));
     const y = dd ? dd.getFullYear() : '', m = dd ? dd.getMonth() + 1 : '';
     const unitType = normalizeUnitType_(s('Unit Type'));
@@ -262,3 +263,189 @@ function ddbReadStore_(key, egyptViewer, out) {
   });
   return out;
 }
+
+/* ================= Phase 4 (preview): copy the old Deals rows into the new files =================
+   Every old deal is cleaned and copied into its file (by project). The copies
+   carry "Old Deals Row", so running it again updates them (Deal IDs stay the
+   same) and deals added straight to a new file are never touched.
+   While Script Property DEALS_DB_LIVE is not "on", the dashboard keeps reading
+   the old sheet and ignores these copies. */
+const DDB_OLD_MAP_ = {
+  'Client Name': ['client details|client name', 'Final Client Name', 'Client Name'], 'Email': ['client info|email'], 'Nationality': ['client info|nationality', 'Nationality'],
+  'Client Type': ['client info|client type', 'Client Type'], 'Gender': ['client info|gender'], 'Birth Date': ['client info|birth date'], 'Job Title': ['client info|job title'],
+  'Job Type': ['client info|job type'], 'ID Type': ['client info|id type'], 'ID Number': ['client info|id number'], 'ID Address': ['client info|id address'],
+  'Residence Address': ['client info|residence address'], 'Project': ['project details|project', 'Project'], 'Unit Code': ['project details|unit code', 'Unit Code'],
+  'Block': ['unit info|block'], 'Floor': ['unit info|floor'], 'View': ['unit info|view'], 'Unit Type': ['unit info|unit type'], 'Finishing Type': ['unit info|finishing type'],
+  'Area m²': ['price details|area', 'Area'], 'Outdoor Area m²': ['price details|outarea', 'OutArea'], 'Currency': ['price details|currency'],
+  'Primary Meter Price': ['price details|primary meter price'], 'Outdoor Meter Price': ['price details|outdoor meter price'], 'Primary Total Price': ['price details|primary total price'],
+  'Discount Offer': ['price details|discount offer'], 'Meter Price After Discount': ['price details|meter price after discount'], 'Final Price': ['price details|final price', 'Final Price'],
+  'Maintenance %': ['price details|maintenance %'], 'Maintenance Amount': ['price details|maintenance amount'],
+  'Reservation Date': ['reservation details|date'], 'Res Code': ['reservation details|res code', 'Res Code'], 'Reservation Amount': ['reservation details|amount'],
+  'Reservation Currency': ['reservation details|currency'], 'Reservation Payment Method': ['reservation details|payment method'], 'EOI Code': ['eoi|code'],
+  'Status': ['deal status|status', 'Status'], 'Additional Status': ['deal status|additional status', 'Additional Status'], 'Deal Type': ['transaction details|deal status'],
+  'Days to Close': ['contract details|days to close', 'Days to Close'],
+  'DP %': ['down payment details|dp %'], 'DP Required': ['down payment details|acctual dp', 'down payment details|actual dp'], 'DP Paid': ['down payment details|dp paid'],
+  'Total Paid': ['down payment details|acctual paid', 'down payment details|actual paid'], 'Remaining DP': ['down payment details|remain'],
+  'DP Payment Method': ['down payment details|payment method'], 'DP Currency': ['down payment details|currency'], 'DP Date': ['down payment details|date'], 'Receipt No.': ['down payment details|receipt'],
+  'Plan Type': ['payment plan details|type of payment plan'], 'Installments Period': ['payment plan details|installments period'], 'Installment Plan': ['payment plan details|installment plan'],
+  'Period Type': ['payment plan details|period type'], 'Payment Exception': ['payment plan details|payment exception'],
+  'Contract Type': ['contract details|contract type'], 'Contract Code': ['contract details|contract code'], 'Contract Date': ['contract details|date'],
+  'Client Sign Date': ['contract details|client sign date'], 'Company Sign Date': ['contract details|company sign date'], 'Delivery Date': ['contract details|delivered'],
+  'Part of DP ✓': ['deal confirmation|part of dp'], 'Total DP ✓': ['deal confirmation|total dp'], 'Client Signed ✓': ['deal confirmation|client sigend'],
+  'Company Signed ✓': ['deal confirmation|company signed'], 'Wallet Checked ✓': ['deal confirmation|check wallet'], 'Delivery Signed ✓': ['deal confirmation|delivery signed'],
+  'Delivered ✓': ['deal confirmation|delivered'], 'COO Confirmed ✓': ['deal confirmation|coo confirmed'],
+  'Branch': ['transaction details|branch', 'Branch'], 'Sales Name': ['transaction details|sales name', 'Sales Name'], 'Shared With': ['transaction details|shared with'],
+  'Sales Manager': ['transaction details|sales manager'], 'Head Of Sales': ['transaction details|head of sales'], 'CCO': ['transaction details|cco'],
+  'Main Source': ['source details|main source'], 'Source Type': ['source details|source type'], 'Campaign Name': ['source details|campaign name'], 'Media Buyer': ['source details|media buyer'],
+  'Brokerage Company': ['source details|brokerage company'], 'BC Sales': ['source details|bc sales'], 'BC Manager': ['source details|bc manger', 'source details|bc manager'],
+  'Comm Sales Paid ✓': ['internal comm|sales'], 'Comm Managers Paid ✓': ['internal comm|managers'], 'Comm Staff Paid ✓': ['internal comm|staff'], 'Comm Note': ['internal comm|statue'],
+  'Cancel Date': ['cancel details|date'], 'Cancel Reason': ['cancel details|reason'], 'Cancel Code': ['cancel details|code'], 'Refund Amount': ['cancel details|received money'],
+  'Notes': ['notes'], 'Old Deal Num': ['client details|deal num', 'Deal Num']
+};
+const DDB_STATUS_FIX_ = { 'client sigend': 'Client Signed', 'client signed': 'Client Signed', 'company signed': 'Company Signed', 'part of dp': 'Part of DP', 'total dp': 'Total DP',
+  'reservation': 'Reservation', 'closed': 'Closed', 'delivered': 'Delivered', 'cancel': 'Cancel', 'cancelled': 'Cancel', 'canceled': 'Cancel', 'eoi': 'EOI' };
+
+/* "Name - EW-F1-C12" → "Name"; spaces tidied. */
+function ddbCleanName_(n) {
+  n = String(n || '').replace(/\(.*?\)/g, ' ');
+  n = n.split(/\s*-\s*(?=[A-Za-z]{1,5}-[A-Za-z]?[0-9])|\s*-\s*(?=(?:CCG|EW|KOB|SQ|E-ONE|CV)\b)/)[0];
+  return n.replace(/\s+/g, ' ').replace(/^[\s-]+|[\s-]+$/g, '').trim();
+}
+/* Phones → international digits; returns {phones:[], bad:[], guessed:[]} */
+function ddbPhones_(raw, nationality) {
+  const out = { phones: [], bad: [], guessed: [] }, nat = String(nationality || '').toLowerCase();
+  const LEN = { '966': 12, '971': 12, '974': 11, '962': 12, '995': 12, '20': 12, '216': 11, '249': 12, '961': 11, '1': 11, '44': 12, '90': 12, '965': 11, '968': 11, '973': 11, '964': 13, '212': 12, '213': 12, '218': 12, '967': 12, '963': 12, '970': 12, '252': 12, '251': 12, '291': 10, '235': 11 };
+  const codes = Object.keys(LEN).sort((a, b) => b.length - a.length);
+  String(raw || '').split(/\s+-\s*|\s*-\s+|\n|\s{3,}|\/|,|;/).forEach(t => {
+    let x = String(t).replace(/\D/g, ''); if (!x) return;
+    let guess = '';
+    if (x.indexOf('00') === 0) x = x.slice(2);
+    if (x.length === 12 && x.indexOf('955') === 0) { x = '995' + x.slice(3); guess = '955→995'; }
+    if (x.length === 11 && x.indexOf('01') === 0) x = '20' + x.slice(1);
+    else if (x.length === 10 && x.indexOf('05') === 0) x = '966' + x.slice(1);
+    else if (x.length === 10 && x.charAt(0) === '1' && /egypt/.test(nat)) { x = '20' + x; guess = 'added 20'; }
+    else if (x.length === 9 && x.charAt(0) === '5') { if (!nat || /georgia/.test(nat)) { x = '995' + x; guess = 'added 995'; } else { x = '966' + x; guess = 'added 966'; } }
+    const c = codes.find(k => x.indexOf(k) === 0);
+    if (c && x.length === LEN[c]) { if (out.phones.indexOf(x) < 0) out.phones.push(x); if (guess) out.guessed.push(t.trim() + ' → ' + x); }
+    else out.bad.push(t.trim());
+  });
+  return out;
+}
+
+/* Admins: copy (or re-copy) the old deals into the two new files. */
+function copyOldDealsToDb(authToken) {
+  const user = targetsRequireAdmin_(authToken);
+  if (!ddbId_('EG') || !ddbId_('GP')) throw new Error('Create both new sheets first.');
+  const lock = LockService.getScriptLock(); lock.waitLock(60000);
+  try {
+    const old = getMainDealsSheet_(), oc = mainDealsColumns_(old);
+    const last = mainDealsLastRow_(old, oc); if (last < DATA_START_ROW) throw new Error('The old Deals sheet is empty.');
+    const nRows = last - DATA_START_ROW + 1;
+    const V = old.getRange(DATA_START_ROW, 1, nRows, oc.lastCol).getValues();
+    const D = old.getRange(DATA_START_ROW, 1, nRows, oc.lastCol).getDisplayValues();
+    const colOf = {}; Object.keys(DDB_OLD_MAP_).forEach(k => colOf[k] = mainDealsCol_(oc, DDB_OLD_MAP_[k]));
+    const contactCol = mainDealsCol_(oc, ['client info|contact', 'Contact']);
+    const cancelChk = (resHoldColumns_(old) || {}).chk || 0;
+    let docLinks = [];
+    try { const hdr = old.getRange(HEADER_ROW, 1, 1, oc.lastCol).getDisplayValues()[0].map(h => String(h || '').trim()); docLinks = clientDocumentLinks_(old, buildIndex_(hdr), nRows); } catch (e) {}
+    const at = ddbColIndex_(), N = DDB_COLS_.length, now = new Date(), who = 'Copied from Deals · ' + (user.name || user.username);
+    const typeOf = {}; DDB_COLS_.forEach(c => typeOf[c[1]] = c[2]);
+    const issues = [], perStore = { EG: [], GP: [] };
+
+    for (let i = 0; i < nRows; i++) {
+      const v = V[i], d = D[i], row = DATA_START_ROW + i;
+      const raw = k => colOf[k] ? v[colOf[k] - 1] : '', disp = k => colOf[k] ? String(d[colOf[k] - 1] || '').trim() : '';
+      const project = disp('Project'), unit = disp('Unit Code').replace(/\s+/g, ''), rawName = disp('Client Name');
+      if (!project && !unit && !rawName) continue;
+      const store = ddbStoreOf_(project), rec = new Array(N).fill('');
+      const put = (name, val) => { if (at[name]) rec[at[name] - 1] = val; };
+      const issue = (what) => issues.push([store, row, project, unit, ddbCleanName_(rawName), what]);
+      Object.keys(DDB_OLD_MAP_).forEach(k => {
+        if (!colOf[k]) return;
+        const t = typeOf[k], x = raw(k), s = disp(k);
+        if (t === 'check') put(k, x === true || /^true$/i.test(s));
+        else if (t === 'date') { const dt = x instanceof Date ? x : parseDate_(s); put(k, dt || (s ? s : '')); if (s && !dt) issue(k + ': not a date (' + s + ')'); }
+        else if (t === 'money' || t === 'number') put(k, typeof x === 'number' ? x : (s ? parseNumber_(s) : ''));
+        else if (t === 'percent') { const p = typeof x === 'number' ? (x > 1 ? x / 100 : x) : (s ? parseNumber_(s) / 100 : ''); put(k, p); }
+        else put(k, s);
+      });
+      // client name / phones / email
+      const name = ddbCleanName_(rawName); put('Client Name', name);
+      if (!name) issue('No client name');
+      const ph = ddbPhones_(contactCol ? d[contactCol - 1] : '', disp('Nationality'));
+      put('Mobile 1', ph.phones[0] || ''); put('Mobile 2', ph.phones[1] || '');
+      if (!ph.phones.length) issue(String(contactCol ? d[contactCol - 1] : '').trim() ? 'Phone not usable: ' + String(d[contactCol - 1]).trim() : 'No phone');
+      else { if (ph.bad.length) issue('Phone part skipped: ' + ph.bad.join(' / ')); if (ph.guessed.length) issue('Country code guessed: ' + ph.guessed.join(' / ')); }
+      if (ph.phones.length > 2) put('Notes', [rec[at['Notes'] - 1], 'Other phones: ' + ph.phones.slice(2).join(', ')].filter(Boolean).join(' · '));
+      const em = (disp('Email').match(/[\w.+\-]+@[\w\-]+(?:\.[\w\-]+)+/) || [''])[0].toLowerCase().replace(/\.+$/, ''); put('Email', em);
+      put('Unit Code', unit); put('Project', project);
+      if (!project) issue('No project'); if (!unit) issue('No unit code');
+      // money: discount %, final price
+      const fp = Number(rec[at['Final Price'] - 1]) || 0, pt = Number(rec[at['Primary Total Price'] - 1]) || 0;
+      const discRaw = colOf['Final Price'] ? String(d[mainDealsCol_(oc, ['price details|discount']) - 1] || '').trim() : '';
+      let disc = /%\s*$/.test(discRaw) ? parseNumber_(discRaw) : (discRaw && pt ? parseNumber_(discRaw) / pt * 100 : (pt && fp && fp <= pt ? (1 - fp / pt) * 100 : null));
+      if (disc != null && isFinite(disc) && disc >= 0 && disc <= 100) put('Discount %', Math.round(disc * 100) / 10000);
+      if (!fp) issue('No final price');
+      if (!rec[at['Currency'] - 1]) put('Currency', normalizeCurrency_(disp('Reservation Currency')) || (store === 'GP' && /ccg|gldani|kobuleti/i.test(project) ? 'USD' : 'EGP'));
+      // status
+      const st0 = disp('Status'), st = DDB_STATUS_FIX_[st0.toLowerCase()] || '';
+      const cancelled = (cancelChk && (v[cancelChk - 1] === true || /^true$/i.test(String(d[cancelChk - 1])))) || st === 'Cancel';
+      put('Cancelled ✓', !!cancelled);
+      let status = st;
+      if (!status) {
+        const T = k => rec[at[k] - 1] === true;
+        status = cancelled ? 'Cancel' : T('Delivered ✓') ? 'Delivered' : T('Company Signed ✓') ? 'Company Signed' : T('Client Signed ✓') ? 'Client Signed' : T('Total DP ✓') ? 'Total DP' : T('Part of DP ✓') ? 'Part of DP' : 'Reservation';
+        issue(st0 ? 'Unknown status "' + st0 + '" → ' + status : 'Status was empty → ' + status);
+      }
+      put('Status', status);
+      // cancel reason that is really an amount
+      const cr = String(rec[at['Cancel Reason'] - 1] || '');
+      if (/^[£$€]?\s*[\d,.]+$/.test(cr)) { put('Cancel Reason', ''); if (!rec[at['Refund Amount'] - 1]) put('Refund Amount', parseNumber_(cr)); }
+      if (!rec[at['Reservation Date'] - 1]) issue('No reservation date');
+      put('Documents Link', docLinks[i] || '');
+      put('Old Deals Row', row); put('Created At', now); put('Created By', who); put('Updated At', now); put('Updated By', who);
+      perStore[store].push(rec);
+    }
+
+    // write each file: keep Deal IDs of earlier copies, keep deals added straight to the file
+    const summary = {};
+    ['EG', 'GP'].forEach(key => {
+      const ss = ddbOpen_(key), sh = ss.getSheetByName('Deals'), st = DDB_STORES_[key];
+      const lastR = sh.getLastRow(), existing = lastR >= DDB_FIRST_ROW_ ? sh.getRange(DDB_FIRST_ROW_, 1, lastR - DDB_FIRST_ROW_ + 1, N).getValues() : [];
+      const idByOld = {}, native = []; let maxSeq = 0;
+      existing.forEach(r => {
+        const id = String(r[at['Deal ID'] - 1] || '').trim(); if (!id) return;
+        const m = id.match(/-(\d+)$/); if (m) maxSeq = Math.max(maxSeq, Number(m[1]));
+        const o = Number(r[at['Old Deals Row'] - 1]);
+        if (o) idByOld[o] = { id: id, created: r[at['Created At'] - 1], by: r[at['Created By'] - 1] }; else native.push(r);
+      });
+      // same unit sold twice (both active) inside this file
+      const act = {};
+      perStore[key].forEach(r => { if (r[at['Status'] - 1] === 'Cancel') return; const u = (r[at['Project'] - 1] + '|' + r[at['Unit Code'] - 1]).toUpperCase(); (act[u] = act[u] || []).push(r[at['Old Deals Row'] - 1]); });
+      Object.keys(act).forEach(u => { if (act[u].length > 1 && u.split('|')[1]) issues.push([key, act[u].join(', '), u.split('|')[0], u.split('|')[1], '', 'Same unit on ' + act[u].length + ' active deals (rows ' + act[u].join(', ') + ')']); });
+      const rows = perStore[key].map(r => {
+        const o = r[at['Old Deals Row'] - 1], prev = idByOld[o];
+        const dt = r[at['Reservation Date'] - 1], yy = dt instanceof Date ? String(dt.getFullYear()).slice(-2) : '00';
+        r[at['Deal ID'] - 1] = prev ? prev.id : st.idPrefix + '-' + yy + '-' + String(++maxSeq).padStart(4, '0');
+        if (prev) { r[at['Created At'] - 1] = prev.created || r[at['Created At'] - 1]; r[at['Created By'] - 1] = prev.by || r[at['Created By'] - 1]; }
+        return r;
+      }).concat(native);
+      const need = rows.length + DDB_FIRST_ROW_ + 50;
+      if (sh.getMaxRows() < need) {
+        const from = sh.getMaxRows();
+        sh.insertRowsAfter(from, need - from);
+        DDB_COLS_.forEach((c, j) => { if (c[2] === 'check') sh.getRange(from + 1, j + 1, need - from, 1).insertCheckboxes(); });
+      }
+      if (lastR >= DDB_FIRST_ROW_) sh.getRange(DDB_FIRST_ROW_, 1, lastR - DDB_FIRST_ROW_ + 1, N).clearContent();
+      if (rows.length) {
+        const cleared = rows.map(r => r.map((x, j) => DDB_COLS_[j][2] === 'check' ? x === true : x));
+        sh.getRange(DDB_FIRST_ROW_, 1, rows.length, N).setValues(cleared);
+      }
+      summary[key] = { copied: perStore[key].length, native: native.length, name: st.name };
+    });
+    PropertiesService.getScriptProperties().setProperty('DEALS_DB_COPIED_AT', now.toISOString());
+    auditLog_(user, 'Old deals copied to Deals DB', { details: 'Egypt ' + summary.EG.copied + ' · Georgia & Past ' + summary.GP.copied + ' · ' + issues.length + ' things to check' });
+    return { summary: summary, issues: issues, at: now.toISOString(), live: ddbLive_() };
+  } finally { lock.releaseLock(); }
+}
+function ddbLive_() { return String(PropertiesService.getScriptProperties().getProperty('DEALS_DB_LIVE') || '').toLowerCase() === 'on'; }

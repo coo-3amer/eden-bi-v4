@@ -7,6 +7,7 @@
 #ddb .ddbBox{background:var(--ds-surface,#fffdf9);border:1px solid var(--ds-line,#e2d7c4);border-radius:14px;padding:14px 16px;margin-bottom:14px;max-width:880px}
 #ddb .ddbBox a{color:var(--ds-gold-strong,#835c12);font-weight:700}
 #ddb .ddbChips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}#ddb .ddbChips span{padding:3px 9px;border-radius:99px;background:var(--ds-surface-3,#f3ede2);font-size:11.5px}
+#ddb .ddbIss td,#ddb .ddbIss th{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#ddb .ddbIss td:last-child{white-space:normal}#ddb .ddbIss th:nth-child(1){width:70px}#ddb .ddbIss th:nth-child(2){width:70px}#ddb .ddbIss th:nth-child(3){width:90px}#ddb .ddbIss th:nth-child(4){width:100px}#ddb .ddbIss th:nth-child(5){width:200px}
 #ddb .daBody{background:var(--ds-bg,#f4f0e8);padding:18px 22px}
 </style>
 <script>
@@ -40,16 +41,34 @@ function ddbRender_(){
       `<div class="ddbBox">✅ <b>${ddbEsc_(x.name)}</b> — <a href="${ddbEsc_(x.url)}" target="_blank" rel="noopener">open the sheet ↗</a><br><span class="daNote">${ddbEsc_(x.label)} · ${x.deals} deal${x.deals===1?'':'s'} in it · locked: only EDEN BI writes to it.</span></div>`):
     `<div class="ddbBox"><b>${ddbEsc_(x.name)}</b> — not created yet<br><span class="daNote">${ddbEsc_(x.label)}. Same ${i.columns} columns, lists, guide and lock as the other file; starts empty.</span>
       <div style="margin-top:10px"><button type="button" class="daBtn" data-create="${x.key}">Create this sheet</button> <span class="daMsg"></span></div></div>`;
-  el.querySelector('.daBody').innerHTML=S.map(card).join('')+`<div class="ddbBox"><span class="daNote">The old Deals sheet keeps working as before until it is switched off. New projects: Egypt → the Egypt file; Georgia → the Georgia &amp; Past file.</span></div><div class="ddbSteps">
+  const copy=ok?`<div class="ddbBox"><b>Copy the old deals into the new sheets</b><br><span class="daNote">Every deal in the old Deals sheet is cleaned (names without unit codes, phones in international format, real dates and numbers, status) and copied into its file by project. Run it again any time — copies are refreshed, their Deal IDs stay the same, deals added straight to a new sheet are not touched. ${i.live?'<b>The dashboard now counts the copies (switched over).</b>':'The dashboard keeps reading the old sheet until the switch, so nothing changes on the pages.'}${i.copiedAt?`<br>Last copy: <b>${new Date(i.copiedAt).toLocaleString('en-GB')}</b>`:''}</span>
+      <div style="margin-top:10px"><button type="button" class="daBtn" data-copy>${i.copiedAt?'Copy again (refresh)':'Copy the old deals now'}</button> <span class="daMsg"></span></div>${DDB_.res?ddbResHtml_(DDB_.res):''}</div>`:'';
+  el.querySelector('.daBody').innerHTML=S.map(card).join('')+copy+`<div class="ddbBox"><span class="daNote">The old Deals sheet keeps working as before until it is switched off. New projects: Egypt → the Egypt file; Georgia → the Georgia &amp; Past file.</span></div><div class="ddbSteps">
     ${step(1,ok?'done':'now','Create the new sheets','Two files with the new columns, lists and guide: Egypt · Georgia & Past.')}
     ${step(2,ok?'done':'','Dashboard reads all the sheets','Deals in the new sheets show on every page; a deal moved from the old sheet is counted once.')}
     ${step(3,ok?'now':'','New deals go to the new sheets','Add New Deal writes to the right file by project; Update Deal, cancel, commission ticks and approvals work on both.')}
     ${step(4,'','Move the old deals','One deal, one project or everything — cleaned on the way (names, phones, dates); problems stop for review.')}
     ${step(5,'','Switch the old Deals sheet off','Read-only, then retired.')}</div>`;
+  const cp=el.querySelector('[data-copy]');
+  if(cp)cp.addEventListener('click',()=>{if(DDB_.busy)return;if(!confirm('Copy all the deals of the old Deals sheet into the two new sheets now? The old sheet is only read, not changed.'))return;
+    DDB_.busy=true;cp.disabled=true;const m=cp.nextElementSibling;m.className='daMsg';m.textContent='Copying… (up to a couple of minutes)';
+    google.script.run.withSuccessHandler(r=>{DDB_.busy=false;DDB_.res=r;google.script.run.withSuccessHandler(i=>{DDB_.info=i;ddbRender_();}).getDealsDbInfo(AUTH_TOKEN);})
+      .withFailureHandler(e=>{DDB_.busy=false;cp.disabled=false;m.className='daMsg err';m.textContent=e&&e.message||String(e);}).copyOldDealsToDb(AUTH_TOKEN);});
+  const xl=el.querySelector('[data-issxl]');
+  if(xl)xl.addEventListener('click',()=>{const r=DDB_.res;if(!r||typeof edenXlsxDownload_!=='function')return;
+    edenXlsxDownload_('EDEN_Deals_DB_copy_check',{title:'Deals DB copy — things to check',sheetName:'Check',kpis:[['Copied at',new Date(r.at).toLocaleString('en-GB')],['Egypt',r.summary.EG.copied],['Georgia & Past',r.summary.GP.copied]],
+      headers:['File','Old Deals row','Project','Unit','Client','What to check'],rows:r.issues.map(x=>[x[0]==='EG'?'Egypt':'Georgia & Past',x[1],x[2],x[3],x[4],x[5]])});});
   el.querySelectorAll('[data-create]').forEach(c=>c.addEventListener('click',()=>{if(DDB_.busy)return;const key=c.dataset.create,x=S.find(y=>y.key===key);
     if(!confirm(`Create “${x.name}” now? (It starts empty; the old Deals sheet is not touched.)`))return;
     DDB_.busy=true;c.disabled=true;const m=c.nextElementSibling;m.className='daMsg';m.textContent='Creating… (about a minute)';
     google.script.run.withSuccessHandler(i=>{DDB_.busy=false;DDB_.info=i;ddbRender_();}).withFailureHandler(e=>{DDB_.busy=false;c.disabled=false;m.className='daMsg err';m.textContent=e&&e.message||String(e);}).setupDealsDb(AUTH_TOKEN,key);}));
+}
+function ddbResHtml_(r){
+  const grp={};r.issues.forEach(x=>{const k=x[5].replace(/:.*$/,'').replace(/\(rows.*$/,'').replace(/".*"/,'…').trim();grp[k]=(grp[k]||0)+1;});
+  return `<div style="margin-top:12px"><b>✓ Copied:</b> Egypt <b>${r.summary.EG.copied}</b> deals · Georgia &amp; Past <b>${r.summary.GP.copied}</b> deals${(r.summary.EG.native+r.summary.GP.native)?` · ${r.summary.EG.native+r.summary.GP.native} deals added straight to the new sheets were kept`:''}.</div>
+    <div style="margin-top:8px"><b>${r.issues.length}</b> things to check <button type="button" class="daBtn" data-issxl>⬇ Excel</button></div>
+    <div class="ddbChips">${Object.entries(grp).sort((a,b)=>b[1]-a[1]).map(([k,n])=>`<span>${ddbEsc_(k)} · <b>${n}</b></span>`).join('')}</div>
+    <div style="max-height:320px;overflow:auto;margin-top:10px"><table class="daTable ddbIss" style="width:100%;font-size:12px;table-layout:fixed"><thead><tr><th>File</th><th>Row</th><th>Project</th><th>Unit</th><th>Client</th><th>What to check</th></tr></thead><tbody>${r.issues.slice(0,400).map(x=>`<tr><td>${x[0]==='EG'?'Egypt':'Georgia'}</td><td>${ddbEsc_(x[1])}</td><td>${ddbEsc_(x[2])}</td><td>${ddbEsc_(x[3])}</td><td>${ddbEsc_(x[4])}</td><td>${ddbEsc_(x[5])}</td></tr>`).join('')}</tbody></table></div>`;
 }
 (function initEdenDealsDb_(){
   const hook=()=>{if(typeof render==='function'&&!render.__ddb){const o=render;render=function(){const r=o.apply(this,arguments);try{ddbMount_();}catch(e){}return r;};render.__ddb=true;}ddbMount_();};
