@@ -81,7 +81,7 @@ function fmEsc_(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':
 function fmNum_(n){return Number(n||0).toLocaleString('en-US',{maximumFractionDigits:2});}
 function fmKey_(c){return String(c||'').trim().replace(/\.+$/,'').toUpperCase();}
 function fmStatus_(s){const t=String(s||'').trim().toLowerCase();return FM_STATUS_.find(x=>x.test(t));}
-function fmShort_(n){n=Number(n)||0;return n>=1e6?(n/1e6).toFixed(n>=1e7?1:2).replace(/\.?0+$/,'')+'M':n>=1e3?Math.round(n/1e3)+'K':String(Math.round(n));}
+function fmShort_(n){n=Number(n)||0;return n>=1e6?(n/1e6).toFixed(n>=1e7?1:2).replace(/\.0+$|(\.\d*?)0+$/,'$1')+'M':n>=1e3?Math.round(n/1e3)+'K':String(Math.round(n));}
 function fmFilterOn_(){return !!(FM_.budget||FM_.aMin||FM_.aMax);}
 function fmMatch_(u){
   if(fmStatus_(u.status).k!=='available')return false;

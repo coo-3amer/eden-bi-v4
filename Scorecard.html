@@ -38,7 +38,7 @@
 const SC_={month:'',project:''};
 function scEsc_(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function scNum_(n,d=0){return Number(n||0).toLocaleString('en-US',{maximumFractionDigits:d});}
-function scShort_(n){n=Number(n)||0;const a=Math.abs(n);if(a>=1e6){let t=(n/1e6).toFixed(a>=1e8?0:2);return t.replace(/\.?0+$/,'')+'M';}if(a>=1e3)return Math.round(n/1e3).toLocaleString('en-US')+'K';return String(Math.round(n));}
+function scShort_(n){n=Number(n)||0;const a=Math.abs(n);if(a>=1e6){let t=(n/1e6).toFixed(a>=1e8?0:2);return t.replace(/\.0+$|(\.\d*?)0+$/,'$1')+'M';}if(a>=1e3)return Math.round(n/1e3).toLocaleString('en-US')+'K';return String(Math.round(n));}
 const SC_MONTHS_=['January','February','March','April','May','June','July','August','September','October','November','December'];
 function scCancelled_(s){return typeof isCancelledStatus_==='function'?isCancelledStatus_(s):/^cancel/i.test(String(s||''));}
 function scParseDate_(v){
