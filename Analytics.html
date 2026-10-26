@@ -1,0 +1,419 @@
+<style id="eden-analytics">
+/* =====================================================================
+   EDEN BI — Analytics (one page, six tabs). Uses the .da overlay frame.
+   ===================================================================== */
+#an .anBar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 22px;border-bottom:1px solid var(--ds-line,#e2d7c4)}
+#an .anSeg{display:inline-flex;background:var(--ds-surface-3,#f3ede2);border-radius:99px;padding:3px}
+#an .anSeg button{border:0;background:transparent;padding:6px 12px;border-radius:99px;font:600 12px var(--ds-font,inherit);color:var(--ds-muted,#6b6255);cursor:pointer}
+#an .anSeg button.on{background:var(--ds-surface,#fff);color:var(--ds-heading,#120f0b);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+#an .anBar select{padding:6px 10px;border-radius:10px;border:1px solid var(--ds-line,#e2d7c4);background:var(--ds-surface,#fff);color:var(--ds-text,#221e19);font:600 12px var(--ds-font,inherit);max-width:200px}
+#an .anPer{font-size:12px;color:var(--ds-muted,#6b6255);margin-left:auto}
+#an .anPer b{color:var(--ds-heading,#120f0b)}
+#an .daBody{padding:18px 22px 40px;background:var(--ds-bg,#f4f0e8)}
+#an .anGrid{display:grid;gap:14px;grid-template-columns:repeat(12,minmax(0,1fr));margin-bottom:14px}
+#an .anC{grid-column:span 4;background:var(--ds-surface,#fffdf9);border:1px solid var(--ds-line,#e2d7c4);border-radius:16px;padding:14px 16px;min-width:0}
+#an .anC.w6{grid-column:span 6}#an .anC.w8{grid-column:span 8}#an .anC.w12{grid-column:span 12}#an .anC.w3{grid-column:span 3}
+#an .anC h3{margin:0 0 10px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ds-muted,#6b6255);display:flex;gap:8px;align-items:center}
+#an .anC h3 small{margin-left:auto;text-transform:none;letter-spacing:0;font-weight:500}
+#an .anKpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:14px}
+#an .anK{background:var(--ds-surface,#fffdf9);border:1px solid var(--ds-line,#e2d7c4);border-radius:16px;padding:12px 14px}
+#an .anK span{display:block;font-size:11px;color:var(--ds-muted,#6b6255);text-transform:uppercase;letter-spacing:.06em}
+#an .anK b{display:block;font-size:22px;color:var(--ds-heading,#120f0b);margin:4px 0 2px;font-variant-numeric:tabular-nums}
+#an .anK small{font-size:11.5px;color:var(--ds-muted,#6b6255)}
+#an .up{color:var(--ds-green,#178a4c)!important;font-weight:700}#an .dn{color:var(--ds-red,#d12f2f)!important;font-weight:700}#an .eq{color:var(--ds-muted,#6b6255)}
+#an .anB{display:grid;grid-template-columns:minmax(80px,140px) 1fr auto;gap:8px;align-items:center;margin:6px 0;font-size:12px}
+#an .anB .l{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#an .anB .t{height:9px;border-radius:99px;background:var(--ds-surface-3,#efe7d8);overflow:hidden;display:flex}
+#an .anB .t i{display:block;height:100%;border-radius:99px}
+#an .anB b{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+#an .anCols{display:flex;align-items:flex-end;gap:6px;height:190px;padding-top:14px}
+#an .anCols .c{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:0;height:100%}
+#an .anCols .v{font-size:9.5px;color:var(--ds-muted,#6b6255);margin-bottom:3px;white-space:nowrap}
+#an .anCols .bb{width:100%;display:flex;gap:2px;align-items:flex-end;justify-content:center;flex:1}
+#an .anCols .bb i{display:block;flex:1;max-width:26px;border-radius:5px 5px 2px 2px;min-height:2px}
+#an .anCols .x{font-size:10px;color:var(--ds-muted,#6b6255);margin-top:5px;white-space:nowrap}
+#an .anLg{font-size:11px;color:var(--ds-muted,#6b6255);margin-top:8px;display:flex;flex-wrap:wrap;gap:12px}
+#an .anLg i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+#an table.anT{width:100%;border-collapse:collapse;font-size:12.5px}
+#an table.anT th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ds-muted,#6b6255);padding:8px;border-bottom:1px solid var(--ds-line,#e2d7c4);white-space:nowrap;cursor:pointer;user-select:none}
+#an table.anT td{padding:8px;border-bottom:1px solid color-mix(in srgb,var(--ds-line,#e2d7c4) 60%,transparent);white-space:nowrap;font-variant-numeric:tabular-nums}
+#an table.anT td.n,#an table.anT th.n{text-align:right}
+#an table.anT tr:hover td{background:color-mix(in srgb,var(--ds-gold,#a8791f) 6%,transparent)}
+#an .anScroll{overflow:auto;max-height:520px}
+#an .anIns{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+#an .anIns div{background:var(--ds-surface,#fffdf9);border:1px solid var(--ds-line,#e2d7c4);border-left:4px solid var(--ds-gold,#a8791f);border-radius:12px;padding:10px 12px;font-size:12.5px;line-height:1.45}
+#an .anIns div.g{border-left-color:var(--ds-green,#178a4c)}#an .anIns div.r{border-left-color:var(--ds-red,#d12f2f)}
+#an .anHeat td.h{text-align:right;border-radius:6px}
+#an .anNote{font-size:11.5px;color:var(--ds-muted,#6b6255);margin-top:6px}
+#an .anBig{display:flex;gap:10px;flex-wrap:wrap}#an .anBig div{flex:1;min-width:110px;background:var(--ds-surface-3,#f6f0e5);border-radius:12px;padding:9px 12px}
+#an .anBig b{display:block;font-size:19px;color:var(--ds-heading,#120f0b);font-variant-numeric:tabular-nums}#an .anBig span{font-size:11px;color:var(--ds-muted,#6b6255)}
+#an .anStk{height:12px;border-radius:99px;overflow:hidden;display:flex;background:var(--ds-surface-3,#efe7d8)}#an .anStk i{display:block;height:100%}
+@media(max-width:1100px){#an .anC,#an .anC.w3{grid-column:span 6}#an .anC.w8,#an .anC.w12{grid-column:span 12}#an .anKpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){#an .anC,#an .anC.w6,#an .anC.w3{grid-column:span 12}#an .anPer{margin-left:0;width:100%}}
+</style>
+<script>
+const AN_={tab:'team',per:'m0',cur:'EGP',grp:'manager',project:'',branch:'',sort:{k:'v',d:-1},inst:null,inv:{}};
+const AN_TABS_=[['team','Sales team'],['sales','Sales & pricing'],['journey','Deal journey'],['clients','Clients & sources'],['money','Collections & inventory']];
+const AN_PAL_=['#c08a2e','#5b6b85','#2f9a63','#3b6fd8','#e0703f','#8a5cd6','#1f9f9a','#e3b24f','#b5476b','#7a8a3a'];
+function anCan_(){
+  if(typeof isEgyptViewer_==='function'&&isEgyptViewer_())return false;
+  if(typeof dsSalesRole_==='function'&&dsSalesRole_())return false;
+  return !!(typeof AUTH_USER!=='undefined'&&AUTH_USER);
+}
+const anEsc_=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const anN_=v=>Math.round(Number(v)||0).toLocaleString('en-US');
+function anM_(v){v=Number(v)||0;const a=Math.abs(v);return a>=1e6?(Math.round(v/1e5)/10).toLocaleString('en-US')+'M':a>=1e3?Math.round(v/1e3).toLocaleString('en-US')+'K':String(Math.round(v));}
+const anP_=v=>v==null||!isFinite(v)?'—':(Math.round(v*10)/10)+'%';
+function anD_(cur,prev,inverse){
+  if(!prev&&!cur)return '<span class="eq">—</span>';
+  if(!prev)return '<span class="up">new</span>';
+  const d=(cur-prev)/Math.abs(prev)*100,good=inverse?d<0:d>0;
+  if(Math.abs(d)<0.5)return '<span class="eq">±0%</span>';
+  if(d>=300)return `<span class="${good?'up':'dn'}">▲ ×${(Math.round(cur/prev*10)/10).toLocaleString('en-US')}</span>`;
+  return `<span class="${good?'up':'dn'}">${d>0?'▲':'▼'} ${Math.abs(Math.round(d))}%</span>`;
+}
+function anPP_(cur,prev,inverse){ // percentage-point change
+  if(cur==null||prev==null||!isFinite(cur)||!isFinite(prev))return '<span class="eq">—</span>';
+  const d=cur-prev,good=inverse?d<0:d>0;if(Math.abs(d)<0.5)return '<span class="eq">±0 pt</span>';
+  return `<span class="${good?'up':'dn'}">${d>0?'▲':'▼'} ${Math.abs(Math.round(d))} pt</span>`;
+}
+const anYm_=r=>{const y=Number(r.year),m=Number(r.month);return y&&m?y*12+m-1:null;};
+const anYmLabel_=k=>new Date(Math.floor(k/12),k%12,1).toLocaleDateString('en-GB',{month:'short',year:'2-digit'});
+const anNowYm_=()=>{const d=new Date();return d.getFullYear()*12+d.getMonth();};
+const anCanc_=r=>/cancel/i.test(String(r.status||''));
+const anT_=v=>typeof commissionTrue_==='function'?commissionTrue_(v):/^(true|yes|1|✓)$/i.test(String(v||'').trim());
+function anStage_(r){return typeof dealStage_==='function'?dealStage_(r):(anCanc_(r)?'cancel':'reservation');}
+function anSigned_(r){const s=anStage_(r);return ['csPart','csTotal','coPart','coTotal','closed','delivered'].includes(s)||/closed|deliver|sign/i.test(String(r.status||''));}
+function anDate_(r){
+  const y=Number(r.year),m=Number(r.month),d=Number(r.day)||1;if(!y||!m)return null;return new Date(y,m-1,d);
+}
+function anParseDate_(s){
+  s=String(s||'').trim();if(!s)return null;
+  let m=s.match(/^(\d{1,2})[-\/ ]([A-Za-z]{3})[A-Za-z]*[-\/ ](\d{4})$/);
+  if(m){const d=new Date(`${m[2]} ${m[1]}, ${m[3]}`);return isNaN(d)?null:d;}
+  const d=new Date(s);return isNaN(d)?null:d;
+}
+/* Period → [from, to] in month numbers (inclusive) + the same-length period before it. */
+function anRange_(){
+  const n=anNowYm_();
+  const map={m0:[n,n],m1:[n-1,n-1],q:[n-2,n],ytd:[n-(n%12),n],y12:[n-11,n]};
+  const [a,b]=map[AN_.per]||map.m0,len=b-a+1;
+  return {a,b,pa:a-len,pb:a-1,len};
+}
+function anPerLabel_(){
+  const R=anRange_(),L=(a,b)=>a===b?anYmLabel_(a):anYmLabel_(a)+' – '+anYmLabel_(b);
+  return `<b>${L(R.a,R.b)}</b> vs ${L(R.pa,R.pb)}`;
+}
+/* All deals in scope: own project / branch filter + currency. */
+function anScope_(){
+  const all=(typeof rawRows!=='undefined'&&rawRows)||[];
+  return all.filter(r=>{
+    if(AN_.project&&String(r.project||'')!==AN_.project)return false;
+    if(AN_.branch&&String(r.branch||'')!==AN_.branch)return false;
+    const cur=typeof projectCurrency_==='function'?projectCurrency_(r):String(r.currency||'EGP').toUpperCase();
+    return cur===AN_.cur;
+  });
+}
+const anIn_=(r,a,b)=>{const k=anYm_(r);return k!=null&&k>=a&&k<=b;};
+/* Credit for a deal: shared deals split 50/50. */
+function anCredits_(r){
+  const share=typeof isShareDeal_==='function'&&isShareDeal_(r);
+  const s=String(r.salesName||'').trim()||'Not assigned';
+  return share?[[s,.5],[String(r.sharedWith).trim(),.5]]:[[s,1]];
+}
+function anGroupOf_(r){
+  const v=AN_.grp==='branch'?r.branch:r.salesManager;
+  return String(v||'').trim()||(AN_.grp==='branch'?'No branch':'No manager');
+}
+function anStats_(rows){
+  const live=rows.filter(r=>!anCanc_(r));
+  const v=live.reduce((a,r)=>a+(Number(r.amount)||0),0);
+  const sig=live.filter(anSigned_).length;
+  const disc=live.map(r=>Number(r.discountPct)).filter(x=>isFinite(x)&&x>=0);
+  return {n:live.length,v,avg:live.length?v/live.length:0,signed:live.length?sig/live.length*100:null,
+    cancel:rows.length?(rows.length-live.length)/rows.length*100:null,canc:rows.length-live.length,all:rows.length,
+    disc:disc.length?disc.reduce((a,x)=>a+x,0)/disc.length:null};
+}
+function anMedian_(a){a=a.filter(x=>isFinite(x)).sort((x,y)=>x-y);if(!a.length)return null;const m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2;}
+
+/* ---------- small chart helpers ---------- */
+function anBars_(items,o={}){
+  const mx=Math.max(...items.map(x=>Math.abs(x[1])),1),col=o.color||'#c08a2e';
+  return items.map((x,i)=>`<div class="anB" title="${anEsc_(x[0])}"><span class="l">${anEsc_(x[0])}</span><span class="t"><i style="width:${Math.max(1.5,Math.abs(x[1])/mx*100).toFixed(1)}%;background:${Array.isArray(col)?col[i%col.length]:col}"></i></span><b>${o.fmt?o.fmt(x[1],x):anN_(x[1])}${x[2]!=null?` <small class="eq">${x[2]}</small>`:''}</b></div>`).join('')||'<div class="anNote">No data.</div>';
+}
+function anCols_(cols,series,o={}){ // cols: labels; series: [{name,color,values[]}]
+  const mx=Math.max(1,...series.flatMap(s=>s.values));
+  return `<div class="anCols">${cols.map((c,i)=>`<div class="c"><div class="v">${o.top?o.top(i):anM_(series[0].values[i])}</div><div class="bb">${series.map(s=>`<i title="${anEsc_(s.name)} · ${anEsc_(c)}: ${anN_(s.values[i])}" style="height:${(s.values[i]/mx*100).toFixed(1)}%;background:${s.color}"></i>`).join('')}</div><div class="x">${anEsc_(c)}</div></div>`).join('')}</div>`+
+    (series.length>1?`<div class="anLg">${series.map(s=>`<span><i style="background:${s.color}"></i>${anEsc_(s.name)}</span>`).join('')}</div>`:'');
+}
+function anCard_(title,body,w,extra){return `<div class="anC ${w||''}"><h3>${title}${extra?`<small>${extra}</small>`:''}</h3>${body}</div>`;}
+
+/* ================= TAB 1 · SALES TEAM ================= */
+function anTeam_(){
+  const S=anScope_(),R=anRange_();
+  const cur=S.filter(r=>anIn_(r,R.a,R.b)),prev=S.filter(r=>anIn_(r,R.pa,R.pb));
+  const A=anStats_(cur),B=anStats_(prev);
+  const partial=AN_.per==='m0'||AN_.per==='q'||AN_.per==='ytd'||AN_.per==='y12';
+  const now=new Date(),dim=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+  const pace=AN_.per==='m0'?A.v/now.getDate()*dim:null;
+  const kpis=`<div class="anKpis">
+    <div class="anK"><span>Sales ${AN_.cur}</span><b>${anM_(A.v)}</b><small>${anD_(A.v,B.v)} vs ${anM_(B.v)}${pace?` · pace ${anM_(pace)}`:''}</small></div>
+    <div class="anK"><span>Deals</span><b>${anN_(A.n)}</b><small>${anD_(A.n,B.n)} vs ${anN_(B.n)}</small></div>
+    <div class="anK"><span>Average deal</span><b>${anM_(A.avg)}</b><small>${anD_(A.avg,B.avg)} vs ${anM_(B.avg)}</small></div>
+    <div class="anK"><span>Client signed</span><b>${anP_(A.signed)}</b><small>${anPP_(A.signed,B.signed)} vs ${anP_(B.signed)}</small></div>
+    <div class="anK"><span>Cancel rate</span><b>${anP_(A.cancel)}</b><small>${anPP_(A.cancel,B.cancel,true)} vs ${anP_(B.cancel)} · ${A.canc} deals</small></div></div>`;
+
+  // teams
+  const teams={};
+  const add=(rows,key)=>rows.forEach(r=>{const g=anGroupOf_(r);(teams[g]=teams[g]||{cur:[],prev:[]})[key].push(r);});
+  add(cur,'cur');add(prev,'prev');
+  const T=Object.entries(teams).map(([g,x])=>({g,a:anStats_(x.cur),b:anStats_(x.prev)})).filter(t=>t.a.all||t.b.all).sort((x,y)=>y.a.v-x.a.v);
+  const tot=A.v||1;
+  const teamTable=`<div class="anScroll"><table class="anT"><thead><tr><th>${AN_.grp==='branch'?'Branch':'Team (sales manager)'}</th><th class="n">Deals</th><th class="n">Sales</th><th class="n">vs before</th><th class="n">Share</th><th class="n">Avg deal</th><th class="n">Signed</th><th class="n">Cancel</th><th class="n">Avg disc.</th></tr></thead><tbody>${
+    T.map((t,i)=>`<tr><td><i style="display:inline-block;width:9px;height:9px;border-radius:3px;background:${AN_PAL_[i%AN_PAL_.length]};margin-right:6px"></i>${anEsc_(t.g)}</td><td class="n">${anN_(t.a.n)}</td><td class="n"><b>${anM_(t.a.v)}</b></td><td class="n">${anD_(t.a.v,t.b.v)}</td><td class="n">${anP_(t.a.v/tot*100)}</td><td class="n">${anM_(t.a.avg)}</td><td class="n">${anP_(t.a.signed)}</td><td class="n ${t.a.cancel>35?'dn':''}">${anP_(t.a.cancel)}</td><td class="n">${anP_(t.a.disc)}</td></tr>`).join('')}</tbody></table></div>`;
+
+  // monthly by team (last 6 months, value)
+  const n=anNowYm_(),months=[...Array(6)].map((_,i)=>n-5+i),top=T.slice(0,6).map(t=>t.g);
+  const heatMax=Math.max(1,...top.flatMap(g=>months.map(k=>S.filter(r=>!anCanc_(r)&&anYm_(r)===k&&anGroupOf_(r)===g).reduce((a,r)=>a+(Number(r.amount)||0),0))));
+  const heat=`<div class="anScroll"><table class="anT anHeat"><thead><tr><th>${AN_.grp==='branch'?'Branch':'Team'}</th>${months.map(k=>`<th class="n">${anYmLabel_(k)}</th>`).join('')}<th class="n">Trend</th></tr></thead><tbody>${top.map(g=>{
+      const vals=months.map(k=>S.filter(r=>!anCanc_(r)&&anYm_(r)===k&&anGroupOf_(r)===g).reduce((a,r)=>a+(Number(r.amount)||0),0));
+      const last=vals[5],before=vals[4];
+      return `<tr><td>${anEsc_(g)}</td>${vals.map(v=>`<td class="h" style="background:rgba(176,124,30,${(v/heatMax*.55).toFixed(2)})">${v?anM_(v):'·'}</td>`).join('')}<td class="n">${anD_(last,before)}</td></tr>`;}).join('')}</tbody></table></div><div class="anNote">Sales value per month · darker = more · trend = this month vs last month</div>`;
+  const cols=anCols_(months.map(anYmLabel_),[{name:'Sales',color:'#c08a2e',values:months.map(k=>S.filter(r=>!anCanc_(r)&&anYm_(r)===k).reduce((a,r)=>a+(Number(r.amount)||0),0))},
+    {name:'Same month last year',color:'#cdbfa6',values:months.map(k=>S.filter(r=>!anCanc_(r)&&anYm_(r)===k-12).reduce((a,r)=>a+(Number(r.amount)||0),0))}]);
+
+  // salespeople
+  const P={};
+  const addP=(rows,key)=>rows.forEach(r=>anCredits_(r).forEach(([s,w])=>{if(!s)return;const o=P[s]=P[s]||{s,team:'',cur:{n:0,v:0,all:0,canc:0,sig:0,disc:[],days:[]},prev:{n:0,v:0,all:0,canc:0,sig:0}};
+    if(key==='cur'&&!o.team)o.team=anGroupOf_(r);
+    const x=o[key];x.all+=w;if(anCanc_(r)){x.canc+=w;return;}x.n+=w;x.v+=(Number(r.amount)||0)*w;if(anSigned_(r))x.sig+=w;
+    if(key==='cur'){const d=Number(r.discountPct);if(isFinite(d)&&d>=0&&r.discountPct!==null&&r.discountPct!=='')x.disc.push(d);const dt=Number(r.daysToClose);if(dt>0&&dt<400)x.days.push(dt);}}));
+  addP(cur,'cur');addP(prev,'prev');
+  let people=Object.values(P).filter(o=>o.cur.all||o.prev.all).map(o=>({...o,v:o.cur.v,n:o.cur.n,pv:o.prev.v,d:o.prev.v?(o.cur.v-o.prev.v)/o.prev.v*100:(o.cur.v?999:0),
+    sig:o.cur.n?o.cur.sig/o.cur.n*100:null,canc:o.cur.all?o.cur.canc/o.cur.all*100:null,disc:o.cur.disc.length?o.cur.disc.reduce((a,x)=>a+x,0)/o.cur.disc.length:null,days:anMedian_(o.cur.days)}));
+  const sk=AN_.sort.k,sd=AN_.sort.d;
+  people.sort((x,y)=>{const a=x[sk],b=y[sk];if(typeof a==='string')return sd*a.localeCompare(b);return sd*((a??-1e9)-(b??-1e9));});
+  const th=(k,l,n)=>`<th class="${n?'n':''}" data-sort="${k}">${l}${sk===k?(sd<0?' ▾':' ▴'):''}</th>`;
+  const peopleTable=`<div class="anScroll"><table class="anT"><thead><tr><th>#</th>${th('s','Salesperson')}${th('team',AN_.grp==='branch'?'Branch':'Team')}${th('n','Deals',1)}${th('v','Sales',1)}${th('pv','Before',1)}${th('d','Change',1)}${th('sig','Signed',1)}${th('canc','Cancel',1)}${th('disc','Avg disc.',1)}${th('days','Days to close',1)}</tr></thead><tbody>${
+    people.map((o,i)=>`<tr><td>${i+1}</td><td><b>${anEsc_(o.s)}</b></td><td>${anEsc_(o.team||'—')}</td><td class="n">${Math.round(o.n*10)/10}</td><td class="n"><b>${anM_(o.v)}</b></td><td class="n">${anM_(o.pv)}</td><td class="n">${anD_(o.v,o.pv)}</td><td class="n">${anP_(o.sig)}</td><td class="n ${o.canc>40?'dn':''}">${anP_(o.canc)}</td><td class="n">${anP_(o.disc)}</td><td class="n">${o.days!=null?Math.round(o.days):'—'}</td></tr>`).join('')}</tbody></table></div><div class="anNote">Shared deals count half for each salesperson · click a column to sort</div>`;
+
+  // insights
+  const ins=[];
+  if(B.v)ins.push([A.v>=B.v?'g':'r',`Sales are <b>${anD_(A.v,B.v).replace(/<[^>]+>/g,'')}</b> compared with the period before (${anM_(A.v)} vs ${anM_(B.v)} ${AN_.cur}).`]);
+  if(pace&&B.v)ins.push([pace>=B.v?'g':'r',`At this month’s pace the month ends near <b>${anM_(pace)}</b> — ${pace>=B.v?'above':'below'} last month (${anM_(B.v)}).`]);
+  const tUp=T.filter(t=>t.b.v>0).sort((x,y)=>(y.a.v/y.b.v)-(x.a.v/x.b.v));
+  if(tUp.length>1){ins.push(['g',`Best moving ${AN_.grp==='branch'?'branch':'team'}: <b>${anEsc_(tUp[0].g)}</b> ${anD_(tUp[0].a.v,tUp[0].b.v).replace(/<[^>]+>/g,'')}.`]);
+    const w=tUp[tUp.length-1];if(w.a.v<w.b.v)ins.push(['r',`Biggest drop: <b>${anEsc_(w.g)}</b> ${anD_(w.a.v,w.b.v).replace(/<[^>]+>/g,'')} (${anM_(w.a.v)} vs ${anM_(w.b.v)}).`]);}
+  if(T[0]&&A.v)ins.push(['',`<b>${anEsc_(T[0].g)}</b> brings ${anP_(T[0].a.v/A.v*100)} of all sales in the period.`]);
+  const ppl=people.filter(o=>o.cur.all>=3);
+  const hiC=[...ppl].sort((x,y)=>(y.canc||0)-(x.canc||0))[0];if(hiC&&hiC.canc>=30)ins.push(['r',`Highest cancel rate: <b>${anEsc_(hiC.s)}</b> — ${anP_(hiC.canc)} of their deals were cancelled.`]);
+  const hiD=[...ppl].filter(o=>o.disc!=null).sort((x,y)=>y.disc-x.disc)[0];if(hiD&&hiD.disc>0)ins.push(['',`Highest average discount: <b>${anEsc_(hiD.s)}</b> (${anP_(hiD.disc)}${A.disc!=null?` vs ${anP_(A.disc)} for everyone`:''}).`]);
+  const star=[...people].filter(o=>o.pv>0&&o.v>0).sort((x,y)=>(y.v-y.pv)-(x.v-x.pv))[0];if(star&&star.v>star.pv)ins.push(['g',`Biggest climb: <b>${anEsc_(star.s)}</b> +${anM_(star.v-star.pv)} vs before.`]);
+  const zero=Object.values(P).filter(o=>o.prev.n>0&&o.cur.n===0).map(o=>o.s);if(zero.length)ins.push(['r',`No sales this period after selling the period before: <b>${zero.slice(0,5).map(anEsc_).join(', ')}</b>${zero.length>5?' …':''}.`]);
+
+  return kpis+`<div class="anIns" style="margin-bottom:14px">${ins.map(([c,t])=>`<div class="${c}">${t}</div>`).join('')||'<div>No comparison yet for this period.</div>'}</div>`+
+    `<div class="anGrid">${anCard_(`${AN_.grp==='branch'?'Branches':'Teams'} compared`,teamTable,'w12',`${anPerLabel_()}`)}</div>`+
+    `<div class="anGrid">${anCard_('Sales per month — last 6 months',cols,'w6',AN_.cur)}${anCard_(`Month by month per ${AN_.grp==='branch'?'branch':'team'}`,heat,'w6')}</div>`+
+    `<div class="anGrid">${anCard_('Salespeople',peopleTable,'w12',`${people.length} people`)}</div>`;
+}
+
+/* ================= TAB 2 · SALES & PRICING ================= */
+function anFloorOf_(r){
+  const u=String(r.unitCode||'').toUpperCase();
+  if(/-G-/.test(u))return 'Ground';const m=u.match(/-F(\d+)-/);if(m)return 'Floor '+m[1];
+  return String(r.floor||'').trim()||'—';
+}
+function anSales_(){
+  const S=anScope_().filter(r=>!anCanc_(r)),R=anRange_(),n=anNowYm_();
+  const months=[...Array(12)].map((_,i)=>n-11+i);
+  const mv=k=>S.filter(r=>anYm_(r)===k).reduce((a,r)=>a+(Number(r.amount)||0),0);
+  const cols=anCols_(months.map(anYmLabel_),[{name:'This year',color:'#c08a2e',values:months.map(mv)},{name:'Year before',color:'#cdbfa6',values:months.map(k=>mv(k-12))}]);
+  const cur=S.filter(r=>anIn_(r,R.a,R.b));
+  const ppm={};cur.forEach(r=>{const a=Number(r.area),v=Number(r.amount);if(a>0&&v>0){const k=(AN_.project?'':String(r.project||'')+' · ')+anFloorOf_(r);(ppm[k]=ppm[k]||[]).push(v/a);}});
+  const ppmL=Object.entries(ppm).map(([k,a])=>[k,a.reduce((x,y)=>x+y,0)/a.length,`(${a.length})`]).sort((x,y)=>y[1]-x[1]).slice(0,10);
+  const byType={};cur.forEach(r=>{const k=String(r.unitType||r.unitCategory||'—');byType[k]=(byType[k]||0)+(Number(r.amount)||0);});
+  const discBy=(key)=>{const o={};cur.forEach(r=>{const d=Number(r.discountPct);if(r.discountPct===null||r.discountPct===''||!isFinite(d))return;const k=String(r[key]||'—').trim()||'—';(o[k]=o[k]||[]).push(d);});
+    return Object.entries(o).filter(([,a])=>a.length>=2).map(([k,a])=>[k,a.reduce((x,y)=>x+y,0)/a.length,`(${a.length})`]).sort((x,y)=>y[1]-x[1]).slice(0,8);};
+  const sz=[['< 2M',0,2e6],['2–4M',2e6,4e6],['4–6M',4e6,6e6],['6–10M',6e6,1e7],['10M+',1e7,1e15]];
+  const usd=AN_.cur==='USD',szL=(usd?[['< 50K',0,5e4],['50–100K',5e4,1e5],['100–150K',1e5,1.5e5],['150–250K',1.5e5,2.5e5],['250K+',2.5e5,1e12]]:sz).map(([l,a,b])=>[l,cur.filter(r=>(Number(r.amount)||0)>=a&&(Number(r.amount)||0)<b).length]);
+  const prim=cur.filter(r=>Number(r.primaryTotal)>0&&Number(r.amount)>0);
+  const listV=prim.reduce((a,r)=>a+Number(r.primaryTotal),0),finV=prim.reduce((a,r)=>a+Number(r.amount),0);
+  return `<div class="anGrid">${anCard_('Sales per month · this year vs the year before',cols,'w12',AN_.cur)}</div>
+   <div class="anGrid">${anCard_('Average price per m²',anBars_(ppmL,{fmt:v=>anM_(v)})+'<div class="anNote">Final price ÷ area · (n) = deals</div>','',anPerLabel_().replace(/ vs.*/,''))}
+   ${anCard_('Sales by unit type',anBars_(Object.entries(byType).sort((x,y)=>y[1]-x[1]).slice(0,8),{fmt:anM_,color:AN_PAL_}),'')}
+   ${anCard_('Deal size',anBars_(szL,{color:'#5b6b85'})+'<div class="anNote">Number of deals by final price</div>','')}</div>
+   <div class="anGrid">${anCard_('Discount by salesperson',anBars_(discBy('salesName'),{fmt:v=>anP_(v),color:'#e0703f'}),'')}
+   ${anCard_('Discount by source',anBars_(discBy('sourceType'),{fmt:v=>anP_(v),color:'#e0703f'}),'')}
+   ${anCard_('List price vs final price',`<div class="anBig"><div><b>${anM_(listV)}</b><span>list (primary) price</span></div><div><b>${anM_(finV)}</b><span>final price</span></div><div><b>${listV?anP_((listV-finV)/listV*100):'—'}</b><span>given away</span></div></div><div class="anNote">${prim.length} deals with a primary price in the period</div>`,'')}</div>`;
+}
+
+/* ================= TAB 3 · DEAL JOURNEY ================= */
+function anJourney_(){
+  const S=anScope_(),R=anRange_(),n=anNowYm_();
+  const cur=S.filter(r=>anIn_(r,R.a,R.b)),live=cur.filter(r=>!anCanc_(r));
+  const steps=[['Reservation',['reservation','part','total','csPart','csTotal','coPart','coTotal','closed','delivered','review']],['Down payment',['part','total','csPart','csTotal','coPart','coTotal','closed','delivered']],
+    ['Client signed',['csPart','csTotal','coPart','coTotal','closed','delivered']],['Company signed',['coPart','coTotal','closed','delivered']],['Closed / delivered',['closed','delivered']]];
+  const base=live.length||1;
+  const funnel=steps.map(([l,ks])=>{const c=live.filter(r=>ks.includes(anStage_(r))).length;return [l,c,anP_(c/base*100)];});
+  const months=[...Array(12)].map((_,i)=>n-11+i);
+  const cr=months.map(k=>{const a=S.filter(r=>anYm_(r)===k);return a.length?a.filter(anCanc_).length/a.length*100:0;});
+  const canc=cur.filter(anCanc_);
+  const reasons={};canc.forEach(r=>{let k=String(r.cancelReason||'').trim();if(!k||/^[£$€]?\s*[\d,.]+$/.test(k))k='(no reason written)';reasons[k]=(reasons[k]||0)+1;});
+  const lost=canc.reduce((a,r)=>a+(Number(r.amount)||0),0);
+  const cBy=key=>{const o={};cur.forEach(r=>{const k=String(r[key]||'—').trim()||'—';o[k]=o[k]||[0,0];o[k][0]++;if(anCanc_(r))o[k][1]++;});return Object.entries(o).filter(([,x])=>x[0]>=3).map(([k,x])=>[k,x[1]/x[0]*100,`${x[1]}/${x[0]}`]).sort((a,b)=>b[1]-a[1]).slice(0,8);};
+  const today=new Date();
+  const ageOf=r=>{const d=anDate_(r);return d?Math.floor((today-d)/864e5):null;};
+  const open=S.filter(r=>!anCanc_(r));
+  const stuckRes=open.filter(r=>anStage_(r)==='reservation'&&ageOf(r)>7);
+  const stuckDP=open.filter(r=>['part','total'].includes(anStage_(r))&&ageOf(r)>30);
+  const stuckCo=open.filter(r=>['csPart','csTotal'].includes(anStage_(r))&&ageOf(r)>30);
+  const days=anMedian_(S.map(r=>Number(r.daysToClose)).filter(x=>x>0&&x<400));
+  const list=(a)=>a.slice().sort((x,y)=>(ageOf(y)||0)-(ageOf(x)||0)).slice(0,6).map(r=>`<div class="anB"><span class="l">${anEsc_(r.unitCode||'')} · ${anEsc_(String(r.clientName||'').split(' - ')[0])}</span><span></span><b>${ageOf(r)} d</b></div>`).join('');
+  return `<div class="anGrid">${anCard_('How far the deals got',anBars_(funnel,{color:'#2f9a63'})+'<div class="anNote">Of the non-cancelled deals made in the period</div>','w6',anPerLabel_().replace(/ vs.*/,''))}
+    ${anCard_('Cancellations',`<div class="anBig"><div><b>${canc.length}</b><span>cancelled</span></div><div><b>${anP_(cur.length?canc.length/cur.length*100:null)}</b><span>cancel rate</span></div><div><b>${anM_(lost)}</b><span>value lost ${AN_.cur}</span></div><div><b>${days!=null?Math.round(days):'—'}</b><span>median days to close</span></div></div>`,'w6')}</div>
+   <div class="anGrid">${anCard_('Cancel rate per month',anCols_(months.map(anYmLabel_),[{name:'Cancel %',color:'#d12f2f',values:cr}],{top:i=>cr[i]?Math.round(cr[i])+'%':''}),'w6')}
+    ${anCard_('Why deals were cancelled',anBars_(Object.entries(reasons).sort((a,b)=>b[1]-a[1]).slice(0,8),{color:'#d12f2f'}),'w6')}</div>
+   <div class="anGrid">${anCard_('Cancel rate by salesperson',anBars_(cBy('salesName'),{fmt:v=>anP_(v),color:'#d12f2f'}),'')}${anCard_('Cancel rate by source',anBars_(cBy('sourceType'),{fmt:v=>anP_(v),color:'#d12f2f'}),'')}${anCard_('Cancel rate by project',anBars_(cBy('project'),{fmt:v=>anP_(v),color:'#d12f2f'}),'')}</div>
+   <div class="anGrid">${anCard_(`Reservations over 7 days · ${stuckRes.length}`,list(stuckRes)||'<div class="anNote">None 👍</div>','')}${anCard_(`Down payment, not signed after 30 days · ${stuckDP.length}`,list(stuckDP)||'<div class="anNote">None 👍</div>','')}${anCard_(`Client signed, company not after 30 days · ${stuckCo.length}`,list(stuckCo)||'<div class="anNote">None 👍</div>','')}</div>`;
+}
+
+/* ================= TAB 4 · CLIENTS & SOURCES ================= */
+function anClients_(){
+  const S=anScope_(),R=anRange_();
+  const cur=S.filter(r=>anIn_(r,R.a,R.b)),live=cur.filter(r=>!anCanc_(r));
+  const cnt=key=>{const o={};live.forEach(r=>{const k=String(r[key]||'—').trim()||'—';o[k]=(o[k]||0)+1;});return Object.entries(o).sort((a,b)=>b[1]-a[1]).slice(0,8);};
+  const val=key=>{const o={};live.forEach(r=>{const k=String(r[key]||'—').trim()||'—';o[k]=(o[k]||0)+(Number(r.amount)||0);});return Object.entries(o).sort((a,b)=>b[1]-a[1]).slice(0,8);};
+  const conv=key=>{const o={};cur.forEach(r=>{const k=String(r[key]||'—').trim()||'—';o[k]=o[k]||[0,0];o[k][0]++;if(!anCanc_(r)&&anSigned_(r))o[k][1]++;});
+    return Object.entries(o).filter(([,x])=>x[0]>=2).sort((a,b)=>b[1][0]-a[1][0]).slice(0,8).map(([k,x])=>[k,x[1]/x[0]*100,`${x[1]}/${x[0]}`]);};
+  const all=S.filter(r=>!anCanc_(r)),ck=r=>typeof clientKeyOf==='function'?clientKeyOf(r):String(r.clientName||'').toLowerCase();
+  const byC={};all.forEach(r=>{const k=ck(r);if(k)(byC[k]=byC[k]||[]).push(r);});
+  const rep=Object.values(byC).filter(a=>a.length>1);
+  const newC=live.filter(r=>{const a=byC[ck(r)]||[];return a.every(x=>(anYm_(x)??0)>=(anYm_(r)??0));}).length;
+  const direct=live.filter(r=>!String(r.brokerageCompany||'').trim()).length;
+  return `<div class="anGrid">${anCard_('Nationality',anBars_(cnt('nationality'),{color:'#5b6b85'}),'',anPerLabel_().replace(/ vs.*/,''))}${anCard_('Client type',anBars_(cnt('clientType'),{color:AN_PAL_}),'')}
+   ${anCard_('Clients',`<div class="anBig"><div><b>${anN_(newC)}</b><span>first-time buyers</span></div><div><b>${anN_(live.length-newC)}</b><span>bought before</span></div><div><b>${anN_(rep.length)}</b><span>clients with 2+ deals (all time)</span></div></div>`,'')}</div>
+   <div class="anGrid">${anCard_('Source type · how many reach signing',anBars_(conv('sourceType'),{fmt:v=>anP_(v),color:'#2f9a63'})+'<div class="anNote">signed or later / all deals (incl. cancelled)</div>','')}
+   ${anCard_('Main source · sales',anBars_(val('mainSource'),{fmt:anM_,color:AN_PAL_}),'')}
+   ${anCard_('Direct vs broker',`<div class="anBig"><div><b>${anN_(direct)}</b><span>direct deals</span></div><div><b>${anN_(live.length-direct)}</b><span>through a broker</span></div><div><b>${anP_(live.length?(live.length-direct)/live.length*100:null)}</b><span>broker share</span></div></div>`,'')}</div>
+   <div class="anGrid">${anCard_('Top campaigns · sales',anBars_(val('campaignName').filter(x=>x[0]!=='—'),{fmt:anM_,color:'#3b6fd8'}),'w6')}${anCard_('Top brokerage companies · sales',anBars_(val('brokerageCompany').filter(x=>x[0]!=='—'),{fmt:anM_,color:'#8a5cd6'}),'w6')}</div>`;
+}
+
+/* ================= TAB 5 · COLLECTIONS & INVENTORY ================= */
+function anMoney_(){
+  const S=anScope_().filter(r=>!anCanc_(r)),R=anRange_();
+  const cur=S.filter(r=>anIn_(r,R.a,R.b));
+  const due=cur.reduce((a,r)=>a+(Number(r.actualDP)||0),0),paid=cur.reduce((a,r)=>a+(Number(r.dpPaid)||0),0);
+  const unpaid=S.filter(r=>(Number(r.actualDP)||0)>(Number(r.dpPaid)||0)+1).sort((x,y)=>((Number(y.actualDP)-Number(y.dpPaid))-(Number(x.actualDP)-Number(x.dpPaid))));
+  let inst='<div class="anNote">Loading installments…</div>';
+  if(AN_.inst&&AN_.inst.err)inst=`<div class="anNote">${anEsc_(AN_.inst.err)}</div>`;
+  else if(AN_.inst){
+    const today=new Date(),t0=new Date(today.getFullYear(),today.getMonth(),today.getDate());
+    const rows=(AN_.inst.rows||[]).filter(x=>(!AN_.project||x.project===AN_.project)&&((/usd/i.test(x.currency)?'USD':'EGP')===AN_.cur));
+    const mOf=x=>{const d=anParseDate_(x.due);return d?d.getFullYear()*12+d.getMonth():null;};
+    const inP=rows.filter(x=>{const k=mOf(x);return k!=null&&k>=R.a&&k<=R.b;});
+    const dueP=inP.reduce((a,x)=>a+x.amount,0),paidP=inP.reduce((a,x)=>a+Math.min(x.paid,x.amount),0);
+    const b=[0,0,0,0];rows.forEach(x=>{const d=anParseDate_(x.due);const left=x.amount-x.paid;if(!d||left<=1||d>=t0)return;const age=(t0-d)/864e5;b[age<=30?0:age<=60?1:age<=90?2:3]+=left;});
+    const nm=anNowYm_(),next=[...Array(6)].map((_,i)=>nm+i),nv=next.map(k=>rows.filter(x=>mOf(x)===k).reduce((a,x)=>a+Math.max(0,x.amount-x.paid),0));
+    inst=`<div class="anBig"><div><b>${anM_(paidP)}</b><span>collected of ${anM_(dueP)} due in the period</span></div><div><b>${anP_(dueP?paidP/dueP*100:null)}</b><span>collection rate</span></div><div><b>${anM_(b.reduce((a,x)=>a+x,0))}</b><span>overdue now</span></div></div>
+      <div style="margin-top:10px">${anBars_([['1–30 days',b[0]],['31–60 days',b[1]],['61–90 days',b[2]],['90+ days',b[3]]],{fmt:anM_,color:['#e3b24f','#e0703f','#d12f2f','#8f1f1f']})}</div>
+      <h3 style="margin-top:12px">Still to collect · next 6 months</h3>${anCols_(next.map(anYmLabel_),[{name:'Due',color:'#2f9a63',values:nv}])}`;
+  }
+  // inventory
+  const projs=AN_.project?[AN_.project]:[...new Set(anScope_().map(r=>String(r.project||'')))];
+  const invKeys=projs.filter(p=>/eden walk|ccg|gldani/i.test(p));
+  const invHtml=invKeys.map(p=>{
+    const d=AN_.inv[p];if(!d)return anCard_(`Inventory · ${anEsc_(p)}`,'<div class="anNote">Loading…</div>','w6');
+    if(d.err)return anCard_(`Inventory · ${anEsc_(p)}`,`<div class="anNote">${anEsc_(d.err)}</div>`,'w6');
+    const rows=(d.rows||[]).filter(x=>!/^(divided|share)$/i.test(String(x.status||'').trim()));
+    const kind=s=>{s=String(s||'').trim().toLowerCase();return /closed|done|sold|deliver/.test(s)?'Sold':/reserv/.test(s)?'Reserved':s==='available'?'Available':'Not on sale';};
+    const fl={};rows.forEach(x=>{const f=String(x.floor||'—').trim()||'—';(fl[f]=fl[f]||{Sold:0,Reserved:0,Available:0,'Not on sale':0})[kind(x.status)]++;});
+    const C={Sold:'#178a4c',Reserved:'#e3b24f',Available:'#3b6fd8','Not on sale':'#e2d7c4'};
+    const avail=rows.filter(x=>kind(x.status)==='Available').length;
+    const n=anNowYm_(),sold90=anScope_().filter(r=>String(r.project)===p&&!anCanc_(r)&&anIn_(r,n-2,n)).length;
+    const months=sold90?avail/(sold90/3):null;
+    const availV=rows.filter(x=>kind(x.status)==='Available').reduce((a,x)=>a+(Number(String(x.totalPrice||'').replace(/[^\d.]/g,''))||0),0);
+    return anCard_(`Inventory · ${anEsc_(p)}`,`<div class="anBig"><div><b>${avail}</b><span>units available</span></div><div><b>${sold90}</b><span>deals last 3 months</span></div><div><b>${months!=null?(Math.round(months*10)/10):'—'}</b><span>months of stock at this pace</span></div><div><b>${availV?anM_(availV):'—'}</b><span>value available</span></div></div>
+      <div style="margin-top:12px">${Object.entries(fl).slice(0,10).map(([f,c])=>{const t=Object.values(c).reduce((a,x)=>a+x,0)||1;return `<div class="anB"><span class="l">${anEsc_(f)}</span><span class="anStk">${Object.keys(C).map(k=>`<i title="${k}: ${c[k]}" style="width:${c[k]/t*100}%;background:${C[k]}"></i>`).join('')}</span><b>${c.Sold+c.Reserved}/${c.Sold+c.Reserved+c.Available}</b></div>`;}).join('')}</div>
+      <div class="anLg">${Object.entries(C).map(([k,c])=>`<span><i style="background:${c}"></i>${k}</span>`).join('')}<span>· sold+reserved / on sale</span></div>`,'w6');
+  }).join('');
+  return `<div class="anGrid">${anCard_('Down payments',`<div class="anBig"><div><b>${anM_(paid)}</b><span>paid of ${anM_(due)} due</span></div><div><b>${anP_(due?paid/due*100:null)}</b><span>collected</span></div><div><b>${anN_(unpaid.length)}</b><span>deals with DP still open (all time)</span></div></div>
+      <h3 style="margin-top:12px">Largest open down payments</h3>${unpaid.slice(0,6).map(r=>`<div class="anB"><span class="l">${anEsc_(r.unitCode||'')} · ${anEsc_(String(r.clientName||'').split(' - ')[0])}</span><span></span><b>${anM_(Number(r.actualDP)-Number(r.dpPaid))}</b></div>`).join('')||'<div class="anNote">None.</div>'}`,'w6',anPerLabel_().replace(/ vs.*/,''))}
+    ${anCard_('Installments',inst,'w6')}</div><div class="anGrid">${invHtml||anCard_('Inventory','<div class="anNote">No inventory sheet is linked for this project.</div>','w12')}</div>`;
+}
+function anLoadMoney_(){
+  if(!AN_.inst&&!AN_.instLoading){AN_.instLoading=true;google.script.run.withSuccessHandler(d=>{AN_.inst=d||{rows:[]};AN_.instLoading=false;if(AN_.tab==='money')anRender_();})
+    .withFailureHandler(e=>{AN_.inst={err:'Installments could not be loaded: '+(e&&e.message||e)};AN_.instLoading=false;if(AN_.tab==='money')anRender_();}).getInstallmentsOverview(AUTH_TOKEN);}
+  const projs=AN_.project?[AN_.project]:[...new Set(anScope_().map(r=>String(r.project||'')))];
+  projs.filter(p=>/eden walk|ccg|gldani/i.test(p)).forEach(p=>{
+    if(AN_.inv[p]||AN_.inv[p+'_l'])return;AN_.inv[p+'_l']=1;
+    google.script.run.withSuccessHandler(d=>{AN_.inv[p]=d||{rows:[]};if(AN_.tab==='money')anRender_();})
+      .withFailureHandler(e=>{AN_.inv[p]={err:String(e&&e.message||e)};if(AN_.tab==='money')anRender_();}).getInventoryData(AUTH_TOKEN,p,false);
+  });
+}
+
+/* ---------- frame ---------- */
+function anRender_(){
+  const el=document.getElementById('an');if(!el)return;
+  el.querySelector('.anPer').innerHTML=anPerLabel_();
+  el.querySelectorAll('.daTabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===AN_.tab));
+  ['per','cur','grp'].forEach(k=>el.querySelectorAll(`[data-${k}]`).forEach(x=>x.classList.toggle('on',x.dataset[k]===AN_[k])));
+  el.querySelectorAll('[data-grp]').forEach(b=>b.closest('.anSeg').style.display=AN_.tab==='team'?'':'none');
+  const body=el.querySelector('.daBody');
+  if(!((typeof rawRows!=='undefined'&&rawRows)||[]).length){body.innerHTML='<div class="daNote" style="text-align:center;padding:40px">Loading data…</div>';return;}
+  if(AN_.tab==='money')anLoadMoney_();
+  try{body.innerHTML=({team:anTeam_,sales:anSales_,journey:anJourney_,clients:anClients_,money:anMoney_}[AN_.tab]||anTeam_)();}
+  catch(e){console.error(e);body.innerHTML=`<div class="daNote daMsg err" style="padding:30px">Something went wrong: ${anEsc_(e.message)}</div>`;}
+  body.querySelectorAll('[data-sort]').forEach(th=>th.addEventListener('click',()=>{const k=th.dataset.sort;AN_.sort=AN_.sort.k===k?{k,d:-AN_.sort.d}:{k,d:k==='s'||k==='team'?1:-1};anRender_();}));
+}
+function anClose_(){document.getElementById('an')?.remove();document.getElementById('anBack')?.remove();document.removeEventListener('keydown',anKey_);}
+function anKey_(e){if(e.key==='Escape')anClose_();}
+function anOpen_(){
+  if(!anCan_()){alert('Analytics is not available for this account.');return;}
+  anClose_();
+  const all=(typeof rawRows!=='undefined'&&rawRows)||[];
+  const uniq=k=>[...new Set(all.map(r=>String(r[k]||'').trim()).filter(Boolean))].sort();
+  const back=document.createElement('div');back.className='daBack';back.id='anBack';back.addEventListener('click',anClose_);
+  const el=document.createElement('section');el.className='da';el.id='an';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');
+  const seg=(attr,opts,val)=>`<span class="anSeg">${opts.map(([v,l])=>`<button type="button" data-${attr}="${v}" class="${v===val?'on':''}">${l}</button>`).join('')}</span>`;
+  el.innerHTML=`<div class="daHead"><div><small>EDEN BI</small><h2>📈 Analytics</h2></div><div class="daTools"><button type="button" class="daBtn" data-xl>⬇ Excel</button><button type="button" class="daX" aria-label="Close">×</button></div></div>
+    <div class="anBar">${seg('per',[['m0','This month'],['m1','Last month'],['q','Last 3 months'],['ytd','This year'],['y12','Last 12 months']],AN_.per)}
+      ${seg('cur',[['EGP','EGP'],['USD','USD']],AN_.cur)}
+      <select data-f="project"><option value="">All projects</option>${uniq('project').map(p=>`<option${p===AN_.project?' selected':''}>${anEsc_(p)}</option>`).join('')}</select>
+      <select data-f="branch"><option value="">All branches</option>${uniq('branch').map(p=>`<option${p===AN_.branch?' selected':''}>${anEsc_(p)}</option>`).join('')}</select>
+      ${seg('grp',[['manager','By team'],['branch','By branch']],AN_.grp)}
+      <span class="anPer"></span></div>
+    <div class="daTabs">${AN_TABS_.map(([k,l])=>`<button type="button" class="daTab" data-tab="${k}">${l}</button>`).join('')}</div><div class="daBody"></div>`;
+  document.body.append(back,el);
+  el.querySelector('.daX').addEventListener('click',anClose_);
+  el.querySelector('[data-xl]').addEventListener('click',anExcel_);
+  el.querySelectorAll('.daTabs button').forEach(b=>b.addEventListener('click',()=>{AN_.tab=b.dataset.tab;anRender_();}));
+  ['per','cur','grp'].forEach(a=>el.querySelectorAll(`[data-${a}]`).forEach(b=>b.addEventListener('click',()=>{AN_[a]=b.dataset[a];el.querySelectorAll(`[data-${a}]`).forEach(x=>x.classList.toggle('on',x===b));anRender_();})));
+  el.querySelectorAll('select[data-f]').forEach(s=>s.addEventListener('change',()=>{AN_[s.dataset.f]=s.value;if(s.dataset.f==='project'){const p=s.value;if(p&&typeof projectCurrency_==='function'){AN_.cur=projectCurrency_({project:p});el.querySelectorAll('[data-cur]').forEach(x=>x.classList.toggle('on',x.dataset.cur===AN_.cur));}}anRender_();}));
+  document.addEventListener('keydown',anKey_);
+  anRender_();
+}
+/* Excel: the salespeople and team tables for the chosen period. */
+function anExcel_(){
+  if(typeof edenXlsxDownload_!=='function'){alert('Excel export is not available.');return;}
+  const keep=AN_.tab;AN_.tab='team';
+  const tmp=document.createElement('div');tmp.innerHTML=anTeam_();AN_.tab=keep;
+  const tables=[...tmp.querySelectorAll('table.anT')];
+  const grab=t=>({h:[...t.querySelectorAll('thead th')].map(x=>x.textContent.replace(/[▾▴]/g,'').trim()),r:[...t.querySelectorAll('tbody tr')].map(tr=>[...tr.children].map(td=>td.textContent.trim()))});
+  const team=grab(tables[0]),ppl=grab(tables[tables.length-1]);
+  const per=anPerLabel_().replace(/<[^>]+>/g,'');
+  edenXlsxDownload_(`EDEN_Analytics_${AN_.cur}_${per.replace(/[^\w]+/g,'_')}`,{title:`EDEN — Sales analytics · ${per} · ${AN_.cur}`,sheetName:'Analytics',
+    kpis:[['Period',per],['Currency',AN_.cur],['Project',AN_.project||'All'],['Branch',AN_.branch||'All']],
+    headers:ppl.h,rows:ppl.r.concat([[''],[`${AN_.grp==='branch'?'Branches':'Teams'}`]],[team.h],team.r)});
+}
+/* Sidebar button (moved into the Analytics group by NavGroups). */
+function anMount_(){
+  const menu=document.querySelector('#transactionsModule .moduleMenu');if(!menu)return;
+  let b=document.querySelector('.nav [data-an]');
+  if(!b){b=document.createElement('button');b.type='button';b.dataset.an='1';b.textContent='Analytics';b.addEventListener('click',anOpen_);menu.appendChild(b);}
+  const d=anCan_()?'':'none';if(b.style.display!==d)b.style.display=d;
+}
+(function initEdenAnalytics_(){
+  const hook=()=>{if(typeof render==='function'&&!render.__an){const o=render;render=function(){const r=o.apply(this,arguments);try{anMount_();}catch(e){}return r;};render.__an=true;}anMount_();};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(hook,0));else setTimeout(hook,0);
+})();
+</script>

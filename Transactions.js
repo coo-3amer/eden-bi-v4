@@ -639,6 +639,8 @@ function buildDashboardData_(authUser) {
       cooConfirmed: confIdx['COO Confirmed'] !== undefined ? r[confIdx['COO Confirmed']] : '',
       primaryTotal: totalPrice || '',
       discountPct,
+      cancelReason: getAny_(r, idx, ['Reason']),
+      cancelDate: idx['reason'] !== undefined ? String(r[idx['reason'] + 2] || '').trim() : '',
       dpDate: dpDetailsIdx['Date'] !== undefined ? String(r[dpDetailsIdx['Date']] || '').trim() : '',
       planType: planIdx['Type Of Payment Plan'] !== undefined ? String(r[planIdx['Type Of Payment Plan']] || '').trim() : '',
       planPeriod: planIdx['Installments Period'] !== undefined ? String(r[planIdx['Installments Period']] || '').trim() : '',
