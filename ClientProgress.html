@@ -23,6 +23,7 @@ function cpStage_(r){
   return k;
 }
 function cpBar_(r){
+  if(typeof isEgyptViewer_==='function'&&isEgyptViewer_())return '';
   if(!r||r.status==null||!('confClientSigned' in r||'confPartDP' in r||r.row))return '';
   const k=cpStage_(r);
   if(k==='cancel')return `<span class="cpPg" title="Cancelled"><span class="cpTr"><i style="width:100%;background:linear-gradient(90deg,#f07a7a,#d12f2f)"></i></span><span class="cpPc" style="color:var(--ds-red,#d12f2f)">✕</span></span>`;
