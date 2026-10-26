@@ -9,7 +9,12 @@
  *     to the account that runs EDEN BI.
  *   - The old Deals sheet keeps working until it is switched off.
  * Phase 1 (this file): create the file (admins, from the dashboard).
- * Script Property DEALS_DB_ID holds the file id.
+ * Two files with the same columns:
+ *   EG  "EDEN Deals DB — Egypt"          EDEN WALK + every new Egypt project   (Script Property DEALS_DB_ID)
+ *   GP  "EDEN Deals DB — Georgia & Past" CCG, Kobuleti, Crown Gldani, Sequoia, E-ONE, City View
+ *                                        + every new Georgia project           (Script Property DEALS_DB_GP_ID)
+ * A project goes to GP when it is in DDB_GP_PROJECTS_ (or Script Property
+ * DEALS_DB_GP_EXTRA, comma separated) or is a USD project; anything else → EG.
  ************************************************/
 
 const DDB_COLS_ = [["Record", "Deal ID", "id", "System", "Fixed ID for every deal, e.g. EDN-26-0001. Never changes, never reused."], ["Record", "Created At", "datetime", "System", "When the deal was added."], ["Record", "Created By", "text", "System", "Who added it (dashboard user)."], ["Record", "Updated At", "datetime", "System", "Last change."], ["Record", "Updated By", "text", "System", "Who made the last change."], ["Client", "Client Name", "text", "Sales", "Full name as on the ID. No unit code after the name."], ["Client", "Mobile 1", "phone", "Sales", "International format, digits only: 201001234567 / 966551234567."], ["Client", "Mobile 2", "phone", "Sales", "Second number, same format."], ["Client", "Email", "email", "Sales", "One email, lower case."], ["Client", "Nationality", "list", "Sales", "From the list."], ["Client", "Client Type", "list", "Sales", "Internal / Overseas / Company …"], ["Client", "Gender", "list", "Sales", "Male / Female."], ["Client", "Birth Date", "date", "Sales", "Real date."], ["Client", "Job Title", "text", "Sales", ""], ["Client", "Job Type", "list", "Sales", ""], ["Client", "ID Type", "list", "Sales", "National ID / Passport."], ["Client", "ID Number", "text", "Sales", "Kept as text (no scientific notation)."], ["Client", "ID Address", "text", "Sales", ""], ["Client", "Residence Address", "text", "Sales", ""], ["Client", "Documents Link", "url", "System", "Drive folder with the client papers."], ["Unit", "Project", "list", "Sales", "From the list (EDEN WALK, CCG, …)."], ["Unit", "Unit Code", "text", "Sales", "Checked against the inventory."], ["Unit", "Unit Category", "list", "System", "Main / Shared / Divided (from the inventory)."], ["Unit", "Block", "text", "System", "From the inventory."], ["Unit", "Floor", "text", "System", "From the inventory."], ["Unit", "View", "text", "System", "From the inventory."], ["Unit", "Unit Type", "list", "System", "Commercial / Admin / Medical …"], ["Unit", "Finishing Type", "list", "System", ""], ["Unit", "Area m²", "number", "System", "Indoor area."], ["Unit", "Outdoor Area m²", "number", "System", ""], ["Price", "Currency", "list", "System", "EGP / USD — by project."], ["Price", "Primary Meter Price", "money", "System", "List price per m² on the day of the deal."], ["Price", "Outdoor Meter Price", "money", "System", ""], ["Price", "Primary Total Price", "money", "System", "List total."], ["Price", "Discount %", "percent", "Sales", "Needs approval above the limit (Discount Approvals)."], ["Price", "Discount Offer", "list", "Sales", "Name of the offer, if any."], ["Price", "Meter Price After Discount", "money", "System", "Calculated."], ["Price", "Final Price", "money", "System", "Calculated: after discount."], ["Price", "Maintenance %", "percent", "Sales", ""], ["Price", "Maintenance Amount", "money", "System", "Calculated."], ["Reservation", "Reservation Date", "date", "Sales", "The deal date used everywhere in the dashboard."], ["Reservation", "Res Code", "text", "Sales", "Receipt / reservation code."], ["Reservation", "Reservation Amount", "money", "Sales", ""], ["Reservation", "Reservation Currency", "list", "Sales", ""], ["Reservation", "Reservation Payment Method", "list", "Sales", "Cash / Transfer / Cheque …"], ["Reservation", "EOI Code", "text", "Sales", "Only for EOI deals."], ["Status", "Status", "list", "System", "Set by the system from the ticks below: Reservation → Part of DP → Total DP → Client Signed → Company Signed → Delivered → Closed, or Cancel."], ["Status", "Additional Status", "list", "Sales", "Renovation / Resale / …"], ["Status", "Deal Type", "list", "Sales", "Direct / Share / …"], ["Status", "Days to Close", "number", "System", "Calculated: reservation → company signed."], ["Down payment", "DP %", "percent", "Sales", ""], ["Down payment", "DP Required", "money", "System", "Calculated from DP % × final price."], ["Down payment", "DP Paid", "money", "Finance", ""], ["Down payment", "Total Paid", "money", "Finance", "All money received on the deal."], ["Down payment", "Remaining DP", "money", "System", "Calculated."], ["Down payment", "DP Payment Method", "list", "Finance", ""], ["Down payment", "DP Currency", "list", "Finance", ""], ["Down payment", "DP Date", "date", "Finance", ""], ["Down payment", "Receipt No.", "text", "Finance", ""], ["Payment plan", "Plan Type", "list", "Sales", ""], ["Payment plan", "Installments Period", "text", "Sales", ""], ["Payment plan", "Installment Plan", "text", "Sales", ""], ["Payment plan", "Period Type", "list", "Sales", "Monthly / Quarterly …"], ["Payment plan", "Payment Exception", "text", "Sales", ""], ["Contract", "Contract Type", "list", "Contracts", ""], ["Contract", "Contract Code", "text", "Contracts", ""], ["Contract", "Contract Date", "date", "Contracts", ""], ["Contract", "Client Sign Date", "date", "Contracts", ""], ["Contract", "Company Sign Date", "date", "Contracts", ""], ["Contract", "Delivery Date", "date", "Contracts", ""], ["Confirmation", "Part of DP ✓", "check", "Finance", "Ticks move the Status."], ["Confirmation", "Total DP ✓", "check", "Finance", ""], ["Confirmation", "Client Signed ✓", "check", "Contracts", "(typo fixed)"], ["Confirmation", "Company Signed ✓", "check", "Contracts", ""], ["Confirmation", "Wallet Checked ✓", "check", "Finance", ""], ["Confirmation", "Delivery Signed ✓", "check", "Contracts", ""], ["Confirmation", "Delivered ✓", "check", "Contracts", ""], ["Confirmation", "COO Confirmed ✓", "check", "COO", ""], ["Sales team", "Branch", "list", "Sales", ""], ["Sales team", "Sales Name", "list", "Sales", "From the users / sales list."], ["Sales team", "Shared With", "list", "Sales", "For shared deals."], ["Sales team", "Sales Manager", "list", "System", "Filled from the salesperson’s team."], ["Sales team", "Head Of Sales", "list", "System", ""], ["Sales team", "CCO", "list", "System", ""], ["Source", "Main Source", "list", "Sales", "Direct / Indirect …"], ["Source", "Source Type", "list", "Sales", "Broker / Campaign / Personal / Previous Client …"], ["Source", "Campaign Name", "list", "Sales", ""], ["Source", "Media Buyer", "list", "Sales", ""], ["Broker", "Brokerage Company", "list", "Sales", "From the broker companies list."], ["Broker", "BC Sales", "text", "Sales", ""], ["Broker", "BC Manager", "text", "Sales", "(typo fixed)"], ["Internal commission", "Comm Sales Paid ✓", "check", "Finance", ""], ["Internal commission", "Comm Managers Paid ✓", "check", "Finance", ""], ["Internal commission", "Comm Staff Paid ✓", "check", "Finance", ""], ["Internal commission", "Comm Note", "text", "Finance", ""], ["Cancellation", "Cancelled ✓", "check", "Admin", "Ticking it (with a date and reason) sets Status = Cancel and frees the unit."], ["Cancellation", "Cancel Date", "date", "Admin", ""], ["Cancellation", "Cancel Reason", "list", "Admin", "From a list (+ free text): changed unit / could not pay / changed mind …"], ["Cancellation", "Cancel Code", "text", "Admin", ""], ["Cancellation", "Refund Amount", "money", "Finance", "Money returned to the client."], ["Other", "Notes", "text", "Anyone", ""], ["Other", "Old Deals Row", "number", "System", "Row in the old Deals sheet (while we move)."], ["Other", "Old Deal Num", "text", "System", ""]];
@@ -37,37 +42,54 @@ const DDB_FIXED_LISTS_ = {
 const DDB_REMOVED_ = ['Ren', 'SH', 'RS', 'Rent', 'Indirect Deal › Brokerage Company / BC Sales / Contracted / Statue', 'Archive › Rev / Exception / Contract / Statue',
   'Cancel Details › Termination', 'Year and Month (calculated from the reservation date)', 'Age (calculated from the birth date)', 'Empty spacer columns'];
 
-function ddbId_() { return String(PropertiesService.getScriptProperties().getProperty('DEALS_DB_ID') || '').trim(); }
-function ddbOpen_() { const id = ddbId_(); return id ? SpreadsheetApp.openById(id) : null; }
+const DDB_STORES_ = {
+  EG: { key: 'EG', prop: 'DEALS_DB_ID', name: 'EDEN Deals DB — Egypt', idPrefix: 'EDN', label: 'Egypt — EDEN WALK and new Egypt projects' },
+  GP: { key: 'GP', prop: 'DEALS_DB_GP_ID', name: 'EDEN Deals DB — Georgia & Past', idPrefix: 'EDG', label: 'Georgia and past projects — CCG, Kobuleti, Crown Gldani, Sequoia, E-ONE, City View' }
+};
+const DDB_GP_PROJECTS_ = ['CCG', 'CITY CENTER GLDANI', 'CITY CENTRE GLDANI', 'KOBULETI', 'CROWN GLDANI', 'SEQUOIA', 'E-ONE', 'E ONE', 'EONE', 'CITY VIEW'];
+/* Which file a project's deals live in. */
+function ddbStoreOf_(project) {
+  const p = String(project || '').trim().toUpperCase();
+  const extra = String(PropertiesService.getScriptProperties().getProperty('DEALS_DB_GP_EXTRA') || '').split(',').map(x => x.trim().toUpperCase()).filter(Boolean);
+  if (DDB_GP_PROJECTS_.indexOf(p) >= 0 || extra.indexOf(p) >= 0 || /GLDANI|GEORGIA|BATUMI|TBILISI|KOBULETI/.test(p)) return 'GP';
+  if (typeof USD_PROJECTS_ !== 'undefined' && USD_PROJECTS_.has && USD_PROJECTS_.has(p)) return 'GP';
+  return 'EG';
+}
+function ddbId_(key) { return String(PropertiesService.getScriptProperties().getProperty(DDB_STORES_[key || 'EG'].prop) || '').trim(); }
+function ddbOpen_(key) { const id = ddbId_(key); return id ? SpreadsheetApp.openById(id) : null; }
 function ddbColIndex_() { const o = {}; DDB_COLS_.forEach((c, i) => o[c[1]] = i + 1); return o; }
 
-/* Admins: the new file's status (created or not, link, deals in it). */
+/* Admins: both files' status (created or not, link, deals in each). */
 function getDealsDbInfo(authToken) {
   targetsRequireAdmin_(authToken);
-  const id = ddbId_();
-  if (!id) return { created: false, columns: DDB_COLS_.length, groups: [...new Set(DDB_COLS_.map(c => c[0]))], removed: DDB_REMOVED_ };
-  try {
-    const ss = SpreadsheetApp.openById(id), sh = ss.getSheetByName('Deals');
-    const last = sh ? sh.getLastRow() : 0;
-    let deals = 0;
-    if (last >= DDB_FIRST_ROW_) deals = sh.getRange(DDB_FIRST_ROW_, 1, last - DDB_FIRST_ROW_ + 1, 1).getValues().filter(r => String(r[0]).trim()).length;
-    return { created: true, id: id, url: ss.getUrl(), name: ss.getName(), deals: deals, columns: DDB_COLS_.length, removed: DDB_REMOVED_ };
-  } catch (e) {
-    return { created: true, id: id, error: 'The file cannot be opened: ' + (e && e.message || e) };
-  }
+  const one = key => {
+    const st = DDB_STORES_[key], id = ddbId_(key), base = { key: key, label: st.label, name: st.name };
+    if (!id) return Object.assign(base, { created: false });
+    try {
+      const ss = SpreadsheetApp.openById(id), sh = ss.getSheetByName('Deals');
+      const last = sh ? sh.getLastRow() : 0;
+      let deals = 0;
+      if (last >= DDB_FIRST_ROW_) deals = sh.getRange(DDB_FIRST_ROW_, 1, last - DDB_FIRST_ROW_ + 1, 1).getValues().filter(r => String(r[0]).trim()).length;
+      if (ss.getName() !== st.name) { try { ss.rename(st.name); } catch (e) {} }
+      return Object.assign(base, { created: true, id: id, url: ss.getUrl(), name: st.name, deals: deals });
+    } catch (e) { return Object.assign(base, { created: true, id: id, error: 'The file cannot be opened: ' + (e && e.message || e) }); }
+  };
+  return { stores: [one('EG'), one('GP')], columns: DDB_COLS_.length, groups: [...new Set(DDB_COLS_.map(c => c[0]))], removed: DDB_REMOVED_, gpProjects: DDB_GP_PROJECTS_ };
 }
 
-/* Admins: create the new file (once). */
-function setupDealsDb(authToken) {
+/* Admins: create one of the two files (once). key = 'EG' | 'GP'. */
+function setupDealsDb(authToken, key) {
+  key = DDB_STORES_[key] ? key : 'EG';
+  const st = DDB_STORES_[key], pendingProp = st.prop + '_PENDING';
   const user = targetsRequireAdmin_(authToken);
   const lock = LockService.getScriptLock(); lock.waitLock(30000);
   try {
-    if (ddbId_()) return getDealsDbInfo(authToken);
+    if (ddbId_(key)) return getDealsDbInfo(authToken);
     // a file left half-made by a failed try goes to the bin first
-    const props = PropertiesService.getScriptProperties(), pending = props.getProperty('DEALS_DB_PENDING');
-    if (pending) { try { Drive.Files.update({ trashed: true }, pending, null, { supportsAllDrives: true }); } catch (e) {} props.deleteProperty('DEALS_DB_PENDING'); }
-    const ss = SpreadsheetApp.create('EDEN Deals DB');
-    props.setProperty('DEALS_DB_PENDING', ss.getId());
+    const props = PropertiesService.getScriptProperties(), pending = props.getProperty(pendingProp);
+    if (pending) { try { Drive.Files.update({ trashed: true }, pending, null, { supportsAllDrives: true }); } catch (e) {} props.deleteProperty(pendingProp); }
+    const ss = SpreadsheetApp.create(st.name);
+    props.setProperty(pendingProp, ss.getId());
     try { ss.setSpreadsheetTimeZone('Africa/Cairo'); } catch (e) {}
     const deals = ss.getSheets()[0]; deals.setName('Deals');
     const lists = ss.insertSheet('Lists'), guide = ss.insertSheet('Guide'), log = ss.insertSheet('Log');
@@ -113,7 +135,7 @@ function setupDealsDb(authToken) {
 
     // Lists: from the deals we already have
     let rows = [];
-    try { const d = dashCacheRead_('ALL', 6 * 3600000) || buildDashboardData_({ role: 'Admin' }); rows = (d && d.rows) || []; } catch (e) {}
+    try { const d = dashCacheRead_('ALL', 6 * 3600000) || buildDashboardData_({ role: 'Admin' }); rows = ((d && d.rows) || []).filter(r => ddbStoreOf_(r.project) === key); } catch (e) {}
     const uniq = f => Array.from(new Set(rows.map(r => String(r[f] == null ? '' : r[f]).trim()).filter(v => v && !/^not assigned$/i.test(v)))).sort((a, b) => a.localeCompare(b));
     const listCols = DDB_LISTS_.map(([name, f]) => [name, DDB_FIXED_LISTS_[name] || (f ? uniq(f) : [])]);
     const maxLen = Math.max(1, ...listCols.map(x => x[1].length));
@@ -163,7 +185,7 @@ function setupDealsDb(authToken) {
       if (parents.length) Drive.Files.update({}, ss.getId(), null, { addParents: parents.join(','), removeParents: 'root', supportsAllDrives: true });
     } catch (e) { console.warn('Deals DB folder: ' + e); }
 
-    props.setProperty('DEALS_DB_ID', ss.getId()); props.deleteProperty('DEALS_DB_PENDING');
+    props.setProperty(st.prop, ss.getId()); props.deleteProperty(pendingProp);
     auditLog_(user, 'Deals DB created', { details: ss.getName() + ' · ' + n + ' columns · ' + ss.getUrl() });
     return getDealsDbInfo(authToken);
   } finally { lock.releaseLock(); }
@@ -175,7 +197,14 @@ function setupDealsDb(authToken) {
    (their "Old Deals Row"), which the old reader then skips so nothing is counted twice. */
 function ddbDashboardRows_(egyptViewer) {
   const out = { rows: [], moved: {} };
-  const ss = ddbOpen_(); if (!ss) return out;
+  ['EG', 'GP'].forEach(key => {
+    if (egyptViewer && key === 'GP') return;                         // Egypt Viewer: EDEN WALK only
+    try { ddbReadStore_(key, egyptViewer, out); } catch (e) { console.warn('Deals DB ' + key + ': ' + e); }
+  });
+  return out;
+}
+function ddbReadStore_(key, egyptViewer, out) {
+  const ss = ddbOpen_(key); if (!ss) return out;
   const sh = ss.getSheetByName('Deals'); if (!sh) return out;
   const last = sh.getLastRow(); if (last < DDB_FIRST_ROW_) return out;
   const n = DDB_COLS_.length;
@@ -207,7 +236,7 @@ function ddbDashboardRows_(egyptViewer) {
     const pct = name => { const x = g(name); return typeof x === 'number' ? (x <= 1 ? x * 100 : x) : parseNumber_(x); };
     const clientName = cleanClientName_(s('Client Name'));
     out.rows.push({
-      row: 0, src: 'db', dealId: dealId, dbRow: DDB_FIRST_ROW_ + i, deal: dealId, num: dealId,
+      row: 0, src: 'db', db: key, dealId: dealId, dbRow: DDB_FIRST_ROW_ + i, deal: dealId, num: dealId,
       year: y, month: m, day: dd ? dd.getDate() : '', monthName: m ? monthName_(m) : '', yearMonth: y && m ? y + '-' + String(m).padStart(2, '0') : '',
       project: project, clientName: clientName, clientKey: normalizeClientKey_(clientName), docsUrl: s('Documents Link'), sysAdded: 1,
       mobile: [s('Mobile 1'), s('Mobile 2')].filter(Boolean).join(' - '), nationality: nationality, clientType: normalizeClientType_(s('Client Type')),
