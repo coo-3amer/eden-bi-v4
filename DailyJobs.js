@@ -27,6 +27,7 @@ function dailyJobs_(force) {
   if (props.getProperty('BRIEF_OFF') !== '1') { try { morningBrief_(); } catch (e) { console.warn('Morning brief: ' + e); } }
   if (props.getProperty('REMIND_OFF') !== '1') { try { collectionReminders_(); } catch (e) { console.warn('Collection reminders: ' + e); } }
   try { if (typeof boardPackMonthly_ === 'function') boardPackMonthly_(); } catch (e) { console.warn('Board pack: ' + e); }
+  try { if (typeof weeklyAnalyticsJob_ === 'function') weeklyAnalyticsJob_(); } catch (e) { console.warn('Weekly analytics: ' + e); }
 }
 
 /* ---------- helpers ---------- */
