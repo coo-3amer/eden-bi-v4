@@ -14,12 +14,14 @@
 const LC_CODE_MIN_ = 5;          // code is valid for 5 minutes
 const LC_MAX_TRIES_ = 5;
 const LC_DEVICE_DAYS_ = 30;
+const LC_PAUSED_ = true;        // paused for now: nobody is asked for a code (set to false to turn it back on)
 
 function lcMode_() {
   const v = String(PropertiesService.getScriptProperties().getProperty('LOGIN_2FA') || 'admins').trim().toLowerCase();
   return ['off', 'admins', 'all'].indexOf(v) >= 0 ? v : 'admins';
 }
 function lcNeeded_(user) {
+  if (LC_PAUSED_) return false;
   const mode = lcMode_();
   if (mode === 'off' || typeof tgToken_ !== 'function' || !tgToken_()) return false;
   if (mode === 'all') return true;
@@ -182,7 +184,7 @@ function verifyLoginCode(pid, code, remember) {
 /* ---------- admin (System › Users) ---------- */
 function getLoginCodeSettings(authToken) {
   assertUserAdmin_(authToken);
-  return { mode: lcMode_(), bot: typeof tgToken_ === 'function' && tgToken_() ? lcBotName_() : '' };
+  return { paused: LC_PAUSED_, mode: lcMode_(), bot: typeof tgToken_ === 'function' && tgToken_() ? lcBotName_() : '' };
 }
 function setLoginCodeMode(authToken, mode) {
   const admin = assertUserAdmin_(authToken);

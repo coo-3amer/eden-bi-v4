@@ -126,13 +126,13 @@ function lcSettingsMount_(){
   const draw=s=>{
     const L={off:'Off',admins:'Admins only',all:'Everyone'};
     box.innerHTML=`<span>🔐</span><b>Telegram code at sign-in</b><span class="lcSeg">${Object.entries(L).map(([k,l])=>`<button type="button" data-m="${k}" class="${s.mode===k?'on':''}">${l}</button>`).join('')}</span>
-      <span class="small">${s.bot?`Codes come from @${lcEsc_(s.bot)}. `:'The Telegram bot is not set up — codes are skipped. '}First sign-in links Telegram once; “remember this device” skips the code for 30 days. Changing a password asks for the code again.</span>`;
+      <span class="small">${s.paused?'<b style="color:var(--ds-red,#d12f2f)">Paused for now — nobody is asked for a code.</b> ':''}${s.bot?`Codes come from @${lcEsc_(s.bot)}. `:'The Telegram bot is not set up — codes are skipped. '}First sign-in links Telegram once; “remember this device” skips the code for 30 days. Changing a password asks for the code again.</span>`;
     box.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{
       if(b.dataset.m==='all'&&!confirm('Everyone will need Telegram to sign in.\nEach user links it once at their next sign-in. Continue?'))return;
       google.script.run.withSuccessHandler(draw2).withFailureHandler(e=>alert(e.message||e)).setLoginCodeMode(AUTH_TOKEN,b.dataset.m);});
   };
-  const draw2=r=>draw({mode:r.mode,bot:box.dataset.bot||''});
-  google.script.run.withSuccessHandler(s=>{box.dataset.bot=s.bot||'';draw(s);}).withFailureHandler(e=>{box.querySelector('.small').textContent=e.message||e;}).getLoginCodeSettings(AUTH_TOKEN);
+  const draw2=r=>draw({mode:r.mode,bot:box.dataset.bot||'',paused:box.dataset.paused==='1'});
+  google.script.run.withSuccessHandler(s=>{box.dataset.bot=s.bot||'';box.dataset.paused=s.paused?'1':'';draw(s);}).withFailureHandler(e=>{box.querySelector('.small').textContent=e.message||e;}).getLoginCodeSettings(AUTH_TOKEN);
 }
 (function initEdenLoginCode_(){
   const hook=()=>{
