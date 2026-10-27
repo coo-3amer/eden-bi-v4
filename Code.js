@@ -58,7 +58,7 @@ function setupUsersSheet() {
   };
 }
 
-function loginUser(username, password) {
+function loginUser(username, password, deviceToken) {
   username = String(username || '').trim().toLowerCase();
   password = String(password || '').trim();
 
@@ -92,25 +92,28 @@ function loginUser(username, password) {
     const status = sIdx > -1 ? String(row[sIdx] || '').trim().toLowerCase() : 'active';
 
     if (rowUser === username && rowPass === password && status !== 'inactive') {
-      const token = Utilities.getUuid();
       const user = {
         username: rowUser,
         name: nIdx > -1 ? row[nIdx] : rowUser,
         role: rIdx > -1 ? row[rIdx] : 'User'
       };
-
-      CacheService.getScriptCache().put('LOGIN_' + token, JSON.stringify(user), 21600); // 6 hours
-      if (typeof auditLog_ === 'function') auditLog_(user, 'Signed in', {});
-
-      return {
-        success: true,
-        token: token,
-        user: user
-      };
+      // Second step: a code on Telegram (LoginCode.js), unless this device is trusted.
+      if (typeof lcStart_ === 'function') {
+        const step = lcStart_(user, deviceToken);
+        if (step) return step;
+      }
+      return loginIssue_(user, 'Signed in');
     }
   }
 
   return { success: false, message: 'Invalid username or password.' };
+}
+
+function loginIssue_(user, action) {
+  const token = Utilities.getUuid();
+  CacheService.getScriptCache().put('LOGIN_' + token, JSON.stringify(user), 21600); // 6 hours
+  if (typeof auditLog_ === 'function') auditLog_(user, action || 'Signed in', {});
+  return { success: true, token: token, user: user };
 }
 
 function validateAuthToken_(token) {
@@ -159,7 +162,8 @@ function getUsersList(authToken) {
     username: uIdx > -1 ? r[uIdx] : '',
     name: nIdx > -1 ? r[nIdx] : '',
     role: rIdx > -1 ? r[rIdx] : '',
-    status: sIdx > -1 ? r[sIdx] : ''
+    status: sIdx > -1 ? r[sIdx] : '',
+    telegram: idx('Telegram ID') > -1 && !!String(r[idx('Telegram ID')] || '').trim()
   }));
 }
 
@@ -217,7 +221,10 @@ function updateUser(authToken, userData) {
   };
 
   setByHeader('Name', String(userData.name || '').trim());
-  if (String(userData.password || '').trim()) setByHeader('Password', String(userData.password || '').trim());
+  if (String(userData.password || '').trim()) {
+    setByHeader('Password', String(userData.password || '').trim());
+    if (typeof lcForgetDevices_ === 'function') lcForgetDevices_(username);   // new password: ask for the code again everywhere
+  }
   setByHeader('Role', String(userData.role || 'Viewer').trim());
   setByHeader('Status', String(userData.status || 'Active').trim());
 

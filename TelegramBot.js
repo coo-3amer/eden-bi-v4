@@ -201,6 +201,9 @@ function tgOnMessage_(msg) {
   }
   const cmd = (text.match(/^\/(\w+)/) || [])[1];
   if (!cmd) return;
+  // sign-in: "Link Telegram" button on the login screen opens /start L<code>
+  const startArg = (text.match(/^\/start\s+(L[A-Za-z0-9]+)/) || [])[1];
+  if (startArg && typeof lcOnTelegramLink_ === 'function') { lcOnTelegramLink_(msg, startArg); return; }
   if (cmd === 'myid') {
     tgApi_('sendMessage', { chat_id: msg.chat.id, reply_to_message_id: msg.message_id,
       text: 'Your Telegram id: ' + msg.from.id + (msg.from.username ? ' (@' + msg.from.username + ')' : '') + (tgIsApprover_(msg.from) ? '\n✅ You can approve discounts.' : '\nNot a discount approver yet.') });

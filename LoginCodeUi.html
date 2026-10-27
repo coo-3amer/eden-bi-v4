@@ -1,0 +1,144 @@
+<style id="eden-login-code">
+#loginCard.lcOn>:not(.lxTop):not(#lcStep){display:none!important}
+#lcStep{display:none}
+#loginCard.lcOn #lcStep{display:block}
+#lcStep h2{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:38px;line-height:1.05;margin:16px 0 8px;color:#fbf6ea}
+#lcStep .lcP{font-size:14px;line-height:1.55;color:rgba(245,239,227,.66);margin:0 0 22px}
+#lcStep .lcP b{color:#f5efe3}
+#lcStep .lcCode{width:100%;height:62px;border-radius:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.16);color:#fbf6ea;font:600 30px 'Inter',sans-serif;letter-spacing:.5em;text-align:center;padding-left:.5em;outline:none;box-sizing:border-box}
+#lcStep .lcCode:focus{border-color:rgba(226,194,122,.7);box-shadow:0 0 0 4px rgba(226,194,122,.12)}
+#lcStep .lcRem{display:flex;gap:10px;align-items:center;margin:16px 0 4px;font-size:13px;color:rgba(245,239,227,.72);cursor:pointer}
+#lcStep .lcRem input{width:17px;height:17px;accent-color:#c9a14f}
+#lcStep .lcTg{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;height:54px;border-radius:12px;background:#2aabee;color:#fff;font:700 14px 'Inter',sans-serif;text-decoration:none;box-shadow:0 12px 30px rgba(42,171,238,.3);box-sizing:border-box}
+#lcStep .lcTg svg{width:22px;height:22px}
+#lcStep .lcWait{display:flex;gap:10px;align-items:center;justify-content:center;margin:16px 0 0;font-size:12.5px;color:rgba(245,239,227,.6)}
+#lcStep .lcWait i{width:14px;height:14px;border-radius:50%;border:2px solid rgba(226,194,122,.25);border-top-color:#e2c27a;animation:lcSpin 1s linear infinite}
+@keyframes lcSpin{to{transform:rotate(360deg)}}
+#lcStep .lcSteps{margin:0 0 20px;padding:0;list-style:none;counter-reset:s;font-size:13px;color:rgba(245,239,227,.72)}
+#lcStep .lcSteps li{counter-increment:s;display:flex;gap:10px;margin:8px 0;line-height:1.45}
+#lcStep .lcSteps li:before{content:counter(s);flex:0 0 22px;height:22px;border-radius:50%;background:rgba(226,194,122,.16);color:#e2c27a;font-weight:700;font-size:11.5px;display:grid;place-items:center}
+#lcStep .lcLinks{display:flex;justify-content:space-between;margin-top:16px;font-size:12.5px}
+#lcStep .lcLinks button{border:0;background:none;color:#e2c27a;cursor:pointer;font:600 12.5px 'Inter',sans-serif;padding:0}
+#lcStep .lcLinks button:disabled{color:rgba(245,239,227,.35);cursor:default}
+#lcStep .lcMsg{min-height:18px;margin:12px 0 0;font-size:12px;font-weight:600;color:#f0a3a3}
+#lcStep .lcMsg.ok{color:#9fd8b4}
+#lcStep .lcUrl{margin-top:10px;font-size:11.5px;color:rgba(245,239,227,.45);word-break:break-all;text-align:center}
+#lcStep .lcUrl a{color:rgba(245,239,227,.7)}
+/* System › Users: the setting */
+.lcSet{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:0 0 14px;padding:12px 14px;border:1px solid var(--ds-line,#e2d7c4);border-radius:14px;background:var(--ds-surface-2,#faf6ee)}
+.lcSet b{font-size:13px;color:var(--ds-heading)}
+.lcSet .small{flex:1 1 260px}
+.lcSet .lcSeg{display:inline-flex;background:var(--ds-surface-3,#f3ede2);border-radius:99px;padding:3px}
+.lcSet .lcSeg button{border:0;background:transparent;padding:6px 12px;border-radius:99px;font:600 12px var(--ds-font,inherit);color:var(--ds-muted,#6b6255);cursor:pointer}
+.lcSet .lcSeg button.on{background:var(--ds-surface,#fff);color:var(--ds-heading,#120f0b);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+</style>
+<script>
+/* =====================================================================
+   EDEN BI — sign-in code on Telegram (server: LoginCode.js).
+   After the password: link Telegram once, then type the 6-digit code.
+   "Remember this device" keeps a device key in this browser for 30 days.
+   ===================================================================== */
+const LC_={pid:'',user:'',timer:0,resendAt:0};
+function lcDevice_(u){try{return localStorage.getItem('edenDev_'+String(u||'').toLowerCase())||'';}catch(e){return '';}}
+function lcSaveDevice_(u,t){try{if(t)localStorage.setItem('edenDev_'+String(u||'').toLowerCase(),t);}catch(e){}}
+const lcEsc_=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const LC_TG_ICON_='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.9 4.3c.3-1.2-.9-2.1-2-1.7L2.8 9.2c-1.2.5-1.2 2.2.1 2.6l4.3 1.4 1.7 5.3c.3.9 1.4 1.2 2.1.5l2.4-2.3 4.6 3.4c.9.6 2.1.2 2.4-.9L21.9 4.3zM9.6 14.1l8.2-7.3-6.5 8.6-.3 3-1.4-4.3z"/></svg>';
+function lcBox_(){
+  const card=document.getElementById('loginCard');if(!card)return null;
+  let b=document.getElementById('lcStep');
+  if(!b){b=document.createElement('div');b.id='lcStep';card.appendChild(b);}
+  return b;
+}
+function lcBack_(){
+  clearInterval(LC_.timer);LC_.pid='';
+  document.getElementById('loginCard')?.classList.remove('lcOn');
+  const p=document.getElementById('loginPassword');if(p){p.value='';setTimeout(()=>p.focus(),50);}
+}
+function lcShow_(res,username){
+  LC_.pid=res.pid;LC_.user=username;clearInterval(LC_.timer);
+  const card=document.getElementById('loginCard'),b=lcBox_();if(!b)return;
+  card.classList.add('lcOn');
+  if(res.step==='link')lcLinkStep_(res);else lcCodeStep_(res);
+}
+function lcLinkStep_(res){
+  const b=lcBox_();
+  b.innerHTML=`<h2>One more step</h2><p class="lcP">For your security, sign-in codes are sent on <b>Telegram</b>. Link it once — it takes a few seconds.</p>
+    <ol class="lcSteps"><li>Tap the button below — the EDEN BI bot opens in Telegram.</li><li>Press <b>Start</b> in Telegram.</li><li>Your code arrives there — come back and type it.</li></ol>
+    ${res.link?`<a class="lcTg" href="${lcEsc_(res.link)}" target="_blank" rel="noopener">${LC_TG_ICON_} Open Telegram</a><div class="lcUrl">On a computer? Open this on your phone: <a href="${lcEsc_(res.link)}" target="_blank" rel="noopener">${lcEsc_(res.link.replace('https://',''))}</a></div>`:'<div class="lcMsg">The Telegram bot is not set up. Ask the admin.</div>'}
+    <div class="lcWait"><i></i><span>Waiting for Telegram…</span></div>
+    <div class="lcLinks"><button type="button" data-lc="back">← Back</button><span></span></div><div class="lcMsg"></div>`;
+  b.querySelector('[data-lc=back]').onclick=lcBack_;
+  let n=0;
+  LC_.timer=setInterval(()=>{
+    if(++n>200){clearInterval(LC_.timer);b.querySelector('.lcWait span').textContent='Link expired — go back and sign in again.';return;}
+    const pid=LC_.pid;
+    google.script.run.withSuccessHandler(r=>{
+      if(pid!==LC_.pid||!r)return;
+      if(r.step==='code'){clearInterval(LC_.timer);lcCodeStep_(r,true);}
+      else if(r.step==='expired'){clearInterval(LC_.timer);b.querySelector('.lcWait span').textContent='This sign-in expired — go back and sign in again.';}
+    }).withFailureHandler(()=>{}).checkLoginLink(pid);
+  },3500);
+}
+function lcCodeStep_(res,linked){
+  const b=lcBox_();
+  LC_.resendAt=Date.now()+30000;
+  b.innerHTML=`<h2>Enter your code</h2><p class="lcP">${linked?'✅ Telegram is linked. ':''}We sent a 6-digit code to your <b>Telegram</b> (EDEN BI bot). It is valid for 5 minutes.</p>
+    <input class="lcCode" id="lcCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="••••••" aria-label="Sign-in code">
+    <label class="lcRem"><input type="checkbox" id="lcRemember" checked> Remember this device for 30 days</label>
+    <button class="loginBtn" type="button" id="lcGo"><span>VERIFY</span><b>→</b></button>
+    <div class="lcMsg" aria-live="polite"></div>
+    <div class="lcLinks"><button type="button" data-lc="back">← Back</button><button type="button" data-lc="resend" disabled>Send a new code (30)</button></div>`;
+  const inp=b.querySelector('#lcCode'),go=b.querySelector('#lcGo'),msg=b.querySelector('.lcMsg'),rs=b.querySelector('[data-lc=resend]');
+  b.querySelector('[data-lc=back]').onclick=lcBack_;
+  const tick=()=>{const s=Math.ceil((LC_.resendAt-Date.now())/1000);rs.disabled=s>0;rs.textContent=s>0?`Send a new code (${s})`:'Send a new code';};
+  tick();LC_.timer=setInterval(tick,1000);
+  rs.onclick=()=>{rs.disabled=true;msg.className='lcMsg';msg.textContent='Sending…';
+    google.script.run.withSuccessHandler(r=>{msg.className='lcMsg'+(r&&r.ok?' ok':'');msg.textContent=(r&&r.message)||'';if(r&&r.ok)LC_.resendAt=Date.now()+30000;tick();})
+      .withFailureHandler(e=>{msg.textContent=e.message||e;tick();}).resendLoginCode(LC_.pid);};
+  const verify=()=>{
+    const code=inp.value.replace(/\D/g,'');
+    if(code.length!==6){msg.className='lcMsg';msg.textContent='Type the 6 digits from Telegram.';inp.focus();return;}
+    go.disabled=true;go.querySelector('span').textContent='CHECKING…';msg.textContent='';
+    google.script.run.withSuccessHandler(r=>{
+      go.disabled=false;go.querySelector('span').textContent='VERIFY';
+      if(r&&r.success){clearInterval(LC_.timer);if(r.device)lcSaveDevice_(LC_.user,r.device);document.getElementById('loginCard')?.classList.remove('lcOn');edenLoginOk_(r);return;}
+      msg.className='lcMsg';msg.textContent=(r&&r.message)||'Wrong code.';inp.select();
+      if(r&&r.expired){go.disabled=true;setTimeout(lcBack_,2200);}
+    }).withFailureHandler(e=>{go.disabled=false;go.querySelector('span').textContent='VERIFY';msg.textContent=e.message||e;}).verifyLoginCode(LC_.pid,code,b.querySelector('#lcRemember').checked);
+  };
+  go.onclick=verify;
+  inp.addEventListener('input',()=>{inp.value=inp.value.replace(/\D/g,'').slice(0,6);if(inp.value.length===6)verify();});
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();verify();}});
+  setTimeout(()=>inp.focus(),80);
+}
+
+/* ---------- System › Users: who needs the code ---------- */
+function lcUnlink_(u){
+  if(!confirm('Unlink Telegram for '+u+'?\nThey will link it again at their next sign-in.'))return;
+  google.script.run.withSuccessHandler(()=>{if(typeof renderUsersPanel==='function')renderUsersPanel();}).withFailureHandler(e=>alert(e.message||e)).unlinkUserTelegram(AUTH_TOKEN,u);
+}
+function lcSettingsMount_(){
+  const panel=document.getElementById('usersPanel');if(!panel||panel.classList.contains('hidden')||document.getElementById('lcSet'))return;
+  const head=panel.querySelector('.panelHead');if(!head)return;
+  const box=document.createElement('div');box.id='lcSet';box.className='lcSet';
+  box.innerHTML='<span>🔐</span><b>Telegram code at sign-in</b><span class="small">Loading…</span>';
+  head.insertAdjacentElement('afterend',box);
+  const draw=s=>{
+    const L={off:'Off',admins:'Admins only',all:'Everyone'};
+    box.innerHTML=`<span>🔐</span><b>Telegram code at sign-in</b><span class="lcSeg">${Object.entries(L).map(([k,l])=>`<button type="button" data-m="${k}" class="${s.mode===k?'on':''}">${l}</button>`).join('')}</span>
+      <span class="small">${s.bot?`Codes come from @${lcEsc_(s.bot)}. `:'The Telegram bot is not set up — codes are skipped. '}First sign-in links Telegram once; “remember this device” skips the code for 30 days. Changing a password asks for the code again.</span>`;
+    box.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{
+      if(b.dataset.m==='all'&&!confirm('Everyone will need Telegram to sign in.\nEach user links it once at their next sign-in. Continue?'))return;
+      google.script.run.withSuccessHandler(draw2).withFailureHandler(e=>alert(e.message||e)).setLoginCodeMode(AUTH_TOKEN,b.dataset.m);});
+  };
+  const draw2=r=>draw({mode:r.mode,bot:box.dataset.bot||''});
+  google.script.run.withSuccessHandler(s=>{box.dataset.bot=s.bot||'';draw(s);}).withFailureHandler(e=>{box.querySelector('.small').textContent=e.message||e;}).getLoginCodeSettings(AUTH_TOKEN);
+}
+(function initEdenLoginCode_(){
+  const hook=()=>{
+    if(typeof renderUsersPanel==='function'&&!renderUsersPanel.__lc){const o=renderUsersPanel;renderUsersPanel=function(){const r=o.apply(this,arguments);setTimeout(lcSettingsMount_,0);return r;};renderUsersPanel.__lc=true;}
+    if(typeof render==='function'&&!render.__lc){const o=render;render=function(){const r=o.apply(this,arguments);setTimeout(lcSettingsMount_,0);return r;};render.__lc=true;}
+  };
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(hook,0));else setTimeout(hook,0);
+})();
+</script>

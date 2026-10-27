@@ -353,11 +353,16 @@ function doLogin(){
  if(btn){btn.disabled=true;const s=btn.querySelector('span');if(s)s.textContent='AUTHENTICATING...';}
  google.script.run.withSuccessHandler(res=>{
   if(btn){btn.disabled=false;const s=btn.querySelector('span');if(s)s.textContent='ACCESS DASHBOARD';}
+  if(res&&res.step&&typeof lcShow_==='function'){lcShow_(res,username);return;}   // Telegram code step (LoginCodeUi.html)
   if(!res||!res.success){executiveLoginError_((res&&res.message)||'Invalid username or password.');return;}
+  edenLoginOk_(res);
+ }).withFailureHandler(e=>{if(btn){btn.disabled=false;const s=btn.querySelector('span');if(s)s.textContent='ACCESS DASHBOARD';}executiveLoginError_(e?.message||String(e));}).loginUser(username,password,typeof lcDevice_==='function'?lcDevice_(username):'');
+}
+function edenLoginOk_(res){
+  const r=document.getElementById('hiddenLoginReaction');
   AUTH_TOKEN=res.token;AUTH_USER=res.user;sessionStorage.setItem('EDEN_AUTH_TOKEN',AUTH_TOKEN);sessionStorage.setItem('EDEN_AUTH_USER',JSON.stringify(AUTH_USER));LOGIN_PENDING_USER=AUTH_USER;
   document.getElementById('loginScreen')?.classList.add('loginSuccess');if(r)r.textContent='Access granted. Preparing your workspace…';
   setTimeout(()=>playEdenMagicTransition_().then(()=>loadDashboard()),420);
- }).withFailureHandler(e=>{if(btn){btn.disabled=false;const s=btn.querySelector('span');if(s)s.textContent='ACCESS DASHBOARD';}executiveLoginError_(e?.message||String(e));}).loginUser(username,password);
 }
 
 function ensureTransactionExportButtons_(){
@@ -6336,11 +6341,12 @@ function renderUsersTable(){
     table.innerHTML='<tbody><tr><td>No users found.</td></tr></tbody>';
     return;
   }
-  table.innerHTML=`<thead><tr><th>Username</th><th>Name</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead><tbody>${USERS_CACHE.map(u=>`<tr>
+  table.innerHTML=`<thead><tr><th>Username</th><th>Name</th><th>Role</th><th>Status</th><th>Telegram</th><th>Actions</th></tr></thead><tbody>${USERS_CACHE.map(u=>`<tr>
     <td>${safe(u.username)}</td>
     <td>${safe(u.name)}</td>
     <td><span class="chip">${safe(u.role)}</span></td>
     <td>${safe(u.status)}</td>
+    <td>${u.telegram?`<span class="chip status-Closed">Linked</span> <button class="miniAction" onclick="lcUnlink_('${attr(u.username)}')">Unlink</button>`:'<span class="small">—</span>'}</td>
     <td>
       <button class="miniAction" onclick="editUser('${attr(u.username)}')">Edit</button>
       <button class="miniAction danger" onclick="removeUser('${attr(u.username)}')">Delete</button>
