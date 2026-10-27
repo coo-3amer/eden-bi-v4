@@ -1,0 +1,247 @@
+<style id="eden-payment-plan">
+#pp .daBody{display:grid;grid-template-columns:360px 1fr;gap:0;padding:0;background:var(--ds-bg,#f4f0e8);min-height:0}
+#pp .ppForm{padding:16px 18px 30px;overflow:auto;border-right:1px solid var(--ds-line,#e2d7c4);background:var(--ds-surface,#fffdf9)}
+#pp .ppForm h4{margin:16px 0 8px;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ds-muted,#6b6255)}
+#pp .ppForm h4:first-child{margin-top:0}
+#pp .ppGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px}
+#pp .ppGrid .w2{grid-column:span 2}
+#pp label{display:flex;flex-direction:column;gap:4px;min-width:0;font-size:11.5px;font-weight:600;color:var(--ds-muted,#6b6255)}
+#pp input,#pp select{width:100%;box-sizing:border-box;height:36px;padding:0 10px;border-radius:9px;border:1px solid var(--ds-line,#e2d7c4);background:var(--ds-surface,#fff);color:var(--ds-heading,#120f0b);font:600 13px var(--ds-font,inherit);min-width:0}
+#pp input:focus,#pp select:focus{outline:0;border-color:var(--ds-gold,#a8791f);box-shadow:0 0 0 3px color-mix(in srgb,var(--ds-gold,#a8791f) 18%,transparent)}
+#pp .ppUnitInfo{margin-top:8px;padding:9px 11px;border-radius:10px;background:var(--ds-surface-3,#f6f0e5);font-size:12px;line-height:1.5;color:var(--ds-text,#221e19)}
+#pp .ppMsg{font-size:12px;margin-top:10px;color:var(--ds-muted,#6b6255)}
+#pp .ppMsg.err{color:var(--ds-red,#d12f2f);font-weight:600}
+#pp .ppMsg.ok{color:var(--ds-green,#178a4c);font-weight:600}
+#pp .ppPrev{overflow:auto;padding:20px;display:flex;justify-content:center;align-items:flex-start}
+#pp .ppPaper{flex:0 0 auto;background:#fff;box-shadow:0 12px 40px rgba(0,0,0,.18);border-radius:4px;overflow:hidden;transform-origin:top left}
+#pp .ppPaper iframe{display:block;width:794px;height:1123px;border:0}
+#pp .ppGo{margin-top:16px;width:100%;height:44px;border:0;border-radius:11px;background:linear-gradient(135deg,#b08a42,#8a6a2c);color:#fff;font:700 13.5px var(--ds-font,inherit);cursor:pointer}
+@media(max-width:900px){#pp .daBody{grid-template-columns:1fr}#pp .ppForm{border-right:0;border-bottom:1px solid var(--ds-line,#e2d7c4)}#pp .ppPrev{padding:12px}}
+.inventoryPpBtn{margin-left:6px}
+body.egypt-viewer-readonly :is([data-pp-open],.inventoryPpBtn){display:none!important}
+</style>
+<script>
+/* =====================================================================
+   EDEN BI — Payment Plan (Inventory › any unit › "Plan").
+   Pick a unit, set down payment / installments / maintenance, and print a
+   clean one-page A4 plan for the client (PDF). Nothing is saved.
+   ===================================================================== */
+const PP_={g:null,t:0};
+const ppEsc_=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ppNum_=v=>Math.round(Number(v)||0).toLocaleString('en-US');
+const ppIn_=v=>Number(String(v??'').replace(/[^\d.\-]/g,''))||0;
+const ppIso_=d=>{const p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;};
+const ppDate_=s=>{const m=String(s||'').match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);return m?new Date(+m[1],+m[2]-1,+m[3]):null;};
+const ppAdd_=(d,months)=>{const x=new Date(d.getFullYear(),d.getMonth()+months,1);x.setDate(Math.min(d.getDate(),new Date(x.getFullYear(),x.getMonth()+1,0).getDate()));return x;};
+const ppFmtD_=s=>{const d=ppDate_(s);return d?d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—';};
+const PP_EVERY_={1:['Monthly','M'],3:['Quarterly','Q'],6:['Every 6 months','S'],12:['Yearly','Y']};
+function ppProjectName_(){
+  const m=typeof inventoryMeta!=='undefined'&&inventoryMeta||{};
+  return String(m.title||m.project||(typeof currentInventoryProject==='function'?currentInventoryProject():'')||'').replace(/_/g,' ').trim();
+}
+function ppPlace_(p){p=String(p).toLowerCase();return /eden walk/.test(p)?'New Capital · R7':/gldani|ccg|city cent/.test(p)?'Tbilisi · Georgia':/kobuleti/.test(p)?'Kobuleti · Georgia':/e-?one/.test(p)?'New Capital':'';}
+function ppImage_(p){
+  const k=String(p).toUpperCase();
+  for(const c of document.querySelectorAll('.dsProjCard[data-project-match]')){
+    if(String(c.dataset.projectMatch).split('|').some(w=>w&&k.includes(w.toUpperCase().trim()))){const i=c.querySelector('img');if(i&&i.src)return i.src;}
+  }
+  return '';
+}
+function ppLogo_(color){
+  const i=document.querySelector('#loginScreen .lxLogo');let src=i&&i.getAttribute('src')||'';
+  if(color&&src.startsWith('data:image/svg+xml;base64,')){try{src='data:image/svg+xml;base64,'+btoa(atob(src.split(',')[1]).replace(/#ffffff/gi,color));}catch(e){}}
+  return src;
+}
+function ppDefaults_(r){
+  const project=ppProjectName_(),cur=r.currency||'EGP';
+  const disc=typeof inventoryDiscountPercent!=='undefined'?Number(inventoryDiscountPercent)||0:0;
+  const price=Math.round((Number(r.totalPrice)||0)*(1-disc/100));
+  const code=String(r.installments||'').toUpperCase(),lm=code.match(/([MQSHY])\s*(\d+)/);
+  const every=lm?({M:1,Q:3,S:6,H:6,Y:12}[lm[1]]||3):3,n=lm?+lm[2]:(parseInt(code,10)||12);
+  let dp=ppIn_(r.downPayment);if(dp>0&&dp<=1)dp*=100;if(!dp||dp>100)dp=20;
+  const today=new Date();
+  return {unit:r.unitCode||'',project,place:ppPlace_(project),floor:r.floor||'',type:r.unitType||r.type||'',view:r.view||'',
+    area:Number(r.area)||ppIn_(r.totalGross),out:Number(r.outdoorAreaNumber)||0,finishing:r.finishingType||'',phase:r.phase||'',
+    price,cur,client:'',dpPct:dp,dpDate:ppIso_(today),n,every,first:ppIso_(ppAdd_(today,every)),mPct:10,mDate:ppIso_(ppAdd_(today,36)),
+    rentN:0,valid:7,by:String((typeof AUTH_USER!=='undefined'&&AUTH_USER&&AUTH_USER.name)||'')};
+}
+function ppRows_(g){
+  const rows=[],dp=Math.round(g.price*g.dpPct/100),loan=g.price-dp,L=(PP_EVERY_[g.every]||PP_EVERY_[3])[1];
+  rows.push({name:'Down payment',due:g.dpDate,amount:dp,rent:false});
+  const n=Math.max(0,Math.round(g.n)||0),each=n?Math.round(loan/n/5)*5:0;let used=0;
+  const first=ppDate_(g.first)||new Date();
+  for(let i=1;i<=n;i++){const amt=i<n?each:loan-used;used+=i<n?each:0;rows.push({name:L+i,due:ppIso_(ppAdd_(first,(i-1)*g.every)),amount:amt,rent:i<=g.rentN});}
+  return rows;
+}
+/* The A4 page (used for the preview and the PDF). */
+function ppDoc_(g){
+  const rows=ppRows_(g),tot=rows.reduce((a,x)=>a+x.amount,0),pct=v=>g.price?Math.round(v/g.price*1000)/10:0;
+  const m=Math.round(g.price*g.mPct/100),img=ppImage_(g.project),logo=ppLogo_(),logoD=ppLogo_('#1f2a26');
+  const each=rows[1]?rows[1].amount:0,ev=(PP_EVERY_[g.every]||PP_EVERY_[3])[0].toLowerCase();
+  const ppm=g.area?Math.round(g.price/g.area):0;
+  const cell=(l,v,big)=>v||v===0?`<div class="${big?'big':''}"><span>${l}</span><b>${ppEsc_(v)}</b></div>`:'';
+  const cells=[cell('Unit',g.unit,1),cell('Project',g.project),cell('Floor',g.floor),cell('Type',g.type),cell('Area',g.area?`${g.area.toLocaleString('en-US',{maximumFractionDigits:2})} m²`:''),
+    g.out?cell('Outdoor',`${g.out} m²`):'',cell('Price per m²',ppm?ppNum_(ppm):''),cell('Finishing',g.finishing),cell('View',g.view)].filter(Boolean).slice(0,8);
+  while(cells.length%4)cells.push('<div></div>');
+  return `<!doctype html><html><head><meta charset="utf-8"><title>${ppEsc_(g.unit)} Payment Plan</title><style>
+@page{size:A4;margin:0}*{box-sizing:border-box}
+html,body{margin:0;background:#fff}
+body{font-family:Inter,"Segoe UI",Arial,sans-serif;color:#1f2a26;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.pg{width:210mm;min-height:297mm;position:relative;padding-bottom:30mm}
+.pg.long{padding-bottom:0}.pg.long .foot{position:static;margin:6mm 14mm 8mm}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:6mm;align-items:start}
+.two table{font-size:10px}.two td{padding:3.5px 6px}.two th{padding:4px 6px}
+tr{break-inside:avoid}
+.hero{height:58mm;background:#1f3a33 ${img?`url("${img}") center 45%/cover`:''};position:relative}
+.hero:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(14,22,19,.12),rgba(14,22,19,.85))}
+.hero .in{position:absolute;z-index:1;left:14mm;right:14mm;bottom:8mm;display:flex;justify-content:space-between;align-items:flex-end;color:#fff}
+.hero img{width:42mm;display:block}
+.hero h1{margin:0;font:600 30px Georgia,serif}
+.hero small{display:block;font-size:9.5px;letter-spacing:.24em;color:#e3c98d;margin-bottom:4px;text-align:right;text-transform:uppercase}
+.wrap{padding:7mm 14mm 0}
+.meta{display:flex;justify-content:space-between;font-size:11px;color:#6b7470;margin-bottom:5mm}.meta b{color:#1f2a26}
+.unit{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid #e3e0d8;border-radius:10px;overflow:hidden;margin-bottom:5mm}
+.unit div{padding:7px 11px;border-right:1px solid #ece9e2;border-bottom:1px solid #ece9e2;min-height:40px}
+.unit div:nth-child(4n){border-right:0}.unit div:nth-last-child(-n+4){border-bottom:0}
+.unit span{display:block;font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:#8a918d;margin-bottom:2px}
+.unit b{font-size:12.5px}.unit .big b{font-size:16px;color:#7a5a1e}
+.sum{display:grid;grid-template-columns:1.15fr 1fr 1fr ${m?'1fr':''};gap:3mm;margin-bottom:5mm}
+.sum div{border-radius:10px;padding:9px 12px;background:#f5f2ea}.sum div.main{background:#1f3a33;color:#fff}
+.sum span{display:block;font-size:9px;letter-spacing:.12em;text-transform:uppercase;opacity:.7}
+.sum b{display:block;font-size:18px;margin:3px 0 1px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.sum small{font-size:10px;opacity:.75}
+h2{font:600 14px Georgia,serif;margin:0 0 2.5mm;color:#1f3a33;display:flex;justify-content:space-between;align-items:baseline}
+h2 small{font:500 10px Inter,sans-serif;color:#8a918d}
+table{width:100%;border-collapse:collapse;font-size:${rows.length>26?9.5:rows.length>18?10.5:11}px}
+th{text-align:left;font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:#8a918d;padding:5px 8px;border-bottom:1.5px solid #1f3a33}
+td{padding:${rows.length>26?'3px':rows.length>18?'4px':'6px'} 8px;border-bottom:1px solid #ece9e2;font-variant-numeric:tabular-nums}
+tbody tr:first-child td{background:#f6efdf}
+.two table+table tbody tr:first-child td{background:none}
+.r{text-align:right}.no{color:#a0a6a3;width:18px}
+.tag{font-size:8.5px;font-weight:600;color:#1d7a4a;background:#e3f3ea;border-radius:99px;padding:2px 8px;white-space:nowrap}
+tfoot td{font-weight:700;background:#f6efdf;border-bottom:0}
+.mt{display:flex;justify-content:space-between;align-items:center;margin-top:4mm;padding:8px 12px;border:1px dashed #cdbb8f;border-radius:10px;font-size:11px}.mt b{font-size:13px}
+.foot{position:absolute;left:14mm;right:14mm;bottom:8mm;display:flex;justify-content:space-between;align-items:flex-end;font-size:9px;color:#8a918d;border-top:1px solid #ece9e2;padding-top:3.5mm;line-height:1.5}
+.foot img{width:26mm;display:block}
+.cols{columns:2;column-gap:6mm}
+</style></head><body><div class="pg${rows.length>52?' long':''}">
+<div class="hero"><div class="in">${logo?`<img src="${logo}" alt="EDEN">`:'<b style="font:600 28px Georgia,serif;letter-spacing:.2em">EDEN</b>'}<div><small>${ppEsc_([g.project,g.place].filter(Boolean).join(' · '))}</small><h1>Payment Plan</h1></div></div></div>
+<div class="wrap">
+<div class="meta"><span>Prepared for: <b>${g.client?ppEsc_(g.client):'________________________'}</b></span><span>Date: <b>${ppFmtD_(ppIso_(new Date()))}</b>${g.valid?` · Valid for ${g.valid} days`:''}</span></div>
+<div class="unit">${cells.join('')}</div>
+<div class="sum">
+<div class="main"><span>Unit price</span><b>${ppNum_(g.price)}</b><small>${ppEsc_(g.cur)}</small></div>
+<div><span>Down payment</span><b>${ppNum_(rows[0].amount)}</b><small>${pct(rows[0].amount)}% · ${ppFmtD_(g.dpDate)}</small></div>
+<div><span>Installments</span><b>${rows.length>1?`${rows.length-1} × ${ppNum_(each)}`:'—'}</b><small>${rows.length>1?`${ev} · from ${ppFmtD_(g.first).replace(/^\d+ /,'')}`:'paid in full'}</small></div>
+${m?`<div><span>Maintenance</span><b>${ppNum_(m)}</b><small>${g.mPct}% · ${ppFmtD_(g.mDate)}</small></div>`:''}</div>
+<h2>Payment schedule <small>${ppEsc_(g.cur)}</small></h2>
+${(()=>{
+  const two=rows.length>16,anyRent=rows.some(x=>x.rent);
+  const tr=(x,i)=>`<tr><td class="no">${i}</td><td><b>${ppEsc_(x.name)}</b></td><td>${ppFmtD_(x.due)}</td><td class="r">${pct(x.amount)}%</td><td class="r"><b>${ppNum_(x.amount)}</b></td>${anyRent?`<td>${x.rent?`<span class="tag">${two?'From rent':'Paid from rental return'}</span>`:''}</td>`:''}</tr>`;
+  const head=`<thead><tr><th></th><th>Payment</th><th>Due date</th><th class="r">%</th><th class="r">Amount</th>${anyRent?'<th></th>':''}</tr></thead>`;
+  const foot=`<tfoot><tr><td></td><td>Total</td><td></td><td class="r">${pct(tot)}%</td><td class="r">${ppNum_(tot)}</td>${anyRent?'<td></td>':''}</tr></tfoot>`;
+  if(!two)return `<table>${head}<tbody>${rows.map(tr).join('')}</tbody>${foot}</table>`;
+  const h=Math.ceil(rows.length/2);
+  return `<div class="two"><table>${head}<tbody>${rows.slice(0,h).map((x,i)=>tr(x,i)).join('')}</tbody></table><table>${head}<tbody>${rows.slice(h).map((x,i)=>tr(x,i+h)).join('')}</tbody>${foot}</table></div>`;
+})()}
+${m?`<div class="mt"><span>Maintenance deposit — <b>${g.mPct}%</b> · due ${ppFmtD_(g.mDate)}</span><b>${ppNum_(m)} ${ppEsc_(g.cur)}</b></div>`:''}
+</div>
+<div class="foot"><div>Prices and plan are indicative${g.valid?` and valid for ${g.valid} days from the date above`:''}.<br>Final terms are those in the signed contract.${g.by?`<br>Prepared by ${ppEsc_(g.by)}`:''}</div>${logoD?`<img src="${logoD}" alt="EDEN">`:''}</div>
+</div></body></html>`;
+}
+
+/* ---------- the window ---------- */
+function ppClose_(){document.getElementById('pp')?.remove();document.getElementById('ppBack')?.remove();document.removeEventListener('keydown',ppKey_);window.removeEventListener('resize',ppFit_);}
+function ppKey_(e){if(e.key==='Escape')ppClose_();}
+function ppUnits_(){return ((typeof inventoryRows!=='undefined'&&inventoryRows)||[]).filter(r=>r.unitCode);}
+function ppOpen_(unitCode){
+  if(typeof isEgyptViewer_==='function'&&isEgyptViewer_())return;
+  const units=ppUnits_();if(!units.length){alert('Open a project inventory first.');return;}
+  const r=units.find(x=>x.unitCode===unitCode)||units.find(x=>/^available$/i.test(String(x.status).trim()))||units[0];
+  PP_.g=ppDefaults_(r);
+  ppClose_();
+  const back=document.createElement('div');back.className='daBack';back.id='ppBack';back.addEventListener('click',ppClose_);
+  const el=document.createElement('section');el.className='da';el.id='pp';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');
+  el.innerHTML=`<div class="daHead"><div><small>EDEN BI · ${ppEsc_(PP_.g.project)}</small><h2>📄 Payment Plan</h2></div><div class="daTools"><button type="button" class="daBtn" data-pdf>⬇ PDF</button><button type="button" class="daX" aria-label="Close">×</button></div></div>
+    <div class="daBody"><div class="ppForm"></div><div class="ppPrev"><div class="ppPaper"><iframe title="Payment plan preview"></iframe></div></div></div>`;
+  document.body.append(back,el);
+  el.querySelector('.daX').addEventListener('click',ppClose_);
+  el.querySelector('[data-pdf]').addEventListener('click',ppPdf_);
+  document.addEventListener('keydown',ppKey_);window.addEventListener('resize',ppFit_);
+  ppForm_();ppPreview_();
+}
+function ppForm_(){
+  const g=PP_.g,f=document.querySelector('#pp .ppForm');if(!f)return;
+  const units=ppUnits_(),sel=units.map(u=>`<option value="${ppEsc_(u.unitCode)}"${u.unitCode===g.unit?' selected':''}>${ppEsc_(u.unitCode)} · ${ppEsc_(u.status||'')}</option>`).join('');
+  const inp=(k,l,t,cls,extra)=>`<label class="${cls||''}">${l}<input data-k="${k}" ${t==='date'?'type="date"':t==='num'?'inputmode="decimal"':''} value="${ppEsc_(t==='money'?ppNum_(g[k]):g[k])}" ${extra||''}></label>`;
+  const u=units.find(x=>x.unitCode===g.unit)||{};
+  f.innerHTML=`<h4>Unit</h4><div class="ppGrid"><label class="w2">Unit<select data-unit>${sel}</select></label></div>
+    <div class="ppUnitInfo">${ppEsc_([g.floor,g.type,g.area?g.area+' m²':'',g.finishing].filter(Boolean).join(' · '))}<br>Status: <b>${ppEsc_(u.status||'—')}</b>${typeof inventoryDiscountPercent!=='undefined'&&inventoryDiscountPercent?` · price after the ${inventoryDiscountPercent}% discount on the page`:''}</div>
+    <h4>Client</h4><div class="ppGrid">${inp('client','Client name','', 'w2','placeholder="Optional"')}</div>
+    <h4>Price</h4><div class="ppGrid">${inp('price',`Unit price (${ppEsc_(g.cur)})`,'money','w2','inputmode="decimal"')}</div>
+    <h4>Down payment</h4><div class="ppGrid">${inp('dpPct','Down payment %','num')}${inp('dpDate','Date','date')}</div>
+    <h4>Installments</h4><div class="ppGrid">${inp('n','Number of installments','num')}
+      <label>Every<select data-k="every">${Object.entries(PP_EVERY_).map(([v,[t]])=>`<option value="${v}"${+v===g.every?' selected':''}>${t}</option>`).join('')}</select></label>
+      ${inp('first','First installment','date')}${inp('rentN','From rental return','num','','title="How many of the first installments are paid from the rental return"')}</div>
+    <h4>Maintenance</h4><div class="ppGrid">${inp('mPct','Maintenance %','num')}${inp('mDate','Due date','date')}</div>
+    <h4>Page</h4><div class="ppGrid">${inp('valid','Valid for (days)','num')}${inp('by','Prepared by','')}</div>
+    <div class="ppMsg" data-msg></div>
+    <button type="button" class="ppGo" data-pdf2>⬇ Download PDF</button>`;
+  f.querySelector('[data-unit]').addEventListener('change',e=>{const r=ppUnits_().find(x=>x.unitCode===e.target.value);if(!r)return;
+    const keep={client:g.client,by:g.by,valid:g.valid,dpPct:g.dpPct,n:g.n,every:g.every,mPct:g.mPct,rentN:g.rentN,dpDate:g.dpDate,first:g.first,mDate:g.mDate};
+    PP_.g={...ppDefaults_(r),...keep};ppForm_();ppPreview_();});
+  f.querySelectorAll('[data-k]').forEach(i=>i.addEventListener('input',()=>{
+    const k=i.dataset.k,num=['price','dpPct','n','rentN','mPct','valid','every'].includes(k);
+    PP_.g[k]=num?ppIn_(i.value):i.value;
+    clearTimeout(PP_.t);PP_.t=setTimeout(ppPreview_,250);
+  }));
+  f.querySelector('[data-k="price"]').addEventListener('blur',e=>{e.target.value=ppNum_(PP_.g.price);});
+  f.querySelector('[data-pdf2]').addEventListener('click',ppPdf_);
+}
+function ppCheck_(){
+  const g=PP_.g,msg=document.querySelector('#pp [data-msg]');
+  const bad=!g.price?'Type the unit price.':g.dpPct<0||g.dpPct>100?'Down payment must be between 0 and 100%.':g.n<0||g.n>240?'Installments must be between 0 and 240.':g.rentN>g.n?'Rental-return installments are more than the installments.':'';
+  if(msg){msg.className='ppMsg '+(bad?'err':'ok');msg.textContent=bad||`Down payment ${ppNum_(Math.round(g.price*g.dpPct/100))} + ${g.n} installments = ${ppNum_(g.price)} ${g.cur} ✓`;}
+  return !bad;
+}
+function ppPreview_(){
+  const fr=document.querySelector('#pp iframe');if(!fr)return;
+  ppCheck_();
+  fr.srcdoc=ppDoc_(PP_.g);
+  ppFit_();
+}
+function ppFit_(){
+  const box=document.querySelector('#pp .ppPrev'),paper=document.querySelector('#pp .ppPaper');if(!box||!paper)return;
+  const s=Math.min(1,(box.clientWidth-40)/794);
+  paper.style.transform=`scale(${s})`;paper.style.width='794px';paper.style.height='1123px';
+  paper.style.marginBottom=`${-(1123*(1-s))}px`;paper.style.marginRight=`${-(794*(1-s))}px`;
+}
+function ppPdf_(){
+  if(!ppCheck_())return;
+  const w=window.open('','_blank');if(!w){alert('Allow pop-ups for this site to make the PDF.');return;}
+  const html=ppDoc_(PP_.g).replace('<body>','<body><div class="noprint" style="position:fixed;top:12px;right:12px;z-index:9"><button onclick="window.print()" style="font:600 13px Arial;padding:8px 14px;border-radius:8px;border:0;background:#b08a42;color:#fff;cursor:pointer">Print / Save as PDF</button></div><style>@media print{.noprint{display:none}}</style>');
+  w.document.open();w.document.write(html);w.document.close();setTimeout(()=>{try{w.focus();w.print();}catch(e){}},600);
+}
+
+/* ---------- buttons in the inventory page ---------- */
+function ppMount_(){
+  if(typeof isEgyptViewer_==='function'&&isEgyptViewer_())return;
+  const acts=document.querySelector('#inventoryPanel .inventoryActions');
+  if(acts&&!acts.querySelector('[data-pp-open]')){const b=document.createElement('button');b.type='button';b.className='btn';b.dataset.ppOpen='1';b.textContent='📄 Payment Plan';b.addEventListener('click',()=>ppOpen_());acts.prepend(b);}
+  const t=document.getElementById('inventoryTable');if(!t||typeof inventoryFiltered==='undefined')return;
+  [...t.querySelectorAll('tbody tr')].forEach((tr,i)=>{
+    const r=inventoryFiltered[i];if(!r||!r.unitCode||tr.querySelector('.inventoryPpBtn'))return;
+    const td=tr.lastElementChild;if(!td)return;
+    const b=document.createElement('button');b.type='button';b.className='miniBtn inventoryPpBtn';b.textContent='Plan';b.title='Payment plan for '+r.unitCode;
+    b.addEventListener('click',()=>ppOpen_(r.unitCode));td.appendChild(b);
+  });
+}
+(function initEdenPaymentPlan_(){
+  const hook=()=>{
+    if(typeof renderInventoryTable==='function'&&!renderInventoryTable.__pp){const o=renderInventoryTable;renderInventoryTable=function(){const r=o.apply(this,arguments);try{ppMount_();}catch(e){}return r;};renderInventoryTable.__pp=true;}
+    if(typeof render==='function'&&!render.__pp){const o=render;render=function(){const r=o.apply(this,arguments);try{ppMount_();}catch(e){}return r;};render.__pp=true;}
+    ppMount_();
+  };
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(hook,0));else setTimeout(hook,0);
+})();
+</script>
