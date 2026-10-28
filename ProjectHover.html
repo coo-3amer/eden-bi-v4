@@ -1,0 +1,79 @@
+<style id="eden-project-hover">
+/* Hover a project card: project size — total units / area, sold, reserved, remaining. */
+html[data-theme] #appRoot .dsProjCard .dsProjMore{position:absolute;inset:10px;z-index:3;border-radius:16px;padding:14px 16px 12px;display:flex;flex-direction:column;gap:9px;color:#fff;
+  background:linear-gradient(180deg,rgba(16,13,9,.62),rgba(16,13,9,.8));-webkit-backdrop-filter:blur(18px) saturate(150%);backdrop-filter:blur(18px) saturate(150%);
+  border:1px solid rgba(255,255,255,.16);box-shadow:inset 0 1px 0 rgba(255,255,255,.14);opacity:0;transform:translateY(8px);transition:opacity .3s ease,transform .35s cubic-bezier(.2,.8,.2,1);pointer-events:none;text-align:left}
+html[data-theme] #appRoot .dsProjCard:hover .dsProjMore,html[data-theme] #appRoot .dsProjCard:focus-visible .dsProjMore{opacity:1;transform:none}
+html[data-theme] #appRoot .dsProjCard:hover .dsProjText{opacity:0}
+html[data-theme] #appRoot .dsProjCard:hover .dsProjGo{z-index:4}
+.dsProjMore .pmHead{display:flex;align-items:center;gap:8px;padding-right:44px}
+.dsProjMore .pmHead b{font-size:15px;font-weight:800;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dsProjMore .pmHead i{font-style:normal;font-size:10px;font-weight:700;padding:1px 7px;border-radius:6px;border:1px solid rgba(255,255,255,.35);color:#e9d39a}
+.dsProjMore .pmTot{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dsProjMore .pmTot span{display:flex;flex-direction:column;background:rgba(255,255,255,.07);border-radius:10px;padding:6px 10px}
+.dsProjMore small{font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.6)}
+.dsProjMore .pmTot strong{font-size:clamp(16px,1.25vw,20px);font-weight:800;font-variant-numeric:tabular-nums}
+.dsProjMore .pmGrid{display:grid;grid-template-columns:1.3fr .8fr 1fr .7fr;font-size:12px;font-variant-numeric:tabular-nums}
+.dsProjMore .pmGrid>span{padding:3px 4px;text-align:right;border-top:1px solid rgba(255,255,255,.1);white-space:nowrap}
+.dsProjMore .pmGrid>span.h{border-top:0;font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.55);padding-bottom:2px}
+.dsProjMore .pmGrid>span.l{text-align:left;font-weight:700;display:flex;align-items:center;gap:6px}
+.dsProjMore .pmGrid>span.l i{width:8px;height:8px;border-radius:2px;display:inline-block}
+html[data-theme] #appRoot .dsProjMore .pmBar{display:flex!important;flex:0 0 auto!important;height:7px!important;min-height:0!important;padding:0!important;margin:0!important;border:0!important;box-shadow:none!important;border-radius:99px;overflow:hidden;background:rgba(255,255,255,.12)!important}
+html[data-theme] #appRoot .dsProjMore .pmBar i{display:block!important;flex:none!important;height:100%!important;border-radius:0!important}
+.dsProjMore .pmNote{font-size:10.5px;color:rgba(255,255,255,.6);margin-top:auto}
+.dsProjMore .pmWait{margin:auto;font-size:12.5px;color:rgba(255,255,255,.75);text-align:center;line-height:1.5}
+body.egypt-viewer-readonly .dsProjMore{display:none!important}
+body.egypt-viewer-readonly #appRoot .dsProjCard:hover .dsProjText{opacity:1}
+</style>
+<script>
+/* =====================================================================
+   EDEN BI — project card hover: size of the project from its inventory
+   sheet (all units, any filter): total units and m², sold, reserved and
+   still available. Projects without an inventory sheet show what was
+   sold from the deals.
+   ===================================================================== */
+function pmKind_(s){s=String(s||'').trim().toLowerCase();
+  if(/^(divided|share|shared)/.test(s))return '';
+  return /closed|done|sold|deliver/.test(s)?'sold':/reserv/.test(s)?'res':s==='available'?'av':'off';}
+function pmFmt_(n){return Math.round(Number(n)||0).toLocaleString('en-US');}
+function pmHtml_(card){
+  const name=card.dataset.projectName||'',cur=String(card.dataset.currency||'').toUpperCase()||'EGP';
+  const head=`<span class="pmHead"><b>${name}</b><i>${cur}</i></span>`;
+  const key=typeof edenInvKeyFor_==='function'?edenInvKeyFor_(card):'';
+  const e=key&&typeof EDEN_INV_CACHE!=='undefined'?EDEN_INV_CACHE[key]:null;
+  if(key&&(!e||e.state==='loading'))return head+'<span class="pmWait">Loading project size…</span>';
+  if(key&&e.state==='ok'&&e.rows&&e.rows.length){
+    const B={sold:{n:0,a:0},res:{n:0,a:0},av:{n:0,a:0,v:0},off:{n:0,a:0}};
+    e.rows.forEach(r=>{const k=pmKind_(r.status);if(!k)return;const a=Number(r.area)||0;B[k].n++;B[k].a+=a;if(k==='av')B.av.v+=Number(r.totalPrice)||0;});
+    const T={n:B.sold.n+B.res.n+B.av.n+B.off.n,a:B.sold.a+B.res.a+B.av.a+B.off.a};
+    const left={n:B.av.n+B.off.n,a:B.av.a+B.off.a},p=x=>T.a?Math.round(x/T.a*1000)/10:0;
+    const row=(l,c,o)=>`<span class="l"><i style="background:${c}"></i>${l}</span><span>${pmFmt_(o.n)}</span><span>${pmFmt_(o.a)} m²</span><span>${p(o.a)}%</span>`;
+    return head+`<span class="pmTot"><span><small>Total units</small><strong>${pmFmt_(T.n)}</strong></span><span><small>Total area</small><strong>${pmFmt_(T.a)} m²</strong></span></span>
+      <span class="pmGrid"><span class="h l"></span><span class="h">Units</span><span class="h">Area</span><span class="h">%</span>
+      ${row('Sold','#4cc386',B.sold)}${row('Reserved','#e4c27a',B.res)}${row('Remaining','#7aa7ff',left)}</span>
+      <span class="pmBar"><i style="width:${p(B.sold.a)}%;background:#4cc386"></i><i style="width:${p(B.res.a)}%;background:#e4c27a"></i><i style="width:${p(B.av.a)}%;background:#7aa7ff"></i></span>
+      <span class="pmNote">Remaining: ${pmFmt_(B.av.n)} available${B.off.n?` + ${pmFmt_(B.off.n)} not on sale`:''}${B.av.v?` · ${typeof edenCompact_==='function'?edenCompact_(B.av.v):pmFmt_(B.av.v)} ${cur} on sale`:''}</span>`;
+  }
+  // no inventory sheet: what the deals say
+  const rows=(typeof edenProjectRows_==='function'?edenProjectRows_(card):[]).filter(r=>!/cancel/i.test(String(r.status||'')));
+  const units=new Set(rows.map(r=>r.unitCode).filter(Boolean)).size,area=rows.reduce((a,r)=>a+(Number(r.area)||0),0);
+  return head+`<span class="pmTot"><span><small>Units sold</small><strong>${pmFmt_(units)}</strong></span><span><small>Area sold</small><strong>${pmFmt_(area)} m²</strong></span></span>
+    <span class="pmWait">${key&&e&&e.state==='error'?'The inventory sheet could not be read right now.':'No inventory sheet is linked to this project yet — total and remaining units will show once it is linked.'}</span>`;
+}
+function pmShow_(card){
+  if(typeof isEgyptViewer_==='function'&&isEgyptViewer_())return;
+  const front=card.querySelector('.dsFront');if(!front)return;
+  let box=front.querySelector('.dsProjMore');
+  if(!box){box=document.createElement('span');box.className='dsProjMore';front.appendChild(box);}
+  try{const k=typeof edenInvKeyFor_==='function'?edenInvKeyFor_(card):'';
+    if(k&&EDEN_INV_CACHE[k]&&EDEN_INV_CACHE[k].state==='error'&&Date.now()-(EDEN_INV_CACHE[k].at||0)>20000)delete EDEN_INV_CACHE[k];   // try again
+    if(typeof edenLoadInventory_==='function')edenLoadInventory_(card);
+    if(k&&EDEN_INV_CACHE[k]&&EDEN_INV_CACHE[k].state==='error'&&!EDEN_INV_CACHE[k].at)EDEN_INV_CACHE[k].at=Date.now();}catch(e){}
+  box.innerHTML=pmHtml_(card);
+  clearInterval(card.__pmT);let n=0;
+  card.__pmT=setInterval(()=>{const key=typeof edenInvKeyFor_==='function'?edenInvKeyFor_(card):'',e=key&&EDEN_INV_CACHE[key];
+    if(!key||!e||e.state!=='loading'||++n>60){clearInterval(card.__pmT);box.innerHTML=pmHtml_(card);}},500);
+}
+document.addEventListener('mouseover',e=>{const c=e.target.closest&&e.target.closest('#dsProjects .dsProjCard');if(c&&!c.contains(e.relatedTarget))pmShow_(c);});
+document.addEventListener('focusin',e=>{const c=e.target.closest&&e.target.closest('#dsProjects .dsProjCard');if(c)pmShow_(c);});
+</script>

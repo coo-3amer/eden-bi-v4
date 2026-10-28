@@ -232,7 +232,7 @@ function edenLoadInventory_(card){
   EDEN_INV_CACHE[key]={state:'loading'};
   google.script.run
     .withSuccessHandler(data=>{
-      EDEN_INV_CACHE[key]={state:'ok',stats:(data&&data.stats)||{}};
+      EDEN_INV_CACHE[key]={state:'ok',stats:(data&&data.stats)||{},rows:(data&&data.rows)||[]};
       document.querySelectorAll('#dsProjects .dsProjCard').forEach(c=>{if(edenInvKeyFor_(c)===key){edenRenderSize_(c);edenFillQuick_(c);}});
     })
     .withFailureHandler(()=>{
