@@ -36,8 +36,9 @@ body.egypt-viewer-readonly :is([data-pp-open],.inventoryPpBtn){display:none!impo
 #pp .ppRev>b{display:block;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ds-muted,#6b6255);margin-bottom:4px}
 #pp .ppRev div{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;padding:3px 0;font-variant-numeric:tabular-nums}
 #pp .ppRev div.t{border-top:1px solid var(--ds-line,#e2d7c4);margin-top:3px;padding-top:5px;font-weight:700}
-#pp .ppBulkRow{display:grid;grid-template-columns:62px 1.3fr .85fr 24px;gap:6px;align-items:center}
+#pp .ppBulkRow{display:grid;grid-template-columns:56px 1.1fr 1fr 22px;gap:6px;align-items:center}
 #pp .ppBulkRow input{padding:0 7px}
+#pp .ppBulkRow input[readonly]{font-size:12px}
 #pp .ppBulkRow>span{font-size:11.5px;font-weight:700;color:var(--ds-muted,#6b6255)}
 #pp .ppFill{margin-top:4px;font-size:12px;color:var(--ds-muted,#6b6255)}
 #pp .ppFill summary{cursor:pointer;font-weight:600;padding:4px 0}
@@ -98,16 +99,21 @@ function ppBulks_(g){
   const fin=ppFinal_(g);
   const val=v=>g.bulkUnit==='amt'?Math.round(ppIn_(v)):Math.round(fin*ppIn_(v)/100);
   if(g.bulkMode==='none')return [];
-  return (g.bulks||[]).filter(b=>ppDate_(b.date)&&ppIn_(b.amt)>0).map(b=>({due:b.date,amount:val(b.amt)}));
+  const list=(g.bulks||[]).filter(b=>ppDate_(b.date)),out=list.map(b=>({due:b.date,amount:val(b.amt)}));
+  if(ppIn_(g.bulkTot)>0&&out.length)out[out.length-1].amount=val(g.bulkTot)-out.slice(0,-1).reduce((a,b)=>a+b.amount,0);   // last bulk = what is left of the total
+  return out.filter((b,i)=>b.amount!==0||i===out.length-1);
 }
 /* Down payment in one go or in parts — the last part takes what is left. */
 const PP_ORD_=['First','Second','Third','Fourth','Fifth','Sixth','Seventh','Eighth','Ninth','Tenth','Eleventh','Twelfth','Thirteenth','Fourteenth','Fifteenth','Sixteenth','Seventeenth','Eighteenth','Nineteenth','Twentieth','Twenty-first','Twenty-second','Twenty-third','Twenty-fourth'];
+const ppBoth_=(v,fin)=>`${fin?Math.round(v/fin*1000)/10:0}% · ${ppNum_(v)}`;
 const ppOrd_=i=>PP_ORD_[i]||('No. '+(i+1));
 function ppDpParts_(g,dp){
   if(g.dpSplit!=='parts'||!(g.dpParts||[]).length)return [{name:'Down payment',due:g.dpDate,amount:dp,kind:'dp'}];
   const fin=ppFinal_(g),n=g.dpParts.length;
-  return g.dpParts.map((x,i)=>({name:ppOrd_(i)+' Part of DP',due:x.date,kind:'dp',
+  const out=g.dpParts.map((x,i)=>({name:ppOrd_(i)+' Part of DP',due:x.date,kind:'dp',
     amount:Math.round(g.dpUnit==='amt'?ppIn_(x.val):fin*ppIn_(x.val)/100)}));
+  out[n-1].amount=dp-out.slice(0,-1).reduce((a,x)=>a+x.amount,0);   // the last part is what is left
+  return out;
 }
 const ppDpTotal_=(g,fin)=>Math.round(g.dpBy==='amt'?ppIn_(g.dpAmt):fin*(Number(g.dpPct)||0)/100);
 /* Everything the page needs: rows sorted by date + totals + problems. */
@@ -132,8 +138,8 @@ function ppPlan_(g){
   rows.sort((a,b)=>String(a.due).localeCompare(String(b.due))||(a.kind==='bulk')-(b.kind==='bulk'));
   dpRows.sort((a,b)=>String(a.due).localeCompare(String(b.due)));rows.unshift(...dpRows);
   const tot=rows.reduce((a,x)=>a+x.amount,0);
-  const dpSum=dpRows.reduce((a,x)=>a+x.amount,0);
-  if(Math.abs(dpSum-dp)>1)err=`The down payment parts add up to ${ppNum_(dpSum)} — the down payment is ${ppNum_(dp)} (${dpSum>dp?'more':'less'} by ${ppNum_(Math.abs(dpSum-dp))}).`;
+  if(dpRows.length>1&&dpRows[dpRows.length-1].amount<=0)err='The down payment parts are more than the down payment — nothing is left for the last part.';
+  if(!err&&bulks.length&&bulks[bulks.length-1].amount<0)err='The bulk payments are more than their total — nothing is left for the last bulk.';
   if(!err&&dpRows.some(x=>!ppDate_(x.due)))err='Every down payment part needs a date.';
   if(!err&&rest<0)err='Down payment + bulk payments are more than the price.';
   if(!err&&!N&&rest>1)err='Add installments (years) — '+ppNum_(rest)+' is not scheduled.';
@@ -257,13 +263,13 @@ function ppForm_(){
   const yPct=g.yearUnit!=='amt',yLast=(P.yearly[Y-1]||[]).reduce((a,x)=>a+x,0);
   const years=g.split==='year'&&Y>1?`<div class="ppRow"><span>Each year as</span>${seg('yearUnit',[['pct','% of price'],['amt','Amount']])}</div><div class="ppYears">${[...Array(Y)].map((_,y)=>y<Y-1?
       `<label>Year ${y+1} ${yPct?'(%)':`(${ppEsc_(g.cur)})`}<input data-ya="${y}" inputmode="decimal" value="${yPct?g.yearVal[y]:ppNum_(g.yearVal[y])}"></label>`:
-      `<label>Year ${y+1} <i>(the rest)</i><input data-last readonly value="${yPct?(P.fin?Math.round(yLast/P.fin*1000)/10+'%':''):ppNum_(yLast)}"></label>`).join('')}</div><div class="ppRev" data-yrev>${ppYearRev_(P)}</div>`:'';
+      `<label>Year ${y+1} <i>(what is left)</i><input data-last readonly value="${ppBoth_(yLast,P.fin)}"></label>`).join('')}</div><div class="ppRev" data-yrev>${ppYearRev_(P)}</div>`:'';
   const dPct=g.dpUnit!=='amt';
   const dpParts=g.dpSplit!=='parts'?'':`<div class="ppGrid" style="margin-top:10px">${inp('dpN','Number of parts','num')}<label>Each part as<select data-dpunit><option value="pct"${dPct?' selected':''}>% of price</option><option value="amt"${dPct?'':' selected'}>Amount (${ppEsc_(g.cur)})</option></select></label></div><div class="ppBulks">
-    ${(g.dpParts||[]).map((x,i,a)=>`<div class="ppBulkRow"><span>${ppOrd_(i)}</span><input type="date" data-dd="${i}" value="${ppEsc_(x.date)}"><input inputmode="decimal" data-dv="${i}" placeholder="${dPct?'%':'Amount'}" value="${x.val?(dPct?x.val:ppNum_(x.val)):''}"><span></span></div>`).join('')}
+    ${(g.dpParts||[]).map((x,i,a)=>`<div class="ppBulkRow"><span>${ppOrd_(i)}</span><input type="date" data-dd="${i}" value="${ppEsc_(x.date)}"><input ${i===a.length-1?'':'inputmode="decimal"'} ${i===a.length-1?`data-dplast readonly title="What is left of the down payment" value="${ppBoth_((P.dpRows[i]||{}).amount||0,P.fin)}"`:`data-dv="${i}" placeholder="${dPct?'%':'Amount'}" value="${x.val?(dPct?x.val:ppNum_(x.val)):''}"`}><span></span></div>`).join('')}
     <div class="ppHint" data-dpsum>${ppDpSumTxt_(g,P)}</div></div>`;
   const bm=String(g.bulkMode),bPct=g.bulkUnit!=='amt';
-  const bulks=bm==='none'?'':`<div class="ppBulks">${(g.bulks||[]).map((b,i)=>`<div class="ppBulkRow"><span>Bulk ${i+1}</span><input type="date" data-bd="${i}" value="${ppEsc_(b.date)}"><input inputmode="decimal" data-ba="${i}" placeholder="${bPct?'%':'Amount'}" value="${b.amt?(bPct?b.amt:ppNum_(b.amt)):''}"><button type="button" data-bx="${i}" aria-label="Remove">×</button></div>`).join('')}
+  const bulks=bm==='none'?'':`<div class="ppGrid" style="margin-top:8px">${inp('bulkTot',`Total of all bulks ${bPct?'(%)':`(${ppEsc_(g.cur)})`}`,bPct?'num':'money','w2','placeholder="Optional — the last bulk then takes what is left"')}</div><div class="ppBulks">${(g.bulks||[]).map((b,i)=>`<div class="ppBulkRow"><span>Bulk ${i+1}</span><input type="date" data-bd="${i}" value="${ppEsc_(b.date)}">${ppIn_(g.bulkTot)>0&&i===g.bulks.length-1?`<input data-blast readonly title="What is left of the total" value="${ppBoth_((P.bulks[P.bulks.length-1]||{}).amount||0,P.fin)}">`:`<input inputmode="decimal" data-ba="${i}" placeholder="${bPct?'%':'Amount'}" value="${b.amt?(bPct?b.amt:ppNum_(b.amt)):''}">`}<button type="button" data-bx="${i}" aria-label="Remove">×</button></div>`).join('')}
       <button type="button" class="ppAdd" data-badd>+ Add a bulk payment</button>
       <details class="ppFill"><summary>Quick fill — same value every year / 6 months / quarter</summary>
         <div class="ppGrid">${inp('bulkN','How many','num')}<label>Every<select data-fill-every>${[[12,'Year'],[6,'6 months'],[3,'Quarter']].map(([v,t])=>`<option value="${v}">${t}</option>`).join('')}</select></label>
@@ -291,16 +297,16 @@ function ppForm_(){
     <div class="ppMsg" data-msg></div>
     <button type="button" class="ppGo" data-pdf2>⬇ Download PDF</button>`;
   f.scrollTop=st;
-  const NUM=['list','disc','dpPct','dpAmt','dpN','years','rentN','mPct','valid','every','bulkN'],STRUCT=['years','every','list','disc','dpPct','dpAmt','first'];
+  const NUM=['list','disc','dpPct','dpAmt','dpN','bulkTot','years','rentN','mPct','valid','every','bulkN'],STRUCT=['years','every','list','disc','dpPct','dpAmt','first','bulkTot'];
   f.querySelector('[data-unit]').addEventListener('change',e=>{const r=ppUnits_().find(x=>x.unitCode===e.target.value);if(!r)return;
-    const d=ppDefaults_(r),keep={};['client','by','valid','dpPct','dpBy','dpAmt','dpN','dpSplit','dpUnit','dpParts','years','every','split','yearUnit','yearVal','bulkMode','bulkUnit','bulkAmt','bulkN','bulkPct','bulkFirst','bulks','mPct','mBase','rentN','dpDate','first','mDate','photo','disc'].forEach(x=>keep[x]=g[x]);
+    const d=ppDefaults_(r),keep={};['client','by','valid','dpPct','dpBy','dpAmt','dpN','dpSplit','dpUnit','dpParts','years','every','split','yearUnit','yearVal','bulkMode','bulkUnit','bulkTot','bulkAmt','bulkN','bulkPct','bulkFirst','bulks','mPct','mBase','rentN','dpDate','first','mDate','photo','disc'].forEach(x=>keep[x]=g[x]);
     PP_.g={...d,...keep};ppForm_();ppPreview_();});
   f.querySelectorAll('[data-k]').forEach(i=>{
     const kk=i.dataset.k;
     i.addEventListener('input',()=>{PP_.g[kk]=NUM.includes(kk)?ppIn_(i.value):i.value;ppSoon_();});
     if(STRUCT.includes(kk))i.addEventListener('change',()=>{ppForm_();});
   });
-  ['list','dpAmt'].forEach(kk=>{const i=f.querySelector(`[data-k="${kk}"]`);i&&i.addEventListener('blur',()=>{i.value=ppNum_(PP_.g[kk]);});});
+  ['list','dpAmt'].concat(PP_.g.bulkUnit==='amt'?['bulkTot']:[]).forEach(kk=>{const i=f.querySelector(`[data-k="${kk}"]`);i&&i.addEventListener('blur',()=>{if(i.value!=='')i.value=ppNum_(PP_.g[kk]);});});
   f.querySelectorAll('[data-seg]').forEach(b=>b.addEventListener('click',()=>{const kk=b.dataset.seg;PP_.g[kk]=b.dataset.v;
     if(kk==='bulkMode'&&b.dataset.v==='on'&&!(PP_.g.bulks||[]).length)PP_.g.bulks=[{date:PP_.g.bulkFirst,amt:0}];
     if(kk==='split'&&b.dataset.v==='year')PP_.g.yearVal=[];
@@ -308,6 +314,7 @@ function ppForm_(){
     if(kk==='dpBy'&&b.dataset.was!==b.dataset.v){const f0=ppFinal_(PP_.g)||1;if(b.dataset.v==='amt')PP_.g.dpAmt=Math.round(f0*(Number(PP_.g.dpPct)||0)/100);else PP_.g.dpPct=Math.round(ppIn_(PP_.g.dpAmt)/f0*10000)/100;}
     const fin=ppFinal_(PP_.g)||1;
     if(kk==='yearUnit'&&b.dataset.was!==b.dataset.v)PP_.g.yearVal=PP_.g.yearVal.map(v=>v==null||v===''?v:b.dataset.v==='amt'?Math.round(fin*ppIn_(v)/100):Math.round(ppIn_(v)/fin*10000)/100);
+    if(kk==='bulkUnit'&&b.dataset.was!==b.dataset.v&&ppIn_(PP_.g.bulkTot))PP_.g.bulkTot=b.dataset.v==='amt'?Math.round(fin*ppIn_(PP_.g.bulkTot)/100):Math.round(ppIn_(PP_.g.bulkTot)/fin*10000)/100;
     if(kk==='bulkUnit'&&b.dataset.was!==b.dataset.v)PP_.g.bulks=(PP_.g.bulks||[]).map(x=>({...x,amt:!x.amt?x.amt:b.dataset.v==='amt'?Math.round(fin*ppIn_(x.amt)/100):Math.round(ppIn_(x.amt)/fin*10000)/100}));
     ppForm_();ppPreview_();}));
   f.querySelectorAll('[data-ya]').forEach(i=>{i.addEventListener('input',()=>{PP_.g.yearVal[+i.dataset.ya]=ppIn_(i.value);ppSoon_();});i.addEventListener('blur',()=>{if(PP_.g.yearUnit==='amt')i.value=ppNum_(PP_.g.yearVal[+i.dataset.ya]);});});
@@ -342,18 +349,20 @@ function ppDpResize_(n){
   g.dpParts=parts;g.dpN=n;
 }
 function ppDpSumTxt_(g,P){
-  const sum=(P.dpRows||[]).reduce((a,x)=>a+x.amount,0),diff=sum-P.dp,pc=v=>P.fin?Math.round(v/P.fin*1000)/10+'%':'';
-  return Math.abs(diff)<=1?`<span style="color:var(--ds-green,#178a4c);font-weight:600">Parts = ${ppNum_(sum)} (${pc(sum)}) ✓ matches the down payment</span>`
-    :`<span style="color:var(--ds-red,#d12f2f);font-weight:600">Parts = ${ppNum_(sum)} (${pc(sum)}) · down payment ${ppNum_(P.dp)} (${pc(P.dp)}) · ${diff>0?'over':'short'} by ${ppNum_(Math.abs(diff))}</span>`;
+  const r=P.dpRows||[],last=r[r.length-1]||{amount:0};
+  return last.amount>0?`<span style="color:var(--ds-green,#178a4c);font-weight:600">The last part takes what is left: ${ppBoth_(last.amount,P.fin)} ✓</span>`
+    :`<span style="color:var(--ds-red,#d12f2f);font-weight:600">The parts are more than the down payment (${ppNum_(P.dp)}) — lower them.</span>`;
 }
 function ppSoon_(){clearTimeout(PP_.t);PP_.t=setTimeout(ppPreview_,250);}
 function ppCheck_(){
   const g=PP_.g,P=ppPlan_(g),f=document.querySelector('#pp .ppForm');if(!f)return !P.err;
   const fin=f.querySelector('[data-fin]');if(fin)fin.value=ppNum_(P.fin);
-  const last=f.querySelector('[data-last]');if(last){const t=(P.yearly[P.yearly.length-1]||[]).reduce((a,x)=>a+x,0);last.value=g.yearUnit!=='amt'?(P.fin?Math.round(t/P.fin*1000)/10+'%':''):ppNum_(t);}
+  const last=f.querySelector('[data-last]');if(last){const t=(P.yearly[P.yearly.length-1]||[]).reduce((a,x)=>a+x,0);last.value=ppBoth_(t,P.fin);}
   const ds=f.querySelector('[data-dpsum]');if(ds)ds.innerHTML=ppDpSumTxt_(g,P);
   const dt=f.querySelector('[data-dptot]');if(dt)dt.value=g.dpBy==='amt'?(P.fin?Math.round(P.dp/P.fin*1000)/10+'%':''):ppNum_(P.dp);
   const rev=f.querySelector('[data-yrev]');if(rev)rev.innerHTML=ppYearRev_(P);
+  const bl=f.querySelector('[data-blast]');if(bl)bl.value=ppBoth_((P.bulks[P.bulks.length-1]||{}).amount||0,P.fin);
+  const dpl=f.querySelector('[data-dplast]');if(dpl)dpl.value=ppBoth_((P.dpRows[P.dpRows.length-1]||{}).amount||0,P.fin);
   const bh=f.querySelector('[data-bhint]');if(bh)bh.textContent=`${P.bulks.length} bulk payment${P.bulks.length===1?'':'s'} = ${ppNum_(P.bTot)} ${g.cur} (${P.fin?Math.round(P.bTot/P.fin*1000)/10:0}% of the price)`;
   const bad=!g.list?'Type the list price.':(g.dpBy!=='amt'&&(g.dpPct<0||g.dpPct>100))||(g.dpBy==='amt'&&ppIn_(g.dpAmt)>ppFinal_(g))?'The down payment must be between 0 and the price.':g.years>30?'Up to 30 years.':g.rentN>P.N?'Rental-return installments are more than the installments.':P.err;
   const msg=f.querySelector('[data-msg]');
