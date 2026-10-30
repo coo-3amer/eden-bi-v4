@@ -15,11 +15,17 @@
    • Watermark: the user's name, username and the time, faint and diagonal,
      over every screen for non-admin accounts — a leaked screenshot or a
      phone photo shows who took it.
-   • Idle sign-out: after 30 minutes without activity (warning 60 s before).
+   • Idle sign-out: after 1 hour without activity (warning 60 s before).
+     The server session also ends after 1 hour without use; while the page
+     is in use it is kept alive, and a page opened later starts signed out.
    • Non-admins can't print the dashboard page itself.
    Browsers can't block screenshots; the Android and Windows apps do.
    ===================================================================== */
-const EDEN_IDLE_MS_=30*60*1000,EDEN_IDLE_WARN_MS_=60*1000;
+const EDEN_IDLE_MS_=60*60*1000,EDEN_IDLE_WARN_MS_=60*1000;
+let EDEN_IDLE_SAVED_=0,EDEN_IDLE_PING_=Date.now();
+/* use: remember it (all tabs + after a reload) and keep the server session alive */
+function edenIdleUse_(){const now=Date.now();EDEN_IDLE_LAST_=now;if(now-EDEN_IDLE_SAVED_<15000)return;EDEN_IDLE_SAVED_=now;try{localStorage.setItem('edenLastActive',String(now));}catch(e){}
+  if(typeof AUTH_TOKEN!=='undefined'&&AUTH_TOKEN&&now-EDEN_IDLE_PING_>10*60*1000){EDEN_IDLE_PING_=now;try{google.script.run.withSuccessHandler(()=>{}).withFailureHandler(()=>{}).keepSessionAlive(AUTH_TOKEN);}catch(e){}}}
 let EDEN_IDLE_LAST_=Date.now(),EDEN_IDLE_T_=null,EDEN_WM_SIG_='';
 function edenSecUser_(){return (typeof AUTH_USER!=='undefined'&&AUTH_USER)||null;}
 function edenSecAdmin_(){const r=String(edenSecUser_()?.role||'').trim().toLowerCase();return r==='admin'||r==='super admin';}
@@ -39,13 +45,15 @@ function edenWmPaint_(){
   const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="420" height="220"><g transform="rotate(-24 210 110)" fill="${col}" font-family="Arial,sans-serif" font-weight="700" text-anchor="middle"><text x="210" y="100" font-size="17">${esc(who)}</text><text x="210" y="124" font-size="12">${esc(stamp)} · EDEN BI · Confidential</text></g></svg>`;
   el.style.backgroundImage=`url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}")`;
 }
-function edenIdleKick_(){EDEN_IDLE_LAST_=Date.now();const d=document.getElementById('edenIdle');if(d&&!d.hidden)d.hidden=true;}
+function edenIdleKick_(){EDEN_IDLE_SAVED_=0;EDEN_IDLE_PING_=0;edenIdleUse_();const d=document.getElementById('edenIdle');if(d&&!d.hidden)d.hidden=true;}
 function edenIdleTick_(){
   const signed=typeof AUTH_TOKEN!=='undefined'&&AUTH_TOKEN;
   if(!signed){EDEN_IDLE_LAST_=Date.now();return;}
-  const idle=Date.now()-EDEN_IDLE_LAST_;
+  let other=0;try{other=Number(localStorage.getItem('edenLastActive'))||0;}catch(e){}   // use in another tab counts too
+  const idle=Date.now()-Math.max(EDEN_IDLE_LAST_,other);
   let d=document.getElementById('edenIdle');
-  if(idle>=EDEN_IDLE_MS_){if(d)d.hidden=true;if(typeof logout==='function')logout();EDEN_IDLE_LAST_=Date.now();return;}
+  if(idle>=EDEN_IDLE_MS_){if(d)d.hidden=true;if(typeof logout==='function')logout();EDEN_IDLE_LAST_=Date.now();
+    setTimeout(()=>{const e=document.getElementById('loginError');if(e)e.textContent='You were signed out after 1 hour without use. Please sign in again.';},200);return;}
   if(idle>=EDEN_IDLE_MS_-EDEN_IDLE_WARN_MS_){
     if(!d){d=document.createElement('div');d.id='edenIdle';d.innerHTML='<div class="b"><h3>Are you still there?</h3><p>You will be signed out for security.</p><b class="n"></b><button type="button">Stay signed in</button></div>';
       document.body.appendChild(d);d.querySelector('button').addEventListener('click',edenIdleKick_);}
@@ -53,9 +61,9 @@ function edenIdleTick_(){
   }
 }
 (function(){
-  ['mousemove','mousedown','keydown','touchstart','wheel','scroll'].forEach(ev=>document.addEventListener(ev,()=>{const d=document.getElementById('edenIdle');if(!d||d.hidden)EDEN_IDLE_LAST_=Date.now();},{passive:true,capture:true}));
+  ['mousemove','mousedown','keydown','touchstart','wheel','scroll'].forEach(ev=>document.addEventListener(ev,()=>{const d=document.getElementById('edenIdle');if(!d||d.hidden)edenIdleUse_();},{passive:true,capture:true}));
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)edenIdleTick_();});
-  const go=()=>{edenWmPaint_();setInterval(edenWmPaint_,30000);setInterval(edenIdleTick_,1000);
+  const go=()=>{edenIdleUse_();if(window.__edenIdleOut)setTimeout(()=>{const e=document.getElementById('loginError');if(e)e.textContent='You were signed out after 1 hour without use. Please sign in again.';},800);edenWmPaint_();setInterval(edenWmPaint_,30000);setInterval(edenIdleTick_,1000);
     new MutationObserver(()=>{EDEN_WM_SIG_='';edenWmPaint_();}).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();
   // repaint right after sign-in / sign-out

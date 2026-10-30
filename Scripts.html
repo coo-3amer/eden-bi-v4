@@ -29,6 +29,8 @@ let inventoryDiscountPercent=0;
 let dealCurrentStep=1, dealUnits=[], dealSelectedUnit=null, dealUnitValidated=false, dealOptionsLoaded=false;
 let AUTH_TOKEN = sessionStorage.getItem('EDEN_AUTH_TOKEN') || '';
 let AUTH_USER = JSON.parse(sessionStorage.getItem('EDEN_AUTH_USER') || 'null');
+// Signed out after 1 hour without use (IdleLogout.html): a page opened later starts at the sign-in screen.
+try{const _last=Number(localStorage.getItem('edenLastActive'))||0;if(AUTH_TOKEN&&_last&&Date.now()-_last>3600000){sessionStorage.removeItem('EDEN_AUTH_TOKEN');sessionStorage.removeItem('EDEN_AUTH_USER');AUTH_TOKEN='';AUTH_USER=null;window.__edenIdleOut=true;}}catch(e){}
 let APP_EVENTS_BOUND=false;
 let LOGIN_PENDING_USER=null;
 

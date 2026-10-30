@@ -111,7 +111,7 @@ function loginUser(username, password, deviceToken) {
 
 function loginIssue_(user, action) {
   const token = Utilities.getUuid();
-  CacheService.getScriptCache().put('LOGIN_' + token, JSON.stringify(user), 21600); // 6 hours
+  CacheService.getScriptCache().put('LOGIN_' + token, JSON.stringify(Object.assign({}, user, { _t: Date.now() })), LOGIN_IDLE_SECONDS_); // ends after 1 hour without use
   if (typeof auditLog_ === 'function') auditLog_(user, action || 'Signed in', {});
   return { success: true, token: token, user: user };
 }
@@ -120,11 +120,21 @@ function validateAuthToken_(token) {
   token = String(token || '').trim();
   if (!token) throw new Error('Access denied. Please login again.');
 
-  const cached = CacheService.getScriptCache().get('LOGIN_' + token);
+  const cache = CacheService.getScriptCache();
+  const cached = cache.get('LOGIN_' + token);
   if (!cached) throw new Error('Session expired. Please login again.');
 
-  return JSON.parse(cached);
+  const user = JSON.parse(cached);
+  // every use moves the 1-hour limit forward (written at most every 5 minutes)
+  if (!user._t || Date.now() - Number(user._t) > 300000) {
+    user._t = Date.now();
+    try { cache.put('LOGIN_' + token, JSON.stringify(user), LOGIN_IDLE_SECONDS_); } catch (e) {}
+  }
+  return user;
 }
+const LOGIN_IDLE_SECONDS_ = 3600;
+/* The page calls this while someone is using it, so the session does not end. */
+function keepSessionAlive(token) { validateAuthToken_(token); return { ok: true }; }
 
 function logoutUser(token) {
   token = String(token || '').trim();
