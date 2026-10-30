@@ -1,0 +1,143 @@
+<style id="eden-client-names">
+#cn .daBody{padding:16px 22px 30px}
+#cn .cnTop{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
+#cn .cnStat{display:flex;gap:10px;flex-wrap:wrap}
+#cn .cnStat span{background:var(--ds-surface-3,#f3ede2);border-radius:10px;padding:6px 11px;font-size:12px;color:var(--ds-muted,#6b6255)}
+#cn .cnStat b{color:var(--ds-heading,#120f0b);font-size:14px;margin-left:4px}
+#cn .cnSeg{display:inline-flex;background:var(--ds-surface-3,#f3ede2);border-radius:99px;padding:3px}
+#cn .cnSeg button{border:0;background:transparent;padding:6px 12px;border-radius:99px;font:600 12px var(--ds-font,inherit);color:var(--ds-muted,#6b6255);cursor:pointer}
+#cn .cnSeg button.on{background:var(--ds-surface,#fff);color:var(--ds-heading,#120f0b);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+#cn .cnSearch{padding:7px 11px;border-radius:10px;border:1px solid var(--ds-line,#e2d7c4);background:var(--ds-surface,#fff);color:var(--ds-text,#221e19);font:600 12.5px var(--ds-font,inherit);min-width:220px}
+#cn .cnMsg{font-size:12.5px;margin:6px 0 12px;color:var(--ds-muted,#6b6255)}
+#cn .cnMsg.err{color:var(--ds-red,#d12f2f);font-weight:600}#cn .cnMsg.ok{color:var(--ds-green,#178a4c);font-weight:600}
+#cn .cnProg{height:8px;border-radius:99px;background:var(--ds-surface-3,#efe7d8);overflow:hidden;margin:4px 0 10px;display:none}
+#cn .cnProg i{display:block;height:100%;background:var(--ds-gold,#a8791f);width:0;transition:width .4s}
+#cn .cnWrap{overflow:auto;max-height:calc(100vh - 290px);border:1px solid var(--ds-line,#e2d7c4);border-radius:12px}
+#cn table{width:100%;border-collapse:collapse;font-size:12.5px}
+#cn th{position:sticky;top:0;z-index:1;background:var(--ds-surface,#fffdf9);text-align:left;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ds-muted,#6b6255);padding:8px;border-bottom:1px solid var(--ds-line,#e2d7c4);white-space:nowrap}
+#cn td{padding:6px 8px;border-bottom:1px solid color-mix(in srgb,var(--ds-line,#e2d7c4) 60%,transparent);vertical-align:top}
+#cn td input[type=text]{width:100%;min-width:300px;box-sizing:border-box;padding:6px 8px;border-radius:8px;border:1px solid var(--ds-line,#e2d7c4);background:var(--ds-surface,#fff);color:var(--ds-heading,#120f0b);font:600 13px var(--ds-font,inherit)}
+#cn td input.ar{direction:rtl;text-align:right;font-family:Tahoma,'Segoe UI',Arial,sans-serif}
+#cn td small{display:block;color:var(--ds-muted,#6b6255);font-size:11px;margin-top:3px;line-height:1.4}
+#cn .cnTag{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10.5px;font-weight:700;white-space:nowrap}
+#cn .cnTag.High{background:#dff3e7;color:#146c3d}#cn .cnTag.Good{background:#fdf1d6;color:#8a5b00}#cn .cnTag.Check{background:#fbe0dd;color:#a3231a}#cn .cnTag.Approved{background:#e3ecfb;color:#2a4f9a}
+#cn tr.done td{opacity:.6}
+#cn .cnFoot{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap}
+</style>
+<script>
+/* =====================================================================
+   EDEN BI — System › Client names (AR / EN) for the new Deals DB files.
+   Scan reads the ID / passport in each client's folder (ClientNames.js);
+   nothing is written on a deal until it is approved here.
+   ===================================================================== */
+const CN_={rows:[],filter:'todo',q:'',busy:false,stop:false,edits:{}};
+const cnEsc_=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function cnIsAdmin_(){const r=String((typeof AUTH_USER!=='undefined'&&AUTH_USER&&AUTH_USER.role)||'').trim().toLowerCase();return r==='admin'||r==='super admin';}
+function cnMount_(){
+  const menu=document.querySelector('#systemModule .moduleMenu');if(!menu)return;
+  let b=document.querySelector('.nav [data-cn]');
+  if(!b){b=document.createElement('button');b.type='button';b.dataset.cn='1';b.textContent='Client names (AR / EN)';b.addEventListener('click',cnOpen_);menu.appendChild(b);}
+  const d=cnIsAdmin_()?'':'none';if(b.style.display!==d)b.style.display=d;
+}
+function cnClose_(){CN_.stop=true;document.getElementById('cn')?.remove();document.getElementById('cnBack')?.remove();}
+function cnOpen_(){
+  if(!cnIsAdmin_())return;cnClose_();CN_.stop=false;
+  const back=document.createElement('div');back.className='daBack';back.id='cnBack';back.addEventListener('click',()=>{if(!CN_.busy)cnClose_();});
+  const el=document.createElement('section');el.className='da';el.id='cn';el.setAttribute('role','dialog');
+  el.innerHTML=`<div class="daHead"><div><small>System · new Deals DB files</small><h2>Client names — Arabic &amp; English as on the papers</h2></div><div class="daTools"><button type="button" class="daBtn" data-xl>⬇ Excel</button><button type="button" class="daX" aria-label="Close">×</button></div></div>
+    <div class="daBody"><div class="cnTop"><button type="button" class="daBtn" data-scan>🔎 Read the papers</button><button type="button" class="daBtn" data-rescan title="Read again the ones not approved yet">↻ Read again</button>
+      <span class="cnSeg">${[['todo','To review'],['Check','Check'],['all','All'],['Approved','Approved']].map(([k,l])=>`<button type="button" data-f="${k}">${l}</button>`).join('')}</span>
+      <input class="cnSearch" type="search" placeholder="Search name, unit, deal ID…"><span class="cnStat"></span></div>
+      <div class="cnProg"><i></i></div><div class="cnMsg">Loading…</div><div class="cnList"></div>
+      <div class="cnFoot"><button type="button" class="daBtn" data-approve>✓ Approve the ticked names</button><label style="font-size:12.5px;display:flex;gap:6px;align-items:center"><input type="checkbox" data-all> Tick all shown</label>
+      <span class="cnMsg" data-fmsg style="margin:0"></span></div></div>`;
+  document.body.append(back,el);
+  el.querySelector('.daX').addEventListener('click',()=>{if(CN_.busy&&!confirm('A scan is running. Stop it and close?'))return;cnClose_();});
+  el.querySelector('[data-scan]').addEventListener('click',()=>cnScan_(false));
+  el.querySelector('[data-rescan]').addEventListener('click',()=>{if(confirm('Read the papers again for every name that is not approved yet?'))cnScan_(true);});
+  el.querySelector('[data-approve]').addEventListener('click',cnApprove_);
+  el.querySelector('[data-xl]').addEventListener('click',cnExcel_);
+  el.querySelector('[data-all]').addEventListener('change',e=>el.querySelectorAll('.cnList input[data-ok]').forEach(c=>c.checked=e.target.checked));
+  el.querySelectorAll('[data-f]').forEach(b=>b.addEventListener('click',()=>{CN_.filter=b.dataset.f;cnRender_();}));
+  el.querySelector('.cnSearch').addEventListener('input',e=>{CN_.q=e.target.value.trim().toLowerCase();cnRender_();});
+  cnLoad_();
+}
+function cnMsg_(t,cls){const m=document.querySelector('#cn .cnMsg');if(m){m.className='cnMsg '+(cls||'');m.textContent=t;}}
+function cnLoad_(after){
+  google.script.run.withSuccessHandler(d=>{CN_.rows=(d&&d.rows)||[];cnRender_();if(after)after();})
+    .withFailureHandler(e=>cnMsg_(e.message||String(e),'err')).getClientNameReview(AUTH_TOKEN);
+}
+function cnScan_(rescan){
+  if(CN_.busy)return;CN_.busy=true;CN_.stop=false;
+  const el=document.getElementById('cn'),prog=el.querySelector('.cnProg'),bar=prog.querySelector('i');
+  el.querySelectorAll('[data-scan],[data-rescan],[data-approve]').forEach(b=>b.disabled=true);
+  prog.style.display='block';let doneAll=0;
+  const p2=n=>String(n).padStart(2,'0'),d0=new Date(new Date().toLocaleString('en-US',{timeZone:'Africa/Cairo'})),since=`${d0.getFullYear()}-${p2(d0.getMonth()+1)}-${p2(d0.getDate())} ${p2(d0.getHours())}:${p2(d0.getMinutes())}`;
+  const step=()=>{
+    if(CN_.stop){CN_.busy=false;return;}
+    cnMsg_(`Reading the ID / passport files… ${doneAll} deals read so far. Each round takes up to 5 minutes — you can keep this window open.`);
+    google.script.run.withSuccessHandler(r=>{
+      if(r&&r.busy){cnMsg_(r.message,'err');CN_.busy=false;el.querySelectorAll('button').forEach(b=>b.disabled=false);return;}
+      doneAll+=r.done;const tot=doneAll+r.left;bar.style.width=(tot?Math.round(doneAll/tot*100):100)+'%';
+      cnLoad_(()=>{
+        if(r.left>0&&!CN_.stop){setTimeout(step,500);return;}
+        CN_.busy=false;prog.style.display='none';el.querySelectorAll('button').forEach(b=>b.disabled=false);
+        cnMsg_(`Done — ${doneAll} deals read.${r.noLink?` ${r.noLink} deals have no documents folder link.`:''} Check the names, fix any letter, tick and approve.`,'ok');
+      });
+    }).withFailureHandler(e=>{CN_.busy=false;prog.style.display='none';el.querySelectorAll('button').forEach(b=>b.disabled=false);
+      cnMsg_('Stopped: '+(e.message||e)+(doneAll?` — ${doneAll} read; press “Read the papers” to go on.`:''),'err');}).scanClientNames(AUTH_TOKEN,{rescan:!!rescan,since:rescan?since:''});
+  };
+  step();
+}
+function cnShown_(){
+  return CN_.rows.filter(r=>{
+    if(CN_.filter==='todo'&&r.status==='Approved')return false;
+    if(CN_.filter==='Check'&&!(r.conf==='Check'&&r.status!=='Approved'))return false;
+    if(CN_.filter==='Approved'&&r.status!=='Approved')return false;
+    if(CN_.q&&![r.dealId,r.name,r.ar,r.en,r.unit,r.project].join(' ').toLowerCase().includes(CN_.q))return false;
+    return true;
+  });
+}
+function cnRender_(){
+  const el=document.getElementById('cn');if(!el)return;
+  el.querySelectorAll('[data-f]').forEach(b=>b.classList.toggle('on',b.dataset.f===CN_.filter));
+  const R=CN_.rows,c=k=>R.filter(r=>r.conf===k&&r.status!=='Approved').length;
+  el.querySelector('.cnStat').innerHTML=`<span>Read<b>${R.length}</b></span><span>High<b>${c('High')}</b></span><span>Good<b>${c('Good')}</b></span><span>Check<b>${c('Check')}</b></span><span>Approved<b>${R.filter(r=>r.status==='Approved').length}</b></span>`;
+  if(!CN_.busy)cnMsg_(R.length?'High = ID + passport found and matched · Good = Arabic from the ID, English kept from the deal · Check = something is missing — open the folder.':'Nothing read yet — press “Read the papers”. Only the names are kept, never ID numbers or addresses.');
+  const rows=cnShown_().slice(0,500);
+  el.querySelector('.cnList').innerHTML=rows.length?`<div class="cnWrap"><table><thead><tr><th>✓</th><th>Deal</th><th>Name on the deal</th><th>Arabic (as on the papers)</th><th>English (as on the papers)</th><th>Found</th></tr></thead><tbody>${rows.map(r=>{
+    const k=r.store+'|'+r.dealId,e=CN_.edits[k]||{};
+    return `<tr class="${r.status==='Approved'?'done':''}" data-k="${cnEsc_(k)}"><td><input type="checkbox" data-ok${r.status!=='Approved'&&r.conf==='High'?' checked':''}></td>
+      <td><b>${cnEsc_(r.unit)}</b><small>${cnEsc_(r.project)} · ${cnEsc_(r.dealId)}</small></td>
+      <td>${cnEsc_(r.name)}</td>
+      <td><input type="text" class="ar" data-ar value="${cnEsc_(e.ar??r.ar)}" placeholder="—"><small>${cnEsc_(r.arFrom||'')}</small></td>
+      <td><input type="text" data-en value="${cnEsc_(e.en??r.en)}" placeholder="—"><small>${cnEsc_(r.enFrom||'')}</small></td>
+      <td><span class="cnTag ${r.status==='Approved'?'Approved':cnEsc_(r.conf)}">${r.status==='Approved'?'Approved':cnEsc_(r.conf)}</span><small>${cnEsc_(r.note||'')}${r.status==='Approved'&&r.by?` · ${cnEsc_(r.by)}`:''}</small></td></tr>`;}).join('')}</tbody></table></div>${cnShown_().length>500?'<div class="cnMsg">Showing the first 500 — use the search.</div>':''}`:'<div class="cnMsg">Nothing here.</div>';
+  el.querySelectorAll('.cnList tr[data-k]').forEach(tr=>{
+    const k=tr.dataset.k;
+    tr.querySelector('[data-ar]').addEventListener('input',ev=>{(CN_.edits[k]=CN_.edits[k]||{}).ar=ev.target.value;tr.querySelector('[data-ok]').checked=true;});
+    tr.querySelector('[data-en]').addEventListener('input',ev=>{(CN_.edits[k]=CN_.edits[k]||{}).en=ev.target.value;tr.querySelector('[data-ok]').checked=true;});
+  });
+}
+function cnApprove_(){
+  const el=document.getElementById('cn'),fm=el.querySelector('[data-fmsg]');
+  const items=[...el.querySelectorAll('.cnList tr[data-k]')].filter(tr=>tr.querySelector('[data-ok]').checked).map(tr=>{const [store,dealId]=tr.dataset.k.split('|');return {store,dealId,ar:tr.querySelector('[data-ar]').value,en:tr.querySelector('[data-en]').value};});
+  if(!items.length){fm.className='cnMsg err';fm.textContent='Tick the names to approve first.';return;}
+  const empty=items.filter(x=>!x.ar.trim()||!x.en.trim()).length;
+  if(!confirm(`Write the Arabic and English names on ${items.length} deal(s) in the new Deals DB files?${empty?`\n\n${empty} of them have an empty Arabic or English name.`:''}`))return;
+  const b=el.querySelector('[data-approve]');b.disabled=true;fm.className='cnMsg';fm.textContent='Saving…';
+  google.script.run.withSuccessHandler(r=>{b.disabled=false;fm.className='cnMsg ok';fm.textContent=`Saved on ${r.saved} deal(s) ✓`;items.forEach(x=>delete CN_.edits[x.store+'|'+x.dealId]);cnLoad_();})
+    .withFailureHandler(e=>{b.disabled=false;fm.className='cnMsg err';fm.textContent=e.message||String(e);}).approveClientNames(AUTH_TOKEN,items);
+}
+function cnExcel_(){
+  if(typeof edenXlsxDownload_!=='function'){alert('Excel export is not available.');return;}
+  const rows=cnShown_();
+  edenXlsxDownload_('EDEN_Client_Names',{title:'EDEN — client names as on the papers',sheetName:'Client names',kpis:[['Shown',rows.length]],
+    headers:['File','Deal ID','Project','Unit','Name on the deal','Arabic','English','Arabic from','English from','Confidence','Note','Status'],
+    rows:rows.map(r=>[r.store==='EG'?'Egypt':'Georgia & Past',r.dealId,r.project,r.unit,r.name,r.ar,r.en,r.arFrom,r.enFrom,r.conf,r.note,r.status])});
+}
+(function initEdenClientNames_(){
+  const hook=()=>{if(typeof render==='function'&&!render.__cn){const o=render;render=function(){const r=o.apply(this,arguments);try{cnMount_();}catch(e){}return r;};render.__cn=true;}cnMount_();};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(hook,0));else setTimeout(hook,0);
+})();
+</script>
