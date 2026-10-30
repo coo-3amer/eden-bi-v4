@@ -71,21 +71,26 @@ function cnScan_(rescan){
   if(CN_.busy)return;CN_.busy=true;CN_.stop=false;
   const el=document.getElementById('cn'),prog=el.querySelector('.cnProg'),bar=prog.querySelector('i');
   el.querySelectorAll('[data-scan],[data-rescan],[data-approve]').forEach(b=>b.disabled=true);
-  prog.style.display='block';let doneAll=0;
+  prog.style.display='block';let doneAll=0,tries=0;
   const p2=n=>String(n).padStart(2,'0'),d0=new Date(new Date().toLocaleString('en-US',{timeZone:'Africa/Cairo'})),since=`${d0.getFullYear()}-${p2(d0.getMonth()+1)}-${p2(d0.getDate())} ${p2(d0.getHours())}:${p2(d0.getMinutes())}`;
   const step=()=>{
     if(CN_.stop){CN_.busy=false;return;}
-    cnMsg_(`Reading the ID / passport files… ${doneAll} deals read so far. Each round takes up to 5 minutes — you can keep this window open.`);
+    cnMsg_(`Reading the ID / passport files… ${doneAll} deals read so far. Each round takes about a minute — keep this window open.`);
     google.script.run.withSuccessHandler(r=>{
-      if(r&&r.busy){cnMsg_(r.message,'err');CN_.busy=false;el.querySelectorAll('button').forEach(b=>b.disabled=false);return;}
+      if(r&&r.busy){if(tries<8&&!CN_.stop){tries++;cnMsg_(`Still reading on Google’s side — going on in 20 seconds… (${doneAll} read so far)`);setTimeout(step,20000);return;}cnMsg_(r.message,'err');CN_.busy=false;el.querySelectorAll('button').forEach(b=>b.disabled=false);return;}
+      tries=0;
       doneAll+=r.done;const tot=doneAll+r.left;bar.style.width=(tot?Math.round(doneAll/tot*100):100)+'%';
       cnLoad_(()=>{
         if(r.left>0&&!CN_.stop){setTimeout(step,500);return;}
         CN_.busy=false;prog.style.display='none';el.querySelectorAll('button').forEach(b=>b.disabled=false);
         cnMsg_(`Done — ${doneAll} deals read.${r.noLink?` ${r.noLink} deals have no documents folder link.`:''} Check the names, fix any letter, tick and approve.`,'ok');
       });
-    }).withFailureHandler(e=>{CN_.busy=false;prog.style.display='none';el.querySelectorAll('button').forEach(b=>b.disabled=false);
-      cnMsg_('Stopped: '+(e.message||e)+(doneAll?` — ${doneAll} read; press “Read the papers” to go on.`:''),'err');}).scanClientNames(AUTH_TOKEN,{rescan:!!rescan,since:rescan?since:''});
+    }).withFailureHandler(e=>{
+      const msg=String(e&&e.message||e);
+      // the server keeps working after the page stops waiting: wait a little and go on
+      if(/90 seconds|already running|timed? ?out/i.test(msg)&&tries<8&&!CN_.stop){tries++;cnMsg_(`Still reading on Google’s side — going on in 20 seconds… (${doneAll} read so far)`);cnLoad_();setTimeout(step,20000);return;}
+      CN_.busy=false;prog.style.display='none';el.querySelectorAll('button').forEach(b=>b.disabled=false);
+      cnLoad_();cnMsg_('Stopped: '+msg+(doneAll?` — ${doneAll} read; press “Read the papers” to go on.`:''),'err');}).scanClientNames(AUTH_TOKEN,{rescan:!!rescan,since:rescan?since:''});
   };
   step();
 }

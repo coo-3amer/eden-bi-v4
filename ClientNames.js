@@ -18,7 +18,7 @@
 const CN_TAB_ = 'Name Review';
 const CN_HEAD_ = ['Deal ID', 'Project', 'Unit Code', 'Name on the deal', 'Arabic name (found)', 'English name (found)', 'Arabic from', 'English from', 'Confidence', 'Note', 'Status', 'Checked At', 'Approved By'];
 const CN_MAX_FILE_ = 12 * 1024 * 1024;   // bigger scans (full contracts) are skipped
-const CN_MAX_OCR_ = 6;                    // files read per client folder at most
+const CN_MAX_OCR_ = 4;                    // files read per client folder at most
 
 function cnRequireAdmin_(token) { return targetsRequireAdmin_(token); }
 
@@ -133,11 +133,11 @@ function cnFiles_(folderId) {
   return out.sort((a, b) => rank(a) - rank(b));
 }
 /* Read one client folder → list of people found on the papers. */
-function cnReadFolder_(folderId) {
+function cnReadFolder_(folderId, hardStop) {
   const files = cnFiles_(folderId), people = [];
   let read = 0;
   for (const f of files) {
-    if (read >= CN_MAX_OCR_) break;
+    if (read >= CN_MAX_OCR_ || (hardStop && Date.now() > hardStop && people.length)) break;
     if (f.kind === 'other' && people.length && read >= 3) break;
     let text = '';
     try { text = cnOcr_(f.id); read++; } catch (e) { console.warn('OCR ' + f.name + ': ' + e); continue; }
@@ -192,7 +192,7 @@ function cnMatch_(dealName, found) {
 function scanClientNames(authToken, opts) {
   const user = cnRequireAdmin_(authToken);
   opts = opts || {};
-  const started = Date.now(), budget = 270000;
+  const started = Date.now(), budget = 40000, hardStop = started + 70000;   // the page waits 90 s for an answer
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(5000)) return { busy: true, message: 'A scan is already running — try again in a minute.' };
   let done = 0, left = 0, total = 0, noLink = 0;
@@ -217,7 +217,7 @@ function scanClientNames(authToken, opts) {
         if (prev && opts.rescan && (String(prev.v[10]) === 'Approved' || (opts.since && String(prev.v[11]) >= opts.since))) continue;
         if (Date.now() - started > budget) { left++; continue; }
         let found = folderCache[fid];
-        if (!found) { try { found = cnReadFolder_(fid); } catch (e) { found = { people: [], files: 0, read: 0, error: String(e && e.message || e) }; } folderCache[fid] = found; }
+        if (!found) { try { found = cnReadFolder_(fid, hardStop); } catch (e) { found = { people: [], files: 0, read: 0, error: String(e && e.message || e) }; } folderCache[fid] = found; }
         const m = cnMatch_(String(v[at['Client Name'] - 1] || ''), found);
         const row = [id, String(v[at['Project'] - 1] || ''), String(v[at['Unit Code'] - 1] || ''), cleanClientName_(String(v[at['Client Name'] - 1] || '')),
           m.ar, m.en, m.arFrom, m.enFrom, found.error ? 'Check' : m.conf, found.error ? 'Folder could not be opened: ' + found.error : m.note, 'Pending', Utilities.formatDate(new Date(), 'Africa/Cairo', 'yyyy-MM-dd HH:mm'), ''];
